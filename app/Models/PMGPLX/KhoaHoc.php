@@ -37,6 +37,19 @@ class KhoaHoc extends Model
         '12' => 'Tháng 12',
     ];
 
+    public static $TIME_SLOTS = [
+        ['start' => '05:58', 'end' => '13:58'],
+        ['start' => '05:59', 'end' => '11:59'],
+        ['start' => '05:59', 'end' => '13:59'],
+        ['start' => '07:00', 'end' => '17:00'],
+        ['start' => '12:00', 'end' => '18:00'],
+        ['start' => '12:00', 'end' => '20:00'],
+        ['start' => '13:59', 'end' => '17:59'],
+        ['start' => '14:00', 'end' => '22:00'],
+        ['start' => '18:00', 'end' => '22:00'],
+        ['start' => '20:01', 'end' => '12:01'],
+    ];
+
     protected $casts = [
         'TrangThai' => 'boolean',
         'NgayKG' => 'datetime',

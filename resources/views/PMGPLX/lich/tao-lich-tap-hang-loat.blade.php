@@ -66,11 +66,17 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="form-group col-md-4">
+                    @include('PMGPLX.lich._khung-gio', [
+                        'timeSlots' => $timeSlots,
+                        'gioBD' => $gioBD,
+                        'gioKT' => $gioKT,
+                        'colClass' => 'col-md-2',
+                    ])
+                    <div class="form-group col-md-2">
                         <label>Giờ bắt đầu</label>
                         @include('PMGPLX.lich._gio-phut', ['name' => 'gio_bd', 'value' => $gioBD])
                     </div>
-                    <div class="form-group col-md-4">
+                    <div class="form-group col-md-2">
                         <label>Giờ kết thúc</label>
                         @include('PMGPLX.lich._gio-phut', ['name' => 'gio_kt', 'value' => $gioKT])
                     </div>
@@ -138,6 +144,30 @@
         hour.addEventListener('change', sync);
         minute.addEventListener('change', sync);
     });
+
+    function setTimePicker(name, time) {
+        var wrap = document.querySelector('[data-time-picker="' + name + '"]');
+        if (!wrap || !time) return;
+        var parts = String(time).split(':');
+        var hour = parts[0] || '00';
+        var minute = parts[1] || '00';
+        var hourEl = wrap.querySelector('.time-hour');
+        var minuteEl = wrap.querySelector('.time-minute');
+        var hidden = wrap.querySelector('input[type="hidden"]');
+        if (hourEl) hourEl.value = hour;
+        if (minuteEl) minuteEl.value = minute;
+        if (hidden) hidden.value = hour + ':' + minute;
+    }
+
+    var khungGio = document.querySelector('[data-khung-gio]');
+    if (khungGio) {
+        khungGio.addEventListener('change', function () {
+            var opt = this.options[this.selectedIndex];
+            if (!opt || !opt.value) return;
+            setTimePicker('gio_bd', opt.getAttribute('data-start'));
+            setTimePicker('gio_kt', opt.getAttribute('data-end'));
+        });
+    }
 
     function reloadCreateForm() {
         var maKh = $('#ma_kh').val() || '';

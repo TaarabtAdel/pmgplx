@@ -263,46 +263,19 @@
     @stack('styles')
 </head>
 <body>
-    <div class="app-header">Phần Mềm Giấy Phép Lái Xe — Trung Tâm Giáo Dục Nghề Nghiệp Mạnh Linh</div>
+    <div class="app-header">Phần Mềm Giấy Phép Lái Xe (Bản cũ) — Trung Tâm Giáo Dục Nghề Nghiệp Mạnh Linh</div>
 
     <nav class="app-nav">
         <ul class="nav">
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('pmgplx.home') ? 'active' : '' }}" href="{{ route('pmgplx.home') }}">Trang chủ</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('pmgplx.dm.giao-vien.*') ? 'active' : '' }}"
-                   href="{{ route('pmgplx.dm.giao-vien.index') }}">
-                    Quản lý giáo viên
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('pmgplx.dm.hoc-vien.*') ? 'active' : '' }}"
-                   href="{{ route('pmgplx.dm.hoc-vien.index') }}">
+                <a class="nav-link {{ request()->routeIs('pmgplxold.dm.hoc-vien.*') ? 'active' : '' }}"
+                   href="{{ route('pmgplxold.dm.hoc-vien.index') }}">
                     Quản lý học viên
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="{{ route('pmgplxold.dm.hoc-vien.index') }}">
-                    Học viên (bản cũ)
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('pmgplx.dm.xe.*') ? 'active' : '' }}"
-                   href="{{ route('pmgplx.dm.xe.index') }}">
-                    Quản lý xe
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('pmgplx.lich.gv.*', 'pmgplx.lich.ly-thuyet.*') ? 'active' : '' }}"
-                   href="{{ route('pmgplx.lich.gv.index') }}">
-                    Quản lý lịch làm việc giáo viên
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('pmgplx.lich.xe.*', 'pmgplx.lich.thuc-hanh.*') ? 'active' : '' }}"
-                   href="{{ route('pmgplx.lich.xe.index') }}">
-                    Quản lý lịch sử dụng xe tập lái
+                <a class="nav-link" href="{{ route('pmgplx.dm.hoc-vien.index') }}">
+                    ← Về bản mới
                 </a>
             </li>
         </ul>

@@ -8,6 +8,7 @@ use App\Http\Controllers\PMGPLX\DanhSachXeController;
 use App\Http\Controllers\PMGPLX\TaoLichDayLyThuyetController;
 use App\Http\Controllers\PMGPLX\TaoLichTapHangLoatController;
 use App\Http\Controllers\PMGPLX\TrangChuController;
+use App\Http\Controllers\PMGPLXOLD\DanhSachHocVienController as OldDanhSachHocVienController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/pmgplx');
@@ -22,6 +23,8 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function () {
 
     Route::get('/danh-muc/hoc-vien', [DanhSachHocVienController::class, 'index'])
         ->name('dm.hoc-vien.index');
+    Route::post('/danh-muc/hoc-vien/dong-bo', [DanhSachHocVienController::class, 'dongBo'])
+        ->name('dm.hoc-vien.dong-bo');
 
     Route::get('/danh-muc/xe', [DanhSachXeController::class, 'index'])
         ->name('dm.xe.index');
@@ -53,4 +56,11 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function () {
         ->name('lich.thuc-hanh.confirm');
     Route::get('/lich/thuc-hanh/huy', [TaoLichTapHangLoatController::class, 'cancel'])
         ->name('lich.thuc-hanh.cancel');
+});
+
+Route::prefix('pmgplxold')->name('pmgplxold.')->group(function () {
+    Route::redirect('/', '/pmgplxold/danh-muc/hoc-vien');
+
+    Route::get('/danh-muc/hoc-vien', [OldDanhSachHocVienController::class, 'index'])
+        ->name('dm.hoc-vien.index');
 });

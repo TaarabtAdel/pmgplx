@@ -3,10 +3,11 @@
     $parts = explode(':', substr((string) $value, 0, 5));
     $hour = isset($parts[0]) ? (int) $parts[0] : 7;
     $minute = isset($parts[1]) ? (int) $parts[1] : 0;
-    // Snap to nearest 5 minutes
-    $minute = (int) (round($minute / 5) * 5);
-    if ($minute >= 60) {
-        $minute = 55;
+    if ($minute < 0) {
+        $minute = 0;
+    }
+    if ($minute > 59) {
+        $minute = 59;
     }
     $id = $name;
 @endphp
@@ -20,7 +21,7 @@
     </select>
     <span>:</span>
     <select class="form-control form-control-sm time-minute" aria-label="Phút">
-        @for ($m = 0; $m <= 55; $m += 5)
+        @for ($m = 0; $m <= 59; $m++)
             <option value="{{ sprintf('%02d', $m) }}" @selected($m === $minute)>{{ sprintf('%02d', $m) }}</option>
         @endfor
     </select>

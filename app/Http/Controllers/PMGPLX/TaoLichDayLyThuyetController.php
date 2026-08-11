@@ -23,11 +23,7 @@ class TaoLichDayLyThuyetController extends Controller
             ->orderBy('TenKH')
             ->get(['MaKH', 'TenKH', 'NgayKG', 'NgayBG']);
 
-        $diaDiem = KhoaHoc::$DIA_DIEM;
         $thangThi = KhoaHoc::$THANG_THI;
-
-        // Chỉ lấy dữ liệu cũ khi quay lại từ validation/cancel (old input).
-        // Không hydrate từ session preview khi vào form mới.
         $maKH = $request->query('ma_kh')
             ?? old('ma_kh')
             ?? ($khoaHocs->first()->MaKH ?? null);
@@ -71,15 +67,14 @@ class TaoLichDayLyThuyetController extends Controller
             'maKH' => $maKH,
             'giaoViens' => $giaoViens,
             'monHocs' => $monHocs,
-            'diaDiem' => $diaDiem,
             'thangThi' => $thangThi,
+            'timeSlots' => KhoaHoc::$TIME_SLOTS,
             'selectedThang' => $selectedThang,
             'selectedNam' => $selectedNam,
             'daysOfMonth' => $daysOfMonth,
             'gioBD' => old('gio_bd', '07:00'),
-            'gioKT' => old('gio_kt', '11:00'),
+            'gioKT' => old('gio_kt', '17:00'),
             'selectedGiaoViens' => array_values(array_filter($selectedGiaoViens)),
-            'selectedDiaDiem' => old('dia_diem', $diaDiem[0] ?? ''),
             'tenMonHoc' => old('ten_mon_hoc', ''),
             'ngayChon' => old('ngay_chon', ''),
         ]);
@@ -93,7 +88,6 @@ class TaoLichDayLyThuyetController extends Controller
             'ma_gv' => ['required', 'array', 'min:1'],
             'ma_gv.*' => ['required', 'string', 'max:8'],
             'ten_mon_hoc' => ['required', 'string', 'max:255'],
-            'dia_diem' => ['nullable', 'string', 'max:255'],
             'gio_bd' => ['required', 'string'],
             'gio_kt' => ['required', 'string'],
             'ngay_chon' => ['required', 'string'],
@@ -159,7 +153,7 @@ class TaoLichDayLyThuyetController extends Controller
                     'MaGV' => $maGV,
                     'TenGV' => $teacher->TenGV,
                     'TenMonHoc' => $validated['ten_mon_hoc'],
-                    'DiaDiem' => $validated['dia_diem'] ?? '',
+                    'DiaDiem' => '',
                     'NgayBD' => $ngayBD->format('Y-m-d H:i:s'),
                     'NgayKT' => $ngayKT->format('Y-m-d H:i:s'),
                     'conflict' => $conflict,

@@ -1,12 +1,12 @@
-@extends('PMGPLX.layouts.quan-ly')
+@extends('PMGPLXOLD.layouts.quan-ly')
 
-@section('title', 'Quản lý học viên')
+@section('title', 'Quản lý học viên (bản cũ)')
 
 @section('content')
     <div class="card card-panel">
-        <div class="card-header">Thông tin tìm kiếm học viên</div>
+        <div class="card-header">Thông tin tìm kiếm học viên — DB bản cũ</div>
         <div class="card-body">
-            <form method="GET" action="{{ route('pmgplx.dm.hoc-vien.index') }}">
+            <form method="GET" action="{{ route('pmgplxold.dm.hoc-vien.index') }}">
                 <div class="form-row align-items-end">
                     <div class="form-group col-md-3">
                         <label>Mã ĐK|Họ tên|CMT|Số hồ sơ</label>
@@ -37,7 +37,7 @@
                     </div>
                     <div class="form-group col-md-2">
                         <button type="submit" class="btn btn-sm btn-primary btn-block">Tìm kiếm</button>
-                        <a href="{{ route('pmgplx.dm.hoc-vien.index') }}" class="btn btn-sm btn-outline-secondary btn-block mt-1" title="Làm mới">↻</a>
+                        <a href="{{ route('pmgplxold.dm.hoc-vien.index') }}" class="btn btn-sm btn-outline-secondary btn-block mt-1" title="Làm mới">↻</a>
                     </div>
                 </div>
             </form>
@@ -45,33 +45,12 @@
     </div>
 
     <div class="card card-panel">
-        <div class="card-header">Danh sách học viên</div>
+        <div class="card-header">Danh sách học viên (bản cũ)</div>
         <div class="card-body">
             <div class="d-flex flex-wrap align-items-center mb-3">
-                <div class="btn-group btn-group-sm mr-2 mb-2" role="group">
-                    <button type="button" class="btn btn-success" disabled title="Sắp hỗ trợ">＋ Thêm mới</button>
-                    <button type="button" class="btn btn-warning" disabled title="Sắp hỗ trợ">✎ Xem - Sửa</button>
-                    <button type="button" class="btn btn-danger" disabled title="Sắp hỗ trợ">✕ Xóa</button>
-                </div>
-
-                <form method="POST" action="{{ route('pmgplx.dm.hoc-vien.dong-bo') }}" class="mb-2 mr-2"
-                      onsubmit="return confirm('Đồng bộ toàn bộ kết quả theo bộ lọc hiện tại ({{ number_format($items->total()) }} học viên) sang bản cũ?');">
-                    @csrf
-                    <input type="hidden" name="tu_khoa" value="{{ $filters['tu_khoa'] }}">
-                    <input type="hidden" name="ma_kh" value="{{ $filters['ma_kh'] }}">
-                    <input type="hidden" name="hang_gplx" value="{{ $filters['hang_gplx'] }}">
-                    <input type="hidden" name="trang_thai" value="{{ $filters['trang_thai'] }}">
-                    <button type="submit" class="btn btn-sm btn-info" @disabled($items->total() === 0)>
-                        Đồng Bộ Qua Bản Cũ
-                    </button>
-                    <a href="{{ route('pmgplxold.dm.hoc-vien.index') }}" class="btn btn-sm btn-outline-secondary ml-1" target="_blank">
-                        Xem bản cũ
-                    </a>
-                </form>
-
                 <div class="ml-auto d-flex flex-wrap align-items-center mb-2">
                     <span class="mr-3">Tổng số bản ghi: <strong>{{ number_format($items->total()) }}</strong></span>
-                    <form method="GET" action="{{ route('pmgplx.dm.hoc-vien.index') }}" class="form-inline mr-3">
+                    <form method="GET" action="{{ route('pmgplxold.dm.hoc-vien.index') }}" class="form-inline mr-3">
                         @foreach (request()->except(['per_page', 'page']) as $key => $value)
                             <input type="hidden" name="{{ $key }}" value="{{ $value }}">
                         @endforeach
@@ -124,7 +103,7 @@
                             <tr>
                                 <td>{{ $items->firstItem() + $index }}</td>
                                 <td>
-                                    @include('PMGPLX.danh-muc._trang-thai-icon', ['active' => (string) $row->TrangThai === '1'])
+                                    @include('PMGPLXOLD.danh-muc._trang-thai-icon', ['active' => (string) $row->TrangThai === '1'])
                                     {{ $row->MaDK }}
                                 </td>
                                 <td>{{ $row->HoVaTen ?: trim(($row->HoDemNLX ?? '').' '.($row->TenNLX ?? '')) }}</td>

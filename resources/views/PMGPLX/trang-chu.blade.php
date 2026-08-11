@@ -16,6 +16,10 @@
                         <span>Quản lý học viên</span>
                         <span class="text-muted small">→</span>
                     </a>
+                    <a href="{{ route('pmgplxold.dm.hoc-vien.index') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <span>Quản lý học viên (bản cũ)</span>
+                        <span class="text-muted small">→</span>
+                    </a>
                     <a href="{{ route('pmgplx.dm.xe.index') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                         <span>Quản lý xe</span>
                         <span class="text-muted small">→</span>

@@ -74,9 +74,10 @@ class TaoLichTapHangLoatController extends Controller
             'selectedNam' => $selectedNam,
             'daysOfMonth' => $daysOfMonth,
             'gioBD' => old('gio_bd', '07:00'),
-            'gioKT' => old('gio_kt', '11:00'),
+            'gioKT' => old('gio_kt', '17:00'),
             'selectedGiaoViens' => array_values(array_filter($selectedGiaoViens)),
             'selectedDiaDiem' => old('dia_diem', $diaDiem[0] ?? ''),
+            'timeSlots' => KhoaHoc::$TIME_SLOTS,
             'ngayChon' => old('ngay_chon', ''),
         ]);
     }
