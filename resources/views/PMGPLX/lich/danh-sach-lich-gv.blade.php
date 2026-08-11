@@ -119,7 +119,10 @@
                             <tr>
                                 <td>{{ $items->firstItem() + $index }}</td>
                                 <td>{{ $row->MaKH }}</td>
-                                <td>{{ $row->MaGV }}</td>
+                                <td>
+                                    @include('PMGPLX.danh-muc._trang-thai-icon', ['active' => (bool) $row->TrangThai])
+                                    {{ $row->MaGV }}
+                                </td>
                                 <td>{{ $row->TenGV }}</td>
                                 <td>{{ \App\Support\PMGPLX\LoaiGiaoVien::label($row->LoaiGV) }}</td>
                                 <td>{{ optional($row->NgayBD)->format('d/m/Y H:i') }}</td>

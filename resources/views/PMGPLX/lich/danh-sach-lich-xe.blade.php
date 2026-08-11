@@ -121,7 +121,6 @@
                             <th>TG kết thúc</th>
                             <th>Ngày khai giảng</th>
                             <th>Ngày bế giảng</th>
-                            <th>Trạng thái</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -129,17 +128,19 @@
                             <tr>
                                 <td>{{ $items->firstItem() + $index }}</td>
                                 <td>{{ $row->MaKH }}</td>
-                                <td>{{ $row->BienSoXe }}</td>
+                                <td>
+                                    @include('PMGPLX.danh-muc._trang-thai-icon', ['active' => (bool) $row->TrangThai])
+                                    {{ $row->BienSoXe }}
+                                </td>
                                 <td>{{ $row->TenGV }}</td>
                                 <td>{{ optional($row->NgayBD)->format('d/m/Y H:i') }}</td>
                                 <td>{{ optional($row->NgayKT)->format('d/m/Y H:i') }}</td>
                                 <td>{{ $row->NgayKG ? \Carbon\Carbon::parse($row->NgayKG)->format('d/m/Y') : '' }}</td>
                                 <td>{{ $row->NgayBG ? \Carbon\Carbon::parse($row->NgayBG)->format('d/m/Y') : '' }}</td>
-                                <td>{{ $row->TrangThai ? 'Hiệu lực' : 'Không hiệu lực' }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="text-center py-4">Không có dữ liệu</td>
+                                <td colspan="8" class="text-center py-4">Không có dữ liệu</td>
                             </tr>
                         @endforelse
                     </tbody>
