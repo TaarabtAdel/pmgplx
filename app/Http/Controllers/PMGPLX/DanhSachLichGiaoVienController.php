@@ -1,10 +1,12 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\PMGPLX;
 
-use App\Models\GiaoVien;
-use App\Models\KhoaHoc;
-use App\Models\KhoaHocGiaoVien;
+use App\Http\Controllers\Controller;
+
+use App\Models\PMGPLX\GiaoVien;
+use App\Models\PMGPLX\KhoaHoc;
+use App\Models\PMGPLX\KhoaHocGiaoVien;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -54,7 +56,7 @@ class DanhSachLichGiaoVienController extends Controller
             ->orderBy('MaGV')
             ->get(['MaGV', 'HoTenDem', 'TenGV']);
 
-        return view('lich.danh-sach-lich-gv', [
+        return view('PMGPLX.lich.danh-sach-lich-gv', [
             'items' => $items,
             'khoaHocs' => $khoaHocs,
             'giaoViens' => $giaoViens,

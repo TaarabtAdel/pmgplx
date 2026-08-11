@@ -1,28 +1,42 @@
-@extends('layouts.quan-ly')
+@extends('PMGPLX.layouts.quan-ly')
 
-@section('title', 'Quản lý lịch sử dụng xe tập lái')
+@section('title', 'Quản lý lịch làm việc giáo viên')
 
 @section('content')
     <div class="card card-panel">
-        <div class="card-header">Thông tin tìm kiếm lịch sử dụng xe tập lái</div>
+        <div class="card-header">Thông tin tìm kiếm lịch làm việc giáo viên</div>
         <div class="card-body">
-            <form method="GET" action="{{ route('lich.xe.index') }}">
+            <form method="GET" action="{{ route('pmgplx.lich.gv.index') }}">
                 <div class="form-row align-items-end">
-                    <div class="form-group col-md-2">
-                        <label>Mã khóa học</label>
-                        <input type="text" class="form-control form-control-sm" name="ma_kh" value="{{ $filters['ma_kh'] }}" placeholder="Nhập mã khóa học">
+                    <div class="form-group col-md-3">
+                        <label for="filter_ma_kh">Mã khóa học</label>
+                        <select name="ma_kh" id="filter_ma_kh" class="form-control form-control-sm">
+                            <option value="">—Tất cả—</option>
+                            @foreach ($khoaHocs as $kh)
+                                <option value="{{ $kh->MaKH }}" @selected($filters['ma_kh'] === $kh->MaKH)>
+                                    {{ $kh->TenKH }} ({{ $kh->MaKH }})
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
-                    <div class="form-group col-md-2">
-                        <label>Biển số xe</label>
-                        <input type="text" class="form-control form-control-sm" name="bien_so_xe" value="{{ $filters['bien_so_xe'] }}" placeholder="Nhập biển số">
-                    </div>
-                    <div class="form-group col-md-4">
+                    <div class="form-group col-md-3">
                         <label>Thời gian từ ... đến ...</label>
                         <div class="d-flex align-items-center">
                             <input type="date" class="form-control form-control-sm" name="tu_ngay" value="{{ $filters['tu_ngay'] }}">
                             <span class="mx-2">→</span>
                             <input type="date" class="form-control form-control-sm" name="den_ngay" value="{{ $filters['den_ngay'] }}">
                         </div>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label for="filter_ma_gv">Mã|Tên giáo viên</label>
+                        <select name="ma_gv" id="filter_ma_gv" class="form-control form-control-sm">
+                            <option value="">—Tất cả—</option>
+                            @foreach ($giaoViens as $gv)
+                                <option value="{{ $gv->MaGV }}" @selected($filters['ma_gv'] === $gv->MaGV)>
+                                    {{ $gv->ho_ten }} ({{ $gv->MaGV }})
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="form-group col-md-2">
                         <label>Trạng thái</label>
@@ -32,9 +46,9 @@
                             <option value="0" @selected($filters['trang_thai'] === '0')>Không hiệu lực</option>
                         </select>
                     </div>
-                    <div class="form-group col-md-2">
-                        <button type="submit" class="btn btn-sm btn-primary btn-block">Tìm kiếm</button>
-                        <a href="{{ route('lich.xe.index') }}" class="btn btn-sm btn-outline-secondary btn-block mt-1" title="Làm mới">↻</a>
+                    <div class="form-group col-md-1">
+                        <button type="submit" class="btn btn-sm btn-primary btn-block">Tìm</button>
+                        <a href="{{ route('pmgplx.lich.gv.index') }}" class="btn btn-sm btn-outline-secondary btn-block mt-1" title="Làm mới">↻</a>
                     </div>
                 </div>
             </form>
@@ -42,18 +56,18 @@
     </div>
 
     <div class="card card-panel">
-        <div class="card-header">Danh sách lịch sử dụng xe tập lái</div>
+        <div class="card-header">Danh sách lịch làm việc giáo viên</div>
         <div class="card-body">
             <div class="d-flex flex-wrap align-items-center mb-3">
                 <div class="btn-group btn-group-sm mr-2 mb-2" role="group">
-                    <a href="{{ route('lich.thuc-hanh.create') }}" class="btn btn-success">＋ Thêm mới</a>
+                    <a href="{{ route('pmgplx.lich.ly-thuyet.create') }}" class="btn btn-success">＋ Thêm mới</a>
                     <button type="button" class="btn btn-warning" disabled>✎ Xem - Sửa</button>
                     <button type="button" class="btn btn-danger" disabled>✕ Xóa</button>
                 </div>
 
                 <div class="ml-auto d-flex flex-wrap align-items-center mb-2">
                     <span class="mr-3">Tổng số bản ghi: <strong>{{ number_format($items->total()) }}</strong></span>
-                    <form method="GET" action="{{ route('lich.xe.index') }}" class="form-inline mr-3">
+                    <form method="GET" action="{{ route('pmgplx.lich.gv.index') }}" class="form-inline mr-3">
                         @foreach (request()->except(['per_page', 'page']) as $key => $value)
                             <input type="hidden" name="{{ $key }}" value="{{ $value }}">
                         @endforeach
@@ -92,13 +106,12 @@
                         <tr>
                             <th>STT</th>
                             <th>Mã khóa học</th>
-                            <th>Biển số xe</th>
-                            <th>Giáo viên phụ trách</th>
+                            <th>Mã giáo viên</th>
+                            <th>Tên giáo viên</th>
+                            <th>Loại hình đào tạo</th>
                             <th>TG bắt đầu</th>
                             <th>TG kết thúc</th>
-                            <th>Ngày khai giảng</th>
-                            <th>Ngày bế giảng</th>
-                            <th>Trạng thái</th>
+                            <th>Môn học GD</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -106,17 +119,16 @@
                             <tr>
                                 <td>{{ $items->firstItem() + $index }}</td>
                                 <td>{{ $row->MaKH }}</td>
-                                <td>{{ $row->BienSoXe }}</td>
+                                <td>{{ $row->MaGV }}</td>
                                 <td>{{ $row->TenGV }}</td>
+                                <td>{{ \App\Support\PMGPLX\LoaiGiaoVien::label($row->LoaiGV) }}</td>
                                 <td>{{ optional($row->NgayBD)->format('d/m/Y H:i') }}</td>
                                 <td>{{ optional($row->NgayKT)->format('d/m/Y H:i') }}</td>
-                                <td>{{ $row->NgayKG ? \Carbon\Carbon::parse($row->NgayKG)->format('d/m/Y') : '' }}</td>
-                                <td>{{ $row->NgayBG ? \Carbon\Carbon::parse($row->NgayBG)->format('d/m/Y') : '' }}</td>
-                                <td>{{ $row->TrangThai ? 'Hiệu lực' : 'Không hiệu lực' }}</td>
+                                <td>{{ $row->TenMonHoc }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="text-center py-4">Không có dữ liệu</td>
+                                <td colspan="8" class="text-center py-4">Không có dữ liệu</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -125,3 +137,29 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    $('#filter_ma_kh').select2({
+        theme: 'bootstrap4',
+        placeholder: 'Tìm khóa học...',
+        allowClear: true,
+        width: '100%',
+        dropdownParent: $('#filter_ma_kh').closest('.form-group'),
+        language: {
+            noResults: function () { return 'Không tìm thấy khóa học'; }
+        }
+    });
+
+    $('#filter_ma_gv').select2({
+        theme: 'bootstrap4',
+        placeholder: 'Tìm giáo viên...',
+        allowClear: true,
+        width: '100%',
+        dropdownParent: $('#filter_ma_gv').closest('.form-group'),
+        language: {
+            noResults: function () { return 'Không tìm thấy giáo viên'; }
+        }
+    });
+</script>
+@endpush

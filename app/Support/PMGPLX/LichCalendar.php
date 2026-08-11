@@ -1,24 +1,36 @@
 <?php
 
-namespace App\Support;
+namespace App\Support\PMGPLX;
 
 use Carbon\Carbon;
 
 class LichCalendar
 {
     /**
-     * Build HTML calendars spanning course months (NgayKG → NgayBG).
+     * Build HTML calendars spanning course months (NgayKG → NgayBG),
+     * always including at least the current month and the next month.
      * Every day of each month is selectable (no past/future filtering).
      */
     public static function render(?Carbon $from, ?Carbon $to): string
     {
-        if (!$from || !$to || $from->gt($to)) {
-            $from = Carbon::today()->startOfMonth();
-            $to = Carbon::today()->addMonths(2)->endOfMonth();
-        }
+        $windowStart = Carbon::today()->startOfMonth();
+        $windowEnd = Carbon::today()->copy()->addMonthNoOverflow()->endOfMonth();
 
-        $from = $from->copy()->startOfDay();
-        $to = $to->copy()->startOfDay();
+        if (!$from || !$to || $from->gt($to)) {
+            $from = $windowStart->copy();
+            $to = $windowEnd->copy();
+        } else {
+            $from = $from->copy()->startOfDay();
+            $to = $to->copy()->startOfDay();
+
+            // Always show current + next month in addition to the course span.
+            if ($from->gt($windowStart)) {
+                $from = $windowStart->copy();
+            }
+            if ($to->lt($windowEnd)) {
+                $to = $windowEnd->copy();
+            }
+        }
 
         $html = '';
         $cursor = $from->copy()->startOfMonth();

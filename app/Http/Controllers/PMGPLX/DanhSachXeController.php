@@ -1,8 +1,10 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\PMGPLX;
 
-use App\Models\XeTap;
+use App\Http\Controllers\Controller;
+
+use App\Models\PMGPLX\XeTap;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -40,7 +42,7 @@ class DanhSachXeController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
-        return view('danh-muc.xe-tap', [
+        return view('PMGPLX.danh-muc.xe-tap', [
             'items' => $items,
             'filters' => [
                 'tu_khoa' => $request->input('tu_khoa', ''),

@@ -1,4 +1,4 @@
-@extends('layouts.quan-ly')
+@extends('PMGPLX.layouts.quan-ly')
 
 @section('title', 'Quản lý xe tập lái')
 
@@ -6,7 +6,7 @@
     <div class="card card-panel">
         <div class="card-header">Thông tin tìm kiếm xe tập lái</div>
         <div class="card-body">
-            <form method="GET" action="{{ route('dm.xe.index') }}">
+            <form method="GET" action="{{ route('pmgplx.dm.xe.index') }}">
                 <div class="form-row align-items-end">
                     <div class="form-group col-md-4">
                         <label>Biển số|Nhãn hiệu|Loại xe|Số GP</label>
@@ -26,7 +26,7 @@
                     </div>
                     <div class="form-group col-md-2">
                         <button type="submit" class="btn btn-sm btn-primary btn-block">Tìm kiếm</button>
-                        <a href="{{ route('dm.xe.index') }}" class="btn btn-sm btn-outline-secondary btn-block mt-1" title="Làm mới">↻</a>
+                        <a href="{{ route('pmgplx.dm.xe.index') }}" class="btn btn-sm btn-outline-secondary btn-block mt-1" title="Làm mới">↻</a>
                     </div>
                 </div>
             </form>
@@ -45,7 +45,7 @@
 
                 <div class="ml-auto d-flex flex-wrap align-items-center mb-2">
                     <span class="mr-3">Tổng số bản ghi: <strong>{{ number_format($items->total()) }}</strong></span>
-                    <form method="GET" action="{{ route('dm.xe.index') }}" class="form-inline mr-3">
+                    <form method="GET" action="{{ route('pmgplx.dm.xe.index') }}" class="form-inline mr-3">
                         @foreach (request()->except(['per_page', 'page']) as $key => $value)
                             <input type="hidden" name="{{ $key }}" value="{{ $value }}">
                         @endforeach
@@ -91,14 +91,16 @@
                             <th>Số GPXTL</th>
                             <th>Ngày cấp GP</th>
                             <th>Ngày HH GP</th>
-                            <th>Trạng thái</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($items as $index => $row)
                             <tr>
                                 <td>{{ $items->firstItem() + $index }}</td>
-                                <td>{{ $row->BienSoXe }}</td>
+                                <td>
+                                    @include('PMGPLX.danh-muc._trang-thai-icon', ['active' => (bool) $row->TrangThai])
+                                    {{ $row->BienSoXe }}
+                                </td>
                                 <td>{{ $row->NhanHieu }}</td>
                                 <td>{{ $row->LoaiXe }}</td>
                                 <td>{{ $row->HangXe }}</td>
@@ -106,11 +108,10 @@
                                 <td>{{ $row->SoGPXTL }}</td>
                                 <td>{{ optional($row->NgayCapGPXTL)->format('d/m/Y') }}</td>
                                 <td>{{ optional($row->NgayHHGPXTL)->format('d/m/Y') }}</td>
-                                <td>{{ $row->TrangThai ? 'Hiệu lực' : 'Không hiệu lực' }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="text-center py-4">Không có dữ liệu</td>
+                                <td colspan="9" class="text-center py-4">Không có dữ liệu</td>
                             </tr>
                         @endforelse
                     </tbody>

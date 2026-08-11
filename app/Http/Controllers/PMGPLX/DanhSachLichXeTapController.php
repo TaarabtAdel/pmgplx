@@ -1,8 +1,12 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\PMGPLX;
 
-use App\Models\KhoaHocXeTap;
+use App\Http\Controllers\Controller;
+use App\Models\PMGPLX\GiaoVien;
+use App\Models\PMGPLX\KhoaHoc;
+use App\Models\PMGPLX\KhoaHocXeTap;
+use App\Models\PMGPLX\XeTap;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -35,11 +39,15 @@ class DanhSachLichXeTapController extends Controller
             ]);
 
         if ($maKH = trim((string) $request->input('ma_kh'))) {
-            $query->where('x.MaKH', 'like', '%'.$maKH.'%');
+            $query->where('x.MaKH', $maKH);
+        }
+
+        if ($maGV = trim((string) $request->input('ma_gv'))) {
+            $query->where('x.MaGV', $maGV);
         }
 
         if ($bienSo = trim((string) $request->input('bien_so_xe'))) {
-            $query->where('x.BienSoXe', 'like', '%'.$bienSo.'%');
+            $query->where('x.BienSoXe', $bienSo);
         }
 
         if ($from = $request->input('tu_ngay')) {
@@ -60,10 +68,27 @@ class DanhSachLichXeTapController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
-        return view('lich.danh-sach-lich-xe', [
+        $khoaHocs = KhoaHoc::query()
+            ->orderBy('TenKH')
+            ->get(['MaKH', 'TenKH']);
+
+        $giaoViens = GiaoVien::query()
+            ->orderBy('TenGV')
+            ->orderBy('MaGV')
+            ->get(['MaGV', 'HoTenDem', 'TenGV']);
+
+        $xeTaps = XeTap::query()
+            ->orderBy('BienSoXe')
+            ->pluck('BienSoXe');
+
+        return view('PMGPLX.lich.danh-sach-lich-xe', [
             'items' => $items,
+            'khoaHocs' => $khoaHocs,
+            'giaoViens' => $giaoViens,
+            'xeTaps' => $xeTaps,
             'filters' => [
                 'ma_kh' => $request->input('ma_kh', ''),
+                'ma_gv' => $request->input('ma_gv', ''),
                 'bien_so_xe' => $request->input('bien_so_xe', ''),
                 'tu_ngay' => $request->input('tu_ngay', ''),
                 'den_ngay' => $request->input('den_ngay', ''),

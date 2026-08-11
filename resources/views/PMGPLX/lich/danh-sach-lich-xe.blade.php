@@ -1,12 +1,12 @@
-@extends('layouts.quan-ly')
+@extends('PMGPLX.layouts.quan-ly')
 
-@section('title', 'Quản lý lịch làm việc giáo viên')
+@section('title', 'Quản lý lịch sử dụng xe tập lái')
 
 @section('content')
     <div class="card card-panel">
-        <div class="card-header">Thông tin tìm kiếm lịch làm việc giáo viên</div>
+        <div class="card-header">Thông tin tìm kiếm lịch sử dụng xe tập lái</div>
         <div class="card-body">
-            <form method="GET" action="{{ route('lich.gv.index') }}">
+            <form method="GET" action="{{ route('pmgplx.lich.xe.index') }}">
                 <div class="form-row align-items-end">
                     <div class="form-group col-md-3">
                         <label for="filter_ma_kh">Mã khóa học</label>
@@ -19,13 +19,14 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="form-group col-md-3">
-                        <label>Thời gian từ ... đến ...</label>
-                        <div class="d-flex align-items-center">
-                            <input type="date" class="form-control form-control-sm" name="tu_ngay" value="{{ $filters['tu_ngay'] }}">
-                            <span class="mx-2">→</span>
-                            <input type="date" class="form-control form-control-sm" name="den_ngay" value="{{ $filters['den_ngay'] }}">
-                        </div>
+                    <div class="form-group col-md-2">
+                        <label for="filter_bien_so_xe">Biển số xe</label>
+                        <select name="bien_so_xe" id="filter_bien_so_xe" class="form-control form-control-sm">
+                            <option value="">—Tất cả—</option>
+                            @foreach ($xeTaps as $xe)
+                                <option value="{{ $xe }}" @selected($filters['bien_so_xe'] === $xe)>{{ $xe }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="form-group col-md-3">
                         <label for="filter_ma_gv">Mã|Tên giáo viên</label>
@@ -38,6 +39,14 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="form-group col-md-3">
+                        <label>Thời gian từ ... đến ...</label>
+                        <div class="d-flex align-items-center">
+                            <input type="date" class="form-control form-control-sm" name="tu_ngay" value="{{ $filters['tu_ngay'] }}">
+                            <span class="mx-2">→</span>
+                            <input type="date" class="form-control form-control-sm" name="den_ngay" value="{{ $filters['den_ngay'] }}">
+                        </div>
+                    </div>
                     <div class="form-group col-md-2">
                         <label>Trạng thái</label>
                         <select class="form-control form-control-sm" name="trang_thai">
@@ -48,7 +57,7 @@
                     </div>
                     <div class="form-group col-md-1">
                         <button type="submit" class="btn btn-sm btn-primary btn-block">Tìm</button>
-                        <a href="{{ route('lich.gv.index') }}" class="btn btn-sm btn-outline-secondary btn-block mt-1" title="Làm mới">↻</a>
+                        <a href="{{ route('pmgplx.lich.xe.index') }}" class="btn btn-sm btn-outline-secondary btn-block mt-1" title="Làm mới">↻</a>
                     </div>
                 </div>
             </form>
@@ -56,18 +65,18 @@
     </div>
 
     <div class="card card-panel">
-        <div class="card-header">Danh sách lịch làm việc giáo viên</div>
+        <div class="card-header">Danh sách lịch sử dụng xe tập lái</div>
         <div class="card-body">
             <div class="d-flex flex-wrap align-items-center mb-3">
                 <div class="btn-group btn-group-sm mr-2 mb-2" role="group">
-                    <a href="{{ route('lich.ly-thuyet.create') }}" class="btn btn-success">＋ Thêm mới</a>
+                    <a href="{{ route('pmgplx.lich.thuc-hanh.create') }}" class="btn btn-success">＋ Thêm mới</a>
                     <button type="button" class="btn btn-warning" disabled>✎ Xem - Sửa</button>
                     <button type="button" class="btn btn-danger" disabled>✕ Xóa</button>
                 </div>
 
                 <div class="ml-auto d-flex flex-wrap align-items-center mb-2">
                     <span class="mr-3">Tổng số bản ghi: <strong>{{ number_format($items->total()) }}</strong></span>
-                    <form method="GET" action="{{ route('lich.gv.index') }}" class="form-inline mr-3">
+                    <form method="GET" action="{{ route('pmgplx.lich.xe.index') }}" class="form-inline mr-3">
                         @foreach (request()->except(['per_page', 'page']) as $key => $value)
                             <input type="hidden" name="{{ $key }}" value="{{ $value }}">
                         @endforeach
@@ -106,12 +115,13 @@
                         <tr>
                             <th>STT</th>
                             <th>Mã khóa học</th>
-                            <th>Mã giáo viên</th>
-                            <th>Tên giáo viên</th>
-                            <th>Loại hình đào tạo</th>
+                            <th>Biển số xe</th>
+                            <th>Giáo viên phụ trách</th>
                             <th>TG bắt đầu</th>
                             <th>TG kết thúc</th>
-                            <th>Môn học GD</th>
+                            <th>Ngày khai giảng</th>
+                            <th>Ngày bế giảng</th>
+                            <th>Trạng thái</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -119,16 +129,17 @@
                             <tr>
                                 <td>{{ $items->firstItem() + $index }}</td>
                                 <td>{{ $row->MaKH }}</td>
-                                <td>{{ $row->MaGV }}</td>
+                                <td>{{ $row->BienSoXe }}</td>
                                 <td>{{ $row->TenGV }}</td>
-                                <td>{{ \App\Support\LoaiGiaoVien::label($row->LoaiGV) }}</td>
                                 <td>{{ optional($row->NgayBD)->format('d/m/Y H:i') }}</td>
                                 <td>{{ optional($row->NgayKT)->format('d/m/Y H:i') }}</td>
-                                <td>{{ $row->TenMonHoc }}</td>
+                                <td>{{ $row->NgayKG ? \Carbon\Carbon::parse($row->NgayKG)->format('d/m/Y') : '' }}</td>
+                                <td>{{ $row->NgayBG ? \Carbon\Carbon::parse($row->NgayBG)->format('d/m/Y') : '' }}</td>
+                                <td>{{ $row->TrangThai ? 'Hiệu lực' : 'Không hiệu lực' }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center py-4">Không có dữ liệu</td>
+                                <td colspan="9" class="text-center py-4">Không có dữ liệu</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -145,6 +156,7 @@
         placeholder: 'Tìm khóa học...',
         allowClear: true,
         width: '100%',
+        dropdownParent: $('#filter_ma_kh').closest('.form-group'),
         language: {
             noResults: function () { return 'Không tìm thấy khóa học'; }
         }
@@ -155,8 +167,20 @@
         placeholder: 'Tìm giáo viên...',
         allowClear: true,
         width: '100%',
+        dropdownParent: $('#filter_ma_gv').closest('.form-group'),
         language: {
             noResults: function () { return 'Không tìm thấy giáo viên'; }
+        }
+    });
+
+    $('#filter_bien_so_xe').select2({
+        theme: 'bootstrap4',
+        placeholder: 'Tìm biển số xe...',
+        allowClear: true,
+        width: '100%',
+        dropdownParent: $('#filter_bien_so_xe').closest('.form-group'),
+        language: {
+            noResults: function () { return 'Không tìm thấy biển số xe'; }
         }
     });
 </script>
