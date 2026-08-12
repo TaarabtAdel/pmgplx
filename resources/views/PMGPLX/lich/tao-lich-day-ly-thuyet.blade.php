@@ -80,11 +80,26 @@
 
                 <h5 class="section-title">Chọn ngày dạy</h5>
                 <div class="calendar">
+                    @php
+                        $nextMonthDate = \Carbon\Carbon::createFromDate($selectedNam, (int) $selectedThang, 1)->addMonth();
+                        $nextThang = $nextMonthDate->format('m');
+                        $nextNam = $nextMonthDate->year;
+                        $daysOfNextMonth = $nextMonthDate->daysInMonth;
+                    @endphp
                     <h5 class="section-title">Tháng {{ $selectedThang }}/{{ $selectedNam }}</h5>
                     <div class="day-calendar">
                         @for ($i = 1; $i <= $daysOfMonth; $i++)
                             @php
                                 $iso = sprintf('%04d-%02d-%02d', $selectedNam, (int) $selectedThang, $i);
+                            @endphp
+                            <div class="day" onclick="chonNgay(this, '{{ $iso }}')">{{ $i }}</div>
+                        @endfor
+                    </div>
+                    <h5 class="section-title">Tháng {{ $nextThang }}/{{ $nextNam }}</h5>
+                    <div class="day-calendar">
+                        @for ($i = 1; $i <= $daysOfNextMonth; $i++)
+                            @php
+                                $iso = sprintf('%04d-%02d-%02d', $nextNam, (int) $nextThang, $i);
                             @endphp
                             <div class="day" onclick="chonNgay(this, '{{ $iso }}')">{{ $i }}</div>
                         @endfor
