@@ -47,7 +47,7 @@ class KhoaHoc extends Model
         ['start' => '13:59', 'end' => '17:59'],
         ['start' => '14:00', 'end' => '22:00'],
         ['start' => '18:00', 'end' => '22:00'],
-        ['start' => '20:01', 'end' => '12:01'],
+        ['start' => '20:01', 'end' => '22:01'],
     ];
 
     protected $casts = [
