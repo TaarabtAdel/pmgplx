@@ -45,6 +45,30 @@
             color: #1f4e79;
             background: #f7f9fb;
         }
+        .app-nav .nav-item.dropdown {
+            position: relative;
+        }
+        .app-nav .dropdown-menu {
+            margin-top: 0;
+            border-radius: 0 0 0.25rem 0.25rem;
+            border-color: #c5cdd6;
+            min-width: 14rem;
+            padding: 0.25rem 0;
+        }
+        .app-nav .dropdown-item {
+            font-size: 0.925rem;
+            padding: 0.45rem 0.9rem;
+            color: #333;
+        }
+        .app-nav .dropdown-item:hover,
+        .app-nav .dropdown-item:focus {
+            background: #f0f4f8;
+            color: #1f4e79;
+        }
+        .app-nav .dropdown-item.active {
+            background: #1f4e79;
+            color: #fff;
+        }
         .page-wrap { padding: 1rem; }
         .card-panel {
             border: 1px solid #c5cdd6;
@@ -293,17 +317,29 @@
                     Quản lý xe
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('pmgplx.lich.gv.*', 'pmgplx.lich.ly-thuyet.*') ? 'active' : '' }}"
-                   href="{{ route('pmgplx.lich.gv.index') }}">
-                    Quản lý lịch làm việc giáo viên
+            <li class="nav-item dropdown">
+                @php
+                    $lichActive = request()->routeIs('pmgplx.lich.*');
+                @endphp
+                <a class="nav-link dropdown-toggle {{ $lichActive ? 'active' : '' }}"
+                   href="#"
+                   id="navLichDropdown"
+                   role="button"
+                   data-toggle="dropdown"
+                   aria-haspopup="true"
+                   aria-expanded="false">
+                    Lịch
                 </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('pmgplx.lich.xe.*', 'pmgplx.lich.thuc-hanh.*') ? 'active' : '' }}"
-                   href="{{ route('pmgplx.lich.xe.index') }}">
-                    Quản lý lịch sử dụng xe tập lái
-                </a>
+                <div class="dropdown-menu" aria-labelledby="navLichDropdown">
+                    <a class="dropdown-item {{ request()->routeIs('pmgplx.lich.gv.*', 'pmgplx.lich.ly-thuyet.*') ? 'active' : '' }}"
+                       href="{{ route('pmgplx.lich.gv.index') }}">
+                        Lịch làm việc giáo viên
+                    </a>
+                    <a class="dropdown-item {{ request()->routeIs('pmgplx.lich.xe.*', 'pmgplx.lich.thuc-hanh.*') ? 'active' : '' }}"
+                       href="{{ route('pmgplx.lich.xe.index') }}">
+                        Lịch sử dụng xe tập lái
+                    </a>
+                </div>
             </li>
         </ul>
     </nav>

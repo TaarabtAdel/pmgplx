@@ -30,16 +30,16 @@
                         <label for="thang">Tháng</label>
                         <select name="thang" id="thang" class="form-control" required>
                             @foreach ($thangThi as $thang => $tenThang)
-                                <option value="{{ $thang }}" @selected($selectedThang === $thang)>{{ $tenThang }}</option>
+                                <option value="{{ $thang }}" @selected($selectedThang == $thang)>{{ $tenThang }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="form-group col-md-5">
                         <label for="ten_mon_hoc">Môn học</label>
-                        <select name="ten_mon_hoc" id="ten_mon_hoc" class="form-control" required>
+                        <select name="MaMonHoc" id="MaMonHoc" class="form-control" required>
                             <option value="">-- Chọn môn học --</option>
                             @foreach ($monHocs as $mh)
-                                <option value="{{ $mh->TenMH }}" @selected(($tenMonHoc ?? '') === $mh->TenMH)>
+                                <option value="{{ $mh->MaMH }}" @selected(($tenMonHoc ?? '') === $mh->TenMH)>
                                     {{ $mh->TenMH }}
                                 </option>
                             @endforeach

@@ -31,10 +31,10 @@ class TaoLichDayLyThuyetController extends Controller
         $selectedThang = $request->query('thang')
             ?? old('thang')
             ?? now()->format('m');
-        $selectedThang = str_pad((string) $selectedThang, 2, '0', STR_PAD_LEFT);
-        if (! array_key_exists($selectedThang, $thangThi)) {
-            $selectedThang = now()->format('m');
-        }
+        // $selectedThang = str_pad((string) $selectedThang, 2, '0', STR_PAD_LEFT);
+        // if (! array_key_exists($selectedThang, $thangThi)) {
+        //     $selectedThang = now()->format('m');
+        // }
 
         $selectedNam = now()->year;
         $daysOfMonth = Carbon::createFromDate($selectedNam, (int) $selectedThang, 1)->daysInMonth;
@@ -75,7 +75,7 @@ class TaoLichDayLyThuyetController extends Controller
             'gioBD' => old('gio_bd', '07:00'),
             'gioKT' => old('gio_kt', '17:00'),
             'selectedGiaoViens' => array_values(array_filter($selectedGiaoViens)),
-            'tenMonHoc' => old('ten_mon_hoc', ''),
+            'maMonHoc' => old('ma_mh', ''),
             'ngayChon' => old('ngay_chon', ''),
         ]);
     }
@@ -87,7 +87,7 @@ class TaoLichDayLyThuyetController extends Controller
             'thang' => ['required', 'string', 'size:2'],
             'ma_gv' => ['required', 'array', 'min:1'],
             'ma_gv.*' => ['required', 'string', 'max:8'],
-            'ten_mon_hoc' => ['required', 'string', 'max:255'],
+            'MaMonHoc' => ['required', 'string', 'max:8'],
             'gio_bd' => ['required', 'string'],
             'gio_kt' => ['required', 'string'],
             'ngay_chon' => ['required', 'string'],
@@ -96,7 +96,7 @@ class TaoLichDayLyThuyetController extends Controller
             'thang.required' => 'Vui lòng chọn tháng.',
             'ma_gv.required' => 'Vui lòng chọn ít nhất một giáo viên.',
             'ma_gv.min' => 'Vui lòng chọn ít nhất một giáo viên.',
-            'ten_mon_hoc.required' => 'Vui lòng chọn môn học.',
+            'MaMonHoc.required' => 'Vui lòng chọn môn học.',
             'ngay_chon.required' => 'Vui lòng chọn ít nhất một ngày dạy.',
         ]);
 
@@ -148,11 +148,15 @@ class TaoLichDayLyThuyetController extends Controller
                     $conflictCount++;
                 }
 
+                $monHoc = DmMonHoc::query()->where('MaMH', $validated['MaMonHoc'])->first();
+                $TenMonHoc = $monHoc?->TenMH ?? '';
+
                 $rows[] = [
                     'MaKH' => $validated['ma_kh'],
                     'MaGV' => $maGV,
                     'TenGV' => $teacher->TenGV,
-                    'TenMonHoc' => $validated['ten_mon_hoc'],
+                    'TenMonHoc' => $TenMonHoc,
+                    'MaMonHoc' => $validated['MaMonHoc'],
                     'DiaDiem' => '',
                     'NgayBD' => $ngayBD->format('Y-m-d H:i:s'),
                     'NgayKT' => $ngayKT->format('Y-m-d H:i:s'),
@@ -263,7 +267,7 @@ class TaoLichDayLyThuyetController extends Controller
                     'NgayBD' => $ngayBD,
                     'NgayKT' => $ngayKT,
                     'IsKhoaHocGiaoVien' => 0,
-                    'MaMonHoc' => null,
+                    'MaMonHoc' => $row['MaMonHoc'],
                     'TenMonHoc' => $row['TenMonHoc'],
                 ]);
 
