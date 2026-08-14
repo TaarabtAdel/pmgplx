@@ -11,10 +11,12 @@ use App\Models\PMGPLX\XeTap;
 use App\Support\PMGPLX\LichCalendar;
 use App\Support\PMGPLX\LichExcelBienSo;
 use App\Support\PMGPLX\LichExcelDiaDiem;
+use App\Support\PMGPLX\LichExcelNoiDungSkip;
 use App\Support\PMGPLX\LichExcelTimeParser;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Throwable;
@@ -128,7 +130,21 @@ class NhapLichTuFileController extends Controller
 
         $rows = $save['gv_rows'];
         $conflictCount = 0;
+        $skipCount = 0;
         foreach ($rows as &$row) {
+            $noiDung = (string) ($row['noi_dung'] ?? '');
+            $chiTiet = (string) ($row['chi_tiet'] ?? '');
+            $skip = LichExcelNoiDungSkip::isGvSkip($noiDung, $chiTiet);
+            $row['skip_save'] = $skip;
+
+            if ($skip) {
+                $row['conflict'] = false;
+                $row['ghi_chu'] = LichExcelNoiDungSkip::gvSkipLabel();
+                $skipCount++;
+
+                continue;
+            }
+
             $conflict = $this->gvConflict($row['MaGV'], $row['NgayBD'], $row['NgayKT']);
             $row['conflict'] = $conflict;
             $row['ghi_chu'] = $conflict ? 'Đã thêm vào lịch' : '';
@@ -140,7 +156,8 @@ class NhapLichTuFileController extends Controller
 
         $save['gv_rows'] = $rows;
         $save['meta']['gv_conflict_count'] = $conflictCount;
-        $save['meta']['gv_ok_count'] = count($rows) - $conflictCount;
+        $save['meta']['gv_skip_count'] = $skipCount;
+        $save['meta']['gv_ok_count'] = count($rows) - $conflictCount - $skipCount;
         $request->session()->put(self::SESSION_SAVE, $save);
 
         $monHocs = DmMonHoc::active()
@@ -236,6 +253,10 @@ class NhapLichTuFileController extends Controller
             $old = $save['gv_rows'][$i] ?? [];
             $maMonHoc = trim($row['MaMonHoc']);
 
+            $noiDung = (string) ($old['noi_dung'] ?? '');
+            $chiTiet = (string) ($old['chi_tiet'] ?? '');
+            $skipGv = LichExcelNoiDungSkip::isGvSkip($noiDung, $chiTiet);
+
             $gvRows[] = [
                 'MaKH' => trim($row['MaKH']),
                 'MaGV' => trim($row['MaGV']),
@@ -245,10 +266,11 @@ class NhapLichTuFileController extends Controller
                 'DiaDiem' => '',
                 'NgayBD' => $ngayBD->format('Y-m-d H:i:s'),
                 'NgayKT' => $ngayKT->format('Y-m-d H:i:s'),
-                'noi_dung' => $old['noi_dung'] ?? '',
-                'chi_tiet' => $old['chi_tiet'] ?? '',
+                'noi_dung' => $noiDung,
+                'chi_tiet' => $chiTiet,
                 'bien_so_xe' => $old['bien_so_xe'] ?? '',
                 'source_key' => $sourceKey !== '' ? $sourceKey : ($old['source_key'] ?? (string) $i),
+                'skip_save' => $skipGv,
                 'conflict' => false,
                 'ghi_chu' => '',
             ];
@@ -262,7 +284,7 @@ class NhapLichTuFileController extends Controller
             $oldXe = $xeByKey->get($key, []);
             $noiDung = (string) ($gv['noi_dung'] ?? '');
             $chiTiet = (string) ($gv['chi_tiet'] ?? '');
-            $diaDiem = (string) ($oldXe['DiaDiem'] ?? LichExcelDiaDiem::resolve($noiDung, $chiTiet));
+            $diaDiem = (string) ($oldXe['DiaDiem'] ?? LichExcelDiaDiem::resolve($noiDung));
             $bienSo = LichExcelBienSo::normalize((string) ($oldXe['BienSoXe'] ?? $gv['bien_so_xe'] ?? ''));
             // Ưu tiên biển số từ nội dung TỰ ĐỘNG nếu có
             $bienSoTuDong = LichExcelBienSo::extractFromTuDong($noiDung, $chiTiet);
@@ -280,6 +302,7 @@ class NhapLichTuFileController extends Controller
                 'NgayKT' => $gv['NgayKT'],
                 'noi_dung' => $noiDung,
                 'chi_tiet' => $chiTiet,
+                'skip_save' => LichExcelNoiDungSkip::isXeSkip($noiDung, $chiTiet),
                 'source_key' => $key,
                 'conflict' => false,
                 'ghi_chu' => '',
@@ -304,7 +327,21 @@ class NhapLichTuFileController extends Controller
 
         $rows = $save['xe_rows'];
         $conflictCount = 0;
+        $skipCount = 0;
         foreach ($rows as &$row) {
+            $noiDung = (string) ($row['noi_dung'] ?? '');
+            $chiTiet = (string) ($row['chi_tiet'] ?? '');
+            $skip = LichExcelNoiDungSkip::isXeSkip($noiDung, $chiTiet);
+            $row['skip_save'] = $skip;
+
+            if ($skip) {
+                $row['conflict'] = false;
+                $row['ghi_chu'] = LichExcelNoiDungSkip::xeSkipLabel($noiDung, $chiTiet);
+                $skipCount++;
+
+                continue;
+            }
+
             $conflict = $this->xeConflict($row['MaGV'], $row['BienSoXe'] ?? '', $row['NgayBD'], $row['NgayKT']);
             $row['conflict'] = $conflict;
             $row['ghi_chu'] = $conflict
@@ -318,7 +355,8 @@ class NhapLichTuFileController extends Controller
 
         $save['xe_rows'] = $rows;
         $save['meta']['xe_conflict_count'] = $conflictCount;
-        $save['meta']['xe_ok_count'] = count($rows) - $conflictCount;
+        $save['meta']['xe_skip_count'] = $skipCount;
+        $save['meta']['xe_ok_count'] = count($rows) - $conflictCount - $skipCount;
         $request->session()->put(self::SESSION_SAVE, $save);
 
         $xeTaps = XeTap::query()->orderBy('BienSoXe')->pluck('BienSoXe');
@@ -349,8 +387,8 @@ class NhapLichTuFileController extends Controller
             'rows.*.MaKH' => ['required', 'string', 'max:50'],
             'rows.*.MaGV' => ['required', 'string', 'max:20'],
             'rows.*.TenGV' => ['required', 'string', 'max:255'],
-            'rows.*.BienSoXe' => ['required', 'string', 'max:50'],
-            'rows.*.DiaDiem' => ['required', 'string', 'max:255'],
+            'rows.*.BienSoXe' => ['nullable', 'string', 'max:50'],
+            'rows.*.DiaDiem' => ['nullable', 'string', 'max:255'],
             'rows.*.NgayBD' => ['required', 'date'],
             'rows.*.NgayKT' => ['required', 'date'],
             'rows.*.source_key' => ['nullable', 'string'],
@@ -358,14 +396,34 @@ class NhapLichTuFileController extends Controller
             'rows.*.MaKH.required' => 'Mã khóa học không được để trống.',
             'rows.*.MaGV.required' => 'Mã giáo viên không được để trống.',
             'rows.*.TenGV.required' => 'Tên giáo viên không được để trống.',
-            'rows.*.BienSoXe.required' => 'Vui lòng chọn xe tập.',
-            'rows.*.DiaDiem.required' => 'Vui lòng chọn địa điểm.',
             'rows.*.NgayBD.required' => 'Vui lòng chọn thời gian bắt đầu.',
             'rows.*.NgayKT.required' => 'Vui lòng chọn thời gian kết thúc.',
         ]);
 
         $xeRows = [];
+        $oldXeByKey = collect($save['xe_rows'] ?? [])->keyBy('source_key');
         foreach ($validated['rows'] as $row) {
+            $sourceKey = (string) ($row['source_key'] ?? '');
+            $old = $oldXeByKey->get($sourceKey, []);
+            $noiDung = (string) ($old['noi_dung'] ?? '');
+            $chiTiet = (string) ($old['chi_tiet'] ?? '');
+            $skipCabin = LichExcelNoiDungSkip::isXeSkip($noiDung, $chiTiet);
+
+            if (! $skipCabin) {
+                if (trim((string) ($row['BienSoXe'] ?? '')) === '') {
+                    return redirect()
+                        ->route('pmgplx.lich.nhap-file.preview-xe')
+                        ->withErrors(['rows' => 'Vui lòng chọn xe tập cho các dòng không bị bỏ qua.'])
+                        ->withInput();
+                }
+                if (trim((string) ($row['DiaDiem'] ?? '')) === '') {
+                    return redirect()
+                        ->route('pmgplx.lich.nhap-file.preview-xe')
+                        ->withErrors(['rows' => 'Vui lòng chọn địa điểm cho các dòng không bị bỏ qua.'])
+                        ->withInput();
+                }
+            }
+
             $ngayBD = Carbon::parse($row['NgayBD']);
             $ngayKT = Carbon::parse($row['NgayKT']);
             if ($ngayKT->lte($ngayBD)) {
@@ -380,7 +438,10 @@ class NhapLichTuFileController extends Controller
                 'DiaDiem' => trim((string) ($row['DiaDiem'] ?? '')),
                 'NgayBD' => $ngayBD->format('Y-m-d H:i:s'),
                 'NgayKT' => $ngayKT->format('Y-m-d H:i:s'),
-                'source_key' => (string) ($row['source_key'] ?? ''),
+                'noi_dung' => $noiDung,
+                'chi_tiet' => $chiTiet,
+                'skip_save' => $skipCabin,
+                'source_key' => $sourceKey,
             ];
         }
 
@@ -423,7 +484,7 @@ class NhapLichTuFileController extends Controller
         ]);
     }
 
-    /** Xác nhận cuối (chưa lưu DB) */
+    /** Xác nhận cuối — ghi lịch GV và xe vào DB */
     public function confirm(Request $request): RedirectResponse
     {
         $save = $request->session()->get(self::SESSION_SAVE);
@@ -433,19 +494,120 @@ class NhapLichTuFileController extends Controller
                 ->with('error', 'Chưa có dữ liệu để xác nhận.');
         }
 
-        $gvCount = count($save['db_payload']['lich_giao_vien'] ?? []);
-        $xeCount = count($save['db_payload']['lich_xe_tap'] ?? []);
-        $gvSkip = count($save['db_payload']['lich_giao_vien_bo_qua'] ?? []);
-        $xeSkip = count($save['db_payload']['lich_xe_tap_bo_qua'] ?? []);
+        $payload = $save['db_payload'];
+        $gvRows = $payload['lich_giao_vien'] ?? [];
+        $xeRows = $payload['lich_xe_tap'] ?? [];
+        $gvSkipPreview = count($payload['lich_giao_vien_bo_qua'] ?? []);
+        $xeSkipPreview = count($payload['lich_xe_tap_bo_qua'] ?? []);
+
+        if ($gvRows === [] && $xeRows === []) {
+            return redirect()
+                ->route('pmgplx.lich.nhap-file.preview-db')
+                ->with('error', 'Không có buổi nào đủ điều kiện lưu.');
+        }
+
+        $savedGv = 0;
+        $savedXe = 0;
+        $skippedGv = 0;
+        $skippedXe = 0;
+        $now = Carbon::now();
+
+        try {
+            DB::beginTransaction();
+
+            foreach ($gvRows as $row) {
+                $ngayBD = Carbon::parse($row['NgayBD']);
+                $ngayKT = Carbon::parse($row['NgayKT']);
+
+                if ($this->gvConflict($row['MaGV'], $row['NgayBD'], $row['NgayKT'])) {
+                    $skippedGv++;
+
+                    continue;
+                }
+
+                KhoaHocGiaoVien::create([
+                    'MaKH' => $row['MaKH'],
+                    'MaGV' => $row['MaGV'],
+                    'TenGV' => $row['TenGV'],
+                    'LoaiGV' => 'TH',
+                    'GhiChu' => (string) ($row['GhiChu'] ?? ''),
+                    'TrangThai' => 1,
+                    'NgayTao' => $now,
+                    'NgaySua' => $now,
+                    'NgayBD' => $ngayBD,
+                    'NgayKT' => $ngayKT,
+                    'IsKhoaHocGiaoVien' => 0,
+                    'MaMonHoc' => (string) ($row['MaMonHoc'] ?? ''),
+                    'TenMonHoc' => (string) ($row['TenMonHoc'] ?? self::TEN_MON_HOC),
+                ]);
+
+                $savedGv++;
+            }
+
+            foreach ($xeRows as $row) {
+                $ngayBD = Carbon::parse($row['NgayBD']);
+                $ngayKT = Carbon::parse($row['NgayKT']);
+                $bienSoXe = trim((string) ($row['BienSoXe'] ?? ''));
+
+                if ($bienSoXe === '' || $this->xeConflict($row['MaGV'], $bienSoXe, $row['NgayBD'], $row['NgayKT'])) {
+                    $skippedXe++;
+
+                    continue;
+                }
+
+                KhoaHocXeTap::create([
+                    'MaKH' => $row['MaKH'],
+                    'BienSoXe' => $bienSoXe,
+                    'MaGV' => $row['MaGV'],
+                    'DiaDiem' => (string) ($row['DiaDiem'] ?? ''),
+                    'GhiChu' => (string) ($row['GhiChu'] ?? ''),
+                    'TrangThai' => 1,
+                    'NgayBD' => $ngayBD,
+                    'NgayKT' => $ngayKT,
+                    'NgayTao' => $now,
+                    'NgaySua' => $now,
+                    'IsKhoaHocXeTap' => 0,
+                    'TenGV' => $row['TenGV'],
+                ]);
+
+                $savedXe++;
+            }
+
+            DB::commit();
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            return redirect()
+                ->route('pmgplx.lich.nhap-file.preview-db')
+                ->with('error', 'Lưu DB thất bại: '.$e->getMessage());
+        }
 
         $request->session()->forget([self::SESSION_EXCEL, self::SESSION_SAVE]);
 
+        if ($savedGv === 0 && $savedXe === 0) {
+            return redirect()
+                ->route('pmgplx.lich.nhap-file.create')
+                ->with(
+                    'error',
+                    "Không có buổi nào được lưu. Bỏ qua GV {$gvSkipPreview}, xe {$xeSkipPreview} (preview) + trùng lịch lúc lưu."
+                );
+        }
+
+        $msg = "Đã lưu DB: GV {$savedGv} buổi, xe {$savedXe} buổi.";
+        $skipParts = [];
+        if ($gvSkipPreview + $skippedGv > 0) {
+            $skipParts[] = 'GV '.($gvSkipPreview + $skippedGv);
+        }
+        if ($xeSkipPreview + $skippedXe > 0) {
+            $skipParts[] = 'xe '.($xeSkipPreview + $skippedXe);
+        }
+        if ($skipParts !== []) {
+            $msg .= ' Bỏ qua '.implode(', ', $skipParts).'.';
+        }
+
         return redirect()
             ->route('pmgplx.lich.nhap-file.create')
-            ->with(
-                'success',
-                "Đã xác nhận preview (chưa lưu DB): GV lưu {$gvCount}/bỏ {$gvSkip}, xe lưu {$xeCount}/bỏ {$xeSkip}."
-            );
+            ->with('success', $msg);
     }
 
     /**
@@ -482,6 +644,12 @@ class NhapLichTuFileController extends Controller
             if ($conflict) {
                 $record['_skip_reason'] = 'Đã thêm vào lịch (trùng GV)';
                 $lichGvSkip[] = $record;
+            } elseif (LichExcelNoiDungSkip::isGvSkip(
+                (string) ($row['noi_dung'] ?? ''),
+                (string) ($row['chi_tiet'] ?? '')
+            )) {
+                $record['_skip_reason'] = LichExcelNoiDungSkip::gvSkipLabel();
+                $lichGvSkip[] = $record;
             } else {
                 $lichGv[] = $record;
             }
@@ -507,6 +675,15 @@ class NhapLichTuFileController extends Controller
 
             if ($conflict) {
                 $record['_skip_reason'] = 'Đã thêm vào lịch (trùng GV/xe)';
+                $lichXeSkip[] = $record;
+            } elseif (LichExcelNoiDungSkip::isXeSkip(
+                (string) ($row['noi_dung'] ?? ''),
+                (string) ($row['chi_tiet'] ?? '')
+            )) {
+                $record['_skip_reason'] = LichExcelNoiDungSkip::xeSkipLabel(
+                    (string) ($row['noi_dung'] ?? ''),
+                    (string) ($row['chi_tiet'] ?? '')
+                );
                 $lichXeSkip[] = $record;
             } elseif ($bienSo === '') {
                 $record['_skip_reason'] = 'Chưa gắn xe';
@@ -637,6 +814,7 @@ class NhapLichTuFileController extends Controller
                         'noi_dung' => $noiDung,
                         'chi_tiet' => $chiTiet,
                         'bien_so_xe' => $bienSo,
+                        'skip_save' => LichExcelNoiDungSkip::isGvSkip($noiDung, $chiTiet),
                         'source_key' => $key,
                         'conflict' => false,
                         'ghi_chu' => '',
@@ -652,6 +830,7 @@ class NhapLichTuFileController extends Controller
                         'NgayKT' => $ngayKT->format('Y-m-d H:i:s'),
                         'noi_dung' => $noiDung,
                         'chi_tiet' => $chiTiet,
+                        'skip_save' => LichExcelNoiDungSkip::isXeSkip($noiDung, $chiTiet),
                         'source_key' => $key,
                         'conflict' => false,
                         'ghi_chu' => '',

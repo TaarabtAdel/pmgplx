@@ -29,6 +29,14 @@ class LichExcelDiaDiem
             return '';
         }
 
+        if (str_contains($text, 'ON LUYEN STL')) {
+            return self::SAN_TAP;
+        }
+
+        if (str_contains($text, 'ON LUYEN TD')) {
+            return self::TUYEN_DUONG;
+        }
+
         // Hình / Ôn luyện STL
         if (
             preg_match('/\bHINH\b/u', $text)
@@ -44,10 +52,28 @@ class LichExcelDiaDiem
 
         // "Tự động 1" — để trống (user chưa chỉ định địa điểm)
         if (preg_match('/\bTU DONG\s*1\b/u', $text)) {
-            return '';
+            return self::TUYEN_DUONG;
         }
 
         return self::TUYEN_DUONG;
+    }
+
+    /** Bỏ qua lưu lịch xe khi nội dung–chi tiết bắt đầu bằng CABIN */
+    public static function isCabinSkip(string $noiDung, string $chiTiet = ''): bool
+    {
+        $noiDung = trim($noiDung);
+        $chiTiet = trim($chiTiet);
+
+        if ($noiDung === '' && $chiTiet === '') {
+            return false;
+        }
+
+        $text = $noiDung;
+        if ($chiTiet !== '') {
+            $text = $noiDung !== '' ? $noiDung.'-'.$chiTiet : $chiTiet;
+        }
+
+        return str_starts_with(self::unaccent(mb_strtoupper($text)), 'CABIN');
     }
 
     private static function unaccent(string $text): string

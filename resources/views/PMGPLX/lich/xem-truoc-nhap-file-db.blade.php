@@ -34,7 +34,7 @@
             <div class="alert alert-info">
                 Đây là mảng record sau tiền xử lý, đúng cấu trúc sẽ insert vào
                 <code>KhoaHoc_GiaoVien</code> (LoaiGV=TH) và <code>KhoaHoc_XeTap</code>.
-                Chưa ghi database.
+                Nhấn <strong>Xác nhận lưu DB</strong> để ghi vào database.
             </div>
 
             <h5 class="section-title">1) Lịch giáo viên — sẽ lưu ({{ count($gvSave) }})</h5>
@@ -63,7 +63,7 @@
 
             <form method="POST" action="{{ route('pmgplx.lich.nhap-file.confirm') }}" class="mt-2">
                 @csrf
-                <button type="submit" class="btn btn-success btn-lg">Xác nhận (chưa lưu DB)</button>
+                <button type="submit" class="btn btn-success btn-lg">Xác nhận lưu DB</button>
                 <a href="{{ route('pmgplx.lich.nhap-file.preview-xe') }}" class="btn btn-outline-secondary btn-lg ml-2">← Quay lại lịch xe</a>
                 <a href="{{ route('pmgplx.lich.nhap-file.preview-gv') }}" class="btn btn-outline-secondary btn-lg ml-2">← Quay lại lịch GV</a>
                 <a href="{{ route('pmgplx.lich.nhap-file.cancel') }}" class="btn btn-outline-danger btn-lg ml-2">Hủy</a>

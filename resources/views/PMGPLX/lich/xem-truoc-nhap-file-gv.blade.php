@@ -2,10 +2,19 @@
 
 @section('title', 'Xem trước lịch giáo viên (nhập file)')
 
+@push('styles')
+<style>
+    tr.row-skip-save > td {
+        background: #fff3cd !important;
+    }
+</style>
+@endpush
+
 @section('content')
     @php
         $okCount = (int) ($preview['meta']['gv_ok_count'] ?? count($rows));
         $conflictCount = (int) ($preview['meta']['gv_conflict_count'] ?? 0);
+        $skipCount = (int) ($preview['meta']['gv_skip_count'] ?? 0);
         $khoaHocList = $preview['meta']['khoa_hoc_list'] ?? [];
         $ngayList = $preview['meta']['ngay_list'] ?? [];
     @endphp
@@ -25,12 +34,21 @@
                     <strong>Tổng buổi:</strong> {{ count($rows) }} —
                     sẽ lưu <strong class="text-success">{{ $okCount }}</strong>,
                     bỏ qua <strong class="text-danger">{{ $conflictCount }}</strong> trùng
+                    @if ($skipCount > 0)
+                        , <strong class="text-warning">{{ $skipCount }}</strong> Bổ Sung
+                    @endif
                 </div>
             </div>
 
             <div class="alert alert-info">
                 Không có địa điểm. Có thể sửa trực tiếp trên từng dòng trước khi tiếp tục.
             </div>
+
+            @if ($skipCount > 0)
+                <div class="alert alert-warning">
+                    Dòng nền vàng có <strong>Bổ Sung</strong> trong Nội dung – Chi tiết — sẽ không lưu lịch giáo viên.
+                </div>
+            @endif
 
             @if ($conflictCount > 0)
                 <div class="alert alert-warning">
@@ -49,14 +67,19 @@
                                 <th>Mã GV</th>
                                 <th>Tên giáo viên</th>
                                 <th>Môn học</th>
+                                <th class="col-noi-dung-chi-tiet">Nội dung – Chi tiết</th>
                                 <th style="min-width: 11rem;">TG bắt đầu</th>
                                 <th style="min-width: 11rem;">TG kết thúc</th>
-                                <th>Ghi chú</th>
+                                <th style="min-width: 9rem;">Ghi chú</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach ($rows as $i => $row)
-                                <tr class="{{ !empty($row['conflict']) ? 'table-danger' : '' }}">
+                                @php
+                                    $skipSave = !empty($row['skip_save']);
+                                    $selectedMaMonHoc = trim((string) ($row['MaMonHoc'] ?? $defaultMaMonHoc ?? ''));
+                                @endphp
+                                <tr class="{{ $skipSave ? 'row-skip-save' : (!empty($row['conflict']) ? 'table-danger' : '') }}">
                                     <td>{{ $i + 1 }}</td>
                                     <td>
                                         <input type="hidden" name="rows[{{ $i }}][source_key]" value="{{ $row['source_key'] ?? '' }}">
@@ -72,7 +95,10 @@
                                                value="{{ $row['TenGV'] }}" readonly required>
                                     </td>
                                     <td>
-                                        @php $selectedMaMonHoc = trim((string) ($row['MaMonHoc'] ?? $defaultMaMonHoc ?? '')); @endphp
+                                        @if ($skipSave)
+                                            <input type="hidden" name="rows[{{ $i }}][MaMonHoc]" value="{{ $selectedMaMonHoc }}">
+                                            <span class="text-muted small">—</span>
+                                        @else
                                         <select name="rows[{{ $i }}][MaMonHoc]" class="form-control form-control-sm" required>
                                             <option value="">-- Chọn môn học --</option>
                                             @foreach ($monHocs as $mh)
@@ -89,6 +115,13 @@
                                                 </option>
                                             @endforeach
                                         </select>
+                                        @endif
+                                    </td>
+                                    <td class="col-noi-dung-chi-tiet">
+                                        @include('PMGPLX.lich._noi-dung-chi-tiet', [
+                                            'noiDung' => $row['noi_dung'] ?? '',
+                                            'chiTiet' => $row['chi_tiet'] ?? '',
+                                        ])
                                     </td>
                                     <td>
                                         <input type="datetime-local" name="rows[{{ $i }}][NgayBD]" class="form-control form-control-sm"
@@ -99,7 +132,9 @@
                                                value="{{ \Carbon\Carbon::parse($row['NgayKT'])->format('Y-m-d\TH:i') }}" required>
                                     </td>
                                     <td>
-                                        @if (!empty($row['conflict']))
+                                        @if ($skipSave)
+                                            <span class="text-warning font-weight-bold">{{ $row['ghi_chu'] ?? 'Bỏ qua' }}</span>
+                                        @elseif (!empty($row['conflict']))
                                             <span class="text-danger font-weight-bold">Đã thêm vào lịch</span>
                                         @else
                                             <span class="text-success">Sẽ lưu mới</span>

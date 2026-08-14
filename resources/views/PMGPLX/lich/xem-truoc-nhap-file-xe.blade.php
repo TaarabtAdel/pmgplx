@@ -2,10 +2,19 @@
 
 @section('title', 'Xem trước lịch xe tập lái (nhập file)')
 
+@push('styles')
+<style>
+    tr.row-skip-save > td {
+        background: #fff3cd !important;
+    }
+</style>
+@endpush
+
 @section('content')
     @php
         $okCount = (int) ($preview['meta']['xe_ok_count'] ?? count($rows));
         $conflictCount = (int) ($preview['meta']['xe_conflict_count'] ?? 0);
+        $skipCount = (int) ($preview['meta']['xe_skip_count'] ?? 0);
         $khoaHocList = $preview['meta']['khoa_hoc_list'] ?? [];
         $ngayList = collect($rows)
             ->map(fn ($r) => \Carbon\Carbon::parse($r['NgayBD'])->format('d/m/Y'))
@@ -32,12 +41,21 @@
                     <strong>Tổng buổi:</strong> {{ count($rows) }} —
                     sẽ lưu <strong class="text-success">{{ $okCount }}</strong>,
                     bỏ qua <strong class="text-danger">{{ $conflictCount }}</strong> trùng
+                    @if ($skipCount > 0)
+                        , <strong class="text-warning">{{ $skipCount }}</strong> bỏ qua
+                    @endif
                 </div>
             </div>
 
             <div class="alert alert-info mb-2">
                 Địa điểm tự gán theo nội dung Excel (Hình/Ôn luyện STL → Sân tập; Cabin → Trung tâm; còn lại → Tuyến đường). Có thể sửa trên dòng.
             </div>
+
+            @if ($skipCount > 0)
+                <div class="alert alert-warning mb-2">
+                    Dòng nền vàng có <strong>CABIN</strong> hoặc <strong>Bổ Sung</strong> trong Nội dung – Chi tiết — sẽ không lưu lịch xe.
+                </div>
+            @endif
 
             @if ($conflictCount > 0)
                 <div class="alert alert-warning">
@@ -55,19 +73,25 @@
                                 <th style="min-width: 10rem;">Xe tập</th>
                                 <th>Mã GV</th>
                                 <th>Giáo viên</th>
+                                <th class="col-noi-dung-chi-tiet">Nội dung – Chi tiết</th>
                                 <th style="min-width: 12rem;">Địa điểm</th>
                                 <th style="min-width: 11rem;">TG bắt đầu</th>
                                 <th style="min-width: 11rem;">TG kết thúc</th>
-                                <th>Ghi chú</th>
+                                <th style="min-width: 9rem;">Ghi chú</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach ($rows as $i => $row)
-                                <tr class="{{ !empty($row['conflict']) ? 'table-danger' : '' }}">
+                                @php $skipSave = !empty($row['skip_save']); @endphp
+                                <tr class="{{ $skipSave ? 'row-skip-save' : (!empty($row['conflict']) ? 'table-danger' : '') }}">
                                     <td>{{ $i + 1 }}</td>
                                     <td>
                                         <input type="hidden" name="rows[{{ $i }}][source_key]" value="{{ $row['source_key'] ?? '' }}">
                                         <input type="hidden" name="rows[{{ $i }}][MaKH]" value="{{ $row['MaKH'] }}">
+                                        @if ($skipSave)
+                                            <input type="hidden" name="rows[{{ $i }}][BienSoXe]" value="">
+                                            <span class="text-muted small">—</span>
+                                        @else
                                         <select
                                             name="rows[{{ $i }}][BienSoXe]"
                                             class="form-control form-control-sm select-xe-preview"
@@ -83,6 +107,7 @@
                                                 <option value="{{ $xe }}" @selected($curXe === $xe)>{{ $xe }}</option>
                                             @endforeach
                                         </select>
+                                        @endif
                                     </td>
                                     <td>
                                         <input type="text" name="rows[{{ $i }}][MaGV]" class="form-control form-control-sm"
@@ -92,7 +117,17 @@
                                         <input type="text" name="rows[{{ $i }}][TenGV]" class="form-control form-control-sm"
                                                value="{{ $row['TenGV'] }}" readonly required>
                                     </td>
+                                    <td class="col-noi-dung-chi-tiet">
+                                        @include('PMGPLX.lich._noi-dung-chi-tiet', [
+                                            'noiDung' => $row['noi_dung'] ?? '',
+                                            'chiTiet' => $row['chi_tiet'] ?? '',
+                                        ])
+                                    </td>
                                     <td>
+                                        @if ($skipSave)
+                                            <input type="hidden" name="rows[{{ $i }}][DiaDiem]" value="">
+                                            <span class="text-muted small">—</span>
+                                        @else
                                         <select name="rows[{{ $i }}][DiaDiem]" class="form-control form-control-sm" required>
                                             <option value="">-- Chọn địa điểm --</option>
                                             @foreach ($diaDiems as $dd)
@@ -102,6 +137,7 @@
                                                 <option value="{{ $row['DiaDiem'] }}" selected>{{ $row['DiaDiem'] }}</option>
                                             @endif
                                         </select>
+                                        @endif
                                     </td>
                                     <td>
                                         <input type="datetime-local" name="rows[{{ $i }}][NgayBD]" class="form-control form-control-sm"
@@ -112,7 +148,9 @@
                                                value="{{ \Carbon\Carbon::parse($row['NgayKT'])->format('Y-m-d\TH:i') }}" required>
                                     </td>
                                     <td>
-                                        @if (!empty($row['conflict']))
+                                        @if ($skipSave)
+                                            <span class="text-warning font-weight-bold">{{ $row['ghi_chu'] ?? 'Bỏ qua' }}</span>
+                                        @elseif (!empty($row['conflict']))
                                             <span class="text-danger font-weight-bold">Đã thêm vào lịch</span>
                                         @elseif (trim((string) ($row['BienSoXe'] ?? '')) === '')
                                             <span class="text-warning font-weight-bold">Chưa gắn xe</span>
