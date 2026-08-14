@@ -42,6 +42,7 @@
 
             <div class="alert alert-info">
                 Không có địa điểm. Có thể sửa trực tiếp trên từng dòng trước khi tiếp tục.
+                Thời gian nhập theo <strong>24 giờ</strong> (ví dụ <code>05:59</code>, <code>13:59</code>).
             </div>
 
             @if ($skipCount > 0)
@@ -68,8 +69,8 @@
                                 <th>Tên giáo viên</th>
                                 <th>Môn học</th>
                                 <th class="col-noi-dung-chi-tiet">Nội dung – Chi tiết</th>
-                                <th style="min-width: 11rem;">TG bắt đầu</th>
-                                <th style="min-width: 11rem;">TG kết thúc</th>
+                                <th style="min-width: 13rem;">TG bắt đầu</th>
+                                <th style="min-width: 13rem;">TG kết thúc</th>
                                 <th style="min-width: 9rem;">Ghi chú</th>
                             </tr>
                         </thead>
@@ -124,12 +125,18 @@
                                         ])
                                     </td>
                                     <td>
-                                        <input type="datetime-local" name="rows[{{ $i }}][NgayBD]" class="form-control form-control-sm"
-                                               value="{{ \Carbon\Carbon::parse($row['NgayBD'])->format('Y-m-d\TH:i') }}" required>
+                                        @include('PMGPLX.lich._lich-datetime-inputs', [
+                                            'name' => 'rows['.$i.'][NgayBD]',
+                                            'value' => $row['NgayBD'],
+                                            'required' => true,
+                                        ])
                                     </td>
                                     <td>
-                                        <input type="datetime-local" name="rows[{{ $i }}][NgayKT]" class="form-control form-control-sm"
-                                               value="{{ \Carbon\Carbon::parse($row['NgayKT'])->format('Y-m-d\TH:i') }}" required>
+                                        @include('PMGPLX.lich._lich-datetime-inputs', [
+                                            'name' => 'rows['.$i.'][NgayKT]',
+                                            'value' => $row['NgayKT'],
+                                            'required' => true,
+                                        ])
                                     </td>
                                     <td>
                                         @if ($skipSave)
