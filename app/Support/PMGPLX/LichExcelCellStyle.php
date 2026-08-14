@@ -37,6 +37,19 @@ class LichExcelCellStyle
         return '';
     }
 
+    /** Cột Nội dung có chứa "Tự động" (không phân biệt dấu/hoa thường). */
+    public static function containsTuDong(?string $text): bool
+    {
+        $raw = trim((string) $text);
+        if ($raw === '') {
+            return false;
+        }
+
+        $plain = self::unaccent(mb_strtoupper($raw));
+
+        return str_contains($plain, 'TU DONG');
+    }
+
     private static function unaccent(string $text): string
     {
         $map = [

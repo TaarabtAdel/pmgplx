@@ -7,6 +7,9 @@
     tr.row-skip-save > td {
         background: #fff3cd !important;
     }
+    tr.row-tu-dong > td {
+        background: #e9d5ff !important;
+    }
 </style>
 @endpush
 
@@ -24,6 +27,9 @@
             ->map(fn ($r) => $r['TenGV'].' ('.$r['MaGV'].')')
             ->unique()
             ->values();
+        $tuDongCount = collect($rows)->filter(
+            fn ($r) => \App\Support\PMGPLX\LichExcelCellStyle::containsTuDong($r['noi_dung'] ?? '')
+        )->count();
     @endphp
 
     <div class="card card-panel">
@@ -50,6 +56,13 @@
             <div class="alert alert-info mb-2">
                 Địa điểm tự gán theo nội dung Excel (Hình/Ôn luyện STL → Sân tập; Cabin → Trung tâm; còn lại → Tuyến đường). Có thể sửa trên dòng.
             </div>
+
+            @if ($tuDongCount > 0)
+                <div class="alert mb-2" style="background:#e9d5ff;border:1px solid #c77dff;color:#111;">
+                    Dòng nền <strong>tím</strong> có <strong>Tự động</strong> trong cột <strong>Nội dung</strong>
+                    ({{ $tuDongCount }} buổi) — vui lòng <strong>dò lại xe tập</strong> trước khi tiếp tục.
+                </div>
+            @endif
 
             @if ($skipCount > 0)
                 <div class="alert alert-warning mb-2">
@@ -82,8 +95,14 @@
                         </thead>
                         <tbody>
                             @foreach ($rows as $i => $row)
-                                @php $skipSave = !empty($row['skip_save']); @endphp
-                                <tr class="{{ $skipSave ? 'row-skip-save' : (!empty($row['conflict']) ? 'table-danger' : '') }}">
+                                @php
+                                    $skipSave = !empty($row['skip_save']);
+                                    $isTuDong = \App\Support\PMGPLX\LichExcelCellStyle::containsTuDong($row['noi_dung'] ?? '');
+                                    $rowClass = $skipSave
+                                        ? 'row-skip-save'
+                                        : (! empty($row['conflict']) ? 'table-danger' : ($isTuDong ? 'row-tu-dong' : ''));
+                                @endphp
+                                <tr class="{{ $rowClass }}">
                                     <td>{{ $i + 1 }}</td>
                                     <td>
                                         <input type="hidden" name="rows[{{ $i }}][source_key]" value="{{ $row['source_key'] ?? '' }}">
