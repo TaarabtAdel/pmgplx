@@ -263,7 +263,7 @@
     @stack('styles')
 </head>
 <body>
-    <div class="app-header">Phần Mềm Giấy Phép Lái Xe (Bản cũ) — Trung Tâm Giáo Dục Nghề Nghiệp Mạnh Linh</div>
+    <div class="app-header">Quản Lý Trung Tâm(Bản cũ) — Trung Tâm Giáo Dục Nghề Nghiệp Mạnh Linh</div>
 
     <nav class="app-nav">
         <ul class="nav">

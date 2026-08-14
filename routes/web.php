@@ -1,20 +1,22 @@
 <?php
 
+use App\Http\Controllers\DaoTao\BaoCaoLuuLuongDaoTaoController as DaoTaoBaoCaoLuuLuongDaoTaoController;
 use App\Http\Controllers\PMGPLX\DanhSachGiaoVienController;
 use App\Http\Controllers\PMGPLX\DanhSachHocVienController;
 use App\Http\Controllers\PMGPLX\DanhSachLichGiaoVienController;
 use App\Http\Controllers\PMGPLX\DanhSachLichXeTapController;
 use App\Http\Controllers\PMGPLX\DanhSachXeController;
+use App\Http\Controllers\PMGPLX\NhapLichTuFileController;
 use App\Http\Controllers\PMGPLX\TaoLichDayLyThuyetController;
 use App\Http\Controllers\PMGPLX\TaoLichTapHangLoatController;
-use App\Http\Controllers\PMGPLX\TrangChuController;
 use App\Http\Controllers\PMGPLXOLD\DanhSachHocVienController as OldDanhSachHocVienController;
+use App\Http\Controllers\TrangChuController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/pmgplx');
+Route::get('/', [TrangChuController::class, 'index'])->name('home');
 
 Route::prefix('pmgplx')->name('pmgplx.')->group(function () {
-    Route::get('/', [TrangChuController::class, 'index'])->name('home');
+    Route::redirect('/', '/pmgplx/danh-muc/giao-vien');
 
     Route::get('/danh-muc/giao-vien', [DanhSachGiaoVienController::class, 'index'])
         ->name('dm.giao-vien.index');
@@ -56,6 +58,34 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function () {
         ->name('lich.thuc-hanh.confirm');
     Route::get('/lich/thuc-hanh/huy', [TaoLichTapHangLoatController::class, 'cancel'])
         ->name('lich.thuc-hanh.cancel');
+
+    Route::get('/lich/nhap-tu-file', [NhapLichTuFileController::class, 'create'])
+        ->name('lich.nhap-file.create');
+    Route::post('/lich/nhap-tu-file', [NhapLichTuFileController::class, 'store'])
+        ->name('lich.nhap-file.store');
+    Route::get('/lich/nhap-tu-file/xem-truoc', [NhapLichTuFileController::class, 'preview'])
+        ->name('lich.nhap-file.preview');
+    Route::post('/lich/nhap-tu-file/xem-truoc-gv', [NhapLichTuFileController::class, 'toGvPreview'])
+        ->name('lich.nhap-file.to-gv');
+    Route::get('/lich/nhap-tu-file/lich-giao-vien', [NhapLichTuFileController::class, 'previewGv'])
+        ->name('lich.nhap-file.preview-gv');
+    Route::post('/lich/nhap-tu-file/lich-xe', [NhapLichTuFileController::class, 'toXePreview'])
+        ->name('lich.nhap-file.to-xe');
+    Route::get('/lich/nhap-tu-file/lich-xe', [NhapLichTuFileController::class, 'previewXe'])
+        ->name('lich.nhap-file.preview-xe');
+    Route::post('/lich/nhap-tu-file/xem-truoc-db', [NhapLichTuFileController::class, 'toDbPreview'])
+        ->name('lich.nhap-file.to-db');
+    Route::get('/lich/nhap-tu-file/xem-truoc-db', [NhapLichTuFileController::class, 'previewDb'])
+        ->name('lich.nhap-file.preview-db');
+    Route::post('/lich/nhap-tu-file/xac-nhan', [NhapLichTuFileController::class, 'confirm'])
+        ->name('lich.nhap-file.confirm');
+    Route::get('/lich/nhap-tu-file/huy', [NhapLichTuFileController::class, 'cancel'])
+        ->name('lich.nhap-file.cancel');
+});
+
+Route::prefix('daotao')->name('daotao.')->group(function () {
+    Route::get('/phong-dao-tao/bao-cao/luu-luong-dao-tao', [DaoTaoBaoCaoLuuLuongDaoTaoController::class, 'index'])
+        ->name('pdt.bc.luu-luong-dao-tao');
 });
 
 Route::prefix('pmgplxold')->name('pmgplxold.')->group(function () {

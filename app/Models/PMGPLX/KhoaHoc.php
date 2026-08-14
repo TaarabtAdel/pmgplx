@@ -60,4 +60,14 @@ class KhoaHoc extends Model
     {
         return $query->where('TrangThai', 1);
     }
+
+    public function scopeActiveAt($query, \Carbon\CarbonInterface $at)
+    {
+        return $query
+            ->where('NgayKG', '<=', $at)
+            ->where(function ($q) use ($at) {
+                $q->where('NgayBG', '>=', $at)
+                    ->orWhereNull('NgayBG');
+            });
+    }
 }

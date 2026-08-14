@@ -21,4 +21,9 @@ class NguoiLXHoSo extends Model
     {
         return $this->belongsTo(NguoiLX::class, 'MaDK', 'MaDK');
     }
+
+    public function khoaHoc(): BelongsTo
+    {
+        return $this->belongsTo(KhoaHoc::class, 'MaKhoaHoc', 'MaKH');
+    }
 }

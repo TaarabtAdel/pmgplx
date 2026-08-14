@@ -69,6 +69,32 @@
             background: #1f4e79;
             color: #fff;
         }
+        .app-nav .dropdown-submenu {
+            position: relative;
+        }
+        .app-nav .dropdown-submenu > .dropdown-menu {
+            top: 0;
+            left: 100%;
+            margin-top: -0.25rem;
+            margin-left: 0;
+            display: none;
+        }
+        .app-nav .dropdown-submenu:hover > .dropdown-menu,
+        .app-nav .dropdown-submenu.show > .dropdown-menu {
+            display: block;
+        }
+        .app-nav .dropdown-submenu > .dropdown-item::after {
+            display: inline-block;
+            margin-left: 0.5rem;
+            vertical-align: 0.15em;
+            content: "";
+            border-top: 0.3em solid transparent;
+            border-right: 0;
+            border-bottom: 0.3em solid transparent;
+            border-left: 0.3em solid;
+            float: right;
+            margin-top: 0.45rem;
+        }
         .page-wrap { padding: 1rem; }
         .card-panel {
             border: 1px solid #c5cdd6;
@@ -287,58 +313,101 @@
     @stack('styles')
 </head>
 <body>
-    <div class="app-header">Phần Mềm Giấy Phép Lái Xe — Trung Tâm Giáo Dục Nghề Nghiệp Mạnh Linh</div>
+    <div class="app-header">Quản Lý Trung Tâm— Trung Tâm Giáo Dục Nghề Nghiệp Mạnh Linh</div>
 
     <nav class="app-nav">
         <ul class="nav">
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('pmgplx.home') ? 'active' : '' }}" href="{{ route('pmgplx.home') }}">Trang chủ</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('pmgplx.dm.giao-vien.*') ? 'active' : '' }}"
-                   href="{{ route('pmgplx.dm.giao-vien.index') }}">
-                    Quản lý giáo viên
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('pmgplx.dm.hoc-vien.*') ? 'active' : '' }}"
-                   href="{{ route('pmgplx.dm.hoc-vien.index') }}">
-                    Quản lý học viên
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{{ route('pmgplxold.dm.hoc-vien.index') }}">
-                    Học viên (bản cũ)
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('pmgplx.dm.xe.*') ? 'active' : '' }}"
-                   href="{{ route('pmgplx.dm.xe.index') }}">
-                    Quản lý xe
-                </a>
+                <a class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}" href="{{ route('home') }}">Trang chủ</a>
             </li>
             <li class="nav-item dropdown">
                 @php
+                    $pmgplxMenuActive = request()->routeIs('pmgplx.dm.*', 'pmgplx.lich.*', 'pmgplxold.*');
                     $lichActive = request()->routeIs('pmgplx.lich.*');
                 @endphp
-                <a class="nav-link dropdown-toggle {{ $lichActive ? 'active' : '' }}"
+                <a class="nav-link dropdown-toggle {{ $pmgplxMenuActive ? 'active' : '' }}"
                    href="#"
-                   id="navLichDropdown"
+                   id="navPmgplxDropdown"
                    role="button"
                    data-toggle="dropdown"
                    aria-haspopup="true"
                    aria-expanded="false">
-                    Lịch
+                    Phần Mềm Giấy Phép Lái Xe
                 </a>
-                <div class="dropdown-menu" aria-labelledby="navLichDropdown">
-                    <a class="dropdown-item {{ request()->routeIs('pmgplx.lich.gv.*', 'pmgplx.lich.ly-thuyet.*') ? 'active' : '' }}"
-                       href="{{ route('pmgplx.lich.gv.index') }}">
-                        Lịch làm việc giáo viên
+                <div class="dropdown-menu" aria-labelledby="navPmgplxDropdown">
+                    <a class="dropdown-item {{ request()->routeIs('pmgplx.dm.giao-vien.*') ? 'active' : '' }}"
+                       href="{{ route('pmgplx.dm.giao-vien.index') }}">
+                        Quản lý giáo viên
                     </a>
-                    <a class="dropdown-item {{ request()->routeIs('pmgplx.lich.xe.*', 'pmgplx.lich.thuc-hanh.*') ? 'active' : '' }}"
-                       href="{{ route('pmgplx.lich.xe.index') }}">
-                        Lịch sử dụng xe tập lái
+                    <a class="dropdown-item {{ request()->routeIs('pmgplx.dm.hoc-vien.*') ? 'active' : '' }}"
+                       href="{{ route('pmgplx.dm.hoc-vien.index') }}">
+                        Quản lý học viên
                     </a>
+                    <a class="dropdown-item {{ request()->routeIs('pmgplxold.dm.hoc-vien.*') ? 'active' : '' }}"
+                       href="{{ route('pmgplxold.dm.hoc-vien.index') }}">
+                        Học viên (bản cũ)
+                    </a>
+                    <a class="dropdown-item {{ request()->routeIs('pmgplx.dm.xe.*') ? 'active' : '' }}"
+                       href="{{ route('pmgplx.dm.xe.index') }}">
+                        Quản lý xe
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-submenu">
+                        <a class="dropdown-item dropdown-toggle {{ $lichActive ? 'active' : '' }}" href="#">
+                            Lịch
+                        </a>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item {{ request()->routeIs('pmgplx.lich.gv.*') ? 'active' : '' }}"
+                               href="{{ route('pmgplx.lich.gv.index') }}">
+                                Lịch làm việc giáo viên
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('pmgplx.lich.xe.*') ? 'active' : '' }}"
+                               href="{{ route('pmgplx.lich.xe.index') }}">
+                                Lịch sử dụng xe tập lái
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item {{ request()->routeIs('pmgplx.lich.ly-thuyet.*') ? 'active' : '' }}"
+                               href="{{ route('pmgplx.lich.ly-thuyet.create') }}">
+                                Thêm lịch lý thuyết
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('pmgplx.lich.thuc-hanh.*') ? 'active' : '' }}"
+                               href="{{ route('pmgplx.lich.thuc-hanh.create') }}">
+                                Thêm lịch thực hành
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('pmgplx.lich.nhap-file.*') ? 'active' : '' }}"
+                               href="{{ route('pmgplx.lich.nhap-file.create') }}">
+                                Nhập lịch từ file
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </li>
+            <li class="nav-item dropdown">
+                @php
+                    $pdtActive = request()->routeIs('daotao.pdt.*');
+                    $baoCaoActive = request()->routeIs('daotao.pdt.bc.*');
+                @endphp
+                <a class="nav-link dropdown-toggle {{ $pdtActive ? 'active' : '' }}"
+                   href="#"
+                   id="navPdtDropdown"
+                   role="button"
+                   data-toggle="dropdown"
+                   aria-haspopup="true"
+                   aria-expanded="false">
+                    Phòng Đào Tạo
+                </a>
+                <div class="dropdown-menu" aria-labelledby="navPdtDropdown">
+                    <div class="dropdown-submenu">
+                        <a class="dropdown-item dropdown-toggle {{ $baoCaoActive ? 'active' : '' }}" href="#">
+                            Báo cáo
+                        </a>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.bc.luu-luong-dao-tao') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.bc.luu-luong-dao-tao') }}">
+                                Báo cáo Lưu lượng đào tạo
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </li>
         </ul>
@@ -386,6 +455,12 @@
         $(function () {
             $('table.table-data tbody').on('click', 'tr', function () {
                 $(this).addClass('selected').siblings().removeClass('selected');
+            });
+
+            $('.app-nav .dropdown-submenu > a').on('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(this).parent().toggleClass('show').siblings('.dropdown-submenu').removeClass('show');
             });
         });
     </script>
