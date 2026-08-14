@@ -126,7 +126,7 @@
                                             : (! empty($row['conflict']) ? 'table-danger' : ($isTuDong ? 'row-tu-dong' : '')));
                                     $hasXeTrung = ! $skipSave && (! empty($row['conflict']) || ! empty($row['will_update']));
                                 @endphp
-                                <tr class="{{ $rowClass }}" @if ($hasXeTrung) data-xe-trung="1" @endif>
+                                <tr class="{{ $rowClass }}" data-row-index="{{ $i }}" @if ($hasXeTrung) data-xe-trung="1" @endif>
                                     <td>{{ $i + 1 }}</td>
                                     <td>
                                         <input type="hidden" name="rows[{{ $i }}][source_key]" value="{{ $row['source_key'] ?? '' }}">
@@ -224,8 +224,41 @@
     </div>
 @endsection
 
+@include('PMGPLX.lich._nhap-file-chunk-submit')
+
 @push('scripts')
 <script>
+    function readXeRowsFromForm($form, start, end) {
+        var rows = [];
+        $form.find('tbody tr[data-row-index]').each(function () {
+            var i = parseInt($(this).data('rowIndex'), 10);
+            if (isNaN(i) || i < start || i >= end) {
+                return;
+            }
+            rows.push({
+                source_key: $form.find('[name="rows[' + i + '][source_key]"]').val() || '',
+                MaKH: $form.find('[name="rows[' + i + '][MaKH]"]').val() || '',
+                MaGV: $form.find('[name="rows[' + i + '][MaGV]"]').val() || '',
+                TenGV: $form.find('[name="rows[' + i + '][TenGV]"]').val() || '',
+                BienSoXe: $form.find('[name="rows[' + i + '][BienSoXe]"]').val() || '',
+                DiaDiem: $form.find('[name="rows[' + i + '][DiaDiem]"]').val() || '',
+                NgayBD: $form.find('[name="rows[' + i + '][NgayBD]"]').val() || '',
+                NgayKT: $form.find('[name="rows[' + i + '][NgayKT]"]').val() || ''
+            });
+        });
+        return rows;
+    }
+
+    lichNhapFileChunkSubmit({
+        $form: $('#formConfirmNhapFileXe'),
+        totalRows: {{ count($rows) }},
+        readRows: function (start, end) {
+            return readXeRowsFromForm($('#formConfirmNhapFileXe'), start, end);
+        },
+        cheDoCapNhatSelector: '#cheDoCapNhatXe',
+        progressLabel: 'Đang lưu lịch xe tập lái'
+    });
+
     $('.select-xe-preview').select2({
         theme: 'bootstrap4',
         placeholder: 'Tìm biển số xe...',

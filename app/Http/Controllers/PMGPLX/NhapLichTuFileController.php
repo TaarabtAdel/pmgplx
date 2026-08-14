@@ -15,8 +15,11 @@ use App\Support\PMGPLX\LichExcelNoiDungSkip;
 use App\Support\PMGPLX\LichExcelTimeParser;
 use App\Support\PMGPLX\LichGvMonHoc;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use JsonException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -29,6 +32,11 @@ class NhapLichTuFileController extends Controller
     private const SESSION_SAVE = 'pmgplx.lich.nhap_file.save';
 
     private const TEN_MON_HOC = 'Thực hành lái xe';
+
+    public const SUBMIT_CHUNK_SIZE = 500;
+
+    /** Trên ngưỡng này gửi qua rows_json (tránh max_input_vars ~1000). */
+    public const SUBMIT_CHUNK_MIN_ROWS = 120;
 
     public function create(): View
     {
@@ -226,12 +234,16 @@ class NhapLichTuFileController extends Controller
     }
 
     /** Lưu chỉnh sửa GV → màn xem trước lịch xe */
-    public function toXePreview(Request $request): RedirectResponse
+    public function toXePreview(Request $request): RedirectResponse|JsonResponse
     {
         $save = $request->session()->get(self::SESSION_SAVE);
         if (! is_array($save) || empty($save['gv_rows'])) {
             return redirect()->route('pmgplx.lich.nhap-file.create')
                 ->with('error', 'Phiên xem trước đã hết hạn.');
+        }
+
+        if ($request->filled('rows_json')) {
+            return $this->submitGvChunked($request, $save);
         }
 
         $validated = $request->validate([
@@ -243,89 +255,16 @@ class NhapLichTuFileController extends Controller
             'rows.*.NgayBD' => ['required', 'date'],
             'rows.*.NgayKT' => ['required', 'date'],
             'rows.*.source_key' => ['nullable', 'string'],
-        ], [
-            'rows.*.MaKH.required' => 'Mã khóa học không được để trống.',
-            'rows.*.MaGV.required' => 'Mã giáo viên không được để trống.',
-            'rows.*.TenGV.required' => 'Tên giáo viên không được để trống.',
-            'rows.*.MaMonHoc.required' => 'Vui lòng chọn môn học.',
-            'rows.*.NgayBD.required' => 'Vui lòng chọn thời gian bắt đầu.',
-            'rows.*.NgayKT.required' => 'Vui lòng chọn thời gian kết thúc.',
-        ]);
+        ], $this->gvRowValidationMessages());
 
         $updateMode = $request->boolean('che_do_cap_nhat');
-
-        $gvRows = [];
-        foreach ($validated['rows'] as $i => $row) {
-            $ngayBD = Carbon::parse($row['NgayBD']);
-            $ngayKT = Carbon::parse($row['NgayKT']);
-            if ($ngayKT->lte($ngayBD)) {
-                $ngayKT = $ngayBD->copy()->addDay()->setTimeFromTimeString($ngayKT->format('H:i:s'));
-            }
-
-            $sourceKey = (string) ($row['source_key'] ?? '');
-            $old = $save['gv_rows'][$i] ?? [];
-            $maMonHoc = LichGvMonHoc::normalizeMa($row['MaMonHoc']);
-            $dbMon = LichGvMonHoc::dbFields($maMonHoc);
-
-            $noiDung = (string) ($old['noi_dung'] ?? '');
-            $chiTiet = (string) ($old['chi_tiet'] ?? '');
-            $skipGv = LichExcelNoiDungSkip::isGvSkip($noiDung, $chiTiet);
-
-            $gvRows[] = [
-                'MaKH' => trim($row['MaKH']),
-                'MaGV' => trim($row['MaGV']),
-                'TenGV' => trim($row['TenGV']),
-                'MaMonHoc' => $maMonHoc,
-                'TenMonHoc' => $dbMon['TenMonHoc'],
-                'DiaDiem' => '',
-                'NgayBD' => $ngayBD->format('Y-m-d H:i:s'),
-                'NgayKT' => $ngayKT->format('Y-m-d H:i:s'),
-                'noi_dung' => $noiDung,
-                'chi_tiet' => $chiTiet,
-                'bien_so_xe' => $old['bien_so_xe'] ?? '',
-                'source_key' => $sourceKey !== '' ? $sourceKey : ($old['source_key'] ?? (string) $i),
-                'skip_save' => $skipGv,
-                'conflict' => false,
-                'ghi_chu' => '',
-            ];
-        }
-
-        // Đồng bộ xe rows theo GV đã sửa (cùng source_key)
-        $xeByKey = collect($save['xe_rows'] ?? [])->keyBy('source_key');
-        $xeRows = [];
-        foreach ($gvRows as $gv) {
-            $key = $gv['source_key'];
-            $oldXe = $xeByKey->get($key, []);
-            $noiDung = (string) ($gv['noi_dung'] ?? '');
-            $chiTiet = (string) ($gv['chi_tiet'] ?? '');
-            $diaDiem = (string) ($oldXe['DiaDiem'] ?? LichExcelDiaDiem::resolve($noiDung));
-            $bienSo = LichExcelBienSo::normalize((string) ($oldXe['BienSoXe'] ?? $gv['bien_so_xe'] ?? ''));
-            // Ưu tiên biển số từ nội dung TỰ ĐỘNG nếu có
-            $bienSoTuDong = LichExcelBienSo::extractFromTuDong($noiDung, $chiTiet);
-            if ($bienSoTuDong !== null) {
-                $bienSo = $bienSoTuDong;
-            }
-
-            $xeRows[] = [
-                'MaKH' => $gv['MaKH'],
-                'MaGV' => $gv['MaGV'],
-                'TenGV' => $gv['TenGV'],
-                'BienSoXe' => $bienSo,
-                'DiaDiem' => $diaDiem,
-                'NgayBD' => $gv['NgayBD'],
-                'NgayKT' => $gv['NgayKT'],
-                'noi_dung' => $noiDung,
-                'chi_tiet' => $chiTiet,
-                'skip_save' => LichExcelNoiDungSkip::isXeSkip($noiDung, $chiTiet),
-                'source_key' => $key,
-                'conflict' => false,
-                'ghi_chu' => '',
-            ];
-        }
+        $gvRows = $this->buildGvRowsFromSubmission($save, $validated['rows']);
+        $xeRows = $this->buildXeRowsFromGvRows($save, $gvRows);
 
         $save['gv_rows'] = $gvRows;
         $save['xe_rows'] = $xeRows;
         $save['meta']['update_mode'] = $updateMode;
+        unset($save['gv_chunk_merge']);
         $request->session()->put(self::SESSION_SAVE, $save);
 
         return redirect()->route('pmgplx.lich.nhap-file.preview-xe');
@@ -399,13 +338,17 @@ class NhapLichTuFileController extends Controller
     }
 
     /** Cập nhật chỉnh sửa xe → màn preview mảng sẽ lưu DB */
-    public function toDbPreview(Request $request): RedirectResponse
+    public function toDbPreview(Request $request): RedirectResponse|JsonResponse
     {
         $save = $request->session()->get(self::SESSION_SAVE);
         if (! is_array($save) || empty($save['xe_rows'])) {
             return redirect()
                 ->route('pmgplx.lich.nhap-file.create')
                 ->with('error', 'Chưa có dữ liệu để xác nhận.');
+        }
+
+        if ($request->filled('rows_json')) {
+            return $this->submitXeChunked($request, $save);
         }
 
         $validated = $request->validate([
@@ -418,84 +361,26 @@ class NhapLichTuFileController extends Controller
             'rows.*.NgayBD' => ['required', 'date'],
             'rows.*.NgayKT' => ['required', 'date'],
             'rows.*.source_key' => ['nullable', 'string'],
-        ], [
-            'rows.*.MaKH.required' => 'Mã khóa học không được để trống.',
-            'rows.*.MaGV.required' => 'Mã giáo viên không được để trống.',
-            'rows.*.TenGV.required' => 'Tên giáo viên không được để trống.',
-            'rows.*.NgayBD.required' => 'Vui lòng chọn thời gian bắt đầu.',
-            'rows.*.NgayKT.required' => 'Vui lòng chọn thời gian kết thúc.',
-        ]);
+        ], $this->xeRowValidationMessages());
 
-        $xeRows = [];
-        $oldXeByKey = collect($save['xe_rows'] ?? [])->keyBy('source_key');
-        foreach ($validated['rows'] as $row) {
-            $sourceKey = (string) ($row['source_key'] ?? '');
-            $old = $oldXeByKey->get($sourceKey, []);
-            $noiDung = (string) ($old['noi_dung'] ?? '');
-            $chiTiet = (string) ($old['chi_tiet'] ?? '');
-            $skipCabin = LichExcelNoiDungSkip::isXeSkip($noiDung, $chiTiet);
-
-            if (! $skipCabin) {
-                if (trim((string) ($row['BienSoXe'] ?? '')) === '') {
-                    return redirect()
-                        ->route('pmgplx.lich.nhap-file.preview-xe')
-                        ->withErrors(['rows' => 'Vui lòng chọn xe tập cho các dòng không bị bỏ qua.'])
-                        ->withInput();
-                }
-                if (trim((string) ($row['DiaDiem'] ?? '')) === '') {
-                    return redirect()
-                        ->route('pmgplx.lich.nhap-file.preview-xe')
-                        ->withErrors(['rows' => 'Vui lòng chọn địa điểm cho các dòng không bị bỏ qua.'])
-                        ->withInput();
-                }
-            }
-
-            $ngayBD = Carbon::parse($row['NgayBD']);
-            $ngayKT = Carbon::parse($row['NgayKT']);
-            if ($ngayKT->lte($ngayBD)) {
-                $ngayKT = $ngayBD->copy()->addDay()->setTimeFromTimeString($ngayKT->format('H:i:s'));
-            }
-
-            $xeRows[] = [
-                'MaKH' => trim($row['MaKH']),
-                'MaGV' => trim($row['MaGV']),
-                'TenGV' => trim($row['TenGV']),
-                'BienSoXe' => LichExcelBienSo::normalize(trim((string) ($row['BienSoXe'] ?? ''))),
-                'DiaDiem' => trim((string) ($row['DiaDiem'] ?? '')),
-                'NgayBD' => $ngayBD->format('Y-m-d H:i:s'),
-                'NgayKT' => $ngayKT->format('Y-m-d H:i:s'),
-                'noi_dung' => $noiDung,
-                'chi_tiet' => $chiTiet,
-                'skip_save' => $skipCabin,
-                'source_key' => $sourceKey,
-            ];
+        $built = $this->buildXeRowsFromDbSubmission($save, $validated['rows']);
+        if (isset($built['error'])) {
+            return redirect()
+                ->route('pmgplx.lich.nhap-file.preview-xe')
+                ->withErrors(['rows' => $built['error']])
+                ->withInput();
         }
 
-        $xeByKey = collect($xeRows)->keyBy('source_key');
-        $gvRows = [];
-        foreach ($save['gv_rows'] as $gv) {
-            $key = (string) ($gv['source_key'] ?? '');
-            $xe = $xeByKey->get($key);
-            if ($xe) {
-                $gv['MaKH'] = $xe['MaKH'];
-                $gv['MaGV'] = $xe['MaGV'];
-                $gv['TenGV'] = $xe['TenGV'];
-                $gv['NgayBD'] = $xe['NgayBD'];
-                $gv['NgayKT'] = $xe['NgayKT'];
-                $gv['bien_so_xe'] = $xe['BienSoXe'];
-            }
-            $gvRows[] = $gv;
-        }
-
-        $save['gv_rows'] = $gvRows;
-        $save['xe_rows'] = $xeRows;
+        $save['gv_rows'] = $built['gv_rows'];
+        $save['xe_rows'] = $built['xe_rows'];
         $save['meta']['update_mode_xe'] = $request->boolean('che_do_cap_nhat');
         $save['db_payload'] = $this->buildDbPayload(
-            $gvRows,
-            $xeRows,
+            $built['gv_rows'],
+            $built['xe_rows'],
             ! empty($save['meta']['update_mode']),
             ! empty($save['meta']['update_mode_xe'])
         );
+        unset($save['xe_chunk_merge']);
         $request->session()->put(self::SESSION_SAVE, $save);
 
         return redirect()->route('pmgplx.lich.nhap-file.preview-db');
@@ -1098,6 +983,355 @@ class NhapLichTuFileController extends Controller
                 'off_count' => $offCount,
             ],
         ];
+    }
+
+    /** @return array<string, string> */
+    private function gvRowValidationMessages(): array
+    {
+        return [
+            'rows.*.MaKH.required' => 'Mã khóa học không được để trống.',
+            'rows.*.MaGV.required' => 'Mã giáo viên không được để trống.',
+            'rows.*.TenGV.required' => 'Tên giáo viên không được để trống.',
+            'rows.*.MaMonHoc.required' => 'Vui lòng chọn môn học.',
+            'rows.*.NgayBD.required' => 'Vui lòng chọn thời gian bắt đầu.',
+            'rows.*.NgayKT.required' => 'Vui lòng chọn thời gian kết thúc.',
+        ];
+    }
+
+    /** @return array<string, string> */
+    private function xeRowValidationMessages(): array
+    {
+        return [
+            'rows.*.MaKH.required' => 'Mã khóa học không được để trống.',
+            'rows.*.MaGV.required' => 'Mã giáo viên không được để trống.',
+            'rows.*.TenGV.required' => 'Tên giáo viên không được để trống.',
+            'rows.*.NgayBD.required' => 'Vui lòng chọn thời gian bắt đầu.',
+            'rows.*.NgayKT.required' => 'Vui lòng chọn thời gian kết thúc.',
+        ];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $rows
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildGvRowsFromSubmission(array $save, array $rows): array
+    {
+        $gvRows = [];
+        foreach ($rows as $i => $row) {
+            $ngayBD = Carbon::parse($row['NgayBD']);
+            $ngayKT = Carbon::parse($row['NgayKT']);
+            if ($ngayKT->lte($ngayBD)) {
+                $ngayKT = $ngayBD->copy()->addDay()->setTimeFromTimeString($ngayKT->format('H:i:s'));
+            }
+
+            $sourceKey = (string) ($row['source_key'] ?? '');
+            $old = $save['gv_rows'][$i] ?? [];
+            $maMonHoc = LichGvMonHoc::normalizeMa($row['MaMonHoc']);
+            $dbMon = LichGvMonHoc::dbFields($maMonHoc);
+
+            $noiDung = (string) ($old['noi_dung'] ?? '');
+            $chiTiet = (string) ($old['chi_tiet'] ?? '');
+            $skipGv = LichExcelNoiDungSkip::isGvSkip($noiDung, $chiTiet);
+
+            $gvRows[] = [
+                'MaKH' => trim($row['MaKH']),
+                'MaGV' => trim($row['MaGV']),
+                'TenGV' => trim($row['TenGV']),
+                'MaMonHoc' => $maMonHoc,
+                'TenMonHoc' => $dbMon['TenMonHoc'],
+                'DiaDiem' => '',
+                'NgayBD' => $ngayBD->format('Y-m-d H:i:s'),
+                'NgayKT' => $ngayKT->format('Y-m-d H:i:s'),
+                'noi_dung' => $noiDung,
+                'chi_tiet' => $chiTiet,
+                'bien_so_xe' => $old['bien_so_xe'] ?? '',
+                'source_key' => $sourceKey !== '' ? $sourceKey : ($old['source_key'] ?? (string) $i),
+                'skip_save' => $skipGv,
+                'conflict' => false,
+                'ghi_chu' => '',
+            ];
+        }
+
+        return $gvRows;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $gvRows
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildXeRowsFromGvRows(array $save, array $gvRows): array
+    {
+        $xeByKey = collect($save['xe_rows'] ?? [])->keyBy('source_key');
+        $xeRows = [];
+        foreach ($gvRows as $gv) {
+            $key = $gv['source_key'];
+            $oldXe = $xeByKey->get($key, []);
+            $noiDung = (string) ($gv['noi_dung'] ?? '');
+            $chiTiet = (string) ($gv['chi_tiet'] ?? '');
+            $diaDiem = (string) ($oldXe['DiaDiem'] ?? LichExcelDiaDiem::resolve($noiDung));
+            $bienSo = LichExcelBienSo::normalize((string) ($oldXe['BienSoXe'] ?? $gv['bien_so_xe'] ?? ''));
+            $bienSoTuDong = LichExcelBienSo::extractFromTuDong($noiDung, $chiTiet);
+            if ($bienSoTuDong !== null) {
+                $bienSo = $bienSoTuDong;
+            }
+
+            $xeRows[] = [
+                'MaKH' => $gv['MaKH'],
+                'MaGV' => $gv['MaGV'],
+                'TenGV' => $gv['TenGV'],
+                'BienSoXe' => $bienSo,
+                'DiaDiem' => $diaDiem,
+                'NgayBD' => $gv['NgayBD'],
+                'NgayKT' => $gv['NgayKT'],
+                'noi_dung' => $noiDung,
+                'chi_tiet' => $chiTiet,
+                'skip_save' => LichExcelNoiDungSkip::isXeSkip($noiDung, $chiTiet),
+                'source_key' => $key,
+                'conflict' => false,
+                'ghi_chu' => '',
+            ];
+        }
+
+        return $xeRows;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $rows
+     * @return array{gv_rows: array<int, array<string, mixed>>, xe_rows: array<int, array<string, mixed>>}|array{error: string}
+     */
+    private function buildXeRowsFromDbSubmission(array $save, array $rows): array
+    {
+        $xeRows = [];
+        $oldXeByKey = collect($save['xe_rows'] ?? [])->keyBy('source_key');
+        foreach ($rows as $i => $row) {
+            $sourceKey = (string) ($row['source_key'] ?? '');
+            $old = $oldXeByKey->get($sourceKey, $save['xe_rows'][$i] ?? []);
+            $noiDung = (string) ($old['noi_dung'] ?? '');
+            $chiTiet = (string) ($old['chi_tiet'] ?? '');
+            $skipCabin = LichExcelNoiDungSkip::isXeSkip($noiDung, $chiTiet);
+
+            if (! $skipCabin) {
+                if (trim((string) ($row['BienSoXe'] ?? '')) === '') {
+                    return ['error' => 'Vui lòng chọn xe tập cho các dòng không bị bỏ qua.'];
+                }
+                if (trim((string) ($row['DiaDiem'] ?? '')) === '') {
+                    return ['error' => 'Vui lòng chọn địa điểm cho các dòng không bị bỏ qua.'];
+                }
+            }
+
+            $ngayBD = Carbon::parse($row['NgayBD']);
+            $ngayKT = Carbon::parse($row['NgayKT']);
+            if ($ngayKT->lte($ngayBD)) {
+                $ngayKT = $ngayBD->copy()->addDay()->setTimeFromTimeString($ngayKT->format('H:i:s'));
+            }
+
+            $xeRows[] = [
+                'MaKH' => trim($row['MaKH']),
+                'MaGV' => trim($row['MaGV']),
+                'TenGV' => trim($row['TenGV']),
+                'BienSoXe' => LichExcelBienSo::normalize(trim((string) ($row['BienSoXe'] ?? ''))),
+                'DiaDiem' => trim((string) ($row['DiaDiem'] ?? '')),
+                'NgayBD' => $ngayBD->format('Y-m-d H:i:s'),
+                'NgayKT' => $ngayKT->format('Y-m-d H:i:s'),
+                'noi_dung' => $noiDung,
+                'chi_tiet' => $chiTiet,
+                'skip_save' => $skipCabin,
+                'source_key' => $sourceKey,
+            ];
+        }
+
+        $xeByKey = collect($xeRows)->keyBy('source_key');
+        $gvRows = [];
+        foreach ($save['gv_rows'] as $gv) {
+            $key = (string) ($gv['source_key'] ?? '');
+            $xe = $xeByKey->get($key);
+            if ($xe) {
+                $gv['MaKH'] = $xe['MaKH'];
+                $gv['MaGV'] = $xe['MaGV'];
+                $gv['TenGV'] = $xe['TenGV'];
+                $gv['NgayBD'] = $xe['NgayBD'];
+                $gv['NgayKT'] = $xe['NgayKT'];
+                $gv['bien_so_xe'] = $xe['BienSoXe'];
+            }
+            $gvRows[] = $gv;
+        }
+
+        return ['gv_rows' => $gvRows, 'xe_rows' => $xeRows];
+    }
+
+    private function submitGvChunked(Request $request, array $save): JsonResponse
+    {
+        try {
+            $rows = json_decode((string) $request->input('rows_json'), true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return response()->json(['ok' => false, 'message' => 'Dữ liệu chunk không hợp lệ.'], 422);
+        }
+
+        if (! is_array($rows)) {
+            return response()->json(['ok' => false, 'message' => 'Dữ liệu chunk không hợp lệ.'], 422);
+        }
+
+        try {
+            $validated = validator([
+                'rows' => $rows,
+            ], [
+                'rows' => ['required', 'array', 'min:1'],
+                'rows.*.MaKH' => ['required', 'string', 'max:50'],
+                'rows.*.MaGV' => ['required', 'string', 'max:20'],
+                'rows.*.TenGV' => ['required', 'string', 'max:255'],
+                'rows.*.MaMonHoc' => ['required', 'integer'],
+                'rows.*.NgayBD' => ['required', 'date'],
+                'rows.*.NgayKT' => ['required', 'date'],
+                'rows.*.source_key' => ['nullable', 'string'],
+            ], $this->gvRowValidationMessages())->validate();
+        } catch (ValidationException $e) {
+            return response()->json([
+                'ok' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Dữ liệu không hợp lệ.',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $chunkIndex = max(0, (int) $request->input('chunk_index', 0));
+        $chunkTotal = max(1, (int) $request->input('chunk_total', 1));
+        $offset = $chunkIndex * self::SUBMIT_CHUNK_SIZE;
+
+        if ($chunkIndex === 0) {
+            unset($save['gv_chunk_merge']);
+            $save['meta']['update_mode'] = $request->boolean('che_do_cap_nhat');
+        }
+
+        $merge = $save['gv_chunk_merge'] ?? [];
+        foreach ($validated['rows'] as $j => $row) {
+            $merge[$offset + $j] = $row;
+        }
+        $save['gv_chunk_merge'] = $merge;
+
+        if (! $request->boolean('chunk_finalize')) {
+            $request->session()->put(self::SESSION_SAVE, $save);
+
+            return response()->json([
+                'ok' => true,
+                'chunk_index' => $chunkIndex,
+                'chunk_total' => $chunkTotal,
+                'merged' => count($merge),
+            ]);
+        }
+
+        $expected = count($save['gv_rows']);
+        if (count($merge) !== $expected) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Thiếu dữ liệu sau khi gom chunk ('.count($merge).'/'.$expected.').',
+            ], 422);
+        }
+
+        ksort($merge);
+        unset($save['gv_chunk_merge']);
+
+        $gvRows = $this->buildGvRowsFromSubmission($save, array_values($merge));
+        $xeRows = $this->buildXeRowsFromGvRows($save, $gvRows);
+
+        $save['gv_rows'] = $gvRows;
+        $save['xe_rows'] = $xeRows;
+        $request->session()->put(self::SESSION_SAVE, $save);
+
+        return response()->json([
+            'ok' => true,
+            'redirect' => route('pmgplx.lich.nhap-file.preview-xe'),
+        ]);
+    }
+
+    private function submitXeChunked(Request $request, array $save): JsonResponse
+    {
+        try {
+            $rows = json_decode((string) $request->input('rows_json'), true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return response()->json(['ok' => false, 'message' => 'Dữ liệu chunk không hợp lệ.'], 422);
+        }
+
+        if (! is_array($rows)) {
+            return response()->json(['ok' => false, 'message' => 'Dữ liệu chunk không hợp lệ.'], 422);
+        }
+
+        try {
+            $validated = validator([
+                'rows' => $rows,
+            ], [
+                'rows' => ['required', 'array', 'min:1'],
+                'rows.*.MaKH' => ['required', 'string', 'max:50'],
+                'rows.*.MaGV' => ['required', 'string', 'max:20'],
+                'rows.*.TenGV' => ['required', 'string', 'max:255'],
+                'rows.*.BienSoXe' => ['nullable', 'string', 'max:50'],
+                'rows.*.DiaDiem' => ['nullable', 'string', 'max:255'],
+                'rows.*.NgayBD' => ['required', 'date'],
+                'rows.*.NgayKT' => ['required', 'date'],
+                'rows.*.source_key' => ['nullable', 'string'],
+            ], $this->xeRowValidationMessages())->validate();
+        } catch (ValidationException $e) {
+            return response()->json([
+                'ok' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Dữ liệu không hợp lệ.',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $chunkIndex = max(0, (int) $request->input('chunk_index', 0));
+        $chunkTotal = max(1, (int) $request->input('chunk_total', 1));
+        $offset = $chunkIndex * self::SUBMIT_CHUNK_SIZE;
+
+        if ($chunkIndex === 0) {
+            unset($save['xe_chunk_merge']);
+            $save['meta']['update_mode_xe'] = $request->boolean('che_do_cap_nhat');
+        }
+
+        $merge = $save['xe_chunk_merge'] ?? [];
+        foreach ($validated['rows'] as $j => $row) {
+            $merge[$offset + $j] = $row;
+        }
+        $save['xe_chunk_merge'] = $merge;
+
+        if (! $request->boolean('chunk_finalize')) {
+            $request->session()->put(self::SESSION_SAVE, $save);
+
+            return response()->json([
+                'ok' => true,
+                'chunk_index' => $chunkIndex,
+                'chunk_total' => $chunkTotal,
+                'merged' => count($merge),
+            ]);
+        }
+
+        $expected = count($save['xe_rows']);
+        if (count($merge) !== $expected) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Thiếu dữ liệu sau khi gom chunk ('.count($merge).'/'.$expected.').',
+            ], 422);
+        }
+
+        ksort($merge);
+        unset($save['xe_chunk_merge']);
+
+        $built = $this->buildXeRowsFromDbSubmission($save, array_values($merge));
+        if (isset($built['error'])) {
+            return response()->json(['ok' => false, 'message' => $built['error']], 422);
+        }
+
+        $save['gv_rows'] = $built['gv_rows'];
+        $save['xe_rows'] = $built['xe_rows'];
+        $save['db_payload'] = $this->buildDbPayload(
+            $built['gv_rows'],
+            $built['xe_rows'],
+            ! empty($save['meta']['update_mode']),
+            ! empty($save['meta']['update_mode_xe'])
+        );
+        $request->session()->put(self::SESSION_SAVE, $save);
+
+        return response()->json([
+            'ok' => true,
+            'redirect' => route('pmgplx.lich.nhap-file.preview-db'),
+        ]);
     }
 
     private function gvConflict(string $maGv, string $ngayBD, string $ngayKT): bool

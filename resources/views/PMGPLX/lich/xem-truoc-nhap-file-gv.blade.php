@@ -71,7 +71,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('pmgplx.lich.nhap-file.to-xe') }}">
+            <form method="POST" action="{{ route('pmgplx.lich.nhap-file.to-xe') }}" id="formNhapFileGv">
                 @csrf
                 <div class="custom-control custom-checkbox mb-3">
                     <input type="checkbox" class="custom-control-input" id="cheDoCapNhat" name="che_do_cap_nhat" value="1"
@@ -107,7 +107,7 @@
                                             : (! empty($row['conflict']) ? 'table-danger' : ''));
                                     $hasGvTrung = ! $skipSave && (! empty($row['conflict']) || ! empty($row['will_update']));
                                 @endphp
-                                <tr class="{{ $rowClass }}" @if ($hasGvTrung) data-gv-trung="1" @endif>
+                                <tr class="{{ $rowClass }}" data-row-index="{{ $i }}" @if ($hasGvTrung) data-gv-trung="1" @endif>
                                     <td>{{ $i + 1 }}</td>
                                     <td>
                                         <input type="hidden" name="rows[{{ $i }}][source_key]" value="{{ $row['source_key'] ?? '' }}">
@@ -190,8 +190,40 @@
     </div>
 @endsection
 
+@include('PMGPLX.lich._nhap-file-chunk-submit')
+
 @push('scripts')
 <script>
+    function readGvRowsFromForm($form, start, end) {
+        var rows = [];
+        $form.find('tbody tr[data-row-index]').each(function () {
+            var i = parseInt($(this).data('rowIndex'), 10);
+            if (isNaN(i) || i < start || i >= end) {
+                return;
+            }
+            rows.push({
+                source_key: $form.find('[name="rows[' + i + '][source_key]"]').val() || '',
+                MaKH: $form.find('[name="rows[' + i + '][MaKH]"]').val() || '',
+                MaGV: $form.find('[name="rows[' + i + '][MaGV]"]').val() || '',
+                TenGV: $form.find('[name="rows[' + i + '][TenGV]"]').val() || '',
+                MaMonHoc: $form.find('[name="rows[' + i + '][MaMonHoc]"]').val() || '',
+                NgayBD: $form.find('[name="rows[' + i + '][NgayBD]"]').val() || '',
+                NgayKT: $form.find('[name="rows[' + i + '][NgayKT]"]').val() || ''
+            });
+        });
+        return rows;
+    }
+
+    lichNhapFileChunkSubmit({
+        $form: $('#formNhapFileGv'),
+        totalRows: {{ count($rows) }},
+        readRows: function (start, end) {
+            return readGvRowsFromForm($('#formNhapFileGv'), start, end);
+        },
+        cheDoCapNhatSelector: '#cheDoCapNhat',
+        progressLabel: 'Đang lưu lịch giáo viên'
+    });
+
     function applyCheDoCapNhatUi(on) {
         $('tr[data-gv-trung="1"]').each(function () {
             var $tr = $(this);
