@@ -21,19 +21,20 @@
                 <div><strong>File:</strong> {{ $preview['file_name'] ?? '' }}</div>
                 <div>
                     <strong>Lịch giáo viên:</strong>
-                    sẽ lưu <strong class="text-success">{{ (int) ($meta['gv_save'] ?? 0) }}</strong>,
+                    sẽ lưu mới <strong class="text-success">{{ (int) ($meta['gv_save'] ?? 0) }}</strong>@if ((int) ($meta['gv_update'] ?? 0) > 0), cập nhật <strong class="text-primary">{{ (int) ($meta['gv_update'] ?? 0) }}</strong>@endif,
                     bỏ qua <strong class="text-danger">{{ (int) ($meta['gv_skip'] ?? 0) }}</strong>
                 </div>
                 <div>
                     <strong>Lịch xe tập lái:</strong>
-                    sẽ lưu <strong class="text-success">{{ (int) ($meta['xe_save'] ?? 0) }}</strong>,
+                    sẽ lưu mới <strong class="text-success">{{ (int) ($meta['xe_save'] ?? 0) }}</strong>@if ((int) ($meta['xe_update'] ?? 0) > 0), cập nhật <strong class="text-primary">{{ (int) ($meta['xe_update'] ?? 0) }}</strong>@endif,
                     bỏ qua <strong class="text-danger">{{ (int) ($meta['xe_skip'] ?? 0) }}</strong>
                 </div>
             </div>
 
             <div class="alert alert-info">
                 Đây là mảng record sau tiền xử lý, đúng cấu trúc sẽ insert vào
-                <code>KhoaHoc_GiaoVien</code> (LoaiGV=TH) và <code>KhoaHoc_XeTap</code>.
+                <code>KhoaHoc_GiaoVien</code> (LoaiGV=TH, <code>MaMonHoc</code>=NULL, <code>TenMonHoc</code>=mã số môn)
+                và <code>KhoaHoc_XeTap</code>.
                 Nhấn <strong>Xác nhận lưu DB</strong> để ghi vào database.
             </div>
 

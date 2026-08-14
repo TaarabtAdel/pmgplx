@@ -127,7 +127,7 @@
                                 <td>{{ \App\Support\PMGPLX\LoaiGiaoVien::label($row->LoaiGV) }}</td>
                                 <td>{{ optional($row->NgayBD)->format('d/m/Y H:i') }}</td>
                                 <td>{{ optional($row->NgayKT)->format('d/m/Y H:i') }}</td>
-                                <td>{{ $row->TenMonHoc }}</td>
+                                <td>{{ \App\Support\PMGPLX\LichGvMonHoc::displayLabel($row->TenMonHoc, $row->MaMonHoc, $monMap) }}</td>
                             </tr>
                         @empty
                             <tr>

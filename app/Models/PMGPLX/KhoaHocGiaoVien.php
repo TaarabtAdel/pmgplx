@@ -37,6 +37,7 @@ class KhoaHocGiaoVien extends Model
     protected $casts = [
         'TrangThai' => 'boolean',
         'IsKhoaHocGiaoVien' => 'boolean',
+        'MaMonHoc' => 'integer',
         'NgayBD' => 'datetime',
         'NgayKT' => 'datetime',
         'NgayTao' => 'datetime',

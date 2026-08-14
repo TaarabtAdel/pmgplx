@@ -13,6 +13,7 @@ use App\Support\PMGPLX\LichExcelBienSo;
 use App\Support\PMGPLX\LichExcelDiaDiem;
 use App\Support\PMGPLX\LichExcelNoiDungSkip;
 use App\Support\PMGPLX\LichExcelTimeParser;
+use App\Support\PMGPLX\LichGvMonHoc;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -129,13 +130,16 @@ class NhapLichTuFileController extends Controller
         }
 
         $rows = $save['gv_rows'];
+        $updateMode = ! empty($save['meta']['update_mode']);
         $conflictCount = 0;
+        $updateCount = 0;
         $skipCount = 0;
         foreach ($rows as &$row) {
             $noiDung = (string) ($row['noi_dung'] ?? '');
             $chiTiet = (string) ($row['chi_tiet'] ?? '');
             $skip = LichExcelNoiDungSkip::isGvSkip($noiDung, $chiTiet);
             $row['skip_save'] = $skip;
+            $row['will_update'] = false;
 
             if ($skip) {
                 $row['conflict'] = false;
@@ -145,17 +149,26 @@ class NhapLichTuFileController extends Controller
                 continue;
             }
 
-            $conflict = $this->gvConflict($row['MaGV'], $row['NgayBD'], $row['NgayKT']);
-            $row['conflict'] = $conflict;
-            $row['ghi_chu'] = $conflict ? 'Đã thêm vào lịch' : '';
-            if ($conflict) {
+            $hasConflict = $this->gvConflict($row['MaGV'], $row['NgayBD'], $row['NgayKT']);
+            if ($hasConflict && $updateMode) {
+                $row['conflict'] = false;
+                $row['will_update'] = true;
+                $row['ghi_chu'] = 'Sẽ cập nhật';
+                $updateCount++;
+            } elseif ($hasConflict) {
+                $row['conflict'] = true;
+                $row['ghi_chu'] = 'Đã thêm vào lịch';
                 $conflictCount++;
+            } else {
+                $row['conflict'] = false;
+                $row['ghi_chu'] = '';
             }
         }
         unset($row);
 
         $save['gv_rows'] = $rows;
         $save['meta']['gv_conflict_count'] = $conflictCount;
+        $save['meta']['gv_update_count'] = $updateCount;
         $save['meta']['gv_skip_count'] = $skipCount;
         $save['meta']['gv_ok_count'] = count($rows) - $conflictCount - $skipCount;
         $request->session()->put(self::SESSION_SAVE, $save);
@@ -191,11 +204,13 @@ class NhapLichTuFileController extends Controller
         }
 
         foreach ($rows as &$row) {
-            $row['MaMonHoc'] = trim((string) ($row['MaMonHoc'] ?? ''));
-            if ($row['MaMonHoc'] === '' && $defaultMaMonHoc !== '') {
-                $row['MaMonHoc'] = $defaultMaMonHoc;
-                $row['TenMonHoc'] = $defaultTenMonHoc;
-            }
+            $selected = LichGvMonHoc::resolveSelected(
+                $row['MaMonHoc'] ?? null,
+                $row['TenMonHoc'] ?? null,
+                LichGvMonHoc::normalizeMa($defaultMaMonHoc)
+            );
+            $row['MaMonHoc'] = $selected;
+            $row['TenMonHoc'] = $selected !== null ? (string) $selected : '';
         }
         unset($row);
 
@@ -224,7 +239,7 @@ class NhapLichTuFileController extends Controller
             'rows.*.MaKH' => ['required', 'string', 'max:50'],
             'rows.*.MaGV' => ['required', 'string', 'max:20'],
             'rows.*.TenGV' => ['required', 'string', 'max:255'],
-            'rows.*.MaMonHoc' => ['required', 'string', 'max:20'],
+            'rows.*.MaMonHoc' => ['required', 'integer'],
             'rows.*.NgayBD' => ['required', 'date'],
             'rows.*.NgayKT' => ['required', 'date'],
             'rows.*.source_key' => ['nullable', 'string'],
@@ -237,9 +252,7 @@ class NhapLichTuFileController extends Controller
             'rows.*.NgayKT.required' => 'Vui lòng chọn thời gian kết thúc.',
         ]);
 
-        $monMap = DmMonHoc::query()
-            ->whereIn('MaMH', collect($validated['rows'])->pluck('MaMonHoc')->unique()->filter()->all())
-            ->pluck('TenMH', 'MaMH');
+        $updateMode = $request->boolean('che_do_cap_nhat');
 
         $gvRows = [];
         foreach ($validated['rows'] as $i => $row) {
@@ -251,7 +264,8 @@ class NhapLichTuFileController extends Controller
 
             $sourceKey = (string) ($row['source_key'] ?? '');
             $old = $save['gv_rows'][$i] ?? [];
-            $maMonHoc = trim($row['MaMonHoc']);
+            $maMonHoc = LichGvMonHoc::normalizeMa($row['MaMonHoc']);
+            $dbMon = LichGvMonHoc::dbFields($maMonHoc);
 
             $noiDung = (string) ($old['noi_dung'] ?? '');
             $chiTiet = (string) ($old['chi_tiet'] ?? '');
@@ -262,7 +276,7 @@ class NhapLichTuFileController extends Controller
                 'MaGV' => trim($row['MaGV']),
                 'TenGV' => trim($row['TenGV']),
                 'MaMonHoc' => $maMonHoc,
-                'TenMonHoc' => (string) ($monMap[$maMonHoc] ?? ($old['TenMonHoc'] ?? '')),
+                'TenMonHoc' => $dbMon['TenMonHoc'],
                 'DiaDiem' => '',
                 'NgayBD' => $ngayBD->format('Y-m-d H:i:s'),
                 'NgayKT' => $ngayKT->format('Y-m-d H:i:s'),
@@ -311,6 +325,7 @@ class NhapLichTuFileController extends Controller
 
         $save['gv_rows'] = $gvRows;
         $save['xe_rows'] = $xeRows;
+        $save['meta']['update_mode'] = $updateMode;
         $request->session()->put(self::SESSION_SAVE, $save);
 
         return redirect()->route('pmgplx.lich.nhap-file.preview-xe');
@@ -326,13 +341,16 @@ class NhapLichTuFileController extends Controller
         }
 
         $rows = $save['xe_rows'];
+        $updateModeXe = ! empty($save['meta']['update_mode_xe']);
         $conflictCount = 0;
+        $updateCount = 0;
         $skipCount = 0;
         foreach ($rows as &$row) {
             $noiDung = (string) ($row['noi_dung'] ?? '');
             $chiTiet = (string) ($row['chi_tiet'] ?? '');
             $skip = LichExcelNoiDungSkip::isXeSkip($noiDung, $chiTiet);
             $row['skip_save'] = $skip;
+            $row['will_update'] = false;
 
             if ($skip) {
                 $row['conflict'] = false;
@@ -342,19 +360,27 @@ class NhapLichTuFileController extends Controller
                 continue;
             }
 
-            $conflict = $this->xeConflict($row['MaGV'], $row['BienSoXe'] ?? '', $row['NgayBD'], $row['NgayKT']);
-            $row['conflict'] = $conflict;
-            $row['ghi_chu'] = $conflict
-                ? 'Đã thêm vào lịch'
-                : (trim((string) ($row['BienSoXe'] ?? '')) === '' ? 'Chưa gắn xe' : '');
-            if ($conflict) {
+            $bienSo = trim((string) ($row['BienSoXe'] ?? ''));
+            $hasConflict = $this->xeConflict($row['MaGV'], $bienSo, $row['NgayBD'], $row['NgayKT']);
+            if ($hasConflict && $updateModeXe) {
+                $row['conflict'] = false;
+                $row['will_update'] = true;
+                $row['ghi_chu'] = 'Sẽ cập nhật';
+                $updateCount++;
+            } elseif ($hasConflict) {
+                $row['conflict'] = true;
+                $row['ghi_chu'] = 'Đã thêm vào lịch';
                 $conflictCount++;
+            } else {
+                $row['conflict'] = false;
+                $row['ghi_chu'] = $bienSo === '' ? 'Chưa gắn xe' : '';
             }
         }
         unset($row);
 
         $save['xe_rows'] = $rows;
         $save['meta']['xe_conflict_count'] = $conflictCount;
+        $save['meta']['xe_update_count'] = $updateCount;
         $save['meta']['xe_skip_count'] = $skipCount;
         $save['meta']['xe_ok_count'] = count($rows) - $conflictCount - $skipCount;
         $request->session()->put(self::SESSION_SAVE, $save);
@@ -463,7 +489,13 @@ class NhapLichTuFileController extends Controller
 
         $save['gv_rows'] = $gvRows;
         $save['xe_rows'] = $xeRows;
-        $save['db_payload'] = $this->buildDbPayload($gvRows, $xeRows);
+        $save['meta']['update_mode_xe'] = $request->boolean('che_do_cap_nhat');
+        $save['db_payload'] = $this->buildDbPayload(
+            $gvRows,
+            $xeRows,
+            ! empty($save['meta']['update_mode']),
+            ! empty($save['meta']['update_mode_xe'])
+        );
         $request->session()->put(self::SESSION_SAVE, $save);
 
         return redirect()->route('pmgplx.lich.nhap-file.preview-db');
@@ -507,7 +539,9 @@ class NhapLichTuFileController extends Controller
         }
 
         $savedGv = 0;
+        $updatedGv = 0;
         $savedXe = 0;
+        $updatedXe = 0;
         $skippedGv = 0;
         $skippedXe = 0;
         $now = Carbon::now();
@@ -518,6 +552,36 @@ class NhapLichTuFileController extends Controller
             foreach ($gvRows as $row) {
                 $ngayBD = Carbon::parse($row['NgayBD']);
                 $ngayKT = Carbon::parse($row['NgayKT']);
+                $dbMon = LichGvMonHoc::dbFields($row['MaMonHoc'] ?? $row['TenMonHoc'] ?? null);
+
+                if (($row['_action'] ?? '') === 'update') {
+                    $existing = ! empty($row['MaLichLV'])
+                        ? KhoaHocGiaoVien::query()->find($row['MaLichLV'])
+                        : $this->findGvLichForUpdate($row['MaGV'], $row['NgayBD'], $row['NgayKT']);
+
+                    if ($existing) {
+                        $existing->update([
+                            'MaKH' => $row['MaKH'],
+                            'MaGV' => $row['MaGV'],
+                            'TenGV' => $row['TenGV'],
+                            'LoaiGV' => 'TH',
+                            'GhiChu' => (string) ($row['GhiChu'] ?? ''),
+                            'TrangThai' => 1,
+                            'NgaySua' => $now,
+                            'NgayBD' => $ngayBD,
+                            'NgayKT' => $ngayKT,
+                            'MaMonHoc' => $dbMon['MaMonHoc'],
+                            'TenMonHoc' => $dbMon['TenMonHoc'],
+                        ]);
+                        $updatedGv++;
+
+                        continue;
+                    }
+
+                    $skippedGv++;
+
+                    continue;
+                }
 
                 if ($this->gvConflict($row['MaGV'], $row['NgayBD'], $row['NgayKT'])) {
                     $skippedGv++;
@@ -537,8 +601,8 @@ class NhapLichTuFileController extends Controller
                     'NgayBD' => $ngayBD,
                     'NgayKT' => $ngayKT,
                     'IsKhoaHocGiaoVien' => 0,
-                    'MaMonHoc' => (string) ($row['MaMonHoc'] ?? ''),
-                    'TenMonHoc' => (string) ($row['TenMonHoc'] ?? self::TEN_MON_HOC),
+                    'MaMonHoc' => $dbMon['MaMonHoc'],
+                    'TenMonHoc' => $dbMon['TenMonHoc'],
                 ]);
 
                 $savedGv++;
@@ -549,7 +613,41 @@ class NhapLichTuFileController extends Controller
                 $ngayKT = Carbon::parse($row['NgayKT']);
                 $bienSoXe = trim((string) ($row['BienSoXe'] ?? ''));
 
-                if ($bienSoXe === '' || $this->xeConflict($row['MaGV'], $bienSoXe, $row['NgayBD'], $row['NgayKT'])) {
+                if ($bienSoXe === '') {
+                    $skippedXe++;
+
+                    continue;
+                }
+
+                if (($row['_action'] ?? '') === 'update') {
+                    $existing = ! empty($row['MaLichSD'])
+                        ? KhoaHocXeTap::query()->find($row['MaLichSD'])
+                        : $this->findXeLichForUpdate($row['MaGV'], $bienSoXe, $row['NgayBD'], $row['NgayKT']);
+
+                    if ($existing) {
+                        $existing->update([
+                            'MaKH' => $row['MaKH'],
+                            'BienSoXe' => $bienSoXe,
+                            'MaGV' => $row['MaGV'],
+                            'DiaDiem' => (string) ($row['DiaDiem'] ?? ''),
+                            'GhiChu' => (string) ($row['GhiChu'] ?? ''),
+                            'TrangThai' => 1,
+                            'NgayBD' => $ngayBD,
+                            'NgayKT' => $ngayKT,
+                            'NgaySua' => $now,
+                            'TenGV' => $row['TenGV'],
+                        ]);
+                        $updatedXe++;
+
+                        continue;
+                    }
+
+                    $skippedXe++;
+
+                    continue;
+                }
+
+                if ($this->xeConflict($row['MaGV'], $bienSoXe, $row['NgayBD'], $row['NgayKT'])) {
                     $skippedXe++;
 
                     continue;
@@ -584,7 +682,7 @@ class NhapLichTuFileController extends Controller
 
         $request->session()->forget([self::SESSION_EXCEL, self::SESSION_SAVE]);
 
-        if ($savedGv === 0 && $savedXe === 0) {
+        if ($savedGv === 0 && $savedXe === 0 && $updatedGv === 0 && $updatedXe === 0) {
             return redirect()
                 ->route('pmgplx.lich.nhap-file.create')
                 ->with(
@@ -593,7 +691,25 @@ class NhapLichTuFileController extends Controller
                 );
         }
 
-        $msg = "Đã lưu DB: GV {$savedGv} buổi, xe {$savedXe} buổi.";
+        $gvParts = [];
+        if ($savedGv > 0) {
+            $gvParts[] = "{$savedGv} mới";
+        }
+        if ($updatedGv > 0) {
+            $gvParts[] = "{$updatedGv} cập nhật";
+        }
+        $msg = 'Đã lưu DB: GV '.($gvParts !== [] ? implode(', ', $gvParts) : '0').' buổi';
+        $xeParts = [];
+        if ($savedXe > 0) {
+            $xeParts[] = "{$savedXe} mới";
+        }
+        if ($updatedXe > 0) {
+            $xeParts[] = "{$updatedXe} cập nhật";
+        }
+        if ($xeParts !== []) {
+            $msg .= ', xe '.implode(', ', $xeParts).' buổi';
+        }
+        $msg .= '.';
         $skipParts = [];
         if ($gvSkipPreview + $skippedGv > 0) {
             $skipParts[] = 'GV '.($gvSkipPreview + $skippedGv);
@@ -615,16 +731,19 @@ class NhapLichTuFileController extends Controller
      * @param  list<array<string, mixed>>  $xeRows
      * @return array<string, mixed>
      */
-    private function buildDbPayload(array $gvRows, array $xeRows): array
+    private function buildDbPayload(array $gvRows, array $xeRows, bool $updateModeGv = false, bool $updateModeXe = false): array
     {
         $now = Carbon::now()->format('Y-m-d H:i:s');
         $lichGv = [];
         $lichGvSkip = [];
+        $lichGvUpdate = [];
         $lichXe = [];
         $lichXeSkip = [];
+        $lichXeUpdate = [];
 
         foreach ($gvRows as $row) {
             $conflict = $this->gvConflict($row['MaGV'], $row['NgayBD'], $row['NgayKT']);
+            $dbMon = LichGvMonHoc::dbFields($row['MaMonHoc'] ?? $row['TenMonHoc'] ?? null);
             $record = [
                 'MaKH' => $row['MaKH'],
                 'MaGV' => $row['MaGV'],
@@ -637,11 +756,24 @@ class NhapLichTuFileController extends Controller
                 'NgayBD' => $row['NgayBD'],
                 'NgayKT' => $row['NgayKT'],
                 'IsKhoaHocGiaoVien' => 0,
-                'MaMonHoc' => $row['MaMonHoc'] ?? '',
-                'TenMonHoc' => $row['TenMonHoc'] ?? self::TEN_MON_HOC,
+                'MaMonHoc' => $dbMon['MaMonHoc'],
+                'TenMonHoc' => $dbMon['TenMonHoc'],
             ];
 
-            if ($conflict) {
+            if ($conflict && $updateModeGv) {
+                $existing = $this->findGvLichForUpdate($row['MaGV'], $row['NgayBD'], $row['NgayKT']);
+                if ($existing) {
+                    $record['MaLichLV'] = $existing->MaLichLV;
+                    $record['_action'] = 'update';
+                    $lichGv[] = $record;
+                    $lichGvUpdate[] = $record;
+
+                    continue;
+                }
+
+                $record['_skip_reason'] = 'Trùng lịch nhưng không tìm thấy bản ghi để cập nhật';
+                $lichGvSkip[] = $record;
+            } elseif ($conflict) {
                 $record['_skip_reason'] = 'Đã thêm vào lịch (trùng GV)';
                 $lichGvSkip[] = $record;
             } elseif (LichExcelNoiDungSkip::isGvSkip(
@@ -651,6 +783,7 @@ class NhapLichTuFileController extends Controller
                 $record['_skip_reason'] = LichExcelNoiDungSkip::gvSkipLabel();
                 $lichGvSkip[] = $record;
             } else {
+                $record['_action'] = 'insert';
                 $lichGv[] = $record;
             }
         }
@@ -673,7 +806,20 @@ class NhapLichTuFileController extends Controller
                 'IsKhoaHocXeTap' => 0,
             ];
 
-            if ($conflict) {
+            if ($conflict && $updateModeXe) {
+                $existing = $this->findXeLichForUpdate($row['MaGV'], $bienSo, $row['NgayBD'], $row['NgayKT']);
+                if ($existing) {
+                    $record['MaLichSD'] = $existing->MaLichSD;
+                    $record['_action'] = 'update';
+                    $lichXe[] = $record;
+                    $lichXeUpdate[] = $record;
+
+                    continue;
+                }
+
+                $record['_skip_reason'] = 'Trùng lịch nhưng không tìm thấy bản ghi để cập nhật';
+                $lichXeSkip[] = $record;
+            } elseif ($conflict) {
                 $record['_skip_reason'] = 'Đã thêm vào lịch (trùng GV/xe)';
                 $lichXeSkip[] = $record;
             } elseif (LichExcelNoiDungSkip::isXeSkip(
@@ -689,6 +835,7 @@ class NhapLichTuFileController extends Controller
                 $record['_skip_reason'] = 'Chưa gắn xe';
                 $lichXeSkip[] = $record;
             } else {
+                $record['_action'] = 'insert';
                 $lichXe[] = $record;
             }
         }
@@ -696,13 +843,19 @@ class NhapLichTuFileController extends Controller
         return [
             'lich_giao_vien' => $lichGv,
             'lich_giao_vien_bo_qua' => $lichGvSkip,
+            'lich_giao_vien_cap_nhat' => $lichGvUpdate,
             'lich_xe_tap' => $lichXe,
             'lich_xe_tap_bo_qua' => $lichXeSkip,
+            'lich_xe_tap_cap_nhat' => $lichXeUpdate,
             'meta' => [
-                'gv_save' => count($lichGv),
+                'gv_save' => count(array_filter($lichGv, fn ($r) => ($r['_action'] ?? '') === 'insert')),
+                'gv_update' => count($lichGvUpdate),
                 'gv_skip' => count($lichGvSkip),
-                'xe_save' => count($lichXe),
+                'xe_save' => count(array_filter($lichXe, fn ($r) => ($r['_action'] ?? '') === 'insert')),
+                'xe_update' => count($lichXeUpdate),
                 'xe_skip' => count($lichXeSkip),
+                'update_mode' => $updateModeGv,
+                'update_mode_xe' => $updateModeXe,
             ],
         ];
     }
@@ -760,7 +913,7 @@ class NhapLichTuFileController extends Controller
                 });
         }
 
-        $defaultMaMonHoc = (string) ($defaultMon->MaMH ?? '');
+        $defaultMaMonHoc = LichGvMonHoc::normalizeMa($defaultMon->MaMH ?? null);
         $defaultTenMonHoc = (string) ($defaultMon->TenMH ?? self::TEN_MON_HOC);
 
         foreach ($excel['teachers'] as $gv) {
@@ -806,7 +959,7 @@ class NhapLichTuFileController extends Controller
                         'MaKH' => $maKh,
                         'MaGV' => $maGv,
                         'TenGV' => $tenGv,
-                        'TenMonHoc' => $defaultTenMonHoc,
+                        'TenMonHoc' => $defaultMaMonHoc !== null ? (string) $defaultMaMonHoc : '',
                         'MaMonHoc' => $defaultMaMonHoc,
                         'DiaDiem' => '',
                         'NgayBD' => $ngayBD->format('Y-m-d H:i:s'),
@@ -949,6 +1102,11 @@ class NhapLichTuFileController extends Controller
 
     private function gvConflict(string $maGv, string $ngayBD, string $ngayKT): bool
     {
+        return $this->findGvLichForUpdate($maGv, $ngayBD, $ngayKT) !== null;
+    }
+
+    private function findGvLichForUpdate(string $maGv, string $ngayBD, string $ngayKT): ?KhoaHocGiaoVien
+    {
         $bd = Carbon::parse($ngayBD);
         $kt = Carbon::parse($ngayKT);
 
@@ -957,30 +1115,34 @@ class NhapLichTuFileController extends Controller
             ->where('IsKhoaHocGiaoVien', 0)
             ->where('NgayBD', '<', $kt)
             ->where('NgayKT', '>', $bd)
-            ->exists();
+            ->orderBy('MaLichLV')
+            ->first();
     }
 
     private function xeConflict(string $maGv, string $bienSoXe, string $ngayBD, string $ngayKT): bool
+    {
+        return $this->findXeLichForUpdate($maGv, $bienSoXe, $ngayBD, $ngayKT) !== null;
+    }
+
+    private function findXeLichForUpdate(string $maGv, string $bienSoXe, string $ngayBD, string $ngayKT): ?KhoaHocXeTap
     {
         $bd = Carbon::parse($ngayBD);
         $kt = Carbon::parse($ngayKT);
         $bienSoXe = trim($bienSoXe);
 
+        $query = KhoaHocXeTap::query()
+            ->where('NgayBD', '<', $kt)
+            ->where('NgayKT', '>', $bd);
+
         if ($bienSoXe !== '') {
-            return KhoaHocXeTap::query()
-                ->where(function ($q) use ($maGv, $bienSoXe) {
-                    $q->where('MaGV', $maGv)->orWhere('BienSoXe', $bienSoXe);
-                })
-                ->where('NgayBD', '<', $kt)
-                ->where('NgayKT', '>', $bd)
-                ->exists();
+            $query->where(function ($q) use ($maGv, $bienSoXe) {
+                $q->where('MaGV', $maGv)->orWhere('BienSoXe', $bienSoXe);
+            });
+        } else {
+            $query->where('MaGV', $maGv);
         }
 
-        return KhoaHocXeTap::query()
-            ->where('MaGV', $maGv)
-            ->where('NgayBD', '<', $kt)
-            ->where('NgayKT', '>', $bd)
-            ->exists();
+        return $query->orderBy('MaLichSD')->first();
     }
 
     /** @return array{0: string, 1: string} */

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\PMGPLX;
 
 use App\Http\Controllers\Controller;
 
+use App\Models\PMGPLX\DmMonHoc;
 use App\Models\PMGPLX\GiaoVien;
 use App\Models\PMGPLX\KhoaHoc;
 use App\Models\PMGPLX\KhoaHocGiaoVien;
@@ -60,6 +61,7 @@ class DanhSachLichGiaoVienController extends Controller
             'items' => $items,
             'khoaHocs' => $khoaHocs,
             'giaoViens' => $giaoViens,
+            'monMap' => DmMonHoc::query()->pluck('TenMH', 'MaMH'),
             'filters' => [
                 'ma_kh' => $request->input('ma_kh', ''),
                 'ma_gv' => $request->input('ma_gv', ''),

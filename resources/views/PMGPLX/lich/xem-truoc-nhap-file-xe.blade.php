@@ -10,6 +10,9 @@
     tr.row-tu-dong > td {
         background: #e9d5ff !important;
     }
+    tr.row-will-update > td {
+        background: #cce5ff !important;
+    }
 </style>
 @endpush
 
@@ -30,6 +33,8 @@
         $tuDongCount = collect($rows)->filter(
             fn ($r) => \App\Support\PMGPLX\LichExcelCellStyle::containsTuDong($r['noi_dung'] ?? '')
         )->count();
+        $updateModeXe = ! empty($preview['meta']['update_mode_xe']);
+        $updateCount = (int) ($preview['meta']['xe_update_count'] ?? 0);
     @endphp
 
     <div class="card card-panel">
@@ -47,6 +52,9 @@
                     <strong>Tổng buổi:</strong> {{ count($rows) }} —
                     sẽ lưu <strong class="text-success">{{ $okCount }}</strong>,
                     bỏ qua <strong class="text-danger">{{ $conflictCount }}</strong> trùng
+                    @if ($updateModeXe && $updateCount > 0)
+                        , <strong class="text-primary">{{ $updateCount }}</strong> cập nhật
+                    @endif
                     @if ($skipCount > 0)
                         , <strong class="text-warning">{{ $skipCount }}</strong> bỏ qua
                     @endif
@@ -70,14 +78,27 @@
                 </div>
             @endif
 
-            @if ($conflictCount > 0)
+            @if ($conflictCount > 0 && ! $updateModeXe)
                 <div class="alert alert-warning">
-                    Dòng nền đỏ đã trùng lịch (GV hoặc xe). Khi lưu sẽ bỏ qua các dòng này.
+                    Dòng nền đỏ đã trùng lịch (GV hoặc xe). Khi lưu sẽ bỏ qua các dòng này (trừ khi bật <strong>Chế độ cập nhật</strong>).
+                </div>
+            @endif
+
+            @if ($updateModeXe)
+                <div class="alert alert-primary">
+                    Đang bật <strong>Chế độ cập nhật</strong> — dòng trùng lịch xe sẽ được <strong>cập nhật</strong> thay vì bỏ qua.
                 </div>
             @endif
 
             <form method="POST" action="{{ route('pmgplx.lich.nhap-file.to-db') }}" id="formConfirmNhapFileXe">
                 @csrf
+                <div class="custom-control custom-checkbox mb-3">
+                    <input type="checkbox" class="custom-control-input" id="cheDoCapNhatXe" name="che_do_cap_nhat" value="1"
+                           @checked(old('che_do_cap_nhat', $updateModeXe))>
+                    <label class="custom-control-label" for="cheDoCapNhatXe">
+                        <strong>Chế độ cập nhật</strong> — dòng trùng lịch xe sẽ được <strong>cập nhật</strong> thay vì bỏ qua / thêm mới
+                    </label>
+                </div>
                 <div class="table-responsive mb-3">
                     <table class="table table-sm table-bordered table-hover mb-0">
                         <thead class="thead-light">
@@ -100,9 +121,12 @@
                                     $isTuDong = \App\Support\PMGPLX\LichExcelCellStyle::containsTuDong($row['noi_dung'] ?? '');
                                     $rowClass = $skipSave
                                         ? 'row-skip-save'
-                                        : (! empty($row['conflict']) ? 'table-danger' : ($isTuDong ? 'row-tu-dong' : ''));
+                                        : (! empty($row['will_update'])
+                                            ? 'row-will-update'
+                                            : (! empty($row['conflict']) ? 'table-danger' : ($isTuDong ? 'row-tu-dong' : '')));
+                                    $hasXeTrung = ! $skipSave && (! empty($row['conflict']) || ! empty($row['will_update']));
                                 @endphp
-                                <tr class="{{ $rowClass }}">
+                                <tr class="{{ $rowClass }}" @if ($hasXeTrung) data-xe-trung="1" @endif>
                                     <td>{{ $i + 1 }}</td>
                                     <td>
                                         <input type="hidden" name="rows[{{ $i }}][source_key]" value="{{ $row['source_key'] ?? '' }}">
@@ -175,8 +199,10 @@
                                     <td>
                                         @if ($skipSave)
                                             <span class="text-warning font-weight-bold">{{ $row['ghi_chu'] ?? 'Bỏ qua' }}</span>
+                                        @elseif (! empty($row['will_update']))
+                                            <span class="text-primary font-weight-bold ghi-chu-xe">Sẽ cập nhật</span>
                                         @elseif (!empty($row['conflict']))
-                                            <span class="text-danger font-weight-bold">Đã thêm vào lịch</span>
+                                            <span class="text-danger font-weight-bold ghi-chu-xe">Đã thêm vào lịch</span>
                                         @elseif (trim((string) ($row['BienSoXe'] ?? '')) === '')
                                             <span class="text-warning font-weight-bold">Chưa gắn xe</span>
                                         @else
@@ -219,5 +245,27 @@
             }
         });
     });
+
+    function applyCheDoCapNhatXeUi(on) {
+        $('tr[data-xe-trung="1"]').each(function () {
+            var $tr = $(this);
+            var $note = $tr.find('.ghi-chu-xe');
+            if (on) {
+                $tr.removeClass('table-danger').addClass('row-will-update');
+                $note.removeClass('text-danger').addClass('text-primary').text('Sẽ cập nhật');
+            } else {
+                $tr.removeClass('row-will-update').addClass('table-danger');
+                $note.removeClass('text-primary').addClass('text-danger').text('Đã thêm vào lịch');
+            }
+        });
+    }
+
+    $('#cheDoCapNhatXe').on('change', function () {
+        applyCheDoCapNhatXeUi($(this).is(':checked'));
+    });
+
+    if ($('#cheDoCapNhatXe').is(':checked')) {
+        applyCheDoCapNhatXeUi(true);
+    }
 </script>
 @endpush

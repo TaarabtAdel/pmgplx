@@ -7,6 +7,9 @@
     tr.row-skip-save > td {
         background: #fff3cd !important;
     }
+    tr.row-will-update > td {
+        background: #cce5ff !important;
+    }
 </style>
 @endpush
 
@@ -17,6 +20,8 @@
         $skipCount = (int) ($preview['meta']['gv_skip_count'] ?? 0);
         $khoaHocList = $preview['meta']['khoa_hoc_list'] ?? [];
         $ngayList = $preview['meta']['ngay_list'] ?? [];
+        $updateMode = ! empty($preview['meta']['update_mode']);
+        $updateCount = (int) ($preview['meta']['gv_update_count'] ?? 0);
     @endphp
 
     <div class="card card-panel">
@@ -34,6 +39,9 @@
                     <strong>Tổng buổi:</strong> {{ count($rows) }} —
                     sẽ lưu <strong class="text-success">{{ $okCount }}</strong>,
                     bỏ qua <strong class="text-danger">{{ $conflictCount }}</strong> trùng
+                    @if ($updateMode && $updateCount > 0)
+                        , <strong class="text-primary">{{ $updateCount }}</strong> cập nhật
+                    @endif
                     @if ($skipCount > 0)
                         , <strong class="text-warning">{{ $skipCount }}</strong> Bổ Sung
                     @endif
@@ -51,14 +59,27 @@
                 </div>
             @endif
 
-            @if ($conflictCount > 0)
+            @if ($conflictCount > 0 && ! $updateMode)
                 <div class="alert alert-warning">
-                    Dòng nền đỏ đã trùng lịch giáo viên. Khi lưu sẽ bỏ qua các dòng này.
+                    Dòng nền đỏ đã trùng lịch giáo viên. Khi lưu sẽ bỏ qua các dòng này (trừ khi bật <strong>Chế độ cập nhật</strong>).
+                </div>
+            @endif
+
+            @if ($updateMode)
+                <div class="alert alert-primary">
+                    Đang bật <strong>Chế độ cập nhật</strong> — dòng trùng lịch GV sẽ được <strong>cập nhật</strong> thay vì bỏ qua.
                 </div>
             @endif
 
             <form method="POST" action="{{ route('pmgplx.lich.nhap-file.to-xe') }}">
                 @csrf
+                <div class="custom-control custom-checkbox mb-3">
+                    <input type="checkbox" class="custom-control-input" id="cheDoCapNhat" name="che_do_cap_nhat" value="1"
+                           @checked(old('che_do_cap_nhat', $updateMode))>
+                    <label class="custom-control-label" for="cheDoCapNhat">
+                        <strong>Chế độ cập nhật</strong> — dòng trùng lịch GV sẽ được <strong>cập nhật</strong> thay vì bỏ qua / thêm mới
+                    </label>
+                </div>
                 <div class="table-responsive mb-3">
                     <table class="table table-sm table-bordered table-hover mb-0">
                         <thead class="thead-light">
@@ -77,10 +98,16 @@
                         <tbody>
                             @foreach ($rows as $i => $row)
                                 @php
-                                    $skipSave = !empty($row['skip_save']);
-                                    $selectedMaMonHoc = trim((string) ($row['MaMonHoc'] ?? $defaultMaMonHoc ?? ''));
+                                    $skipSave = ! empty($row['skip_save']);
+                                    $selectedMaMonHoc = $row['MaMonHoc'] ?? $defaultMaMonHoc ?? null;
+                                    $rowClass = $skipSave
+                                        ? 'row-skip-save'
+                                        : (! empty($row['will_update'])
+                                            ? 'row-will-update'
+                                            : (! empty($row['conflict']) ? 'table-danger' : ''));
+                                    $hasGvTrung = ! $skipSave && (! empty($row['conflict']) || ! empty($row['will_update']));
                                 @endphp
-                                <tr class="{{ $skipSave ? 'row-skip-save' : (!empty($row['conflict']) ? 'table-danger' : '') }}">
+                                <tr class="{{ $rowClass }}" @if ($hasGvTrung) data-gv-trung="1" @endif>
                                     <td>{{ $i + 1 }}</td>
                                     <td>
                                         <input type="hidden" name="rows[{{ $i }}][source_key]" value="{{ $row['source_key'] ?? '' }}">
@@ -104,10 +131,10 @@
                                             <option value="">-- Chọn môn học --</option>
                                             @foreach ($monHocs as $mh)
                                                 @php
-                                                    $maMh = trim((string) $mh->MaMH);
+                                                    $maMh = (int) $mh->MaMH;
                                                     $tenMh = trim((string) $mh->TenMH);
-                                                    $isSelected = $selectedMaMonHoc !== '' && $selectedMaMonHoc === $maMh;
-                                                    if (! $isSelected && $selectedMaMonHoc === '') {
+                                                    $isSelected = $selectedMaMonHoc !== null && (int) $selectedMaMonHoc === $maMh;
+                                                    if (! $isSelected && $selectedMaMonHoc === null) {
                                                         $isSelected = mb_stripos($tenMh, 'Thực hành lái xe') !== false;
                                                     }
                                                 @endphp
@@ -141,8 +168,10 @@
                                     <td>
                                         @if ($skipSave)
                                             <span class="text-warning font-weight-bold">{{ $row['ghi_chu'] ?? 'Bỏ qua' }}</span>
-                                        @elseif (!empty($row['conflict']))
-                                            <span class="text-danger font-weight-bold">Đã thêm vào lịch</span>
+                                        @elseif (! empty($row['will_update']))
+                                            <span class="text-primary font-weight-bold ghi-chu-gv">Sẽ cập nhật</span>
+                                        @elseif (! empty($row['conflict']))
+                                            <span class="text-danger font-weight-bold ghi-chu-gv">Đã thêm vào lịch</span>
                                         @else
                                             <span class="text-success">Sẽ lưu mới</span>
                                         @endif
@@ -160,3 +189,29 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    function applyCheDoCapNhatUi(on) {
+        $('tr[data-gv-trung="1"]').each(function () {
+            var $tr = $(this);
+            var $note = $tr.find('.ghi-chu-gv');
+            if (on) {
+                $tr.removeClass('table-danger').addClass('row-will-update');
+                $note.removeClass('text-danger').addClass('text-primary').text('Sẽ cập nhật');
+            } else {
+                $tr.removeClass('row-will-update').addClass('table-danger');
+                $note.removeClass('text-primary').addClass('text-danger').text('Đã thêm vào lịch');
+            }
+        });
+    }
+
+    $('#cheDoCapNhat').on('change', function () {
+        applyCheDoCapNhatUi($(this).is(':checked'));
+    });
+
+    if ($('#cheDoCapNhat').is(':checked')) {
+        applyCheDoCapNhatUi(true);
+    }
+</script>
+@endpush
