@@ -107,6 +107,20 @@ return [
             'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'true'),
         ],
 
+        'sqlsrv_manhlinh' => [
+            'driver' => 'sqlsrv',
+            'host' => env('DB_HOST_3', env('DB_HOST', 'localhost')),
+            'port' => env('DB_PORT_3', env('DB_PORT', '1433')),
+            'database' => env('DB_DATABASE_3', 'MANHLINH'),
+            'username' => env('DB_USERNAME_3', env('DB_USERNAME', 'forge')),
+            'password' => env('DB_PASSWORD_3', env('DB_PASSWORD', '')),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'encrypt' => env('DB_ENCRYPT', 'yes'),
+            'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'true'),
+        ],
+
     ],
 
     /*

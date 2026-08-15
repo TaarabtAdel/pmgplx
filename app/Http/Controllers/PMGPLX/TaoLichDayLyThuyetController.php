@@ -7,6 +7,7 @@ use App\Models\PMGPLX\DmMonHoc;
 use App\Models\PMGPLX\KhoaHoc;
 use App\Models\PMGPLX\KhoaHocGiaoVien;
 use App\Support\PMGPLX\LichCalendar;
+use App\Support\PMGPLX\LichGvMonHoc;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -148,15 +149,15 @@ class TaoLichDayLyThuyetController extends Controller
                     $conflictCount++;
                 }
 
-                $monHoc = DmMonHoc::query()->where('MaMH', $validated['MaMonHoc'])->first();
-                $TenMonHoc = $monHoc?->TenMH ?? '';
+                $maMonHoc = LichGvMonHoc::normalizeMa($validated['MaMonHoc']);
+                $dbMon = LichGvMonHoc::dbFields($maMonHoc);
 
                 $rows[] = [
                     'MaKH' => $validated['ma_kh'],
                     'MaGV' => $maGV,
                     'TenGV' => $teacher->TenGV,
-                    'TenMonHoc' => $TenMonHoc,
-                    'MaMonHoc' => $validated['MaMonHoc'],
+                    'TenMonHoc' => $dbMon['TenMonHoc'],
+                    'MaMonHoc' => $dbMon['MaMonHoc'],
                     'DiaDiem' => '',
                     'NgayBD' => $ngayBD->format('Y-m-d H:i:s'),
                     'NgayKT' => $ngayKT->format('Y-m-d H:i:s'),
@@ -165,6 +166,9 @@ class TaoLichDayLyThuyetController extends Controller
                 ];
             }
         }
+
+        $monHoc = DmMonHoc::query()->where('MaMH', $validated['MaMonHoc'])->first();
+        $validated['ten_mon_hoc'] = $monHoc?->TenMH ?? '';
 
         $validated['gio_bd'] = $gioBD;
         $validated['gio_kt'] = $gioKT;
@@ -219,6 +223,7 @@ class TaoLichDayLyThuyetController extends Controller
 
         return view('PMGPLX.lich.xem-truoc-ly-thuyet', [
             'preview' => $preview,
+            'monMap' => DmMonHoc::active()->pluck('TenMH', 'MaMH'),
         ]);
     }
 

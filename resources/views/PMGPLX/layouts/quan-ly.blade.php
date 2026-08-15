@@ -386,6 +386,7 @@
                 @php
                     $pdtActive = request()->routeIs('daotao.pdt.*');
                     $baoCaoActive = request()->routeIs('daotao.pdt.bc.*');
+                    $tienDoActive = request()->routeIs('daotao.pdt.td.*');
                 @endphp
                 <a class="nav-link dropdown-toggle {{ $pdtActive ? 'active' : '' }}"
                    href="#"
@@ -405,6 +406,17 @@
                             <a class="dropdown-item {{ request()->routeIs('daotao.pdt.bc.luu-luong-dao-tao') ? 'active' : '' }}"
                                href="{{ route('daotao.pdt.bc.luu-luong-dao-tao') }}">
                                 Báo cáo Lưu lượng đào tạo
+                            </a>
+                        </div>
+                    </div>
+                    <div class="dropdown-submenu">
+                        <a class="dropdown-item dropdown-toggle {{ $tienDoActive ? 'active' : '' }}" href="#">
+                            Tiến độ đào tạo
+                        </a>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.td.nhap-file') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.td.nhap-file') }}">
+                                Nhập file tiến độ đào tạo
                             </a>
                         </div>
                     </div>

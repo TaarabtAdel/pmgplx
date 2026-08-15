@@ -71,6 +71,41 @@
         padding: 0.45rem 0.85rem;
         border-radius: 1rem;
     }
+    .ky-hieu-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem 1.25rem;
+        margin-bottom: 1rem;
+        font-size: 0.875rem;
+    }
+    .ky-hieu-legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+    .ky-hieu-badge {
+        display: inline-block;
+        min-width: 1.6rem;
+        padding: 0.15rem 0.4rem;
+        font-weight: 700;
+        text-align: center;
+        border-radius: 0.15rem;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        line-height: 1.3;
+    }
+    .ky-hieu-h {
+        background: #cce5ff;
+        color: #004085;
+    }
+    .ky-hieu-t,
+    .ky-hieu-d {
+        background: #fff3cd;
+        color: #856404;
+    }
+    .ky-hieu-kiem {
+        background: #f8d7da;
+        color: #721c24;
+    }
 </style>
 @endpush
 
@@ -78,8 +113,9 @@
     <div class="luu-luong-intro">
         <h5>Tra cứu lưu lượng theo thời điểm</h5>
         <p class="mb-0">
-            Tại thời điểm kiểm tra, lấy các khóa học có ngày khai giảng–ngày tốt nghiệp bao trùm thời điểm đó,
-            sau đó đếm số học viên theo hạng GPLX (liên kết qua <code>MaKhoaHoc</code> trong hồ sơ học viên).
+            Dữ liệu từ bảng <strong>TienDoDaoTao</strong> (DB MANHLINH — nhập file tiến độ đào tạo).
+            Tại ngày kiểm tra, lấy các lớp có tuần đào tạo (<code>TuNgay</code> → <code>DenNgay</code>) bao trùm ngày đó,
+            cộng <strong>Số lượng học viên</strong> theo hạng GPLX (<strong>B</strong>, <strong>B01</strong>, <strong>C</strong> — suy ra từ mã khóa-lớp).
         </p>
     </div>
 
@@ -97,16 +133,16 @@
                                value="{{ $filters['ngay_kiem_tra'] }}"
                                required>
                     </div>
-                    <div class="form-group col-md-2">
-                        <label for="gio">Giờ</label>
-                        <input type="time"
-                               class="form-control form-control-sm"
-                               id="gio"
-                               name="gio"
-                               value="{{ $filters['gio'] }}"
-                               required>
-                    </div>
                     <div class="form-group col-md-3">
+                        <label for="ky_hieu">Ký hiệu</label>
+                        <select class="form-control form-control-sm" id="ky_hieu" name="ky_hieu">
+                            <option value="" @selected($filters['ky_hieu'] === '')>Tất cả</option>
+                            @foreach ($kyHieuOptions as $option)
+                                <option value="{{ $option['value'] }}" @selected($filters['ky_hieu'] === $option['value'])>{{ $option['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group col-md-2">
                         <label for="hang_gplx">Hạng GPLX</label>
                         <select class="form-control form-control-sm" id="hang_gplx" name="hang_gplx">
                             <option value="" @selected($filters['hang_gplx'] === '')>Tất cả</option>
@@ -128,14 +164,17 @@
                 <div class="luu-luong-summary mt-3">
                     <div>
                         <div class="summary-label">
-                            Học viên đang học tại {{ $summary['gio_hien_thi'] }} - {{ $summary['ngay_hien_thi'] }}
+                            Học viên đang học ngày {{ $summary['ngay_hien_thi'] }}
+                            @if (! empty($summary['ky_hieu_loc']))
+                                · ký hiệu <strong>{{ $summary['ky_hieu_loc'] }}</strong>
+                            @endif
                         </div>
                         <div class="summary-count">
                             {{ number_format($summary['tong_so']) }}
                             <span class="han-muc">/ {{ number_format($summary['han_muc']) }}</span>
                         </div>
                         <div class="summary-meta">
-                            {{ number_format($summary['so_khoa_hoc']) }} khóa học phù hợp (NgayKG → NgayBG)
+                            {{ number_format($summary['so_lop']) }} lớp đang trong tuần đào tạo
                             · {{ $summary['han_muc_mo_ta'] }}
                         </div>
                     </div>
@@ -169,7 +208,7 @@
                             @empty
                                 <tr>
                                     <td colspan="3" class="text-center py-4">
-                                        Không có học viên trong khóa học phù hợp tại thời điểm này
+                                        Không có lớp nào trong tuần đào tạo tại ngày này
                                     </td>
                                 </tr>
                             @endforelse
@@ -185,45 +224,63 @@
                     </table>
                 </div>
 
-                <h6 class="section-title mt-4 mb-2">Các khóa học đang học phù hợp</h6>
+                <h6 class="section-title mt-4 mb-2">Các lớp đang trong tuần đào tạo</h6>
+                <div class="ky-hieu-legend">
+                    @foreach (\App\Models\DaoTao\TienDoDaoTao::kyHieuLegend() as $item)
+                        <span class="ky-hieu-legend-item">
+                            <span class="ky-hieu-badge {{ $item['css_class'] }}">{{ $item['token'] }}</span>
+                            {{ $item['label'] }}
+                        </span>
+                    @endforeach
+                </div>
                 <div class="table-responsive">
                     <table class="table table-sm table-bordered table-striped table-hover table-data mb-0">
                         <thead>
                             <tr>
                                 <th>STT</th>
-                                <th>Mã khóa học</th>
-                                <th>Tên khóa</th>
-                                <th>Ngày bắt đầu</th>
-                                <th>Ngày kết thúc</th>
-                                <th>Số học viên đang học</th>
-                                <th>Hạng học</th>
+                                <th>Mã khóa-lớp</th>
+                                <th>Năm</th>
+                                <th>Số HV</th>
+                                <th>GV dạy</th>
+                                <th>Hạng</th>
+                                <th>Tuần (TG)</th>
+                                <th>Ký hiệu</th>
+                                <th>Giải thích</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse ($khoaHocs as $index => $kh)
+                            @forelse ($classes as $index => $lop)
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
-                                    <td>{{ $kh['ma_kh'] }}</td>
-                                    <td>{{ $kh['ten_kh'] }}</td>
-                                    <td>{{ $kh['ngay_bat_dau'] }}</td>
-                                    <td>{{ $kh['ngay_ket_thuc'] }}</td>
-                                    <td>{{ number_format($kh['so_hoc_vien']) }}</td>
-                                    <td>{{ $kh['hang_hoc'] }}</td>
+                                    <td><strong>{{ $lop['ma_khoa_lop'] }}</strong></td>
+                                    <td>{{ $lop['nam_hoc'] ?? '—' }}</td>
+                                    <td>{{ number_format($lop['so_hoc_vien']) }}</td>
+                                    <td>{{ $lop['giao_vien_day'] ?: '—' }}</td>
+                                    <td>{{ $lop['hang'] }}</td>
+                                    <td>{{ $lop['tuan_tu'] }} – {{ $lop['tuan_den'] }}</td>
+                                    <td>
+                                        @if (! empty($lop['ky_hieu_parts']))
+                                            @include('DaoTao._ky-hieu-badges', ['parts' => $lop['ky_hieu_parts']])
+                                        @else
+                                            {{ $lop['ky_hieu'] ?: '—' }}
+                                        @endif
+                                    </td>
+                                    <td class="small">{{ $lop['giai_thich'] ?: '—' }}</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-center py-4">
-                                        Không có khóa học phù hợp tại thời điểm này
+                                    <td colspan="9" class="text-center py-4">
+                                        Không có lớp nào trong tuần đào tạo tại ngày này
                                     </td>
                                 </tr>
                             @endforelse
                         </tbody>
-                        @if (count($khoaHocs) > 0)
+                        @if (count($classes) > 0)
                             <tfoot>
                                 <tr class="font-weight-bold">
-                                    <td colspan="5" class="text-right">Tổng số học viên</td>
+                                    <td colspan="3" class="text-right">Tổng số học viên</td>
                                     <td>{{ number_format($summary['tong_so']) }}</td>
-                                    <td></td>
+                                    <td colspan="5"></td>
                                 </tr>
                             </tfoot>
                         @endif

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DaoTao\BaoCaoLuuLuongDaoTaoController as DaoTaoBaoCaoLuuLuongDaoTaoController;
+use App\Http\Controllers\DaoTao\NhapFileTienDoDaoTaoController;
 use App\Http\Controllers\PMGPLX\DanhSachGiaoVienController;
 use App\Http\Controllers\PMGPLX\DanhSachHocVienController;
 use App\Http\Controllers\PMGPLX\DanhSachLichGiaoVienController;
@@ -86,6 +87,16 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function () {
 Route::prefix('daotao')->name('daotao.')->group(function () {
     Route::get('/phong-dao-tao/bao-cao/luu-luong-dao-tao', [DaoTaoBaoCaoLuuLuongDaoTaoController::class, 'index'])
         ->name('pdt.bc.luu-luong-dao-tao');
+    Route::get('/phong-dao-tao/tien-do/nhap-file', [NhapFileTienDoDaoTaoController::class, 'create'])
+        ->name('pdt.td.nhap-file');
+    Route::post('/phong-dao-tao/tien-do/nhap-file', [NhapFileTienDoDaoTaoController::class, 'store'])
+        ->name('pdt.td.nhap-file.store');
+    Route::get('/phong-dao-tao/tien-do/nhap-file/xem-truoc', [NhapFileTienDoDaoTaoController::class, 'preview'])
+        ->name('pdt.td.nhap-file.preview');
+    Route::post('/phong-dao-tao/tien-do/nhap-file/xac-nhan', [NhapFileTienDoDaoTaoController::class, 'confirm'])
+        ->name('pdt.td.nhap-file.confirm');
+    Route::get('/phong-dao-tao/tien-do/nhap-file/huy', [NhapFileTienDoDaoTaoController::class, 'cancel'])
+        ->name('pdt.td.nhap-file.cancel');
 });
 
 Route::prefix('pmgplxold')->name('pmgplxold.')->group(function () {

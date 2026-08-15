@@ -56,7 +56,7 @@
                                 <td>{{ $i + 1 }}</td>
                                 <td>{{ $row['MaGV'] }}</td>
                                 <td>{{ $row['TenGV'] }}</td>
-                                <td>{{ $row['TenMonHoc'] }}</td>
+                                <td>{{ \App\Support\PMGPLX\LichGvMonHoc::displayLabel($row['TenMonHoc'], $row['MaMonHoc'], $monMap) }}</td>
                                 <td>{{ \Carbon\Carbon::parse($row['NgayBD'])->format('d/m/Y H:i') }}</td>
                                 <td>{{ \Carbon\Carbon::parse($row['NgayKT'])->format('d/m/Y H:i') }}</td>
                                 <td>
