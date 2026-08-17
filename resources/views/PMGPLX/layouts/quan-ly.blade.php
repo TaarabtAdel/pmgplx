@@ -386,7 +386,8 @@
                 @php
                     $pdtActive = request()->routeIs('daotao.pdt.*');
                     $baoCaoActive = request()->routeIs('daotao.pdt.bc.*');
-                    $tienDoActive = request()->routeIs('daotao.pdt.td.*');
+                    $congCuNhapActive = request()->routeIs('daotao.pdt.cong-cu-nhap.*');
+                    $phanCongActive = request()->routeIs('daotao.pdt.phan-cong-dao-tao.*');
                 @endphp
                 <a class="nav-link dropdown-toggle {{ $pdtActive ? 'active' : '' }}"
                    href="#"
@@ -410,13 +411,32 @@
                         </div>
                     </div>
                     <div class="dropdown-submenu">
-                        <a class="dropdown-item dropdown-toggle {{ $tienDoActive ? 'active' : '' }}" href="#">
-                            Tiến độ đào tạo
+                        <a class="dropdown-item dropdown-toggle {{ $congCuNhapActive ? 'active' : '' }}" href="#">
+                            Công cụ nhập
                         </a>
                         <div class="dropdown-menu">
-                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.td.nhap-file') ? 'active' : '' }}"
-                               href="{{ route('daotao.pdt.td.nhap-file') }}">
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.cong-cu-nhap.nhap-file-tien-do-dao-tao*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.cong-cu-nhap.nhap-file-tien-do-dao-tao') }}">
                                 Nhập file tiến độ đào tạo
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.cong-cu-nhap.nhap-file-so-phan-cong-giao-vien*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.cong-cu-nhap.nhap-file-so-phan-cong-giao-vien') }}">
+                                Nhập file sổ phân công giáo viên
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.cong-cu-nhap.nhap-file-in-bang-ten*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.cong-cu-nhap.nhap-file-in-bang-ten') }}">
+                                Nhập file in bảng tên
+                            </a>
+                        </div>
+                    </div>
+                    <div class="dropdown-submenu">
+                        <a class="dropdown-item dropdown-toggle {{ $phanCongActive ? 'active' : '' }}" href="#">
+                            Phân Công Đào Tạo
+                        </a>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.phan-cong-dao-tao.danh-sach') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach') }}">
+                                Danh sách phân công
                             </a>
                         </div>
                     </div>

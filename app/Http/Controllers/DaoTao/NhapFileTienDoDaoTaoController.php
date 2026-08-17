@@ -39,7 +39,7 @@ class NhapFileTienDoDaoTaoController extends Controller
 
             $request->session()->put(self::SESSION_KEY, $preview);
 
-            return redirect()->route('daotao.pdt.td.nhap-file.preview');
+            return redirect()->route('daotao.pdt.cong-cu-nhap.nhap-file-tien-do-dao-tao.preview');
         } catch (Throwable $e) {
             return back()->with('error', 'Không đọc được file Excel: '.$e->getMessage());
         }
@@ -50,7 +50,7 @@ class NhapFileTienDoDaoTaoController extends Controller
         $preview = $request->session()->get(self::SESSION_KEY);
         if (! is_array($preview) || empty($preview['sheets'])) {
             return redirect()
-                ->route('daotao.pdt.td.nhap-file')
+                ->route('daotao.pdt.cong-cu-nhap.nhap-file-tien-do-dao-tao')
                 ->with('error', 'Chưa có dữ liệu xem trước. Vui lòng chọn file Excel.');
         }
 
@@ -74,7 +74,7 @@ class NhapFileTienDoDaoTaoController extends Controller
     {
         $request->session()->forget(self::SESSION_KEY);
 
-        return redirect()->route('daotao.pdt.td.nhap-file');
+        return redirect()->route('daotao.pdt.cong-cu-nhap.nhap-file-tien-do-dao-tao');
     }
 
     public function confirm(Request $request): RedirectResponse
@@ -82,14 +82,14 @@ class NhapFileTienDoDaoTaoController extends Controller
         $preview = $request->session()->get(self::SESSION_KEY);
         if (! is_array($preview) || empty($preview['sheets'])) {
             return redirect()
-                ->route('daotao.pdt.td.nhap-file')
+                ->route('daotao.pdt.cong-cu-nhap.nhap-file-tien-do-dao-tao')
                 ->with('error', 'Phiên xem trước đã hết hạn. Vui lòng chọn file Excel.');
         }
 
         $rows = TienDoDaoTao::rowsFromPreview($preview);
         if ($rows === []) {
             return redirect()
-                ->route('daotao.pdt.td.nhap-file.preview')
+                ->route('daotao.pdt.cong-cu-nhap.nhap-file-tien-do-dao-tao.preview')
                 ->with('error', 'Không có dữ liệu để lưu.');
         }
 
@@ -97,7 +97,7 @@ class NhapFileTienDoDaoTaoController extends Controller
             $result = TienDoDaoTao::upsertFromPreview($preview);
         } catch (Throwable $e) {
             return redirect()
-                ->route('daotao.pdt.td.nhap-file.preview')
+                ->route('daotao.pdt.cong-cu-nhap.nhap-file-tien-do-dao-tao.preview')
                 ->with('error', 'Lưu DB thất bại: '.$e->getMessage());
         }
 
@@ -112,7 +112,7 @@ class NhapFileTienDoDaoTaoController extends Controller
         }
 
         return redirect()
-            ->route('daotao.pdt.td.nhap-file')
+            ->route('daotao.pdt.cong-cu-nhap.nhap-file-tien-do-dao-tao')
             ->with('success', $msg);
     }
 }

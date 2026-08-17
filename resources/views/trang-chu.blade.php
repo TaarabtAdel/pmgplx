@@ -38,9 +38,19 @@
                     <a href="{{ route('daotao.pdt.bc.luu-luong-dao-tao') }}" class="list-group-item list-group-item-action pl-4">
                         Báo cáo Lưu lượng đào tạo
                     </a>
-                    <div class="list-group-item list-group-item-light small font-weight-bold py-2">Tiến độ đào tạo</div>
-                    <a href="{{ route('daotao.pdt.td.nhap-file') }}" class="list-group-item list-group-item-action pl-4">
+                    <div class="list-group-item list-group-item-light small font-weight-bold py-2">Công cụ nhập</div>
+                    <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-file-tien-do-dao-tao') }}" class="list-group-item list-group-item-action pl-4">
                         Nhập file tiến độ đào tạo
+                    </a>
+                    <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-file-so-phan-cong-giao-vien') }}" class="list-group-item list-group-item-action pl-4">
+                        Nhập file sổ phân công giáo viên
+                    </a>
+                    <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-file-in-bang-ten') }}" class="list-group-item list-group-item-action pl-4">
+                        Nhập file in bảng tên
+                    </a>
+                    <div class="list-group-item list-group-item-light small font-weight-bold py-2">Phân Công Đào Tạo</div>
+                    <a href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach') }}" class="list-group-item list-group-item-action pl-4">
+                        Danh sách phân công
                     </a>
                 </div>
             </div>

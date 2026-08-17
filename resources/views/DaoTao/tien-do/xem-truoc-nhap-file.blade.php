@@ -28,7 +28,7 @@
     <div class="card card-panel mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>Xem trước — Nhập file tiến độ đào tạo</span>
-            <a href="{{ route('daotao.pdt.td.nhap-file.cancel') }}" class="btn btn-sm btn-outline-secondary">← Chọn file khác</a>
+            <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-file-tien-do-dao-tao.cancel') }}" class="btn btn-sm btn-outline-secondary">← Chọn file khác</a>
         </div>
         <div class="card-body td-preview-meta">
             <div><strong>File:</strong> {{ $preview['file_name'] ?? '' }}</div>
@@ -45,7 +45,7 @@
         @foreach ($preview['sheets'] as $i => $sheet)
             <li class="nav-item">
                 <a class="nav-link {{ $sheetIndex === $i ? 'active' : '' }}"
-                   href="{{ route('daotao.pdt.td.nhap-file.preview', ['sheet' => $i]) }}">
+                   href="{{ route('daotao.pdt.cong-cu-nhap.nhap-file-tien-do-dao-tao.preview', ['sheet' => $i]) }}">
                     {{ $sheet['sheet_name'] ?? ('Sheet '.($i + 1)) }}
                     <span class="badge badge-secondary ml-1">{{ (int) ($sheet['meta']['class_count'] ?? 0) }} lớp</span>
                 </a>
@@ -162,8 +162,8 @@
             </div>
         </div>
         <div class="card-footer d-flex align-items-center flex-wrap">
-            <a href="{{ route('daotao.pdt.td.nhap-file.cancel') }}" class="btn btn-outline-secondary">← Chọn file khác</a>
-            <form method="POST" action="{{ route('daotao.pdt.td.nhap-file.confirm') }}" class="d-inline ml-2"
+            <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-file-tien-do-dao-tao.cancel') }}" class="btn btn-outline-secondary">← Chọn file khác</a>
+            <form method="POST" action="{{ route('daotao.pdt.cong-cu-nhap.nhap-file-tien-do-dao-tao.confirm') }}" class="d-inline ml-2"
                   onsubmit="return confirm('Lưu {{ number_format((int) ($preview['meta']['record_count'] ?? 0)) }} dòng vào DB MANHLINH?\n\nLớp trùng mã khóa-lớp (cùng năm) sẽ được cập nhật (ghi đè dữ liệu cũ).');">
                 @csrf
                 <button type="submit" class="btn btn-success btn-lg">

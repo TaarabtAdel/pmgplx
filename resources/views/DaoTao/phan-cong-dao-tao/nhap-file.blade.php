@@ -1,17 +1,17 @@
 @extends('PMGPLX.layouts.quan-ly')
 
-@section('title', 'Nhập file tiến độ đào tạo')
+@section('title', 'Nhập file sổ phân công giáo viên')
 
 @section('content')
     <div class="card card-panel">
-        <div class="card-header">Nhập file tiến độ đào tạo</div>
+        <div class="card-header">Nhập file sổ phân công giáo viên</div>
         <div class="card-body">
             <div class="alert alert-info">
-                Upload file Excel tiến độ đào tạo (vd. <code>TIE__N_ĐO___ĐA_O_TA_O.xlsx</code>).
-                Hệ thống sẽ đọc từng sheet, parse dữ liệu lớp và tuần, rồi hiển thị xem trước trước khi lưu DB.
+                Upload file Excel sổ phân công (cột: Số TT, Giáo viên, Thời gian, Khoá đào tạo, Biển số xe, Nội dung giảng dạy).
+                Dữ liệu lưu vào DB <strong>MANHLINH</strong> (bảng <code>GiaoVien</code>, <code>XeTapLai</code>, <code>KhoaDaoTao</code>, <code>PhanCongDaoTao</code>).
             </div>
 
-            <form method="POST" action="{{ route('daotao.pdt.cong-cu-nhap.nhap-file-tien-do-dao-tao.store') }}" enctype="multipart/form-data">
+            <form method="POST" action="{{ route('daotao.pdt.cong-cu-nhap.nhap-file-so-phan-cong-giao-vien.store') }}" enctype="multipart/form-data">
                 @csrf
 
                 <div class="form-group col-md-6 px-0">
