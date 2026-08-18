@@ -118,6 +118,8 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
         ->name('pdt.cong-cu-nhap.nhap-file-in-bang-ten.store');
     Route::get('/phong-dao-tao/cong-cu-nhap/nhap-file-in-bang-ten/xem-truoc', [NhapFileInBangTenController::class, 'preview'])
         ->name('pdt.cong-cu-nhap.nhap-file-in-bang-ten.preview');
+    Route::get('/phong-dao-tao/cong-cu-nhap/nhap-file-in-bang-ten/in', [NhapFileInBangTenController::class, 'printSheet'])
+        ->name('pdt.cong-cu-nhap.nhap-file-in-bang-ten.print');
     Route::get('/phong-dao-tao/cong-cu-nhap/nhap-file-in-bang-ten/huy', [NhapFileInBangTenController::class, 'cancel'])
         ->name('pdt.cong-cu-nhap.nhap-file-in-bang-ten.cancel');
 

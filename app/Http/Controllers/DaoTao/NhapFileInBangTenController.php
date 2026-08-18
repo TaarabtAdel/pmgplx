@@ -63,6 +63,33 @@ class NhapFileInBangTenController extends Controller
 
     public function preview(Request $request): View|RedirectResponse
     {
+        $preview = $this->loadPreview($request);
+        if ($preview instanceof RedirectResponse) {
+            return $preview;
+        }
+
+        return view('DaoTao.cong-cu-nhap.xem-truoc-in-bang-ten', [
+            'preview' => $preview,
+        ]);
+    }
+
+    public function printSheet(Request $request): View|RedirectResponse
+    {
+        $preview = $this->loadPreview($request);
+        if ($preview instanceof RedirectResponse) {
+            return $preview;
+        }
+
+        return view('DaoTao.cong-cu-nhap.in-bang-ten-print', [
+            'preview' => $preview,
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>|RedirectResponse
+     */
+    private function loadPreview(Request $request): array|RedirectResponse
+    {
         $session = $request->session()->get(self::SESSION_KEY);
         $tempPath = is_array($session) ? ($session['temp_path'] ?? null) : null;
 
@@ -73,7 +100,7 @@ class NhapFileInBangTenController extends Controller
         }
 
         try {
-            $preview = (new DangKyKhoaHocXmlParser())->parse(
+            return (new DangKyKhoaHocXmlParser())->parse(
                 Storage::path($tempPath),
                 (string) ($session['file_name'] ?? basename($tempPath))
             );
@@ -84,10 +111,6 @@ class NhapFileInBangTenController extends Controller
                 ->route('daotao.pdt.cong-cu-nhap.nhap-file-in-bang-ten')
                 ->with('error', 'Không đọc được file XML: '.$e->getMessage());
         }
-
-        return view('DaoTao.cong-cu-nhap.xem-truoc-in-bang-ten', [
-            'preview' => $preview,
-        ]);
     }
 
     public function cancel(Request $request): RedirectResponse

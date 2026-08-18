@@ -3,219 +3,65 @@
 @section('title', 'In bảng tên học viên')
 
 @push('styles')
-<style>
-    .bang-ten-toolbar {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        margin-bottom: 1rem;
-    }
-    .bang-ten-meta {
-        color: #444;
-        line-height: 1.6;
-    }
-    .bang-ten-meta strong {
-        color: #1f4e79;
-    }
-    .bang-ten-spec-note {
-        font-size: 0.85rem;
-        color: #555;
-        margin-bottom: 1rem;
-        line-height: 1.5;
-    }
-    /*
-     * Quy cách: 50 mm × 85 mm = cao 50 mm, ngang 85 mm (thẻ nằm ngang).
-     * Trước đó nhầm thành 50 ngang × 85 cao (dọc) nên chữ bị xuống dòng từng từ.
-     */
-    .bang-ten-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, 85mm);
-        gap: 5mm;
-        justify-content: start;
-    }
-    .bang-ten-card {
-        width: 85mm;
-        height: 50mm;
-        box-sizing: border-box;
-        border: 0.4mm solid #000;
-        background: #fff;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        break-inside: avoid;
-        page-break-inside: avoid;
-        font-family: "Times New Roman", Times, serif;
-        font-style: normal;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-    .bang-ten-header {
-        flex-shrink: 0;
-        height: 10mm;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        padding: 0.4mm 1.5mm;
-        text-align: center;
-        line-height: 1.18;
-        border-bottom: 0.25mm solid #000;
-        box-sizing: border-box;
-    }
-    .bang-ten-header-line {
-        font-size: 10pt;
-        font-weight: 400;
-        font-style: normal;
-        text-transform: uppercase;
-        color: #000;
-        white-space: nowrap;
-        letter-spacing: 0.01em;
-    }
-    .bang-ten-body {
-        flex-shrink: 0;
-        height: 40mm;
-        display: flex;
-        flex-direction: row;
-        align-items: stretch;
-    }
-    /* Ảnh 3 cm × 4 cm */
-    .bang-ten-photo-wrap {
-        width: 30mm;
-        height: 40mm;
-        flex-shrink: 0;
-        background: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        border-right: 0.25mm solid #000;
-        box-sizing: border-box;
-    }
-    .bang-ten-photo-wrap img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-    }
-    .bang-ten-photo-placeholder {
-        font-size: 7pt;
-        color: #666;
-        text-align: center;
-        padding: 1mm;
-        line-height: 1.2;
-    }
-    .bang-ten-info {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: space-between;
-        text-align: center;
-        padding: 1.5mm 2.5mm;
-    }
-    .bang-ten-title {
-        font-size: 13pt;
-        font-weight: 700;
-        font-style: normal;
-        text-transform: uppercase;
-        color: #000;
-        line-height: 1.15;
-        white-space: nowrap;
-        letter-spacing: 0.02em;
-    }
-    .bang-ten-name {
-        font-size: 14pt;
-        font-weight: 700;
-        font-style: normal;
-        text-transform: uppercase;
-        color: #000;
-        line-height: 1.2;
-        word-break: break-word;
-        max-width: 100%;
-        padding: 0 0.5mm;
-    }
-    .bang-ten-name.is-long {
-        font-size: 11.5pt;
-        line-height: 1.15;
-    }
-    .bang-ten-hang {
-        font-size: 14pt;
-        font-weight: 400;
-        font-style: normal;
-        text-transform: none;
-        color: #000;
-        line-height: 1.15;
-        white-space: nowrap;
-    }
-    .bang-ten-hang strong {
-        font-weight: 700;
-        text-transform: uppercase;
-    }
-    @media screen {
-        .bang-ten-print-area {
+    @include('DaoTao.cong-cu-nhap.partials.bang-ten-cards-styles')
+    <style>
+        .bang-ten-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .bang-ten-meta {
+            color: #444;
+            line-height: 1.6;
+        }
+        .bang-ten-meta strong {
+            color: #1f4e79;
+        }
+        .bang-ten-spec-note {
+            font-size: 0.85rem;
+            color: #555;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+        .bang-ten-calibrate {
+            margin-bottom: 1rem;
+            font-size: 0.8rem;
+            color: #666;
+        }
+        .bang-ten-calibrate-bar {
+            width: var(--bt-card-w);
+            height: var(--bt-card-h);
+            border: 1px dashed #c0392b;
+            box-sizing: border-box;
+            margin-bottom: 0.35rem;
+            position: relative;
+        }
+        .bang-ten-calibrate-bar::before {
+            content: "85 mm × 50 mm";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10pt;
+            color: #c0392b;
+            white-space: nowrap;
+        }
+        .bang-ten-preview-area {
             overflow-x: auto;
             padding-bottom: 1rem;
         }
-        .bang-ten-scale-wrap {
-            transform: scale(1.45);
-            transform-origin: top left;
-            width: calc(100% / 1.45);
+        @media (max-width: 768px) {
+            .bang-ten-header-line {
+                white-space: normal;
+            }
+            .bang-ten-grid {
+                grid-template-columns: 1fr;
+            }
         }
-    }
-    @media (max-width: 768px) {
-        .bang-ten-scale-wrap {
-            transform: scale(1.1);
-            width: calc(100% / 1.1);
-        }
-        .bang-ten-header-line {
-            white-space: normal;
-        }
-    }
-    @media print {
-        @page {
-            size: A4;
-            margin: 8mm;
-        }
-        body * {
-            visibility: hidden;
-        }
-        .bang-ten-print-area,
-        .bang-ten-print-area * {
-            visibility: visible;
-        }
-        .bang-ten-print-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-        }
-        .bang-ten-scale-wrap {
-            transform: none;
-            width: 100%;
-        }
-        .no-print {
-            display: none !important;
-        }
-        .page-wrap {
-            padding: 0 !important;
-        }
-        .card-panel {
-            border: none !important;
-            box-shadow: none !important;
-        }
-        .bang-ten-grid {
-            grid-template-columns: repeat(2, 85mm);
-            gap: 4mm;
-            justify-content: flex-start;
-        }
-        .bang-ten-card {
-            width: 85mm;
-            height: 50mm;
-        }
-    }
-</style>
+    </style>
 @endpush
 
 @section('content')
@@ -225,12 +71,12 @@
     @endphp
 
     <div class="card card-panel">
-        <div class="card-header d-flex justify-content-between align-items-center no-print">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <span>In bảng tên học viên</span>
             <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-file-in-bang-ten.cancel') }}" class="btn btn-sm btn-outline-secondary">← Chọn file khác</a>
         </div>
         <div class="card-body">
-            <div class="bang-ten-toolbar no-print">
+            <div class="bang-ten-toolbar">
                 <div class="bang-ten-meta">
                     <div><strong>File:</strong> {{ $preview['file_name'] ?? '' }}</div>
                     <div>
@@ -241,47 +87,26 @@
                     <div><strong>{{ number_format((int) ($meta['hoc_vien_count'] ?? 0)) }}</strong> học viên</div>
                 </div>
                 <div>
-                    <button type="button" class="btn btn-navy btn-lg" onclick="window.print()">In bảng tên</button>
+                    <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-file-in-bang-ten.print') }}"
+                       class="btn btn-navy btn-lg"
+                       target="_blank"
+                       rel="noopener">In bảng tên</a>
                 </div>
             </div>
 
-            <div class="bang-ten-spec-note no-print">
-                Quy cách in: thẻ <strong>85 mm (ngang) × 50 mm (cao)</strong>, giấy trắng chất lượng tốt, ép plastic kẹp mica.
-                Ảnh chân dung <strong>3 cm × 4 cm</strong> (đóng dấu giáp lai tại cơ sở đào tạo).
+            <div class="bang-ten-spec-note">
+                Xem trước và bản in dùng <strong>cùng CSS</strong> (<code>85 mm × 50 mm</code>).
+                Khung đỏ bên dưới đúng kích thước thẻ — đối chiếu thước kẹp giấy trên màn hình.
+                Khi in: hộp thoại chọn <strong>Tỷ lệ 100%</strong>, không «Vừa trang».
             </div>
 
-            <div class="bang-ten-print-area">
-                <div class="bang-ten-scale-wrap">
-                    <div class="bang-ten-grid">
-                        @foreach ($preview['hoc_vien'] as $hv)
-                            @php
-                                $hoTen = trim((string) ($hv['ho_ten'] ?? '—'));
-                                $nameClass = mb_strlen($hoTen) > 22 ? 'bang-ten-name is-long' : 'bang-ten-name';
-                            @endphp
-                            <div class="bang-ten-card">
-                                <div class="bang-ten-header">
-                                    <div class="bang-ten-header-line">Sở Giáo dục &amp; Đào tạo Quảng Trị</div>
-                                    <div class="bang-ten-header-line">Trung tâm GDNN Mạnh Linh</div>
-                                </div>
-                                <div class="bang-ten-body">
-                                    <div class="bang-ten-photo-wrap">
-                                        @if (! empty($hv['anh_src']))
-                                            <img src="{{ $hv['anh_src'] }}" alt="{{ $hv['ho_ten'] }}"
-                                                 onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'bang-ten-photo-placeholder',textContent:'Không có ảnh'}))">
-                                        @else
-                                            <span class="bang-ten-photo-placeholder">Không có ảnh</span>
-                                        @endif
-                                    </div>
-                                    <div class="bang-ten-info">
-                                        <div class="bang-ten-title">Học viên tập lái xe</div>
-                                        <div class="{{ $nameClass }}">{{ $hoTen }}</div>
-                                        <div class="bang-ten-hang">Tập lái xe hạng: <strong>{{ $hv['hang_gplx'] ?? '—' }}</strong></div>
-                                    </div>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
+            <div class="bang-ten-calibrate bang-ten-spec">
+                <div class="bang-ten-calibrate-bar"></div>
+                Khung mẫu 85 × 50 mm (cùng kích thước mỗi thẻ bên dưới)
+            </div>
+
+            <div class="bang-ten-preview-area">
+                @include('DaoTao.cong-cu-nhap.partials.bang-ten-cards', ['preview' => $preview])
             </div>
         </div>
     </div>
