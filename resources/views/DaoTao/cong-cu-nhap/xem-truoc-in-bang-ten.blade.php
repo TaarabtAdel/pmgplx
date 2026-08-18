@@ -21,70 +21,95 @@
     }
     .bang-ten-grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
     }
     .bang-ten-card {
-        border: 2px solid #222;
-        border-radius: 4px;
+        border: 2px solid #000;
         background: #fff;
-        padding: 8px 8px 10px;
-        text-align: center;
-        min-height: 175px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
         break-inside: avoid;
         page-break-inside: avoid;
+        font-family: "Times New Roman", Times, serif;
+    }
+    .bang-ten-header {
+        border-bottom: 2px solid #000;
+        padding: 6px 8px;
+        text-align: center;
+        line-height: 1.25;
+    }
+    .bang-ten-header-line {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #000;
+    }
+    .bang-ten-body {
+        display: flex;
+        min-height: 118px;
     }
     .bang-ten-photo-wrap {
-        width: 88px;
-        height: 110px;
-        border: 1px solid #999;
-        background: #f5f5f5;
+        flex: 0 0 34%;
+        border-right: 2px solid #000;
+        background: #fff;
         display: flex;
         align-items: center;
         justify-content: center;
         overflow: hidden;
-        margin-bottom: 6px;
+        min-height: 118px;
     }
     .bang-ten-photo-wrap img {
         width: 100%;
         height: 100%;
         object-fit: cover;
+        display: block;
     }
     .bang-ten-photo-placeholder {
-        font-size: 0.75rem;
-        color: #888;
-        padding: 0.25rem;
+        font-size: 0.7rem;
+        color: #666;
+        padding: 0.5rem;
+        text-align: center;
     }
-    .bang-ten-hang {
-        font-size: 1.65rem;
-        font-weight: 800;
-        color: #c0392b;
-        line-height: 1.1;
-        margin-bottom: 4px;
+    .bang-ten-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 8px 10px;
+        gap: 8px;
     }
-    .bang-ten-name {
-        font-size: 0.82rem;
+    .bang-ten-title {
+        font-size: 0.95rem;
         font-weight: 700;
         text-transform: uppercase;
+        color: #000;
+        line-height: 1.2;
+    }
+    .bang-ten-name {
+        font-size: 0.9rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #000;
         line-height: 1.25;
-        color: #111;
         word-break: break-word;
     }
-    @media (max-width: 992px) {
-        .bang-ten-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
+    .bang-ten-hang {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #000;
+        line-height: 1.2;
     }
-    @media (max-width: 576px) {
+    @media (max-width: 992px) {
         .bang-ten-grid {
             grid-template-columns: 1fr;
         }
     }
     @media print {
+        @page {
+            size: A4;
+            margin: 10mm;
+        }
         body * {
             visibility: hidden;
         }
@@ -109,12 +134,22 @@
             box-shadow: none !important;
         }
         .bang-ten-grid {
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
         }
         .bang-ten-card {
-            min-height: 165px;
-            padding: 6px;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        .bang-ten-header-line {
+            font-size: 9pt;
+        }
+        .bang-ten-title {
+            font-size: 11pt;
+        }
+        .bang-ten-name,
+        .bang-ten-hang {
+            font-size: 10pt;
         }
     }
 </style>
@@ -151,16 +186,25 @@
                 <div class="bang-ten-grid">
                     @foreach ($preview['hoc_vien'] as $hv)
                         <div class="bang-ten-card">
-                            <div class="bang-ten-photo-wrap">
-                                @if (! empty($hv['anh_src']))
-                                    <img src="{{ $hv['anh_src'] }}" alt="{{ $hv['ho_ten'] }}"
-                                         onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'bang-ten-photo-placeholder',textContent:'Không hiển thị được ảnh'}))">
-                                @else
-                                    <span class="bang-ten-photo-placeholder">Không có ảnh</span>
-                                @endif
+                            <div class="bang-ten-header">
+                                <div class="bang-ten-header-line">Sở Giáo dục &amp; Đào tạo Quảng Trị</div>
+                                <div class="bang-ten-header-line">Trung tâm GDNN Mạnh Linh</div>
                             </div>
-                            <div class="bang-ten-hang">{{ $hv['hang_gplx'] ?? '—' }}</div>
-                            <div class="bang-ten-name">{{ $hv['ho_ten'] ?? '—' }}</div>
+                            <div class="bang-ten-body">
+                                <div class="bang-ten-photo-wrap">
+                                    @if (! empty($hv['anh_src']))
+                                        <img src="{{ $hv['anh_src'] }}" alt="{{ $hv['ho_ten'] }}"
+                                             onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'bang-ten-photo-placeholder',textContent:'Không có ảnh'}))">
+                                    @else
+                                        <span class="bang-ten-photo-placeholder">Không có ảnh</span>
+                                    @endif
+                                </div>
+                                <div class="bang-ten-info">
+                                    <div class="bang-ten-title">Học viên tập lái xe</div>
+                                    <div class="bang-ten-name">{{ $hv['ho_ten'] ?? '—' }}</div>
+                                    <div class="bang-ten-hang">Tập lái xe hạng: {{ $hv['hang_gplx'] ?? '—' }}</div>
+                                </div>
+                            </div>
                         </div>
                     @endforeach
                 </div>
