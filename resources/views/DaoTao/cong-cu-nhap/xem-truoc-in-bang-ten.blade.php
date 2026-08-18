@@ -20,35 +20,6 @@
         .bang-ten-meta strong {
             color: #1f4e79;
         }
-        .bang-ten-spec-note {
-            font-size: 0.85rem;
-            color: #555;
-            margin-bottom: 1rem;
-            line-height: 1.5;
-        }
-        .bang-ten-calibrate {
-            margin-bottom: 1rem;
-            font-size: 0.8rem;
-            color: #666;
-        }
-        .bang-ten-calibrate-bar {
-            width: var(--bt-card-w);
-            height: var(--bt-card-h);
-            border: 1px dashed #c0392b;
-            box-sizing: border-box;
-            margin-bottom: 0.35rem;
-            position: relative;
-        }
-        .bang-ten-calibrate-bar::before {
-            content: "85 mm × 50 mm";
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 10pt;
-            color: #c0392b;
-            white-space: nowrap;
-        }
         .bang-ten-preview-area {
             overflow-x: auto;
             padding-bottom: 1rem;
@@ -92,17 +63,6 @@
                        target="_blank"
                        rel="noopener">In bảng tên</a>
                 </div>
-            </div>
-
-            <div class="bang-ten-spec-note">
-                Xem trước và bản in dùng <strong>cùng CSS</strong> (<code>85 mm × 50 mm</code>).
-                Khung đỏ bên dưới đúng kích thước thẻ — đối chiếu thước kẹp giấy trên màn hình.
-                Khi in: hộp thoại chọn <strong>Tỷ lệ 100%</strong>, không «Vừa trang».
-            </div>
-
-            <div class="bang-ten-calibrate bang-ten-spec">
-                <div class="bang-ten-calibrate-bar"></div>
-                Khung mẫu 85 × 50 mm (cùng kích thước mỗi thẻ bên dưới)
             </div>
 
             <div class="bang-ten-preview-area">
