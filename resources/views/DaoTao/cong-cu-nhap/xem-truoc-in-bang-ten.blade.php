@@ -39,7 +39,7 @@
         width: 85mm;
         height: 50mm;
         box-sizing: border-box;
-        border: 1px solid #000;
+        border: 0.4mm solid #000;
         background: #fff;
         display: flex;
         flex-direction: column;
@@ -48,6 +48,8 @@
         page-break-inside: avoid;
         font-family: "Times New Roman", Times, serif;
         font-style: normal;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
     .bang-ten-header {
         flex-shrink: 0;
@@ -55,10 +57,10 @@
         display: flex;
         flex-direction: column;
         justify-content: center;
-        padding: 0 2mm;
+        padding: 0.4mm 1.5mm;
         text-align: center;
-        line-height: 1.12;
-        border-bottom: 1px solid #000;
+        line-height: 1.18;
+        border-bottom: 0.25mm solid #000;
         box-sizing: border-box;
     }
     .bang-ten-header-line {
@@ -68,6 +70,7 @@
         text-transform: uppercase;
         color: #000;
         white-space: nowrap;
+        letter-spacing: 0.01em;
     }
     .bang-ten-body {
         flex-shrink: 0;
@@ -86,7 +89,7 @@
         align-items: center;
         justify-content: center;
         overflow: hidden;
-        border-right: 1px solid #000;
+        border-right: 0.25mm solid #000;
         box-sizing: border-box;
     }
     .bang-ten-photo-wrap img {
@@ -108,10 +111,9 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: space-between;
         text-align: center;
-        padding: 1mm 2mm;
-        gap: 1mm;
+        padding: 1.5mm 2.5mm;
     }
     .bang-ten-title {
         font-size: 13pt;
@@ -119,7 +121,9 @@
         font-style: normal;
         text-transform: uppercase;
         color: #000;
-        line-height: 1.1;
+        line-height: 1.15;
+        white-space: nowrap;
+        letter-spacing: 0.02em;
     }
     .bang-ten-name {
         font-size: 14pt;
@@ -127,16 +131,27 @@
         font-style: normal;
         text-transform: uppercase;
         color: #000;
-        line-height: 1.1;
+        line-height: 1.2;
         word-break: break-word;
+        max-width: 100%;
+        padding: 0 0.5mm;
+    }
+    .bang-ten-name.is-long {
+        font-size: 11.5pt;
+        line-height: 1.15;
     }
     .bang-ten-hang {
         font-size: 14pt;
-        font-weight: 700;
+        font-weight: 400;
         font-style: normal;
-        text-transform: uppercase;
+        text-transform: none;
         color: #000;
-        line-height: 1.1;
+        line-height: 1.15;
+        white-space: nowrap;
+    }
+    .bang-ten-hang strong {
+        font-weight: 700;
+        text-transform: uppercase;
     }
     @media screen {
         .bang-ten-print-area {
@@ -239,6 +254,10 @@
                 <div class="bang-ten-scale-wrap">
                     <div class="bang-ten-grid">
                         @foreach ($preview['hoc_vien'] as $hv)
+                            @php
+                                $hoTen = trim((string) ($hv['ho_ten'] ?? '—'));
+                                $nameClass = mb_strlen($hoTen) > 22 ? 'bang-ten-name is-long' : 'bang-ten-name';
+                            @endphp
                             <div class="bang-ten-card">
                                 <div class="bang-ten-header">
                                     <div class="bang-ten-header-line">Sở Giáo dục &amp; Đào tạo Quảng Trị</div>
@@ -255,8 +274,8 @@
                                     </div>
                                     <div class="bang-ten-info">
                                         <div class="bang-ten-title">Học viên tập lái xe</div>
-                                        <div class="bang-ten-name">{{ $hv['ho_ten'] ?? '—' }}</div>
-                                        <div class="bang-ten-hang">{{ $hv['hang_gplx'] ?? '—' }}</div>
+                                        <div class="{{ $nameClass }}">{{ $hoTen }}</div>
+                                        <div class="bang-ten-hang">Tập lái xe hạng: <strong>{{ $hv['hang_gplx'] ?? '—' }}</strong></div>
                                     </div>
                                 </div>
                             </div>
