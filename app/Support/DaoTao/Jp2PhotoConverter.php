@@ -6,6 +6,8 @@ class Jp2PhotoConverter
 {
     private static ?bool $available = null;
 
+    private static ?string $binary = null;
+
     public static function isJp2(string $binary): bool
     {
         return str_contains(substr($binary, 0, 32), 'jP  ');
@@ -17,14 +19,13 @@ class Jp2PhotoConverter
             return self::$available;
         }
 
-        $binary = trim((string) shell_exec('command -v opj_decompress 2>/dev/null'));
-
-        return self::$available = $binary !== '';
+        return self::$available = self::resolveBinary() !== null;
     }
 
     public static function toDataUri(string $jp2Binary): ?string
     {
-        if (! self::isAvailable()) {
+        $decompress = self::resolveBinary();
+        if ($decompress === null) {
             return null;
         }
 
@@ -37,28 +38,24 @@ class Jp2PhotoConverter
                 : null;
         }
 
-        $decompress = trim((string) shell_exec('command -v opj_decompress 2>/dev/null'));
-        if ($decompress === '') {
-            return null;
-        }
-
-        $dir = sys_get_temp_dir().'/bang-ten-'.uniqid('', true);
+        $dir = sys_get_temp_dir().DIRECTORY_SEPARATOR.'bang-ten-'.uniqid('', true);
         if (! @mkdir($dir) && ! is_dir($dir)) {
             return null;
         }
 
-        $input = $dir.'/photo.jp2';
-        $output = $dir.'/photo.png';
+        $input = $dir.DIRECTORY_SEPARATOR.'photo.jp2';
+        $output = $dir.DIRECTORY_SEPARATOR.'photo.png';
 
         try {
             if (file_put_contents($input, $jp2Binary) === false) {
                 return null;
             }
 
+            $nullDevice = PHP_OS_FAMILY === 'Windows' ? '2>nul' : '2>/dev/null';
             $command = escapeshellarg($decompress)
                 .' -i '.escapeshellarg($input)
                 .' -o '.escapeshellarg($output)
-                .' 2>/dev/null';
+                .' '.$nullDevice;
 
             exec($command, $unused, $exitCode);
             unset($unused);
@@ -82,6 +79,79 @@ class Jp2PhotoConverter
         }
     }
 
+    /**
+     * Tìm opj_decompress theo thứ tự:
+     * 1. JP2_DECOMPRESS_BIN (.env)
+     * 2. bin/opj_decompress.exe (Windows) hoặc bin/opj_decompress (Linux)
+     * 3. PATH hệ thống (where / command -v)
+     */
+    private static function resolveBinary(): ?string
+    {
+        if (self::$binary !== null) {
+            return self::$binary !== '' ? self::$binary : null;
+        }
+
+        $candidates = [];
+
+        $configured = trim((string) config('services.jp2.decompress_bin', ''));
+        if ($configured !== '') {
+            $candidates[] = $configured;
+        }
+
+        if (function_exists('base_path')) {
+            try {
+                if (PHP_OS_FAMILY === 'Windows') {
+                    $candidates[] = base_path('bin/opj_decompress.exe');
+                }
+                $candidates[] = base_path('bin/opj_decompress');
+            } catch (\Throwable) {
+                // CLI chưa bootstrap Laravel
+            }
+        }
+
+        $candidates[] = dirname(__DIR__, 3).'/bin/opj_decompress.exe';
+        $candidates[] = dirname(__DIR__, 3).'/bin/opj_decompress';
+
+        foreach ($candidates as $path) {
+            if ($path !== '' && is_file($path)) {
+                return self::$binary = $path;
+            }
+        }
+
+        $fromPath = self::findOnSystemPath();
+        if ($fromPath !== null) {
+            return self::$binary = $fromPath;
+        }
+
+        self::$binary = '';
+
+        return null;
+    }
+
+    private static function findOnSystemPath(): ?string
+    {
+        if (PHP_OS_FAMILY === 'Windows') {
+            $output = shell_exec('where opj_decompress 2>nul');
+            if (! is_string($output) || trim($output) === '') {
+                return null;
+            }
+
+            foreach (preg_split('/\R/u', trim($output)) ?: [] as $line) {
+                $line = trim($line);
+                if ($line !== '' && is_file($line)) {
+                    return $line;
+                }
+            }
+
+            return null;
+        }
+
+        $output = shell_exec('command -v opj_decompress 2>/dev/null');
+        $path = is_string($output) ? trim($output) : '';
+
+        return $path !== '' && is_executable($path) ? $path : null;
+    }
+
     private static function cachePath(string $jp2Binary): string
     {
         $dir = self::cacheDir();
@@ -89,7 +159,7 @@ class Jp2PhotoConverter
             @mkdir($dir, 0755, true);
         }
 
-        return $dir.'/'.hash('sha256', $jp2Binary).'.png';
+        return $dir.DIRECTORY_SEPARATOR.hash('sha256', $jp2Binary).'.png';
     }
 
     private static function cacheDir(): string

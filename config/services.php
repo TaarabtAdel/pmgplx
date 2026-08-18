@@ -31,4 +31,12 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    /*
+    | Ảnh chân dung file DKKH (JPEG2000) — công cụ chuyển sang PNG.
+    | Mặc định dùng laravel/bin/opj_decompress.exe trên Windows.
+    */
+    'jp2' => [
+        'decompress_bin' => env('JP2_DECOMPRESS_BIN'),
+    ],
+
 ];
