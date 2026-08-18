@@ -44,12 +44,12 @@
                 <div>
                     <strong>Tổng buổi:</strong>
                     sẽ lưu <strong class="text-success">{{ $okCount }}</strong>,
-                    bỏ qua <strong class="text-warning">{{ $offCount }}</strong> ngày nghỉ (ô nội dung trống)
+                    bỏ qua <strong class="text-warning">{{ $offCount }}</strong> ngày nghỉ (Nội dung + Chi tiết trống)
                 </div>
             </div>
 
             <div class="alert alert-warning mb-3">
-                Dòng nền vàng là <strong>ngày nghỉ</strong> (cột nội dung trống) — sẽ <strong>không lưu</strong> vào phần mềm.
+                Dòng nền vàng là <strong>ngày nghỉ</strong> (cột Nội dung và Chi tiết đều trống) — sẽ <strong>không lưu</strong> vào phần mềm.
             </div>
 
             <div class="mb-3 small">

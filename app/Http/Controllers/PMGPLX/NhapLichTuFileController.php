@@ -939,7 +939,8 @@ class NhapLichTuFileController extends Controller
                     continue;
                 }
 
-                $isOff = $noiDung === '';
+                // Ngày nghỉ: cột Nội dung và Chi tiết (ô 3 + 4 trong khối 5 cột/GV) đều trống
+                $isOff = trim($noiDung) === '' && trim($chiTiet) === '';
                 if ($isOff) {
                     $offCount++;
                 } else {
