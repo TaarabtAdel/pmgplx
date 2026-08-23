@@ -15,7 +15,6 @@ class SoPhanCongDaoTaoExcelParser
 
     /** @var array<string, int> */
     private const DEFAULT_COLUMNS = [
-        'SoTT' => 1,
         'HoTen' => 2,
         'ThoiGian' => 3,
         'TenKhoa' => 4,
@@ -79,8 +78,6 @@ class SoPhanCongDaoTaoExcelParser
     {
         $columns = self::DEFAULT_COLUMNS;
         $map = [
-            'số tt' => 'SoTT',
-            'so tt' => 'SoTT',
             'giáo viên' => 'HoTen',
             'giao vien' => 'HoTen',
             'thời gian' => 'ThoiGian',
@@ -130,11 +127,9 @@ class SoPhanCongDaoTaoExcelParser
             $hoTen = trim($hoTen);
 
             [$tuNgay, $denNgay, $thoiGianDisplay] = $this->parseThoiGian($thoiGian);
-            $soTtRaw = $this->cellText($sheet, $row, $columns['SoTT']);
 
             $records[] = [
                 'excel_row' => $row,
-                'SoTT' => is_numeric($soTtRaw) ? (int) $soTtRaw : null,
                 'HoTen' => $hoTen,
                 'ThoiGian' => $thoiGianDisplay,
                 'TuNgay' => $tuNgay,
@@ -163,7 +158,14 @@ class SoPhanCongDaoTaoExcelParser
                 $tu = Carbon::createFromFormat('d/m/Y', trim($m[1]))->toDateString();
                 $den = Carbon::createFromFormat('d/m/Y', trim($m[2]))->toDateString();
 
-                return [$tu, $den, trim($m[1]).' – '.trim($m[2])];
+                if ($tu > $den) {
+                    [$tu, $den] = [$den, $tu];
+                }
+
+                $tuDisplay = Carbon::parse($tu)->format('d/m/Y');
+                $denDisplay = Carbon::parse($den)->format('d/m/Y');
+
+                return [$tu, $den, $tuDisplay.' – '.$denDisplay];
             } catch (\Throwable) {
                 return [null, null, $value];
             }

@@ -19,6 +19,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::connection($this->connection)->hasTable('TienDoDaoTao')) {
+            return;
+        }
+
         Schema::create('TienDoDaoTao', function (Blueprint $table) {
             $table->increments('Id');
             $table->string('MaKhoaLop', 50);

@@ -120,6 +120,15 @@
             background-color: #2f6fad !important;
             color: #fff;
         }
+        .table-data tbody tr.selected a,
+        .table-data tbody tr.table-primary a {
+            color: #fff;
+            text-decoration: underline;
+        }
+        .table-data tbody tr.selected a:hover,
+        .table-data tbody tr.table-primary a:hover {
+            color: #d6ebff;
+        }
         .status-bar {
             margin-top: 0.75rem;
             padding: 0.45rem 0.75rem;
@@ -440,6 +449,30 @@
                             </a>
                         </div>
                     </div>
+                </div>
+            </li>
+            <li class="nav-item dropdown">
+                @php
+                    $trungTamActive = request()->routeIs('trungtam.*');
+                @endphp
+                <a class="nav-link dropdown-toggle {{ $trungTamActive ? 'active' : '' }}"
+                   href="#"
+                   id="navTrungTamDropdown"
+                   role="button"
+                   data-toggle="dropdown"
+                   aria-haspopup="true"
+                   aria-expanded="false">
+                    Trung Tâm
+                </a>
+                <div class="dropdown-menu" aria-labelledby="navTrungTamDropdown">
+                    <a class="dropdown-item {{ request()->routeIs('trungtam.giao-vien.*') ? 'active' : '' }}"
+                       href="{{ route('trungtam.giao-vien.danh-sach') }}">
+                        Giáo viên
+                    </a>
+                    <a class="dropdown-item {{ request()->routeIs('trungtam.xe-tap-lai.*') ? 'active' : '' }}"
+                       href="{{ route('trungtam.xe-tap-lai.danh-sach') }}">
+                        Xe tập lái
+                    </a>
                 </div>
             </li>
         </ul>

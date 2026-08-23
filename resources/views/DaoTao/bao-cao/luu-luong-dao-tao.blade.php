@@ -252,7 +252,28 @@
                             @forelse ($classes as $index => $lop)
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
-                                    <td><strong>{{ $lop['ma_khoa_lop'] }}</strong></td>
+                                    <td>
+                                        @php
+                                            $khoaDaoTaoId = \App\Models\DaoTao\KhoaDaoTao::query()
+                                                ->where('TenKhoa', \App\Models\DaoTao\KhoaDaoTao::normalizeTenKhoa($lop['ma_khoa_lop']))
+                                                ->value('Id');
+                                        @endphp
+                                        @if ($khoaDaoTaoId)
+                                            <a href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach', array_merge(
+                                                ['khoa_dao_tao_id' => $khoaDaoTaoId, 'from' => 'luu-luong-dao-tao'],
+                                                array_filter([
+                                                    'ngay_kiem_tra' => $filters['ngay_kiem_tra'],
+                                                    'ky_hieu' => $filters['ky_hieu'],
+                                                    'hang_gplx' => $filters['hang_gplx'],
+                                                ], fn ($value) => $value !== '' && $value !== null)
+                                            )) }}"
+                                               title="Xem phân công đào tạo">
+                                                <strong>{{ $lop['ma_khoa_lop'] }}</strong>
+                                            </a>
+                                        @else
+                                            <strong>{{ $lop['ma_khoa_lop'] }}</strong>
+                                        @endif
+                                    </td>
                                     <td>{{ $lop['nam_hoc'] ?? '—' }}</td>
                                     <td>{{ number_format($lop['so_hoc_vien']) }}</td>
                                     <td>{{ $lop['giao_vien_day'] ?: '—' }}</td>

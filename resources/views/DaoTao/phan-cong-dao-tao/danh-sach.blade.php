@@ -4,36 +4,44 @@
 
 @section('content')
     <div class="card card-panel">
-        <div class="card-header">Danh sách phân công đào tạo</div>
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span>Danh sách phân công đào tạo</span>
+            @if (! empty($backToLuuLuongUrl))
+                <a href="{{ $backToLuuLuongUrl }}" class="btn btn-sm btn-outline-secondary">← Báo cáo lưu lượng</a>
+            @endif
+        </div>
         <div class="card-body">
             <form method="GET" action="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach') }}">
+                @foreach ($luuLuongBackParams ?? [] as $name => $value)
+                    <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+                @endforeach
                 <div class="form-row align-items-end">
                     <div class="form-group col-md-3">
-                        <label for="ten_khoa">Khoá đào tạo</label>
-                        <select class="form-control form-control-sm" id="ten_khoa" name="ten_khoa">
-                            <option value="" @selected($filters['ten_khoa'] === '')>Tất cả</option>
-                            @foreach ($khoaOptions as $tenKhoa)
-                                <option value="{{ $tenKhoa }}" @selected($filters['ten_khoa'] === $tenKhoa)>{{ $tenKhoa }}</option>
+                        <label for="khoa_dao_tao_id">Khoá đào tạo</label>
+                        <select class="form-control form-control-sm" id="khoa_dao_tao_id" name="khoa_dao_tao_id">
+                            <option value="">— Tất cả —</option>
+                            @foreach ($khoaOptions as $khoa)
+                                <option value="{{ $khoa->Id }}" @selected((int) ($filters['khoa_dao_tao_id'] ?? 0) === (int) $khoa->Id)>{{ $khoa->TenKhoa }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="form-group col-md-3">
-                        <label for="ho_ten">Giáo viên</label>
-                        <input type="text"
-                               class="form-control form-control-sm"
-                               id="ho_ten"
-                               name="ho_ten"
-                               value="{{ $filters['ho_ten'] }}"
-                               placeholder="Tên giáo viên">
+                        <label for="giao_vien_id">Giáo viên</label>
+                        <select class="form-control form-control-sm" id="giao_vien_id" name="giao_vien_id">
+                            <option value="">— Tất cả —</option>
+                            @foreach ($giaoVienOptions as $gv)
+                                <option value="{{ $gv->Id }}" @selected((int) ($filters['giao_vien_id'] ?? 0) === (int) $gv->Id)>{{ $gv->HoTen }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="form-group col-md-3">
-                        <label for="bien_so">Biển số xe</label>
-                        <input type="text"
-                               class="form-control form-control-sm"
-                               id="bien_so"
-                               name="bien_so"
-                               value="{{ $filters['bien_so'] }}"
-                               placeholder="74A-246.00">
+                        <label for="xe_tap_lai_id">Biển số xe</label>
+                        <select class="form-control form-control-sm" id="xe_tap_lai_id" name="xe_tap_lai_id">
+                            <option value="">— Tất cả —</option>
+                            @foreach ($xeOptions as $xe)
+                                <option value="{{ $xe->Id }}" @selected((int) ($filters['xe_tap_lai_id'] ?? 0) === (int) $xe->Id)>{{ $xe->BienSo }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="form-group col-md-2">
                         <button type="submit" class="btn btn-sm btn-primary btn-block">Lọc</button>
@@ -43,6 +51,46 @@
                     </div>
                 </div>
             </form>
+
+            @if ($giaoVienScheduleChecked ?? false)
+                @if (($giaoVienOverlapWarnings ?? []) !== [])
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <strong>Cảnh báo — trùng lịch giữa các khoá</strong>
+                        (giáo viên lọc: <em>{{ $selectedGiaoVien?->HoTen ?? '—' }}</em>):
+                        <ul class="mb-0 pl-3 mt-2">
+                            @foreach ($giaoVienOverlapWarnings as $warning)
+                                <li>{{ $warning }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @else
+                    <div class="alert alert-success mt-3 mb-0">
+                        <strong>Khoảng thời gian giáo viên hợp lệ</strong>
+                        — không có trùng lịch giữa các khoá
+                        (giáo viên lọc: <em>{{ $selectedGiaoVien?->HoTen ?? '—' }}</em>).
+                    </div>
+                @endif
+            @endif
+
+            @if ($xeScheduleChecked ?? false)
+                @if (($xeOverlapWarnings ?? []) !== [])
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <strong>Cảnh báo — trùng lịch giữa các khoá</strong>
+                        (xe lọc: <em>{{ $selectedXeTapLai?->BienSo ?? '—' }}</em>):
+                        <ul class="mb-0 pl-3 mt-2">
+                            @foreach ($xeOverlapWarnings as $warning)
+                                <li>{{ $warning }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @else
+                    <div class="alert alert-success mt-3 mb-0">
+                        <strong>Khoảng thời gian xe hợp lệ</strong>
+                        — không có trùng lịch giữa các khoá
+                        (xe lọc: <em>{{ $selectedXeTapLai?->BienSo ?? '—' }}</em>).
+                    </div>
+                @endif
+            @endif
 
             <div class="table-responsive mt-3">
                 <table class="table table-sm table-bordered table-striped table-hover table-data mb-0">
@@ -57,9 +105,9 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse ($items as $row)
+                        @forelse ($items as $index => $row)
                             <tr>
-                                <td>{{ $row->SoTT ?? '—' }}</td>
+                                <td>{{ $items->firstItem() + $index }}</td>
                                 <td><strong>{{ $row->khoaDaoTao?->TenKhoa ?? '—' }}</strong></td>
                                 <td>{{ $row->giaoVien?->HoTen ?? '—' }}</td>
                                 <td>
@@ -70,7 +118,14 @@
                                     @endif
                                 </td>
                                 <td>{{ $row->xeTapLai?->BienSo ?? '—' }}</td>
-                                <td>{{ $row->NoiDungGiangDay ?: '—' }}</td>
+                                <td>
+                                    @if ($row->LoaiGiangDay)
+                                        {{ \App\Models\DaoTao\PhanCongDaoTao::loaiGiangDayLabel($row->LoaiGiangDay) }}
+                                        <span class="text-muted small">({{ $row->LoaiGiangDay }})</span>
+                                    @else
+                                        {{ $row->NoiDungGiangDay ?: '—' }}
+                                    @endif
+                                </td>
                             </tr>
                         @empty
                             <tr>
@@ -82,10 +137,63 @@
             </div>
 
             @if ($items->hasPages())
-                <div class="mt-3">
-                    {{ $items->links() }}
+                <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+                    <div class="text-muted small">
+                        Trang {{ $items->currentPage() }}/{{ max($items->lastPage(), 1) }}
+                        · {{ number_format($items->total()) }} dòng
+                    </div>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item {{ $items->onFirstPage() ? 'disabled' : '' }}">
+                                <a class="page-link" href="{{ $items->url(1) }}">«</a>
+                            </li>
+                            <li class="page-item {{ $items->onFirstPage() ? 'disabled' : '' }}">
+                                <a class="page-link" href="{{ $items->previousPageUrl() }}">‹</a>
+                            </li>
+                            <li class="page-item active">
+                                <span class="page-link">{{ $items->currentPage() }}</span>
+                            </li>
+                            <li class="page-item {{ $items->hasMorePages() ? '' : 'disabled' }}">
+                                <a class="page-link" href="{{ $items->nextPageUrl() }}">›</a>
+                            </li>
+                            <li class="page-item {{ $items->hasMorePages() ? '' : 'disabled' }}">
+                                <a class="page-link" href="{{ $items->url($items->lastPage()) }}">»</a>
+                            </li>
+                        </ul>
+                    </nav>
                 </div>
             @endif
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    $('#khoa_dao_tao_id').select2({
+        theme: 'bootstrap4',
+        placeholder: 'Tìm khoá đào tạo...',
+        allowClear: true,
+        width: '100%',
+        dropdownParent: $('#khoa_dao_tao_id').closest('.form-group'),
+        language: { noResults: function () { return 'Không tìm thấy khoá'; } }
+    });
+
+    $('#giao_vien_id').select2({
+        theme: 'bootstrap4',
+        placeholder: 'Tìm giáo viên...',
+        allowClear: true,
+        width: '100%',
+        dropdownParent: $('#giao_vien_id').closest('.form-group'),
+        language: { noResults: function () { return 'Không tìm thấy giáo viên'; } }
+    });
+
+    $('#xe_tap_lai_id').select2({
+        theme: 'bootstrap4',
+        placeholder: 'Tìm biển số xe...',
+        allowClear: true,
+        width: '100%',
+        dropdownParent: $('#xe_tap_lai_id').closest('.form-group'),
+        language: { noResults: function () { return 'Không tìm thấy biển số xe'; } }
+    });
+</script>
+@endpush

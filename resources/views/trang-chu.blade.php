@@ -55,5 +55,19 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-lg-4 mb-3">
+            <div class="card card-panel h-100">
+                <div class="card-header">Trung Tâm</div>
+                <div class="list-group list-group-flush">
+                    <a href="{{ route('trungtam.giao-vien.danh-sach') }}" class="list-group-item list-group-item-action">
+                        Giáo viên
+                    </a>
+                    <a href="{{ route('trungtam.xe-tap-lai.danh-sach') }}" class="list-group-item list-group-item-action">
+                        Xe tập lái
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 @endsection

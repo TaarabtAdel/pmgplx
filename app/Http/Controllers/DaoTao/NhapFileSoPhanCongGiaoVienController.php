@@ -34,6 +34,9 @@ class NhapFileSoPhanCongGiaoVienController extends Controller
         try {
             $spreadsheet = IOFactory::load($file->getRealPath());
             $preview = (new SoPhanCongDaoTaoExcelParser())->parse($spreadsheet, $file->getClientOriginalName());
+            $saveable = PhanCongDaoTao::saveableRecords($preview['records']);
+            $preview['meta']['save_count'] = count($saveable);
+            $preview['meta']['skip_count'] = count($preview['records']) - count($saveable);
             $preview['validation_errors'] = PhanCongDaoTao::collectRowErrors($preview['records']);
             $preview['overlap_errors'] = $preview['validation_errors'] === []
                 ? PhanCongDaoTao::validateOverlaps($preview['records'])
@@ -58,7 +61,9 @@ class NhapFileSoPhanCongGiaoVienController extends Controller
 
         return view('DaoTao.phan-cong-dao-tao.xem-truoc-nhap-file', [
             'preview' => $preview,
-            'canConfirm' => ($preview['validation_errors'] ?? []) === [] && ($preview['overlap_errors'] ?? []) === [],
+            'saveableCount' => (int) ($preview['meta']['save_count'] ?? count(PhanCongDaoTao::saveableRecords($preview['records']))),
+            'canConfirm' => ($preview['validation_errors'] ?? []) === []
+                && count(PhanCongDaoTao::saveableRecords($preview['records'])) > 0,
         ]);
     }
 
@@ -78,10 +83,16 @@ class NhapFileSoPhanCongGiaoVienController extends Controller
                 ->with('error', 'Phiên xem trước đã hết hạn. Vui lòng chọn file Excel.');
         }
 
-        if (($preview['validation_errors'] ?? []) !== [] || ($preview['overlap_errors'] ?? []) !== []) {
+        if (($preview['validation_errors'] ?? []) !== []) {
             return redirect()
                 ->route('daotao.pdt.cong-cu-nhap.nhap-file-so-phan-cong-giao-vien.preview')
                 ->with('error', 'Dữ liệu còn lỗi, không thể lưu.');
+        }
+
+        if (PhanCongDaoTao::saveableRecords($preview['records']) === []) {
+            return redirect()
+                ->route('daotao.pdt.cong-cu-nhap.nhap-file-so-phan-cong-giao-vien.preview')
+                ->with('error', 'Không có dòng nào đủ điều kiện lưu.');
         }
 
         try {
@@ -100,7 +111,18 @@ class NhapFileSoPhanCongGiaoVienController extends Controller
 
         $request->session()->forget(self::SESSION_KEY);
 
-        $msg = "Đã lưu {$result['saved']} dòng phân công ({$result['khoa_count']} khoá).";
+        $msg = "Đã cập nhật {$result['saved']} dòng phân công ({$result['khoa_count']} khoá)";
+        if ($result['updated'] > 0 || $result['created'] > 0) {
+            $parts = [];
+            if ($result['updated'] > 0) {
+                $parts[] = "{$result['updated']} dòng cập nhật";
+            }
+            if ($result['created'] > 0) {
+                $parts[] = "{$result['created']} dòng mới";
+            }
+            $msg .= ' — '.implode(', ', $parts);
+        }
+        $msg .= '.';
         if ($result['gv_created'] > 0) {
             $msg .= " Thêm {$result['gv_created']} giáo viên mới.";
         }

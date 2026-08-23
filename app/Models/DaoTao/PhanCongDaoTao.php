@@ -20,12 +20,12 @@ class PhanCongDaoTao extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'SoTT',
         'GiaoVienId',
         'XeTapLaiId',
         'KhoaDaoTaoId',
         'TuNgay',
         'DenNgay',
+        'LoaiGiangDay',
         'NoiDungGiangDay',
         'GhiChu',
         'NgayTao',
@@ -33,7 +33,6 @@ class PhanCongDaoTao extends Model
     ];
 
     protected $casts = [
-        'SoTT' => 'integer',
         'TuNgay' => 'date',
         'DenNgay' => 'date',
         'NgayTao' => 'datetime',
@@ -57,92 +56,152 @@ class PhanCongDaoTao extends Model
 
     /**
      * @param  array<string, mixed>  $preview
-     * @return array{saved: int, khoa_count: int, gv_created: int, xe_created: int, errors: list<string>}
+     * @return array{saved: int, updated: int, created: int, khoa_count: int, gv_created: int, xe_created: int, errors: list<string>}
      *
      * @throws Throwable
      */
     public static function importFromPreview(array $preview): array
     {
-        $records = $preview['records'] ?? [];
-        $errors = self::collectRowErrors($records);
-        if ($errors !== []) {
-            return ['saved' => 0, 'khoa_count' => 0, 'gv_created' => 0, 'xe_created' => 0, 'errors' => $errors];
+        $records = self::saveableRecords($preview['records'] ?? []);
+        if ($records === []) {
+            return [
+                'saved' => 0,
+                'updated' => 0,
+                'created' => 0,
+                'khoa_count' => 0,
+                'gv_created' => 0,
+                'xe_created' => 0,
+                'errors' => ['Không có dòng nào đủ điều kiện lưu (cần giáo viên và loại lý thuyết/GVLT hoặc thực hành/GVTH).'],
+            ];
         }
 
-        $overlapErrors = self::validateOverlaps($records);
-        if ($overlapErrors !== []) {
-            return ['saved' => 0, 'khoa_count' => 0, 'gv_created' => 0, 'xe_created' => 0, 'errors' => $overlapErrors];
+        $errors = self::collectRowErrors($records);
+        if ($errors !== []) {
+            return ['saved' => 0, 'updated' => 0, 'created' => 0, 'khoa_count' => 0, 'gv_created' => 0, 'xe_created' => 0, 'errors' => $errors];
         }
 
         $saved = 0;
+        $updated = 0;
+        $created = 0;
         $gvCreated = 0;
         $xeCreated = 0;
         $khoaIds = [];
 
-        DB::connection('sqlsrv_manhlinh')->transaction(function () use ($records, &$saved, &$gvCreated, &$xeCreated, &$khoaIds): void {
-            $khoaMap = [];
+        DB::connection('sqlsrv_manhlinh')->transaction(function () use ($records, &$saved, &$updated, &$created, &$gvCreated, &$xeCreated, &$khoaIds): void {
+            /** @var array<string, list<array<string, mixed>>> $byKhoa */
+            $byKhoa = [];
             foreach ($records as $record) {
-                $tenKhoa = KhoaDaoTao::normalizeTenKhoa((string) ($record['TenKhoa'] ?? ''));
-                if (! isset($khoaMap[$tenKhoa])) {
-                    $existing = KhoaDaoTao::query()->where('TenKhoa', $tenKhoa)->exists();
-                    $khoa = KhoaDaoTao::findOrCreateByTenKhoa($tenKhoa);
-                    $khoaMap[$tenKhoa] = $khoa->Id;
-                    $khoaIds[] = $khoa->Id;
+                if (! self::isSaveableRecord($record)) {
+                    continue;
                 }
+                $tenKhoa = KhoaDaoTao::normalizeTenKhoa((string) ($record['TenKhoa'] ?? ''));
+                $byKhoa[$tenKhoa][] = $record;
             }
 
-            static::query()->whereIn('KhoaDaoTaoId', array_values(array_unique($khoaIds)))->delete();
+            foreach ($byKhoa as $tenKhoa => $khoaRecords) {
+                $khoa = KhoaDaoTao::findOrCreateByTenKhoa($tenKhoa);
+                $khoaId = (int) $khoa->Id;
+                $khoaIds[] = $khoaId;
+                $keptIds = [];
 
-            foreach ($records as $record) {
-                $tenKhoa = KhoaDaoTao::normalizeTenKhoa((string) $record['TenKhoa']);
-                $khoaId = $khoaMap[$tenKhoa];
-
-                $giaoVienId = null;
-                $hoTen = trim((string) ($record['HoTen'] ?? ''));
-                if ($hoTen !== '') {
+                foreach ($khoaRecords as $record) {
+                    $hoTen = trim((string) ($record['HoTen'] ?? ''));
                     $before = GiaoVien::query()->where('HoTen', GiaoVien::normalizeHoTen($hoTen))->exists();
                     $gv = GiaoVien::findOrCreateByHoTen($hoTen, self::guessLoaiGv((string) ($record['NoiDungGiangDay'] ?? '')));
-                    if ($gv !== null) {
-                        $giaoVienId = $gv->Id;
-                        if (! $before) {
-                            $gvCreated++;
+                    if ($gv === null) {
+                        continue;
+                    }
+                    $giaoVienId = $gv->Id;
+                    if (! $before) {
+                        $gvCreated++;
+                    }
+
+                    $xeTapLaiId = null;
+                    $bienSo = trim((string) ($record['BienSo'] ?? ''));
+                    if ($bienSo !== '') {
+                        $normalized = XeTapLai::normalizeBienSo($bienSo);
+                        $beforeXe = XeTapLai::query()->where('BienSo', $normalized)->exists();
+                        $xe = XeTapLai::findOrCreateByBienSo($bienSo, self::guessLoaiXe((string) ($record['NoiDungGiangDay'] ?? '')));
+                        $xeTapLaiId = $xe->Id;
+                        if (! $beforeXe) {
+                            $xeCreated++;
                         }
                     }
-                }
 
-                $xeTapLaiId = null;
-                $bienSo = trim((string) ($record['BienSo'] ?? ''));
-                if ($bienSo !== '') {
-                    $normalized = XeTapLai::normalizeBienSo($bienSo);
-                    $before = XeTapLai::query()->where('BienSo', $normalized)->exists();
-                    $xe = XeTapLai::findOrCreateByBienSo($bienSo, self::guessLoaiXe((string) ($record['NoiDungGiangDay'] ?? '')));
-                    $xeTapLaiId = $xe->Id;
-                    if (! $before) {
-                        $xeCreated++;
+                    $loaiGiangDay = self::classifyLoaiGiangDay((string) ($record['NoiDungGiangDay'] ?? ''));
+                    if ($loaiGiangDay === null) {
+                        continue;
                     }
+
+                    $tuNgay = (string) $record['TuNgay'];
+                    $denNgay = (string) $record['DenNgay'];
+                    if ($tuNgay > $denNgay) {
+                        [$tuNgay, $denNgay] = [$denNgay, $tuNgay];
+                    }
+
+                    $data = [
+                        'GiaoVienId' => $giaoVienId,
+                        'XeTapLaiId' => $xeTapLaiId,
+                        'TuNgay' => $tuNgay,
+                        'DenNgay' => $denNgay,
+                        'LoaiGiangDay' => $loaiGiangDay,
+                        'NoiDungGiangDay' => null,
+                        'GhiChu' => self::nullableLimit($record['GhiChu'] ?? null, 255),
+                    ];
+
+                    $existing = static::query()
+                        ->where('KhoaDaoTaoId', $khoaId)
+                        ->where(self::rowMatchQuery($record, $giaoVienId, $xeTapLaiId))
+                        ->first();
+
+                    if ($existing !== null) {
+                        $existing->update(array_merge($data, ['NgayCapNhat' => now()]));
+                        $keptIds[] = (int) $existing->Id;
+                        $updated++;
+                    } else {
+                        $row = static::query()->create(array_merge($data, [
+                            'KhoaDaoTaoId' => $khoaId,
+                            'NgayTao' => now(),
+                        ]));
+                        $keptIds[] = (int) $row->Id;
+                        $created++;
+                    }
+
+                    $saved++;
                 }
 
-                static::query()->create([
-                    'SoTT' => $record['SoTT'] ?? null,
-                    'GiaoVienId' => $giaoVienId,
-                    'XeTapLaiId' => $xeTapLaiId,
-                    'KhoaDaoTaoId' => $khoaId,
-                    'TuNgay' => $record['TuNgay'],
-                    'DenNgay' => $record['DenNgay'],
-                    'NoiDungGiangDay' => self::nullableLimit($record['NoiDungGiangDay'] ?? null, 100),
-                    'GhiChu' => self::nullableLimit($record['GhiChu'] ?? null, 255),
-                    'NgayTao' => now(),
-                ]);
-                $saved++;
+                $orphanQuery = static::query()->where('KhoaDaoTaoId', $khoaId);
+                if ($keptIds !== []) {
+                    $orphanQuery->whereNotIn('Id', $keptIds);
+                }
+                $orphanQuery->delete();
             }
         });
 
         return [
             'saved' => $saved,
+            'updated' => $updated,
+            'created' => $created,
             'khoa_count' => count(array_unique($khoaIds)),
             'gv_created' => $gvCreated,
             'xe_created' => $xeCreated,
             'errors' => [],
+        ];
+    }
+
+    /**
+     * Khóa đối chiếu 1 dòng phân công trong cùng khoá.
+     *
+     * @param  array<string, mixed>  $record
+     * @return array<string, mixed>
+     */
+    private static function rowMatchQuery(array $record, ?int $giaoVienId, ?int $xeTapLaiId): array
+    {
+        return [
+            'TuNgay' => $record['TuNgay'],
+            'DenNgay' => $record['DenNgay'],
+            'GiaoVienId' => $giaoVienId,
+            'XeTapLaiId' => $xeTapLaiId,
         ];
     }
 
@@ -154,10 +213,12 @@ class PhanCongDaoTao extends Model
     {
         $errors = [];
         foreach ($records as $i => $record) {
+            if (! self::isSaveableRecord($record)) {
+                continue;
+            }
+
             $line = (int) ($record['excel_row'] ?? ($i + 2));
             $tenKhoa = trim((string) ($record['TenKhoa'] ?? ''));
-            $hoTen = trim((string) ($record['HoTen'] ?? ''));
-            $bienSo = trim((string) ($record['BienSo'] ?? ''));
 
             if ($tenKhoa === '') {
                 $errors[] = "Dòng {$line}: thiếu khoá đào tạo.";
@@ -167,12 +228,224 @@ class PhanCongDaoTao extends Model
                 $errors[] = "Dòng {$line}: không parse được thời gian.";
                 continue;
             }
-            if ($hoTen === '' && $bienSo === '') {
-                $errors[] = "Dòng {$line}: cần có giáo viên hoặc biển số xe.";
+            if ((string) $record['TuNgay'] > (string) $record['DenNgay']) {
+                $errors[] = "Dòng {$line}: ngày kết thúc trước ngày bắt đầu.";
             }
         }
 
         return $errors;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $records
+     * @return list<array<string, mixed>>
+     */
+    public static function saveableRecords(array $records): array
+    {
+        return array_values(array_filter($records, fn (array $record): bool => self::isSaveableRecord($record)));
+    }
+
+    /**
+     * @param  array<string, mixed>  $record
+     */
+    public static function isSaveableRecord(array $record): bool
+    {
+        if (trim((string) ($record['HoTen'] ?? '')) === '') {
+            return false;
+        }
+
+        $noiDung = (string) ($record['NoiDungGiangDay'] ?? '');
+        if (self::isTuDongNoiDung($noiDung)) {
+            return false;
+        }
+
+        return self::classifyLoaiGiangDay($noiDung) !== null;
+    }
+
+    public static function classifyLoaiGiangDay(string $noiDung): ?string
+    {
+        if (self::isTuDongNoiDung($noiDung)) {
+            return null;
+        }
+
+        $upper = mb_strtoupper($noiDung);
+        $lower = mb_strtolower($noiDung);
+        if (str_contains($lower, 'lý thuyết') || str_contains($lower, 'ly thuyet') || str_contains($upper, 'GVLT')) {
+            return 'ly_thuyet';
+        }
+
+        if (str_contains($lower, 'thực hành') || str_contains($lower, 'thuc hanh') || str_contains($upper, 'GVTH')) {
+            return 'thuc_hanh';
+        }
+
+        return null;
+    }
+
+    public static function skipReason(array $record): ?string
+    {
+        if (trim((string) ($record['HoTen'] ?? '')) === '') {
+            return 'Không có giáo viên';
+        }
+
+        $noiDung = (string) ($record['NoiDungGiangDay'] ?? '');
+        if (self::isTuDongNoiDung($noiDung)) {
+            return 'Xe tự động — không lưu';
+        }
+
+        if (self::classifyLoaiGiangDay($noiDung) === null) {
+            return 'Không xác định loại (cần lý thuyết/GVLT hoặc thực hành/GVTH)';
+        }
+
+        return null;
+    }
+
+    public static function loaiGiangDayLabel(?string $loai): string
+    {
+        return match ($loai) {
+            'ly_thuyet' => 'Lý thuyết',
+            'thuc_hanh' => 'Thực hành',
+            default => '—',
+        };
+    }
+
+    private static function isTuDongNoiDung(string $noiDung): bool
+    {
+        $lower = mb_strtolower($noiDung);
+
+        return str_contains($lower, 'tự động') || str_contains($lower, 'tu dong');
+    }
+
+    /**
+     * Cảnh báo trùng khoảng thời gian của cùng giáo viên giữa các khoá khác nhau.
+     *
+     * @param  list<int>  $giaoVienIds
+     * @return list<string>
+     */
+    public static function crossKhoaOverlapWarningsForGiaoVienIds(array $giaoVienIds): array
+    {
+        if ($giaoVienIds === []) {
+            return [];
+        }
+
+        $rows = static::query()
+            ->with(['khoaDaoTao', 'giaoVien'])
+            ->whereIn('GiaoVienId', $giaoVienIds)
+            ->whereNotNull('TuNgay')
+            ->whereNotNull('DenNgay')
+            ->orderBy('GiaoVienId')
+            ->orderBy('TuNgay')
+            ->get();
+
+        $warnings = [];
+        $seenPairs = [];
+
+        foreach ($rows->groupBy('GiaoVienId') as $gvRows) {
+            $list = $gvRows->values()->all();
+            $count = count($list);
+
+            for ($a = 0; $a < $count; $a++) {
+                for ($b = $a + 1; $b < $count; $b++) {
+                    $rowA = $list[$a];
+                    $rowB = $list[$b];
+
+                    if ((int) $rowA->KhoaDaoTaoId === (int) $rowB->KhoaDaoTaoId) {
+                        continue;
+                    }
+
+                    if (! self::rangesOverlap(
+                        $rowA->TuNgay->toDateString(),
+                        $rowA->DenNgay->toDateString(),
+                        $rowB->TuNgay->toDateString(),
+                        $rowB->DenNgay->toDateString()
+                    )) {
+                        continue;
+                    }
+
+                    $pairKey = min((int) $rowA->Id, (int) $rowB->Id).'-'.max((int) $rowA->Id, (int) $rowB->Id);
+                    if (isset($seenPairs[$pairKey])) {
+                        continue;
+                    }
+                    $seenPairs[$pairKey] = true;
+
+                    $hoTen = $rowA->giaoVien?->HoTen ?? '—';
+                    $khoaA = $rowA->khoaDaoTao?->TenKhoa ?? '—';
+                    $khoaB = $rowB->khoaDaoTao?->TenKhoa ?? '—';
+                    $rangeA = $rowA->TuNgay->format('d/m/Y').' – '.$rowA->DenNgay->format('d/m/Y');
+                    $rangeB = $rowB->TuNgay->format('d/m/Y').' – '.$rowB->DenNgay->format('d/m/Y');
+
+                    $warnings[] = "{$hoTen}: khoá {$khoaA} ({$rangeA}) trùng thời gian với khoá {$khoaB} ({$rangeB}).";
+                }
+            }
+        }
+
+        return $warnings;
+    }
+
+    /**
+     * Cảnh báo trùng khoảng thời gian của cùng xe giữa các khoá khác nhau.
+     * Trùng thời gian trong cùng một khoá được bỏ qua.
+     *
+     * @param  list<int>  $xeTapLaiIds
+     * @return list<string>
+     */
+    public static function crossKhoaOverlapWarningsForXeTapLaiIds(array $xeTapLaiIds): array
+    {
+        if ($xeTapLaiIds === []) {
+            return [];
+        }
+
+        $rows = static::query()
+            ->with(['khoaDaoTao', 'xeTapLai'])
+            ->whereIn('XeTapLaiId', $xeTapLaiIds)
+            ->whereNotNull('TuNgay')
+            ->whereNotNull('DenNgay')
+            ->orderBy('XeTapLaiId')
+            ->orderBy('TuNgay')
+            ->get();
+
+        $warnings = [];
+        $seenPairs = [];
+
+        foreach ($rows->groupBy('XeTapLaiId') as $xeRows) {
+            $list = $xeRows->values()->all();
+            $count = count($list);
+
+            for ($a = 0; $a < $count; $a++) {
+                for ($b = $a + 1; $b < $count; $b++) {
+                    $rowA = $list[$a];
+                    $rowB = $list[$b];
+
+                    if ((int) $rowA->KhoaDaoTaoId === (int) $rowB->KhoaDaoTaoId) {
+                        continue;
+                    }
+
+                    if (! self::rangesOverlap(
+                        $rowA->TuNgay->toDateString(),
+                        $rowA->DenNgay->toDateString(),
+                        $rowB->TuNgay->toDateString(),
+                        $rowB->DenNgay->toDateString()
+                    )) {
+                        continue;
+                    }
+
+                    $pairKey = min((int) $rowA->Id, (int) $rowB->Id).'-'.max((int) $rowA->Id, (int) $rowB->Id);
+                    if (isset($seenPairs[$pairKey])) {
+                        continue;
+                    }
+                    $seenPairs[$pairKey] = true;
+
+                    $bienSo = $rowA->xeTapLai?->BienSo ?? '—';
+                    $khoaA = $rowA->khoaDaoTao?->TenKhoa ?? '—';
+                    $khoaB = $rowB->khoaDaoTao?->TenKhoa ?? '—';
+                    $rangeA = $rowA->TuNgay->format('d/m/Y').' – '.$rowA->DenNgay->format('d/m/Y');
+                    $rangeB = $rowB->TuNgay->format('d/m/Y').' – '.$rowB->DenNgay->format('d/m/Y');
+
+                    $warnings[] = "{$bienSo}: khoá {$khoaA} ({$rangeA}) trùng thời gian với khoá {$khoaB} ({$rangeB}).";
+                }
+            }
+        }
+
+        return $warnings;
     }
 
     /**
@@ -185,6 +458,10 @@ class PhanCongDaoTao extends Model
         $items = [];
 
         foreach ($records as $i => $record) {
+            if (! self::isSaveableRecord($record)) {
+                continue;
+            }
+
             $items[] = [
                 'index' => $i,
                 'line' => (int) ($record['excel_row'] ?? ($i + 2)),
@@ -217,6 +494,10 @@ class PhanCongDaoTao extends Model
         $gvIdsInFile = [];
         $xeIdsInFile = [];
         foreach ($records as $record) {
+            if (! self::isSaveableRecord($record)) {
+                continue;
+            }
+
             $hoTen = trim((string) ($record['HoTen'] ?? ''));
             if ($hoTen !== '') {
                 $gv = GiaoVien::query()->where('HoTen', GiaoVien::normalizeHoTen($hoTen))->first();

@@ -15,6 +15,9 @@ use App\Http\Controllers\PMGPLX\TaoLichDayLyThuyetController;
 use App\Http\Controllers\PMGPLX\TaoLichTapHangLoatController;
 use App\Http\Controllers\PMGPLXOLD\DanhSachHocVienController as OldDanhSachHocVienController;
 use App\Http\Controllers\TrangChuController;
+use App\Http\Controllers\TrungTam\DanhSachGiaoVienController as TrungTamDanhSachGiaoVienController;
+use App\Http\Controllers\TrungTam\DanhSachXeTapLaiController as TrungTamDanhSachXeTapLaiController;
+use App\Http\Controllers\TrungTam\GopGiaoVienController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [TrangChuController::class, 'index'])->name('home');
@@ -125,6 +128,17 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
 
     Route::get('/phong-dao-tao/phan-cong-dao-tao/danh-sach', [DanhSachPhanCongDaoTaoController::class, 'index'])
         ->name('pdt.phan-cong-dao-tao.danh-sach');
+});
+
+Route::prefix('trung-tam')->name('trungtam.')->group(function () {
+    Route::get('/giao-vien', [TrungTamDanhSachGiaoVienController::class, 'index'])
+        ->name('giao-vien.danh-sach');
+    Route::get('/giao-vien/gop', [GopGiaoVienController::class, 'create'])
+        ->name('giao-vien.gop');
+    Route::post('/giao-vien/gop', [GopGiaoVienController::class, 'store'])
+        ->name('giao-vien.gop.store');
+    Route::get('/xe-tap-lai', [TrungTamDanhSachXeTapLaiController::class, 'index'])
+        ->name('xe-tap-lai.danh-sach');
 });
 
 Route::prefix('pmgplxold')->name('pmgplxold.')->group(function () {
