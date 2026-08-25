@@ -1,66 +1,101 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# KHGPLX — Laravel
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Ứng dụng quản lý GPLX. Chạy bằng Docker từ thư mục **`khgplx`** (cùng cấp với `docker-compose.yml`).
 
-## About Laravel
+## Khởi động
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+```bash
+cd ..   # vào thư mục khgplx
+docker compose up -d --build
+docker compose run --rm app composer install
+docker compose exec app php artisan key:generate
+```
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+App: http://localhost:8080
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Cấu hình DB
 
-## Learning Laravel
+File `.env` (connection `sqlsrv_manhlinh` → DB **MANHLINH**):
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+```env
+DB_HOST=db
+DB_PORT=1433
+DB_USERNAME=sa
+DB_PASSWORD=YourPassword123!
+DB_DATABASE_3=MANHLINH
+```
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+Tạo database (lần đầu):
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
+docker compose exec db /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U sa -P "YourPassword123!" -C \
+  -Q "CREATE DATABASE MANHLINH"
+```
 
-## Laravel Sponsors
+Migration bảng MANHLINH:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+docker compose exec app php artisan migrate \
+  --database=sqlsrv_manhlinh \
+  --path=database/migrations/manhlinh
+```
 
-### Premium Partners
+Kiểm tra trạng thái migration:
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+```bash
+docker compose exec app php artisan migrate:status \
+  --database=sqlsrv_manhlinh \
+  --path=database/migrations/manhlinh
+```
 
-## Contributing
+## Backup / restore MANHLINH
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+File backup nằm trên máy host: `khgplx/sqlserver-backup/` (mount vào container SQL Server).
 
-## Code of Conduct
+**Backup:**
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+docker compose exec db /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U sa -P "YourPassword123!" -C \
+  -Q "BACKUP DATABASE MANHLINH TO DISK = N'/var/opt/mssql/backup/MANHLINH.bak' WITH FORMAT, INIT, NAME = N'MANHLINH-Full'"
+```
 
-## Security Vulnerabilities
+**Restore:**
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+docker compose exec db /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U sa -P "YourPassword123!" -C \
+  -Q "RESTORE DATABASE MANHLINH FROM DISK = N'/var/opt/mssql/backup/MANHLINH.bak' WITH REPLACE"
+```
 
-## License
+Sau restore, chạy lại migration nếu code mới hơn DB.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Xuất file SQL (CREATE + INSERT) — tương thích SQL Server 2012
+
+Giống `mysqldump`: gồm tạo DB, tạo bảng, chèn dữ liệu. Dùng khi máy đích **không restore được** file `.bak` (vd. SQL Server 2012).
+
+**Xuất (Mac / Docker):**
+
+```bash
+docker compose exec app php artisan manhlinh:dump-sql
+```
+
+File ra: `laravel/database/dumps/MANHLINH.sql` (commit lên git được).
+
+Chỉ schema + data, không drop DB:
+
+```bash
+docker compose exec app php artisan manhlinh:dump-sql --no-drop-db --output=database/dumps/MANHLINH_data.sql
+```
+
+**Import trên Windows (SQL Server 2012):**
+
+1. SSMS → mở `laravel/database/dumps/MANHLINH.sql` → Execute  
+   Hoặc sqlcmd:
+
+```powershell
+sqlcmd -S localhost -U sa -P "..." -C -i "C:\path\to\khgplx\laravel\database\dumps\MANHLINH.sql"
+```
+
+2. Sửa `laravel\.env` trỏ DB `MANHLINH` trên Win → chạy app.
