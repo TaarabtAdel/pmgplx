@@ -10,7 +10,8 @@
                 Upload file Excel sổ phân công (cột: Số TT, Giáo viên, Thời gian, Khoá đào tạo, Biển số xe, Nội dung giảng dạy).
                 Dữ liệu lưu vào DB <strong>MANHLINH</strong> (bảng <code>GiaoVien</code>, <code>XeTapLai</code>, <code>KhoaDaoTao</code>, <code>PhanCongDaoTao</code>).
                 Chỉ lưu dòng có <strong>giáo viên</strong>; nội dung map thành <code>ly_thuyet</code> / <code>thuc_hanh</code> (dòng “tự động” bỏ qua).
-                Nhập lại cùng khoá sẽ <strong>cập nhật</strong> dòng phân công hiện có (theo STT), không tạo trùng.
+                Nhập lại cùng khoá sẽ <strong>cập nhật</strong> dòng trùng khóa
+                (cùng giáo viên + loại giảng dạy + xe), kể cả khi đổi thời gian.
             </div>
 
             <form method="POST" action="{{ route('daotao.pdt.cong-cu-nhap.nhap-file-so-phan-cong-giao-vien.store') }}" enctype="multipart/form-data">

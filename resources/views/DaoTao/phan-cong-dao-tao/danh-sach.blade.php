@@ -52,11 +52,35 @@
                 </div>
             </form>
 
+            <div class="d-flex flex-wrap gap-2 mt-2">
+                <a href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach', array_merge($listQueryParams ?? [], ['check_gv' => 'all'])) }}"
+                   class="btn btn-sm {{ ($checkGiaoVienAll ?? false) ? 'btn-warning' : 'btn-outline-warning' }}">
+                    Kiểm tra trùng lịch — tất cả giáo viên
+                </a>
+                <a href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach', array_merge($listQueryParams ?? [], ['check_xe' => 'all'])) }}"
+                   class="btn btn-sm {{ ($checkXeAll ?? false) ? 'btn-warning' : 'btn-outline-warning' }}">
+                    Kiểm tra trùng lịch — tất cả xe
+                </a>
+                @if (($checkGiaoVienAll ?? false) || ($checkXeAll ?? false))
+                    @php
+                        $clearBulkCheckParams = collect($listQueryParams ?? [])->except(['check_gv', 'check_xe'])->all();
+                    @endphp
+                    <a href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach', $clearBulkCheckParams) }}"
+                       class="btn btn-sm btn-outline-secondary">
+                        Tắt kiểm tra hàng loạt
+                    </a>
+                @endif
+            </div>
+            <p class="small text-muted mb-0 mt-1">
+                Chọn 1 giáo viên/xe trong bộ lọc để kiểm tra riêng, hoặc dùng nút trên để quét toàn hệ thống.
+                Trùng lịch chỉ tính trong cùng loại giảng dạy (<strong>lý thuyết</strong> / <strong>thực hành</strong>).
+            </p>
+
             @if ($giaoVienScheduleChecked ?? false)
                 @if (($giaoVienOverlapWarnings ?? []) !== [])
                     <div class="alert alert-warning mt-3 mb-0">
                         <strong>Cảnh báo — trùng lịch giữa các khoá</strong>
-                        (giáo viên lọc: <em>{{ $selectedGiaoVien?->HoTen ?? '—' }}</em>):
+                        ({{ $giaoVienCheckScope ?? ($selectedGiaoVien?->HoTen ?? '—') }}):
                         <ul class="mb-0 pl-3 mt-2">
                             @foreach ($giaoVienOverlapWarnings as $warning)
                                 <li>{{ $warning }}</li>
@@ -67,7 +91,7 @@
                     <div class="alert alert-success mt-3 mb-0">
                         <strong>Khoảng thời gian giáo viên hợp lệ</strong>
                         — không có trùng lịch giữa các khoá
-                        (giáo viên lọc: <em>{{ $selectedGiaoVien?->HoTen ?? '—' }}</em>).
+                        ({{ $giaoVienCheckScope ?? ($selectedGiaoVien?->HoTen ?? '—') }}).
                     </div>
                 @endif
             @endif
@@ -76,7 +100,7 @@
                 @if (($xeOverlapWarnings ?? []) !== [])
                     <div class="alert alert-warning mt-3 mb-0">
                         <strong>Cảnh báo — trùng lịch giữa các khoá</strong>
-                        (xe lọc: <em>{{ $selectedXeTapLai?->BienSo ?? '—' }}</em>):
+                        ({{ $xeCheckScope ?? ($selectedXeTapLai?->BienSo ?? '—') }}):
                         <ul class="mb-0 pl-3 mt-2">
                             @foreach ($xeOverlapWarnings as $warning)
                                 <li>{{ $warning }}</li>
@@ -87,7 +111,7 @@
                     <div class="alert alert-success mt-3 mb-0">
                         <strong>Khoảng thời gian xe hợp lệ</strong>
                         — không có trùng lịch giữa các khoá
-                        (xe lọc: <em>{{ $selectedXeTapLai?->BienSo ?? '—' }}</em>).
+                        ({{ $xeCheckScope ?? ($selectedXeTapLai?->BienSo ?? '—') }}).
                     </div>
                 @endif
             @endif

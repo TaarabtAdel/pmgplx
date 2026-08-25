@@ -24,6 +24,8 @@
         $validationErrors = $preview['validation_errors'] ?? [];
         $overlapErrors = $preview['overlap_errors'] ?? [];
         $skipCount = (int) ($meta['skip_count'] ?? 0);
+        $updateCount = (int) ($meta['update_count'] ?? 0);
+        $createCount = (int) ($meta['create_count'] ?? 0);
     @endphp
 
     <div class="card card-panel mb-3">
@@ -37,7 +39,11 @@
             <div>
                 <strong>Tổng quan:</strong>
                 {{ number_format((int) ($meta['record_count'] ?? 0)) }} dòng trong file,
-                <strong class="text-success">{{ number_format($saveableCount) }} dòng sẽ lưu</strong>,
+                <strong class="text-success">{{ number_format($saveableCount) }} dòng sẽ lưu</strong>
+                @if ($updateCount > 0 || $createCount > 0)
+                    (<span class="text-primary">{{ number_format($updateCount) }} cập nhật</span>,
+                    <span class="text-success">{{ number_format($createCount) }} thêm mới</span>)
+                @endif,
                 {{ number_format($skipCount) }} dòng bỏ qua
             </div>
             <div class="small text-muted mt-2 mb-0">
@@ -45,6 +51,7 @@
                 <code>ly_thuyet</code> (chứa “lý thuyết” hoặc “GVLT”),
                 <code>thuc_hanh</code> (chứa “thực hành” hoặc “GVTH”).
                 Dòng “tự động” hoặc không có giáo viên — không lưu.
+                Nhập lại cùng khoá: trùng <strong>giáo viên + loại + xe</strong> → <strong>Cập nhật</strong> (kể cả đổi thời gian).
             </div>
         </div>
     </div>
@@ -100,6 +107,7 @@
                                 $willSave = \App\Models\DaoTao\PhanCongDaoTao::isSaveableRecord($row);
                                 $loai = \App\Models\DaoTao\PhanCongDaoTao::classifyLoaiGiangDay((string) ($row['NoiDungGiangDay'] ?? ''));
                                 $skipReason = \App\Models\DaoTao\PhanCongDaoTao::skipReason($row);
+                                $importLabel = \App\Models\DaoTao\PhanCongDaoTao::importActionLabel($row['import_action'] ?? null);
                             @endphp
                             <tr class="{{ $willSave ? '' : 'phan-cong-skip-row' }}">
                                 <td>{{ $index + 1 }}</td>
@@ -116,8 +124,8 @@
                                         —
                                     @endif
                                 </td>
-                                <td class="small {{ $willSave ? 'text-success' : 'text-muted' }}">
-                                    {{ $willSave ? 'Sẽ lưu' : ($skipReason ?? 'Bỏ qua') }}
+                                <td class="small {{ $willSave ? ($importLabel === 'Cập nhật' ? 'text-primary' : 'text-success') : 'text-muted' }}">
+                                    {{ $willSave ? ($importLabel ?? 'Sẽ lưu') : ($skipReason ?? 'Bỏ qua') }}
                                 </td>
                             </tr>
                         @empty

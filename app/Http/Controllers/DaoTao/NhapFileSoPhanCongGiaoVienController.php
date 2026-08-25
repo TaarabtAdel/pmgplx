@@ -34,8 +34,12 @@ class NhapFileSoPhanCongGiaoVienController extends Controller
         try {
             $spreadsheet = IOFactory::load($file->getRealPath());
             $preview = (new SoPhanCongDaoTaoExcelParser())->parse($spreadsheet, $file->getClientOriginalName());
+            $annotated = PhanCongDaoTao::annotatePreviewRecords($preview['records']);
+            $preview['records'] = $annotated['records'];
             $saveable = PhanCongDaoTao::saveableRecords($preview['records']);
             $preview['meta']['save_count'] = count($saveable);
+            $preview['meta']['update_count'] = $annotated['update_count'];
+            $preview['meta']['create_count'] = $annotated['create_count'];
             $preview['meta']['skip_count'] = count($preview['records']) - count($saveable);
             $preview['validation_errors'] = PhanCongDaoTao::collectRowErrors($preview['records']);
             $preview['overlap_errors'] = $preview['validation_errors'] === []
@@ -58,6 +62,11 @@ class NhapFileSoPhanCongGiaoVienController extends Controller
                 ->route('daotao.pdt.cong-cu-nhap.nhap-file-so-phan-cong-giao-vien')
                 ->with('error', 'Chưa có dữ liệu xem trước. Vui lòng chọn file Excel.');
         }
+
+        $annotated = PhanCongDaoTao::annotatePreviewRecords($preview['records']);
+        $preview['records'] = $annotated['records'];
+        $preview['meta']['update_count'] = $annotated['update_count'];
+        $preview['meta']['create_count'] = $annotated['create_count'];
 
         return view('DaoTao.phan-cong-dao-tao.xem-truoc-nhap-file', [
             'preview' => $preview,

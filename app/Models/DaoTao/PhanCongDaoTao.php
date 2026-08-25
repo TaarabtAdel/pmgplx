@@ -151,7 +151,7 @@ class PhanCongDaoTao extends Model
 
                     $existing = static::query()
                         ->where('KhoaDaoTaoId', $khoaId)
-                        ->where(self::rowMatchQuery($record, $giaoVienId, $xeTapLaiId))
+                        ->where(self::rowMatchQuery($giaoVienId, $xeTapLaiId, $loaiGiangDay))
                         ->first();
 
                     if ($existing !== null) {
@@ -190,18 +190,16 @@ class PhanCongDaoTao extends Model
     }
 
     /**
-     * Khóa đối chiếu 1 dòng phân công trong cùng khoá.
+     * Khóa đối chiếu 1 dòng phân công trong cùng khoá (không gồm thời gian — đổi ngày khi nhập lại sẽ cập nhật).
      *
-     * @param  array<string, mixed>  $record
      * @return array<string, mixed>
      */
-    private static function rowMatchQuery(array $record, ?int $giaoVienId, ?int $xeTapLaiId): array
+    private static function rowMatchQuery(?int $giaoVienId, ?int $xeTapLaiId, ?string $loaiGiangDay): array
     {
         return [
-            'TuNgay' => $record['TuNgay'],
-            'DenNgay' => $record['DenNgay'],
             'GiaoVienId' => $giaoVienId,
             'XeTapLaiId' => $xeTapLaiId,
+            'LoaiGiangDay' => $loaiGiangDay,
         ];
     }
 
@@ -243,6 +241,86 @@ class PhanCongDaoTao extends Model
     public static function saveableRecords(array $records): array
     {
         return array_values(array_filter($records, fn (array $record): bool => self::isSaveableRecord($record)));
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $records
+     * @return array{records: list<array<string, mixed>>, update_count: int, create_count: int}
+     */
+    public static function annotatePreviewRecords(array $records): array
+    {
+        $updateCount = 0;
+        $createCount = 0;
+
+        foreach ($records as &$record) {
+            $action = self::importActionForRecord($record);
+            $record['import_action'] = $action;
+            if ($action === 'update') {
+                $updateCount++;
+            } elseif ($action === 'create') {
+                $createCount++;
+            }
+        }
+        unset($record);
+
+        return [
+            'records' => $records,
+            'update_count' => $updateCount,
+            'create_count' => $createCount,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $record
+     */
+    public static function importActionForRecord(array $record): ?string
+    {
+        if (! self::isSaveableRecord($record)) {
+            return null;
+        }
+
+        $tenKhoa = KhoaDaoTao::normalizeTenKhoa((string) ($record['TenKhoa'] ?? ''));
+        $khoa = KhoaDaoTao::query()->where('TenKhoa', $tenKhoa)->first();
+        if ($khoa === null) {
+            return 'create';
+        }
+
+        $gv = GiaoVien::query()
+            ->where('HoTen', GiaoVien::normalizeHoTen((string) ($record['HoTen'] ?? '')))
+            ->first();
+        if ($gv === null) {
+            return 'create';
+        }
+
+        $xeTapLaiId = null;
+        $bienSo = trim((string) ($record['BienSo'] ?? ''));
+        if ($bienSo !== '') {
+            $xe = XeTapLai::query()
+                ->where('BienSo', XeTapLai::normalizeBienSo($bienSo))
+                ->first();
+            $xeTapLaiId = $xe?->Id;
+        }
+
+        $loaiGiangDay = self::classifyLoaiGiangDay((string) ($record['NoiDungGiangDay'] ?? ''));
+        if ($loaiGiangDay === null) {
+            return null;
+        }
+
+        $exists = static::query()
+            ->where('KhoaDaoTaoId', $khoa->Id)
+            ->where(self::rowMatchQuery((int) $gv->Id, $xeTapLaiId, $loaiGiangDay))
+            ->exists();
+
+        return $exists ? 'update' : 'create';
+    }
+
+    public static function importActionLabel(?string $action): ?string
+    {
+        return match ($action) {
+            'update' => 'Cập nhật',
+            'create' => 'Thêm mới',
+            default => null,
+        };
     }
 
     /**
@@ -317,6 +395,7 @@ class PhanCongDaoTao extends Model
 
     /**
      * Cảnh báo trùng khoảng thời gian của cùng giáo viên giữa các khoá khác nhau.
+     * Chỉ so khớp trong cùng loại giảng dạy (lý thuyết / thực hành).
      *
      * @param  list<int>  $giaoVienIds
      * @return list<string>
@@ -352,6 +431,10 @@ class PhanCongDaoTao extends Model
                         continue;
                     }
 
+                    if (self::loaiGiangDayBlocksOverlap($rowA->LoaiGiangDay, $rowB->LoaiGiangDay)) {
+                        continue;
+                    }
+
                     if (! self::rangesOverlap(
                         $rowA->TuNgay->toDateString(),
                         $rowA->DenNgay->toDateString(),
@@ -368,12 +451,13 @@ class PhanCongDaoTao extends Model
                     $seenPairs[$pairKey] = true;
 
                     $hoTen = $rowA->giaoVien?->HoTen ?? '—';
+                    $loaiLabel = self::loaiGiangDayLabel($rowA->LoaiGiangDay);
                     $khoaA = $rowA->khoaDaoTao?->TenKhoa ?? '—';
                     $khoaB = $rowB->khoaDaoTao?->TenKhoa ?? '—';
                     $rangeA = $rowA->TuNgay->format('d/m/Y').' – '.$rowA->DenNgay->format('d/m/Y');
                     $rangeB = $rowB->TuNgay->format('d/m/Y').' – '.$rowB->DenNgay->format('d/m/Y');
 
-                    $warnings[] = "{$hoTen}: khoá {$khoaA} ({$rangeA}) trùng thời gian với khoá {$khoaB} ({$rangeB}).";
+                    $warnings[] = "{$hoTen} ({$loaiLabel}): khoá {$khoaA} ({$rangeA}) trùng thời gian với khoá {$khoaB} ({$rangeB}).";
                 }
             }
         }
@@ -384,6 +468,7 @@ class PhanCongDaoTao extends Model
     /**
      * Cảnh báo trùng khoảng thời gian của cùng xe giữa các khoá khác nhau.
      * Trùng thời gian trong cùng một khoá được bỏ qua.
+     * Chỉ so khớp trong cùng loại giảng dạy (lý thuyết / thực hành).
      *
      * @param  list<int>  $xeTapLaiIds
      * @return list<string>
@@ -419,6 +504,10 @@ class PhanCongDaoTao extends Model
                         continue;
                     }
 
+                    if (self::loaiGiangDayBlocksOverlap($rowA->LoaiGiangDay, $rowB->LoaiGiangDay)) {
+                        continue;
+                    }
+
                     if (! self::rangesOverlap(
                         $rowA->TuNgay->toDateString(),
                         $rowA->DenNgay->toDateString(),
@@ -435,12 +524,13 @@ class PhanCongDaoTao extends Model
                     $seenPairs[$pairKey] = true;
 
                     $bienSo = $rowA->xeTapLai?->BienSo ?? '—';
+                    $loaiLabel = self::loaiGiangDayLabel($rowA->LoaiGiangDay);
                     $khoaA = $rowA->khoaDaoTao?->TenKhoa ?? '—';
                     $khoaB = $rowB->khoaDaoTao?->TenKhoa ?? '—';
                     $rangeA = $rowA->TuNgay->format('d/m/Y').' – '.$rowA->DenNgay->format('d/m/Y');
                     $rangeB = $rowB->TuNgay->format('d/m/Y').' – '.$rowB->DenNgay->format('d/m/Y');
 
-                    $warnings[] = "{$bienSo}: khoá {$khoaA} ({$rangeA}) trùng thời gian với khoá {$khoaB} ({$rangeB}).";
+                    $warnings[] = "{$bienSo} ({$loaiLabel}): khoá {$khoaA} ({$rangeA}) trùng thời gian với khoá {$khoaB} ({$rangeB}).";
                 }
             }
         }
@@ -470,6 +560,7 @@ class PhanCongDaoTao extends Model
                 'den' => (string) $record['DenNgay'],
                 'gv_key' => self::gvKey($record),
                 'xe_key' => self::xeKey($record),
+                'loai_giang_day' => self::classifyLoaiGiangDay((string) ($record['NoiDungGiangDay'] ?? '')),
                 'ten_khoa' => KhoaDaoTao::normalizeTenKhoa((string) ($record['TenKhoa'] ?? '')),
             ];
         }
@@ -479,11 +570,17 @@ class PhanCongDaoTao extends Model
                 if (! self::rangesOverlap($items[$a]['tu'], $items[$a]['den'], $items[$b]['tu'], $items[$b]['den'])) {
                     continue;
                 }
-                if ($items[$a]['gv_key'] !== null && $items[$a]['gv_key'] === $items[$b]['gv_key']) {
-                    $errors[] = "Dòng {$items[$a]['line']} và {$items[$b]['line']}: giáo viên trùng khoảng thời gian ({$items[$a]['label']}).";
+                if ($items[$a]['gv_key'] !== null
+                    && $items[$a]['gv_key'] === $items[$b]['gv_key']
+                    && ! self::loaiGiangDayBlocksOverlap($items[$a]['loai_giang_day'], $items[$b]['loai_giang_day'])) {
+                    $loaiLabel = self::loaiGiangDayLabel($items[$a]['loai_giang_day']);
+                    $errors[] = "Dòng {$items[$a]['line']} và {$items[$b]['line']}: giáo viên trùng khoảng thời gian ({$loaiLabel}, {$items[$a]['label']}).";
                 }
-                if ($items[$a]['xe_key'] !== null && $items[$a]['xe_key'] === $items[$b]['xe_key']) {
-                    $errors[] = "Dòng {$items[$a]['line']} và {$items[$b]['line']}: xe trùng khoảng thời gian ({$items[$a]['label']}).";
+                if ($items[$a]['xe_key'] !== null
+                    && $items[$a]['xe_key'] === $items[$b]['xe_key']
+                    && ! self::loaiGiangDayBlocksOverlap($items[$a]['loai_giang_day'], $items[$b]['loai_giang_day'])) {
+                    $loaiLabel = self::loaiGiangDayLabel($items[$a]['loai_giang_day']);
+                    $errors[] = "Dòng {$items[$a]['line']} và {$items[$b]['line']}: xe trùng khoảng thời gian ({$loaiLabel}, {$items[$a]['label']}).";
                 }
             }
         }
@@ -551,11 +648,16 @@ class PhanCongDaoTao extends Model
                 if (! self::rangesOverlap($item['tu'], $item['den'], $row->TuNgay->toDateString(), $row->DenNgay->toDateString())) {
                     continue;
                 }
+                if (self::loaiGiangDayBlocksOverlap($item['loai_giang_day'], $row->LoaiGiangDay)) {
+                    continue;
+                }
                 if ($gvId !== null && (int) $row->GiaoVienId === (int) $gvId) {
-                    $errors[] = "Dòng {$item['line']}: giáo viên {$item['label']} trùng lịch với khoá {$row->khoaDaoTao?->TenKhoa} ({$row->TuNgay->format('d/m/Y')} – {$row->DenNgay->format('d/m/Y')}).";
+                    $loaiLabel = self::loaiGiangDayLabel($item['loai_giang_day']);
+                    $errors[] = "Dòng {$item['line']}: giáo viên {$item['label']} ({$loaiLabel}) trùng lịch với khoá {$row->khoaDaoTao?->TenKhoa} ({$row->TuNgay->format('d/m/Y')} – {$row->DenNgay->format('d/m/Y')}).";
                 }
                 if ($xeId !== null && (int) $row->XeTapLaiId === (int) $xeId) {
-                    $errors[] = "Dòng {$item['line']}: xe trùng lịch với khoá {$row->khoaDaoTao?->TenKhoa} ({$row->TuNgay->format('d/m/Y')} – {$row->DenNgay->format('d/m/Y')}).";
+                    $loaiLabel = self::loaiGiangDayLabel($item['loai_giang_day']);
+                    $errors[] = "Dòng {$item['line']}: xe ({$loaiLabel}) trùng lịch với khoá {$row->khoaDaoTao?->TenKhoa} ({$row->TuNgay->format('d/m/Y')} – {$row->DenNgay->format('d/m/Y')}).";
                 }
             }
         }
@@ -606,6 +708,16 @@ class PhanCongDaoTao extends Model
     private static function rangesOverlap(string $aStart, string $aEnd, string $bStart, string $bEnd): bool
     {
         return $aStart <= $bEnd && $aEnd >= $bStart;
+    }
+
+    /** Lý thuyết và thực hành trùng thời gian — không coi là xung đột. */
+    private static function loaiGiangDayBlocksOverlap(?string $loaiA, ?string $loaiB): bool
+    {
+        if ($loaiA === null || $loaiB === null) {
+            return false;
+        }
+
+        return $loaiA !== $loaiB;
     }
 
     private static function guessLoaiGv(string $noiDung): ?string

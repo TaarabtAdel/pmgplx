@@ -34,6 +34,9 @@ class DanhSachPhanCongDaoTaoController extends Controller
             'xe_tap_lai_id' => $this->positiveIntOrNull($request->input('xe_tap_lai_id')),
         ];
 
+        $checkGiaoVienAll = $request->input('check_gv') === 'all';
+        $checkXeAll = $request->input('check_xe') === 'all';
+
         $query = PhanCongDaoTao::query()->with(['giaoVien', 'xeTapLai', 'khoaDaoTao']);
 
         if ($filters['khoa_dao_tao_id'] !== null) {
@@ -61,20 +64,59 @@ class DanhSachPhanCongDaoTaoController extends Controller
             ? XeTapLai::query()->find($filters['xe_tap_lai_id'])
             : null;
 
-        $giaoVienScheduleChecked = $selectedGiaoVien !== null;
-        $giaoVienOverlapWarnings = $giaoVienScheduleChecked
-            ? PhanCongDaoTao::crossKhoaOverlapWarningsForGiaoVienIds([$filters['giao_vien_id']])
-            : [];
+        $giaoVienOverlapWarnings = [];
+        $giaoVienScheduleChecked = false;
+        $giaoVienCheckScope = '';
 
-        $xeScheduleChecked = $selectedXeTapLai !== null;
-        $xeOverlapWarnings = $xeScheduleChecked
-            ? PhanCongDaoTao::crossKhoaOverlapWarningsForXeTapLaiIds([$filters['xe_tap_lai_id']])
-            : [];
+        if ($checkGiaoVienAll) {
+            $gvIds = PhanCongDaoTao::query()
+                ->whereNotNull('GiaoVienId')
+                ->distinct()
+                ->pluck('GiaoVienId')
+                ->map(fn ($id): int => (int) $id)
+                ->all();
+            $giaoVienOverlapWarnings = PhanCongDaoTao::crossKhoaOverlapWarningsForGiaoVienIds($gvIds);
+            $giaoVienScheduleChecked = true;
+            $giaoVienCheckScope = 'tất cả giáo viên ('.number_format(count($gvIds)).' GV có phân công)';
+        } elseif ($selectedGiaoVien !== null) {
+            $giaoVienOverlapWarnings = PhanCongDaoTao::crossKhoaOverlapWarningsForGiaoVienIds([$filters['giao_vien_id']]);
+            $giaoVienScheduleChecked = true;
+            $giaoVienCheckScope = (string) $selectedGiaoVien->HoTen;
+        }
+
+        $xeOverlapWarnings = [];
+        $xeScheduleChecked = false;
+        $xeCheckScope = '';
+
+        if ($checkXeAll) {
+            $xeIds = PhanCongDaoTao::query()
+                ->whereNotNull('XeTapLaiId')
+                ->distinct()
+                ->pluck('XeTapLaiId')
+                ->map(fn ($id): int => (int) $id)
+                ->all();
+            $xeOverlapWarnings = PhanCongDaoTao::crossKhoaOverlapWarningsForXeTapLaiIds($xeIds);
+            $xeScheduleChecked = true;
+            $xeCheckScope = 'tất cả xe ('.number_format(count($xeIds)).' xe có phân công)';
+        } elseif ($selectedXeTapLai !== null) {
+            $xeOverlapWarnings = PhanCongDaoTao::crossKhoaOverlapWarningsForXeTapLaiIds([$filters['xe_tap_lai_id']]);
+            $xeScheduleChecked = true;
+            $xeCheckScope = (string) $selectedXeTapLai->BienSo;
+        }
 
         $luuLuongBackParams = $this->luuLuongBackParams($request);
         $backToLuuLuongUrl = $luuLuongBackParams !== []
             ? route('daotao.pdt.bc.luu-luong-dao-tao', array_diff_key($luuLuongBackParams, ['from' => true]))
             : null;
+
+        $listQueryParams = array_filter(array_merge(
+            $filters,
+            $luuLuongBackParams,
+            array_filter([
+                'check_gv' => $checkGiaoVienAll ? 'all' : null,
+                'check_xe' => $checkXeAll ? 'all' : null,
+            ])
+        ), fn ($value) => $value !== null && $value !== '');
 
         return view('DaoTao.phan-cong-dao-tao.danh-sach', [
             'filters' => $filters,
@@ -88,6 +130,11 @@ class DanhSachPhanCongDaoTaoController extends Controller
             'xeOverlapWarnings' => $xeOverlapWarnings,
             'giaoVienScheduleChecked' => $giaoVienScheduleChecked,
             'xeScheduleChecked' => $xeScheduleChecked,
+            'giaoVienCheckScope' => $giaoVienCheckScope,
+            'xeCheckScope' => $xeCheckScope,
+            'checkGiaoVienAll' => $checkGiaoVienAll,
+            'checkXeAll' => $checkXeAll,
+            'listQueryParams' => $listQueryParams,
             'backToLuuLuongUrl' => $backToLuuLuongUrl,
             'luuLuongBackParams' => $luuLuongBackParams,
         ]);
