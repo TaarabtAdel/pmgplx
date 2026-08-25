@@ -73,7 +73,7 @@ Sau restore, chạy lại migration nếu code mới hơn DB.
 
 ## Xuất file SQL (CREATE + INSERT) — tương thích SQL Server 2012
 
-Giống `mysqldump`: gồm tạo DB, tạo bảng, chèn dữ liệu. Dùng khi máy đích **không restore được** file `.bak` (vd. SQL Server 2012).
+Giống `mysqldump`: gồm tạo bảng + chèn dữ liệu. **Giả định DB `MANHLINH` đã tạo sẵn** (phù hợp SQL Server 2012 trên Windows). File không DROP database.
 
 **Xuất (Mac / Docker):**
 
@@ -83,15 +83,16 @@ docker compose exec app php artisan manhlinh:dump-sql
 
 File ra: `laravel/database/dumps/MANHLINH.sql` (commit lên git được).
 
-Chỉ schema + data, không drop DB:
+Xuất kèm DROP + CREATE DATABASE (reset sạch trên Mac):
 
 ```bash
-docker compose exec app php artisan manhlinh:dump-sql --no-drop-db --output=database/dumps/MANHLINH_data.sql
+docker compose exec app php artisan manhlinh:dump-sql --fresh-db
 ```
 
 **Import trên Windows (SQL Server 2012):**
 
-1. SSMS → mở `laravel/database/dumps/MANHLINH.sql` → Execute  
+1. Tạo DB rỗng (nếu chưa có): `CREATE DATABASE MANHLINH`
+2. SSMS → mở `laravel/database/dumps/MANHLINH.sql` → Execute  
    Hoặc sqlcmd:
 
 ```powershell

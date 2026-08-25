@@ -9,7 +9,7 @@ class DumpManhlinhSql extends Command
 {
     protected $signature = 'manhlinh:dump-sql
                             {--output= : Đường dẫn file .sql (mặc định: database/dumps/MANHLINH.sql)}
-                            {--no-drop-db : Không DROP/CREATE DATABASE, chỉ schema + dữ liệu}';
+                            {--fresh-db : DROP + CREATE DATABASE (xóa sạch DB trước khi import)}';
 
     protected $description = 'Xuất DB MANHLINH ra file SQL (CREATE TABLE + INSERT), tương thích SQL Server 2012+';
 
@@ -50,12 +50,12 @@ class DumpManhlinhSql extends Command
         }
 
         $lines = [];
-        $lines[] = '-- MANHLINH SQL dump — CREATE DATABASE + schema + INSERT';
+        $lines[] = '-- MANHLINH SQL dump — schema + INSERT (DB MANHLINH phải đã tồn tại)';
         $lines[] = '-- Tương thích SQL Server 2012+ (chạy bằng SSMS hoặc sqlcmd)';
         $lines[] = '-- Generated: '.now()->format('Y-m-d H:i:s');
         $lines[] = '';
 
-        if (! $this->option('no-drop-db')) {
+        if ($this->option('fresh-db')) {
             $lines[] = 'IF DB_ID(N\'MANHLINH\') IS NOT NULL';
             $lines[] = 'BEGIN';
             $lines[] = '    ALTER DATABASE [MANHLINH] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;';
@@ -63,6 +63,10 @@ class DumpManhlinhSql extends Command
             $lines[] = 'END';
             $lines[] = 'GO';
             $lines[] = 'CREATE DATABASE [MANHLINH];';
+            $lines[] = 'GO';
+        } else {
+            $lines[] = 'IF DB_ID(N\'MANHLINH\') IS NULL';
+            $lines[] = '    CREATE DATABASE [MANHLINH];';
             $lines[] = 'GO';
         }
 
