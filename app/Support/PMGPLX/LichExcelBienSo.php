@@ -5,6 +5,19 @@ namespace App\Support\PMGPLX;
 class LichExcelBienSo
 {
     /**
+     * Dòng có phải biển số xe (không phải chữ trong tên GV) — vd. 51H-123.45.
+     */
+    public static function isLikelyPlate(string $raw): bool
+    {
+        $raw = trim($raw);
+        if ($raw === '' || ! preg_match('/\d/u', $raw)) {
+            return false;
+        }
+
+        return (bool) preg_match('/^[A-Z0-9\-]+(?:\.\d+)?$/iu', $raw);
+    }
+
+    /**
      * Chuẩn hóa biển số Excel → dạng XeTap: 74A-452.04 → 74A45204
      */
     public static function normalize(string $raw): string

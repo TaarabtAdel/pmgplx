@@ -32,7 +32,15 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function () {
 
     Route::get('/danh-muc/hoc-vien', [DanhSachHocVienController::class, 'index'])
         ->name('dm.hoc-vien.index');
-    Route::post('/danh-muc/hoc-vien/dong-bo', [DanhSachHocVienController::class, 'dongBo'])
+    Route::get('/danh-muc/hoc-vien/dong-bo', [DanhSachHocVienController::class, 'dongBoForm'])
+        ->name('dm.hoc-vien.dong-bo.form');
+    Route::post('/danh-muc/hoc-vien/dong-bo', [DanhSachHocVienController::class, 'dongBoStore'])
+        ->name('dm.hoc-vien.dong-bo.store');
+    Route::post('/danh-muc/hoc-vien/dong-bo/test-mot', [DanhSachHocVienController::class, 'dongBoTestMot'])
+        ->name('dm.hoc-vien.dong-bo.test-mot');
+    Route::post('/danh-muc/hoc-vien/dong-bo/khoi-phuc', [DanhSachHocVienController::class, 'dongBoKhoiPhuc'])
+        ->name('dm.hoc-vien.dong-bo.khoi-phuc');
+    Route::post('/danh-muc/hoc-vien/dong-bo-loc', [DanhSachHocVienController::class, 'dongBo'])
         ->name('dm.hoc-vien.dong-bo');
 
     Route::get('/danh-muc/xe', [DanhSachXeController::class, 'index'])

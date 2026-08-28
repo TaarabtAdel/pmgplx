@@ -1403,17 +1403,60 @@ class NhapLichTuFileController extends Controller
             return ['', ''];
         }
 
-        if (preg_match('/^(.*?)\s*[-–]?\s*\n\s*([A-Z0-9\-]+(?:\.\d+)?)\s*$/iu', $raw, $m)) {
-            return [trim($m[1], " \t-–"), trim($m[2])];
+        if (preg_match('/^(.*?)\s*[-–]?\s*\n\s*([A-Z0-9\-]+(?:\.\d+)?)\s*$/iu', $raw, $m)
+            && LichExcelBienSo::isLikelyPlate(trim($m[2]))) {
+            $ten = trim($m[1]);
+            $ten = (string) preg_replace('/[-–\s]+$/u', '', $ten);
+
+            return [$ten, trim($m[2])];
         }
 
-        if (preg_match('/^(.*?)\s*[-–]\s*([A-Z0-9\-]+(?:\.\d+)?)\s*$/iu', $raw, $m)) {
+        if (preg_match('/^(.*?)\s*[-–]\s*([A-Z0-9\-]+(?:\.\d+)?)\s*$/iu', $raw, $m)
+            && LichExcelBienSo::isLikelyPlate(trim($m[2]))) {
             return [trim($m[1]), trim($m[2])];
         }
 
-        $parts = preg_split("/\n+/", $raw) ?: [$raw];
+        $parts = array_values(array_filter(
+            array_map('trim', preg_split("/\n+/", $raw) ?: [$raw]),
+            static fn ($part) => $part !== ''
+        ));
 
-        return [trim((string) ($parts[0] ?? '')), trim((string) ($parts[1] ?? ''))];
+        if (count($parts) >= 2 && LichExcelBienSo::isLikelyPlate($parts[count($parts) - 1])) {
+            $bienSo = array_pop($parts);
+
+            return [trim($this->joinNameLines($parts)), $bienSo];
+        }
+
+        return [$this->joinNameLines($parts !== [] ? $parts : [$raw]), ''];
+    }
+
+    /**
+     * @param  list<string>  $parts
+     */
+    private function joinNameLines(array $parts): string
+    {
+        if ($parts === []) {
+            return '';
+        }
+
+        $name = trim($parts[0]);
+        for ($i = 1; $i < count($parts); $i++) {
+            $chunk = trim($parts[$i]);
+            if ($chunk === '') {
+                continue;
+            }
+
+            // Tên bị xuống dòng giữa chữ (vd. "HOÀNG TRUNG H" + "À" → "HOÀNG TRUNG HÀ")
+            if (mb_strlen($chunk) <= 2
+                && ! str_contains($chunk, ' ')
+                && preg_match('/\p{L}$/u', $name)) {
+                $name .= $chunk;
+            } else {
+                $name .= ' '.$chunk;
+            }
+        }
+
+        return trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
     }
 
     private function normalizeCell(mixed $value): mixed

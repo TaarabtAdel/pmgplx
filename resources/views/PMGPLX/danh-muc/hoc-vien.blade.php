@@ -54,20 +54,15 @@
                     <button type="button" class="btn btn-danger" disabled title="Sắp hỗ trợ">✕ Xóa</button>
                 </div>
 
-                <form method="POST" action="{{ route('pmgplx.dm.hoc-vien.dong-bo') }}" class="mb-2 mr-2"
-                      onsubmit="return confirm('Đồng bộ toàn bộ kết quả theo bộ lọc hiện tại ({{ number_format($items->total()) }} học viên) sang bản cũ?');">
-                    @csrf
-                    <input type="hidden" name="tu_khoa" value="{{ $filters['tu_khoa'] }}">
-                    <input type="hidden" name="ma_kh" value="{{ $filters['ma_kh'] }}">
-                    <input type="hidden" name="hang_gplx" value="{{ $filters['hang_gplx'] }}">
-                    <input type="hidden" name="trang_thai" value="{{ $filters['trang_thai'] }}">
-                    <button type="submit" class="btn btn-sm btn-info" @disabled($items->total() === 0)>
+                <div class="mb-2 mr-2">
+                    <a href="{{ route('pmgplx.dm.hoc-vien.dong-bo.form', array_filter(['ma_kh_nguon' => $filters['ma_kh']])) }}"
+                       class="btn btn-sm btn-info">
                         Đồng Bộ Qua Bản Cũ
-                    </button>
+                    </a>
                     <a href="{{ route('pmgplxold.dm.hoc-vien.index') }}" class="btn btn-sm btn-outline-secondary ml-1" target="_blank">
                         Xem bản cũ
                     </a>
-                </form>
+                </div>
 
                 <div class="ml-auto d-flex flex-wrap align-items-center mb-2">
                     <span class="mr-3">Tổng số bản ghi: <strong>{{ number_format($items->total()) }}</strong></span>
