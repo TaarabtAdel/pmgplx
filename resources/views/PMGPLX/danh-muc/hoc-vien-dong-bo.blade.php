@@ -81,6 +81,32 @@
     @endif
 
     <div class="card card-panel mb-3">
+        <div class="card-header bg-light">Hướng dẫn sử dụng</div>
+        <div class="card-body pb-2">
+            <ol class="mb-3 pl-3">
+                <li class="mb-2">
+                    Chọn <strong>Mã khóa học nguồn</strong> (phần mềm mới) — danh sách học viên bên trái sẽ hiện ngay.
+                </li>
+                <li class="mb-2">
+                    Chọn <strong>Khóa học đích</strong> (phần mềm cũ), bấm <strong>Xem trước</strong> — bảng bên phải hiện mã ĐK dự kiến (thay tiền tố mã khóa, phần số sau gộp liền).
+                </li>
+                <li class="mb-2">
+                    Kiểm tra dòng vàng (<strong>Đã tồn tại</strong>): những mã ĐK đã có trên bản cũ sẽ <strong>bỏ qua</strong> khi đồng bộ; dòng có dấu ✓ xanh là học viên sẽ được đưa sang.
+                </li>
+                <li class="mb-2">
+                    (Khuyến nghị) Bấm <strong>Test 1 học viên</strong> để thử trước — nếu không ổn, dùng <strong>Khôi phục</strong> để xóa trên bản cũ.
+                </li>
+                <li class="mb-2">
+                    Bấm <strong>Xác nhận đồng bộ sang bản cũ</strong> để đưa toàn bộ học viên còn lại (chưa trùng mã) sang phần mềm cũ.
+                </li>
+            </ol>
+            <div class="alert alert-warning mb-0">
+                <strong>Lưu ý:</strong> Nếu bên <strong>Khóa học đích</strong> chưa có khóa học cần đưa qua thì cần <strong>tạo khóa học trên phần mềm cũ trước</strong>, sau đó quay lại chọn khóa đích và xem trước.
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-panel mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>Đồng bộ học viên qua bản cũ</span>
             <a href="{{ route('pmgplx.dm.hoc-vien.index') }}" class="btn btn-sm btn-outline-secondary">← Danh sách học viên</a>
