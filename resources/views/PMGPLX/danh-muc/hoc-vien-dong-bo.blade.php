@@ -100,6 +100,20 @@
                     Bấm <strong>Xác nhận đồng bộ sang bản cũ</strong> để đưa toàn bộ học viên còn lại (chưa trùng mã) sang phần mềm cũ.
                 </li>
             </ol>
+            <div class="alert alert-info mb-3">
+                <strong>Phạm vi dữ liệu mỗi học viên</strong> (cả phần mềm mới và cũ đều có cùng các bảng sau, liên kết qua <code>MaDK</code>):
+                <ul class="mb-2 mt-2 pl-3">
+                    <li><strong>NguoiLX</strong> — thông tin cá nhân (họ tên, CMT, ngày sinh…)</li>
+                    <li><strong>NguoiLX_HoSo</strong> — hồ sơ khóa học (số hồ sơ, mã khóa, hạng GPLX…)</li>
+                    <li><strong>NguoiLX_GPLX</strong> — GPLX đã có (nếu có)</li>
+                    <li><strong>NguoiLXHS_GiayTo</strong> — giấy tờ kèm hồ sơ (đơn, CMT, ảnh…)</li>
+                </ul>
+                Chức năng này hiện chỉ copy sang bản cũ <strong>2 bảng: NguoiLX + NguoiLX_HoSo</strong>
+                (91 cột hồ sơ chung giữa 2 DB; mã ĐK và mã khóa được map sang khóa đích).
+                <strong>Chưa</strong> đưa <code>NguoiLX_GPLX</code>, <code>NguoiLXHS_GiayTo</code>
+                và các cột chỉ có trên bản mới (điểm thi, kết quả DAT…).
+                Đủ để hiện danh sách học viên trên bản cũ; chưa đủ nếu cần xem/sửa giấy tờ hoặc GPLX cũ trong phần mềm cũ.
+            </div>
             <div class="alert alert-warning mb-0">
                 <strong>Lưu ý:</strong> Nếu bên <strong>Khóa học đích</strong> chưa có khóa học cần đưa qua thì cần <strong>tạo khóa học trên phần mềm cũ trước</strong>, sau đó quay lại chọn khóa đích và xem trước.
             </div>
