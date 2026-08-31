@@ -11,9 +11,9 @@
             </p>
             <ol class="mb-3 pl-3">
                 <li class="mb-2">
-                    Chuẩn bị file Excel đúng mẫu: mỗi giáo viên chiếm <strong>5 cột</strong>
-                    (Thời gian, Nội dung, Chi tiết, Bắt đầu, Kết thúc).
-                    Dòng header có <strong>tên GV + biển số xe</strong> và <strong>mã GV + mã khóa học</strong>.
+                    Chuẩn bị file Excel đúng mẫu: mỗi giáo viên chiếm <strong>7 cột</strong>
+                    (Thứ, Thời Gian, Số Giờ, Nội dung, Chi tiết, Bắt đầu, Kết thúc).
+                    Dòng header cột <strong>Nội dung</strong> có tên GV + biển số xe; cột <strong>Chi tiết</strong> có mã GV + mã khóa học.
                 </li>
                 <li class="mb-2">
                     Chọn file (<code>.xls</code>, <code>.xlsx</code>, <code>.csv</code>) và bấm <strong>Xem trước kết quả</strong>.

@@ -29,6 +29,9 @@
         $okCount = (int) ($preview['meta']['ok_count'] ?? 0);
         $offCount = (int) ($preview['meta']['off_count'] ?? 0);
         $teacherCount = (int) ($preview['meta']['teacher_count'] ?? 0);
+        $offDeleteSummary = $offDayDeletes['summary'] ?? [];
+        $offDeleteGvCount = (int) ($offDayDeletes['gv_count'] ?? 0);
+        $offDeleteXeCount = (int) ($offDayDeletes['xe_count'] ?? 0);
         $cellClass = fn (?string $text) => \App\Support\PMGPLX\LichExcelCellStyle::classFor($text);
     @endphp
 
@@ -49,8 +52,28 @@
             </div>
 
             <div class="alert alert-warning mb-3">
-                Dòng nền vàng là <strong>ngày nghỉ</strong> (cột Nội dung và Chi tiết đều trống) — sẽ <strong>không lưu</strong> vào phần mềm.
+                Dòng nền vàng là <strong>ngày nghỉ</strong> (cột Nội dung và Chi tiết đều trống).
+                Khi xác nhận lưu, hệ thống sẽ <strong>gỡ lịch GV và xe</strong> đã có trên DB cho đúng giáo viên, khóa học và ngày đó
+                (ví dụ đổi lịch: trước dạy 9/1, sau nghỉ 9/1 thì lịch 9/1 cũ sẽ bị xóa).
             </div>
+
+            @if ($offDeleteGvCount > 0 || $offDeleteXeCount > 0)
+                <div class="alert alert-danger mb-3">
+                    <strong>Sẽ xóa khỏi DB:</strong>
+                    {{ $offDeleteGvCount }} buổi lịch GV,
+                    {{ $offDeleteXeCount }} buổi lịch xe (theo {{ count($offDeleteSummary) }} ngày nghỉ trong file).
+                    <ul class="mb-0 mt-2 pl-3">
+                        @foreach ($offDeleteSummary as $item)
+                            <li>
+                                {{ $item['ten_gv'] !== '' ? $item['ten_gv'] : $item['MaGV'] }}
+                                — khóa {{ $item['MaKH'] }}
+                                — ngày {{ \Carbon\Carbon::parse($item['ngay'])->format('d/m/Y') }}
+                                (GV {{ (int) $item['gv_count'] }}, xe {{ (int) $item['xe_count'] }})
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
 
             <div class="mb-3 small">
                 <span class="badge mr-1" style="background:#00e5e5;color:#111;">PHỨC TẠP</span>
@@ -84,7 +107,9 @@
                             <thead class="thead-light">
                                 <tr>
                                     <th>STT</th>
-                                    <th>Thời gian</th>
+                                    <th>Thứ</th>
+                                    <th>Thời Gian</th>
+                                    <th>Số Giờ</th>
                                     <th>Nội dung</th>
                                     <th>Chi tiết</th>
                                     <th>Bắt đầu</th>
@@ -96,14 +121,16 @@
                                 @forelse ($gv['rows'] as $i => $row)
                                     <tr class="{{ !empty($row['is_off']) ? 'row-off' : '' }}">
                                         <td>{{ $i + 1 }}</td>
+                                        <td>{{ $row['thu'] ?? '' }}</td>
                                         <td>{{ $row['ngay'] }}</td>
+                                        <td>{{ $row['so_gio'] ?? '' }}</td>
                                         <td class="{{ $cellClass($row['noi_dung']) }}">{{ $row['noi_dung'] }}</td>
                                         <td class="{{ $cellClass($row['chi_tiet']) }}">{{ $row['chi_tiet'] }}</td>
                                         <td>{{ $row['bat_dau'] }}</td>
                                         <td>{{ $row['ket_thuc'] }}</td>
                                         <td>
                                             @if (!empty($row['is_off']))
-                                                <span class="text-warning font-weight-bold">Ngày nghỉ</span>
+                                                <span class="text-warning font-weight-bold">Ngày nghỉ — gỡ lịch DB nếu có</span>
                                             @else
                                                 <span class="text-success">Sẽ lưu</span>
                                             @endif
@@ -111,7 +138,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-center py-3">Không có dòng dữ liệu</td>
+                                        <td colspan="9" class="text-center py-3">Không có dòng dữ liệu</td>
                                     </tr>
                                 @endforelse
                             </tbody>

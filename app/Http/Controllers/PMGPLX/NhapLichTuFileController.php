@@ -38,6 +38,23 @@ class NhapLichTuFileController extends Controller
     /** Trên ngưỡng này gửi qua rows_json (tránh max_input_vars ~1000). */
     public const SUBMIT_CHUNK_MIN_ROWS = 120;
 
+    /** Số cột Excel cho mỗi giáo viên: Thứ, Thời Gian, Số Giờ, Nội dung, Chi tiết, Bắt đầu, Kết thúc */
+    private const COLS_PER_TEACHER = 7;
+
+    private const COL_THU = 0;
+
+    private const COL_NGAY = 1;
+
+    private const COL_SO_GIO = 2;
+
+    private const COL_NOI_DUNG = 3;
+
+    private const COL_CHI_TIET = 4;
+
+    private const COL_BAT_DAU = 5;
+
+    private const COL_KET_THUC = 6;
+
     public function create(): View
     {
         return view('PMGPLX.lich.nhap-tu-file');
@@ -80,7 +97,7 @@ class NhapLichTuFileController extends Controller
 
             $preview = $this->buildExcelPreview($data, $file->getClientOriginalName());
             if ($preview['teachers'] === []) {
-                return back()->with('error', 'Không tìm thấy khối giáo viên (mỗi giáo viên cần 5 cột).');
+                return back()->with('error', 'Không tìm thấy khối giáo viên (mỗi giáo viên cần '.self::COLS_PER_TEACHER.' cột).');
             }
 
             $request->session()->forget(self::SESSION_SAVE);
@@ -103,6 +120,7 @@ class NhapLichTuFileController extends Controller
 
         return view('PMGPLX.lich.xem-truoc-nhap-file', [
             'preview' => $preview,
+            'offDayDeletes' => $this->resolveOffDayDeletes($this->buildOffDaySyncFromExcel($preview)),
         ]);
     }
 
@@ -117,7 +135,7 @@ class NhapLichTuFileController extends Controller
         }
 
         $built = $this->buildSaveRows($excel);
-        if ($built['gv_rows'] === []) {
+        if ($built['gv_rows'] === [] && ($built['off_day_sync'] ?? []) === []) {
             return redirect()
                 ->route('pmgplx.lich.nhap-file.preview')
                 ->with('error', 'Không có buổi nào để lưu (toàn ngày nghỉ hoặc thiếu giờ/ngày).');
@@ -378,7 +396,8 @@ class NhapLichTuFileController extends Controller
             $built['gv_rows'],
             $built['xe_rows'],
             ! empty($save['meta']['update_mode']),
-            ! empty($save['meta']['update_mode_xe'])
+            ! empty($save['meta']['update_mode_xe']),
+            $save['off_day_sync'] ?? []
         );
         unset($save['xe_chunk_merge']);
         $request->session()->put(self::SESSION_SAVE, $save);
@@ -414,10 +433,12 @@ class NhapLichTuFileController extends Controller
         $payload = $save['db_payload'];
         $gvRows = $payload['lich_giao_vien'] ?? [];
         $xeRows = $payload['lich_xe_tap'] ?? [];
+        $gvDeleteRows = $payload['lich_giao_vien_xoa'] ?? [];
+        $xeDeleteRows = $payload['lich_xe_tap_xoa'] ?? [];
         $gvSkipPreview = count($payload['lich_giao_vien_bo_qua'] ?? []);
         $xeSkipPreview = count($payload['lich_xe_tap_bo_qua'] ?? []);
 
-        if ($gvRows === [] && $xeRows === []) {
+        if ($gvRows === [] && $xeRows === [] && $gvDeleteRows === [] && $xeDeleteRows === []) {
             return redirect()
                 ->route('pmgplx.lich.nhap-file.preview-db')
                 ->with('error', 'Không có buổi nào đủ điều kiện lưu.');
@@ -427,12 +448,34 @@ class NhapLichTuFileController extends Controller
         $updatedGv = 0;
         $savedXe = 0;
         $updatedXe = 0;
+        $deletedGv = 0;
+        $deletedXe = 0;
         $skippedGv = 0;
         $skippedXe = 0;
         $now = Carbon::now();
 
         try {
             DB::beginTransaction();
+
+            foreach ($gvDeleteRows as $row) {
+                $maLich = $row['MaLichLV'] ?? null;
+                if ($maLich === null || $maLich === '') {
+                    continue;
+                }
+                if (KhoaHocGiaoVien::query()->where('MaLichLV', $maLich)->delete()) {
+                    $deletedGv++;
+                }
+            }
+
+            foreach ($xeDeleteRows as $row) {
+                $maLich = $row['MaLichSD'] ?? null;
+                if ($maLich === null || $maLich === '') {
+                    continue;
+                }
+                if (KhoaHocXeTap::query()->where('MaLichSD', $maLich)->delete()) {
+                    $deletedXe++;
+                }
+            }
 
             foreach ($gvRows as $row) {
                 $ngayBD = Carbon::parse($row['NgayBD']);
@@ -567,7 +610,7 @@ class NhapLichTuFileController extends Controller
 
         $request->session()->forget([self::SESSION_EXCEL, self::SESSION_SAVE]);
 
-        if ($savedGv === 0 && $savedXe === 0 && $updatedGv === 0 && $updatedXe === 0) {
+        if ($savedGv === 0 && $savedXe === 0 && $updatedGv === 0 && $updatedXe === 0 && $deletedGv === 0 && $deletedXe === 0) {
             return redirect()
                 ->route('pmgplx.lich.nhap-file.create')
                 ->with(
@@ -595,6 +638,16 @@ class NhapLichTuFileController extends Controller
             $msg .= ', xe '.implode(', ', $xeParts).' buổi';
         }
         $msg .= '.';
+        $deleteParts = [];
+        if ($deletedGv > 0) {
+            $deleteParts[] = "GV {$deletedGv}";
+        }
+        if ($deletedXe > 0) {
+            $deleteParts[] = "xe {$deletedXe}";
+        }
+        if ($deleteParts !== []) {
+            $msg .= ' Đã xóa '.implode(', ', $deleteParts).' buổi (ngày nghỉ trong file).';
+        }
         $skipParts = [];
         if ($gvSkipPreview + $skippedGv > 0) {
             $skipParts[] = 'GV '.($gvSkipPreview + $skippedGv);
@@ -612,11 +665,140 @@ class NhapLichTuFileController extends Controller
     }
 
     /**
+     * @param  array<string, mixed>  $excel
+     * @return list<array{MaGV: string, MaKH: string, ngay: string, ten_gv: string}>
+     */
+    private function buildOffDaySyncFromExcel(array $excel): array
+    {
+        $items = [];
+        $seen = [];
+
+        foreach ($excel['teachers'] ?? [] as $gv) {
+            $maGv = (string) ($gv['ma_gv'] ?? '');
+            $maKh = (string) ($gv['ma_kh'] ?? '');
+            $tenGv = (string) ($gv['ten_gv'] ?? '');
+
+            if ($maGv === '' || $maKh === '') {
+                continue;
+            }
+
+            foreach ($gv['rows'] ?? [] as $row) {
+                if (empty($row['is_off'])) {
+                    continue;
+                }
+
+                $date = LichExcelTimeParser::parseDate((string) ($row['ngay'] ?? ''));
+                if ($date === null) {
+                    continue;
+                }
+
+                $ngay = $date;
+                $key = $maGv.'|'.$maKh.'|'.$ngay;
+                if (isset($seen[$key])) {
+                    continue;
+                }
+                $seen[$key] = true;
+
+                $items[] = [
+                    'MaGV' => $maGv,
+                    'MaKH' => $maKh,
+                    'ngay' => $ngay,
+                    'ten_gv' => $tenGv,
+                ];
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * @param  list<array{MaGV: string, MaKH: string, ngay: string, ten_gv?: string}>  $offDaySync
+     * @return array{gv: list<array<string, mixed>>, xe: list<array<string, mixed>>, summary: list<array<string, mixed>>, gv_count: int, xe_count: int}
+     */
+    private function resolveOffDayDeletes(array $offDaySync): array
+    {
+        $gvDeletes = [];
+        $xeDeletes = [];
+        $summary = [];
+
+        foreach ($offDaySync as $item) {
+            $maGv = (string) ($item['MaGV'] ?? '');
+            $maKh = (string) ($item['MaKH'] ?? '');
+            $ngay = (string) ($item['ngay'] ?? '');
+
+            if ($maGv === '' || $maKh === '' || $ngay === '') {
+                continue;
+            }
+
+            $gvRecords = KhoaHocGiaoVien::query()
+                ->where('MaGV', $maGv)
+                ->where('MaKH', $maKh)
+                ->where('IsKhoaHocGiaoVien', 0)
+                ->whereDate('NgayBD', $ngay)
+                ->orderBy('MaLichLV')
+                ->get();
+
+            $xeRecords = KhoaHocXeTap::query()
+                ->where('MaGV', $maGv)
+                ->where('MaKH', $maKh)
+                ->where('IsKhoaHocXeTap', 0)
+                ->whereDate('NgayBD', $ngay)
+                ->orderBy('MaLichSD')
+                ->get();
+
+            foreach ($gvRecords as $record) {
+                $gvDeletes[] = [
+                    'MaLichLV' => $record->MaLichLV,
+                    'MaGV' => $record->MaGV,
+                    'MaKH' => $record->MaKH,
+                    'TenGV' => $record->TenGV,
+                    'NgayBD' => $record->NgayBD?->format('Y-m-d H:i:s'),
+                    'NgayKT' => $record->NgayKT?->format('Y-m-d H:i:s'),
+                    'ngay_off' => $ngay,
+                ];
+            }
+
+            foreach ($xeRecords as $record) {
+                $xeDeletes[] = [
+                    'MaLichSD' => $record->MaLichSD,
+                    'MaGV' => $record->MaGV,
+                    'MaKH' => $record->MaKH,
+                    'TenGV' => $record->TenGV,
+                    'BienSoXe' => $record->BienSoXe,
+                    'NgayBD' => $record->NgayBD?->format('Y-m-d H:i:s'),
+                    'NgayKT' => $record->NgayKT?->format('Y-m-d H:i:s'),
+                    'ngay_off' => $ngay,
+                ];
+            }
+
+            if ($gvRecords->isNotEmpty() || $xeRecords->isNotEmpty()) {
+                $summary[] = [
+                    'MaGV' => $maGv,
+                    'MaKH' => $maKh,
+                    'ten_gv' => (string) ($item['ten_gv'] ?? ''),
+                    'ngay' => $ngay,
+                    'gv_count' => $gvRecords->count(),
+                    'xe_count' => $xeRecords->count(),
+                ];
+            }
+        }
+
+        return [
+            'gv' => $gvDeletes,
+            'xe' => $xeDeletes,
+            'summary' => $summary,
+            'gv_count' => count($gvDeletes),
+            'xe_count' => count($xeDeletes),
+        ];
+    }
+
+    /**
      * @param  list<array<string, mixed>>  $gvRows
      * @param  list<array<string, mixed>>  $xeRows
+     * @param  list<array{MaGV: string, MaKH: string, ngay: string, ten_gv?: string}>  $offDaySync
      * @return array<string, mixed>
      */
-    private function buildDbPayload(array $gvRows, array $xeRows, bool $updateModeGv = false, bool $updateModeXe = false): array
+    private function buildDbPayload(array $gvRows, array $xeRows, bool $updateModeGv = false, bool $updateModeXe = false, array $offDaySync = []): array
     {
         $now = Carbon::now()->format('Y-m-d H:i:s');
         $lichGv = [];
@@ -725,20 +907,28 @@ class NhapLichTuFileController extends Controller
             }
         }
 
+        $offDeletes = $this->resolveOffDayDeletes($offDaySync);
+
         return [
             'lich_giao_vien' => $lichGv,
             'lich_giao_vien_bo_qua' => $lichGvSkip,
             'lich_giao_vien_cap_nhat' => $lichGvUpdate,
+            'lich_giao_vien_xoa' => $offDeletes['gv'],
             'lich_xe_tap' => $lichXe,
             'lich_xe_tap_bo_qua' => $lichXeSkip,
             'lich_xe_tap_cap_nhat' => $lichXeUpdate,
+            'lich_xe_tap_xoa' => $offDeletes['xe'],
+            'off_day_sync' => $offDaySync,
             'meta' => [
                 'gv_save' => count(array_filter($lichGv, fn ($r) => ($r['_action'] ?? '') === 'insert')),
                 'gv_update' => count($lichGvUpdate),
                 'gv_skip' => count($lichGvSkip),
+                'gv_delete' => $offDeletes['gv_count'],
                 'xe_save' => count(array_filter($lichXe, fn ($r) => ($r['_action'] ?? '') === 'insert')),
                 'xe_update' => count($lichXeUpdate),
                 'xe_skip' => count($lichXeSkip),
+                'xe_delete' => $offDeletes['xe_count'],
+                'off_day_summary' => $offDeletes['summary'],
                 'update_mode' => $updateModeGv,
                 'update_mode_xe' => $updateModeXe,
             ],
@@ -891,6 +1081,7 @@ class NhapLichTuFileController extends Controller
             'file_name' => $excel['file_name'] ?? '',
             'gv_rows' => $gvRows,
             'xe_rows' => $xeRows,
+            'off_day_sync' => $this->buildOffDaySyncFromExcel($excel),
             'meta' => [
                 'ten_mon_hoc' => self::TEN_MON_HOC,
                 'khoa_hoc_list' => $tenKhList,
@@ -915,31 +1106,33 @@ class NhapLichTuFileController extends Controller
             $maxCols = max($maxCols, count($row));
         }
 
-        $teacherCount = intdiv($maxCols, 5);
+        $teacherCount = intdiv($maxCols, self::COLS_PER_TEACHER);
         $teachers = [];
         $okCount = 0;
         $offCount = 0;
 
         for ($t = 0; $t < $teacherCount; $t++) {
-            $base = $t * 5;
-            $rawTenXe = (string) ($header[$base + 1] ?? '');
+            $base = $t * self::COLS_PER_TEACHER;
+            $rawTenXe = (string) ($header[$base + self::COL_NOI_DUNG] ?? '');
             [$tenGv, $bienSoXe] = $this->parseTenVaBienSo($rawTenXe);
-            $rawMa = (string) ($header[$base + 2] ?? '');
+            $rawMa = (string) ($header[$base + self::COL_CHI_TIET] ?? '');
             [$maGv, $maKh] = $this->parseMaGvVaMaKh($rawMa);
 
             $rows = [];
             foreach ($body as $row) {
-                $ngay = (string) ($row[$base] ?? '');
-                $noiDung = (string) ($row[$base + 1] ?? '');
-                $chiTiet = (string) ($row[$base + 2] ?? '');
-                $batDau = (string) ($row[$base + 3] ?? '');
-                $ketThuc = (string) ($row[$base + 4] ?? '');
+                $thu = (string) ($row[$base + self::COL_THU] ?? '');
+                $ngay = (string) ($row[$base + self::COL_NGAY] ?? '');
+                $soGio = (string) ($row[$base + self::COL_SO_GIO] ?? '');
+                $noiDung = (string) ($row[$base + self::COL_NOI_DUNG] ?? '');
+                $chiTiet = (string) ($row[$base + self::COL_CHI_TIET] ?? '');
+                $batDau = (string) ($row[$base + self::COL_BAT_DAU] ?? '');
+                $ketThuc = (string) ($row[$base + self::COL_KET_THUC] ?? '');
 
-                if ($ngay === '' && $noiDung === '' && $chiTiet === '' && $batDau === '' && $ketThuc === '') {
+                if ($thu === '' && $ngay === '' && $soGio === '' && $noiDung === '' && $chiTiet === '' && $batDau === '' && $ketThuc === '') {
                     continue;
                 }
 
-                // Ngày nghỉ: cột Nội dung và Chi tiết (ô 3 + 4 trong khối 5 cột/GV) đều trống
+                // Ngày nghỉ: cột Nội dung và Chi tiết trống
                 $isOff = trim($noiDung) === '' && trim($chiTiet) === '';
                 if ($isOff) {
                     $offCount++;
@@ -948,7 +1141,9 @@ class NhapLichTuFileController extends Controller
                 }
 
                 $rows[] = [
+                    'thu' => $thu,
                     'ngay' => $ngay,
+                    'so_gio' => $soGio,
                     'noi_dung' => $noiDung,
                     'chi_tiet' => $chiTiet,
                     'bat_dau' => $batDau,
@@ -1325,7 +1520,8 @@ class NhapLichTuFileController extends Controller
             $built['gv_rows'],
             $built['xe_rows'],
             ! empty($save['meta']['update_mode']),
-            ! empty($save['meta']['update_mode_xe'])
+            ! empty($save['meta']['update_mode_xe']),
+            $save['off_day_sync'] ?? []
         );
         $request->session()->put(self::SESSION_SAVE, $save);
 

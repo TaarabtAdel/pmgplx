@@ -7,8 +7,11 @@
         $meta = $payload['meta'] ?? [];
         $gvSave = $payload['lich_giao_vien'] ?? [];
         $gvSkip = $payload['lich_giao_vien_bo_qua'] ?? [];
+        $gvDelete = $payload['lich_giao_vien_xoa'] ?? [];
         $xeSave = $payload['lich_xe_tap'] ?? [];
         $xeSkip = $payload['lich_xe_tap_bo_qua'] ?? [];
+        $xeDelete = $payload['lich_xe_tap_xoa'] ?? [];
+        $offDaySummary = $meta['off_day_summary'] ?? [];
     @endphp
 
     <div class="card card-panel">
@@ -29,7 +32,30 @@
                     sẽ lưu mới <strong class="text-success">{{ (int) ($meta['xe_save'] ?? 0) }}</strong>@if ((int) ($meta['xe_update'] ?? 0) > 0), cập nhật <strong class="text-primary">{{ (int) ($meta['xe_update'] ?? 0) }}</strong>@endif,
                     bỏ qua <strong class="text-danger">{{ (int) ($meta['xe_skip'] ?? 0) }}</strong>
                 </div>
+                @if ((int) ($meta['gv_delete'] ?? 0) > 0 || (int) ($meta['xe_delete'] ?? 0) > 0)
+                    <div class="text-danger">
+                        <strong>Sẽ xóa (ngày nghỉ trong file):</strong>
+                        lịch GV <strong>{{ (int) ($meta['gv_delete'] ?? 0) }}</strong>,
+                        lịch xe <strong>{{ (int) ($meta['xe_delete'] ?? 0) }}</strong>
+                    </div>
+                @endif
             </div>
+
+            @if ($offDaySummary !== [])
+                <div class="alert alert-danger">
+                    <strong>Ngày nghỉ — lịch sẽ gỡ khỏi DB:</strong>
+                    <ul class="mb-0 mt-2 pl-3">
+                        @foreach ($offDaySummary as $item)
+                            <li>
+                                {{ ($item['ten_gv'] ?? '') !== '' ? $item['ten_gv'] : ($item['MaGV'] ?? '') }}
+                                — khóa {{ $item['MaKH'] ?? '' }}
+                                — ngày {{ \Carbon\Carbon::parse($item['ngay'])->format('d/m/Y') }}
+                                (GV {{ (int) ($item['gv_count'] ?? 0) }}, xe {{ (int) ($item['xe_count'] ?? 0) }})
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
 
             <div class="alert alert-info">
                 Đây là mảng record sau tiền xử lý, đúng cấu trúc sẽ insert vào
@@ -50,6 +76,13 @@
                 </div>
             @endif
 
+            @if (count($gvDelete) > 0)
+                <h5 class="section-title text-danger">Lịch giáo viên — sẽ xóa ({{ count($gvDelete) }})</h5>
+                <div class="table-responsive mb-3">
+                    <pre class="mb-0 p-2 border bg-light" style="max-height: 16rem; overflow: auto; white-space: pre-wrap; word-break: break-word;">{{ json_encode($gvDelete, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                </div>
+            @endif
+
             <h5 class="section-title">2) Lịch xe tập lái — sẽ lưu ({{ count($xeSave) }})</h5>
             <div class="table-responsive mb-3">
                 <pre class="mb-0 p-2 border bg-light" style="max-height: 28rem; overflow: auto; white-space: pre-wrap; word-break: break-word;">{{ json_encode($xeSave, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
@@ -59,6 +92,13 @@
                 <h5 class="section-title text-danger">Lịch xe tập lái — bỏ qua ({{ count($xeSkip) }})</h5>
                 <div class="table-responsive mb-3">
                     <pre class="mb-0 p-2 border bg-light" style="max-height: 16rem; overflow: auto; white-space: pre-wrap; word-break: break-word;">{{ json_encode($xeSkip, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                </div>
+            @endif
+
+            @if (count($xeDelete) > 0)
+                <h5 class="section-title text-danger">Lịch xe tập lái — sẽ xóa ({{ count($xeDelete) }})</h5>
+                <div class="table-responsive mb-3">
+                    <pre class="mb-0 p-2 border bg-light" style="max-height: 16rem; overflow: auto; white-space: pre-wrap; word-break: break-word;">{{ json_encode($xeDelete, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
                 </div>
             @endif
 

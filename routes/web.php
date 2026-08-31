@@ -10,6 +10,7 @@ use App\Http\Controllers\PMGPLX\DanhSachHocVienController;
 use App\Http\Controllers\PMGPLX\DanhSachLichGiaoVienController;
 use App\Http\Controllers\PMGPLX\DanhSachLichXeTapController;
 use App\Http\Controllers\PMGPLX\DanhSachXeController;
+use App\Http\Controllers\PMGPLX\NhapHocVienTuFileController;
 use App\Http\Controllers\PMGPLX\NhapLichTuFileController;
 use App\Http\Controllers\PMGPLX\TaoLichDayLyThuyetController;
 use App\Http\Controllers\PMGPLX\TaoLichTapHangLoatController;
@@ -42,6 +43,15 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function () {
         ->name('dm.hoc-vien.dong-bo.khoi-phuc');
     Route::post('/danh-muc/hoc-vien/dong-bo-loc', [DanhSachHocVienController::class, 'dongBo'])
         ->name('dm.hoc-vien.dong-bo');
+
+    Route::get('/danh-muc/hoc-vien/nhap-tu-file', [NhapHocVienTuFileController::class, 'create'])
+        ->name('dm.hoc-vien.nhap-file.create');
+    Route::post('/danh-muc/hoc-vien/nhap-tu-file', [NhapHocVienTuFileController::class, 'store'])
+        ->name('dm.hoc-vien.nhap-file.store');
+    Route::get('/danh-muc/hoc-vien/nhap-tu-file/xem-truoc', [NhapHocVienTuFileController::class, 'preview'])
+        ->name('dm.hoc-vien.nhap-file.preview');
+    Route::get('/danh-muc/hoc-vien/nhap-tu-file/huy', [NhapHocVienTuFileController::class, 'cancel'])
+        ->name('dm.hoc-vien.nhap-file.cancel');
 
     Route::get('/danh-muc/xe', [DanhSachXeController::class, 'index'])
         ->name('dm.xe.index');

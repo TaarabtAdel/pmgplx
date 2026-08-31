@@ -55,8 +55,12 @@
                 </div>
 
                 <div class="mb-2 mr-2">
+                    <a href="{{ route('pmgplx.dm.hoc-vien.nhap-file.create') }}"
+                       class="btn btn-sm btn-success">
+                        Nhập học viên mới từ file
+                    </a>
                     <a href="{{ route('pmgplx.dm.hoc-vien.dong-bo.form', array_filter(['ma_kh_nguon' => $filters['ma_kh']])) }}"
-                       class="btn btn-sm btn-info">
+                       class="btn btn-sm btn-info ml-1">
                         Đồng Bộ Qua Bản Cũ
                     </a>
                     <a href="{{ route('pmgplxold.dm.hoc-vien.index') }}" class="btn btn-sm btn-outline-secondary ml-1" target="_blank">
