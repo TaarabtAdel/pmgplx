@@ -397,6 +397,7 @@
                     $baoCaoActive = request()->routeIs('daotao.pdt.bc.*');
                     $congCuNhapActive = request()->routeIs('daotao.pdt.cong-cu-nhap.*');
                     $phanCongActive = request()->routeIs('daotao.pdt.phan-cong-dao-tao.*');
+                    $datActive = request()->routeIs('daotao.pdt.dat.*');
                 @endphp
                 <a class="nav-link dropdown-toggle {{ $pdtActive ? 'active' : '' }}"
                    href="#"
@@ -446,6 +447,21 @@
                             <a class="dropdown-item {{ request()->routeIs('daotao.pdt.phan-cong-dao-tao.danh-sach') ? 'active' : '' }}"
                                href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach') }}">
                                 Danh sách phân công
+                            </a>
+                        </div>
+                    </div>
+                    <div class="dropdown-submenu">
+                        <a class="dropdown-item dropdown-toggle {{ $datActive ? 'active' : '' }}" href="#">
+                            DAT
+                        </a>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.quan-ly-phien') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.quan-ly-phien') }}">
+                                Quản lý phiên
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.nhap-du-lieu-phien*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.nhap-du-lieu-phien') }}">
+                                Nhập dữ liệu phiên
                             </a>
                         </div>
                     </div>

@@ -102,9 +102,9 @@ class DanhSachHocVienController extends Controller
             return back()->withInput()->with('error', 'Đồng bộ thất bại: '.$e->getMessage());
         }
 
-        if ($result['inserted'] === 0) {
-            $message = $result['skipped'] > 0
-                ? "Không có học viên mới được đồng bộ — {$result['skipped']} mã ĐK đã tồn tại trên bản cũ (đã bỏ qua)."
+        if (($result['inserted'] ?? 0) + ($result['updated'] ?? 0) === 0) {
+            $message = $result['failed'] > 0
+                ? "Không có học viên nào được đồng bộ — {$result['failed']} lỗi."
                 : 'Không có học viên nào được đồng bộ.';
 
             return redirect()
@@ -120,17 +120,30 @@ class DanhSachHocVienController extends Controller
             $service->buildSessionBatch($maKhNguon, $maKhDich, $result)
         );
 
+        $synced = ($result['inserted'] ?? 0) + ($result['updated'] ?? 0);
+        $detail = [];
+        if (($result['inserted'] ?? 0) > 0) {
+            $detail[] = "thêm mới {$result['inserted']}";
+        }
+        if (($result['updated'] ?? 0) > 0) {
+            $detail[] = "cập nhật {$result['updated']}";
+        }
+        if (($result['failed'] ?? 0) > 0) {
+            $detail[] = "lỗi {$result['failed']}";
+        }
+
+        $message = "Đã đồng bộ {$synced} học viên từ khóa {$maKhNguon} sang khóa {$maKhDich} trên bản cũ";
+        if ($detail !== []) {
+            $message .= ' ('.implode(', ', $detail).')';
+        }
+        $message .= '. Bao gồm NguoiLX, NguoiLX_HoSo và NguoiLXHS_GiayTo. Có thể dùng Khôi phục để xóa lại trên bản cũ.';
+
         return redirect()
             ->route('pmgplx.dm.hoc-vien.dong-bo.form', [
                 'ma_kh_nguon' => $maKhNguon,
                 'ma_kh_dich' => $maKhDich,
             ])
-            ->with(
-                'success',
-                "Đã đồng bộ {$result['inserted']} học viên từ khóa {$maKhNguon} sang khóa {$maKhDich} trên bản cũ".
-                ($result['skipped'] > 0 ? ", bỏ qua {$result['skipped']} mã ĐK đã tồn tại" : '').
-                ($result['failed'] > 0 ? " (lỗi: {$result['failed']})" : '').'. Có thể dùng Khôi phục để xóa lại trên bản cũ.'
-            );
+            ->with('success', $message);
     }
 
     public function dongBoTestMot(Request $request, DongBoHocVienBanCuService $service): RedirectResponse
@@ -157,7 +170,7 @@ class DanhSachHocVienController extends Controller
         $testStudent = $preview['meta']['test_student'] ?? null;
 
         if (! is_array($testStudent) || ($testStudent['ma_dk_nguon'] ?? '') !== $maDkNguon) {
-            return back()->withInput()->with('error', 'Học viên test không hợp lệ hoặc mã ĐK dự kiến đã tồn tại trên bản cũ.');
+            return back()->withInput()->with('error', 'Học viên test không hợp lệ.');
         }
 
         try {
@@ -168,7 +181,7 @@ class DanhSachHocVienController extends Controller
             return back()->withInput()->with('error', 'Test đồng bộ thất bại: '.$e->getMessage());
         }
 
-        if ($result['inserted'] === 0) {
+        if (($result['inserted'] ?? 0) + ($result['updated'] ?? 0) === 0) {
             return redirect()
                 ->route('pmgplx.dm.hoc-vien.dong-bo.form', [
                     'ma_kh_nguon' => $maKhNguon,
@@ -184,6 +197,7 @@ class DanhSachHocVienController extends Controller
 
         $hoTen = trim((string) ($result['ho_ten'] ?? $testStudent['ho_ten'] ?? ''));
         $targetMaDk = $result['target_ma_dk'] ?? $testStudent['ma_dk'] ?? '';
+        $action = ($result['updated'] ?? 0) > 0 && ($result['inserted'] ?? 0) === 0 ? 'cập nhật' : 'đồng bộ';
 
         return redirect()
             ->route('pmgplx.dm.hoc-vien.dong-bo.form', [
@@ -192,7 +206,7 @@ class DanhSachHocVienController extends Controller
             ])
             ->with(
                 'success',
-                "Đã test đồng bộ 1 học viên ({$hoTen}): {$maDkNguon} → {$targetMaDk} trên bản cũ. Kiểm tra dữ liệu, sau đó dùng Khôi phục nếu cần xóa."
+                "Đã test {$action} 1 học viên ({$hoTen}): {$maDkNguon} → {$targetMaDk} trên bản cũ (kèm giấy tờ). Kiểm tra dữ liệu, sau đó dùng Khôi phục nếu cần xóa."
             );
     }
 
@@ -223,7 +237,7 @@ class DanhSachHocVienController extends Controller
             ])
             ->with(
                 'success',
-                "Đã khôi phục: xóa {$result['deleted']} / {$result['total']} học viên khỏi bản cũ (khóa {$batch['ma_kh_dich']})."
+                "Đã khôi phục: xóa {$result['deleted']} / {$result['total']} học viên khỏi bản cũ (NguoiLX, hồ sơ, giấy tờ — khóa {$batch['ma_kh_dich']})."
             );
     }
 
@@ -243,7 +257,7 @@ class DanhSachHocVienController extends Controller
             return back()->with('error', 'Không có học viên nào theo bộ lọc để đồng bộ.');
         }
 
-        [$colsNguoi, $colsHoSo] = app(DongBoHocVienBanCuService::class)->mappableColumns();
+        [$colsNguoi, $colsHoSo, $colsGiayTo] = app(DongBoHocVienBanCuService::class)->mappableColumns();
 
         $inserted = 0;
         $updated = 0;
@@ -251,6 +265,11 @@ class DanhSachHocVienController extends Controller
 
         $nguoiRows = NguoiLX::query()->whereIn('MaDK', $maDKs)->get()->keyBy('MaDK');
         $hoSoRows = NguoiLXHoSo::query()->whereIn('MaDK', $maDKs)->get()->keyBy('MaDK');
+        $giayToRows = DB::connection('sqlsrv')
+            ->table('NguoiLXHS_GiayTo')
+            ->whereIn('MaDK', $maDKs)
+            ->get()
+            ->groupBy('MaDK');
 
         $oldDb = DB::connection('sqlsrv_old');
 
@@ -273,6 +292,18 @@ class DanhSachHocVienController extends Controller
                 if ($hoSo) {
                     $payloadHoSo = $this->onlyColumns($hoSo->getAttributes(), $colsHoSo);
                     $oldDb->table('NguoiLX_HoSo')->updateOrInsert(['MaDK' => $maDK], $payloadHoSo);
+                }
+
+                foreach ($giayToRows->get($maDK, collect()) as $giayTo) {
+                    $payloadGiayTo = $this->onlyColumns((array) $giayTo, $colsGiayTo);
+                    $maGt = $payloadGiayTo['MaGT'] ?? null;
+                    if ($maGt === null) {
+                        continue;
+                    }
+                    $oldDb->table('NguoiLXHS_GiayTo')->updateOrInsert(
+                        ['MaDK' => $maDK, 'MaGT' => $maGt],
+                        $payloadGiayTo
+                    );
                 }
             }
 

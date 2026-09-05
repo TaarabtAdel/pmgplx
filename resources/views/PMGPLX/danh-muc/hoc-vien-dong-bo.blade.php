@@ -35,7 +35,8 @@
         $sourceRows = $preview['source'] ?? [];
         $plannedRows = $preview['planned'] ?? [];
         $conflictCount = (int) ($meta['conflict_count'] ?? 0);
-        $syncableCount = (int) ($meta['syncable_count'] ?? max(0, count($sourceRows) - $conflictCount));
+        $updateCount = (int) ($meta['update_count'] ?? $conflictCount);
+        $syncableCount = (int) ($meta['syncable_count'] ?? count($sourceRows));
         $canSync = $maKhNguon !== '' && $maKhDich !== '' && $syncableCount > 0;
         $lastBatch = $lastBatch ?? null;
         $testStudent = $meta['test_student'] ?? null;
@@ -91,13 +92,13 @@
                     Chọn <strong>Khóa học đích</strong> (phần mềm cũ), bấm <strong>Xem trước</strong> — bảng bên phải hiện mã ĐK dự kiến (thay tiền tố mã khóa, phần số sau gộp liền).
                 </li>
                 <li class="mb-2">
-                    Kiểm tra dòng vàng (<strong>Đã tồn tại</strong>): những mã ĐK đã có trên bản cũ sẽ <strong>bỏ qua</strong> khi đồng bộ; dòng có dấu ✓ xanh là học viên sẽ được đưa sang.
+                    Kiểm tra dòng vàng (<strong>Đã tồn tại</strong>): những mã ĐK đã có trên bản cũ sẽ được <strong>cập nhật</strong> khi đồng bộ lại; dòng không vàng là học viên sẽ được thêm mới.
                 </li>
                 <li class="mb-2">
                     (Khuyến nghị) Bấm <strong>Test 1 học viên</strong> để thử trước — nếu không ổn, dùng <strong>Khôi phục</strong> để xóa trên bản cũ.
                 </li>
                 <li class="mb-2">
-                    Bấm <strong>Xác nhận đồng bộ sang bản cũ</strong> để đưa toàn bộ học viên còn lại (chưa trùng mã) sang phần mềm cũ.
+                    Bấm <strong>Xác nhận đồng bộ sang bản cũ</strong> để đưa toàn bộ học viên sang phần mềm cũ (thêm mới hoặc cập nhật nếu đã có).
                 </li>
             </ol>
             <div class="alert alert-info mb-3">
@@ -108,11 +109,11 @@
                     <li><strong>NguoiLX_GPLX</strong> — GPLX đã có (nếu có)</li>
                     <li><strong>NguoiLXHS_GiayTo</strong> — giấy tờ kèm hồ sơ (đơn, CMT, ảnh…)</li>
                 </ul>
-                Chức năng này hiện chỉ copy sang bản cũ <strong>2 bảng: NguoiLX + NguoiLX_HoSo</strong>
-                (91 cột hồ sơ chung giữa 2 DB; mã ĐK và mã khóa được map sang khóa đích).
-                <strong>Chưa</strong> đưa <code>NguoiLX_GPLX</code>, <code>NguoiLXHS_GiayTo</code>
+                Chức năng này copy sang bản cũ <strong>3 bảng: NguoiLX + NguoiLX_HoSo + NguoiLXHS_GiayTo</strong>
+                (mã ĐK và mã khóa được map sang khóa đích; giấy tờ upsert theo khóa <code>MaDK</code> + <code>MaGT</code>).
+                <strong>Chưa</strong> đưa <code>NguoiLX_GPLX</code>
                 và các cột chỉ có trên bản mới (điểm thi, kết quả DAT…).
-                Đủ để hiện danh sách học viên trên bản cũ; chưa đủ nếu cần xem/sửa giấy tờ hoặc GPLX cũ trong phần mềm cũ.
+                Đủ để hiện danh sách học viên và giấy tờ trên bản cũ; chưa đủ nếu cần xem/sửa GPLX cũ trong phần mềm cũ.
             </div>
             <div class="alert alert-warning mb-0">
                 <strong>Lưu ý:</strong> Nếu bên <strong>Khóa học đích</strong> chưa có khóa học cần đưa qua thì cần <strong>tạo khóa học trên phần mềm cũ trước</strong>, sau đó quay lại chọn khóa đích và xem trước.
@@ -262,14 +263,16 @@
                                             <tr @class(['hoc-vien-dong-bo-row-conflict' => ! empty($row['ton_tai'])])>
                                                 <td>
                                                     @if (empty($row['ton_tai']))
-                                                        <span class="text-success font-weight-bold" title="Chưa tồn tại trên bản cũ">✓</span>
+                                                        <span class="text-success font-weight-bold" title="Chưa tồn tại trên bản cũ — sẽ thêm mới">+</span>
+                                                    @else
+                                                        <span class="text-warning font-weight-bold" title="Đã tồn tại — sẽ cập nhật">↻</span>
                                                     @endif
                                                     {{ $index + 1 }}
                                                 </td>
                                                 <td class="col-ma-dk-du-kien">
                                                     <code @class(['text-primary' => empty($row['ton_tai']), 'text-warning' => ! empty($row['ton_tai'])])>{{ $row['ma_dk'] ?? '—' }}</code>
                                                     @if (! empty($row['ton_tai']))
-                                                        <span class="badge badge-warning ml-1">Đã tồn tại</span>
+                                                        <span class="badge badge-warning ml-1">Sẽ cập nhật</span>
                                                     @endif
                                                 </td>
                                                 <td class="col-ho-ten">{{ $row['ho_ten'] }}</td>
@@ -291,10 +294,10 @@
             </div>
         </div>
 
-        @if ($maKhDich !== '' && count($sourceRows) > 0 && $conflictCount > 0 && $syncableCount === 0)
+        @if ($maKhDich !== '' && count($sourceRows) > 0 && $updateCount > 0)
             <div class="card card-panel">
                 <div class="card-body text-muted">
-                    Tất cả học viên đã có mã ĐK trên bản cũ — không còn ai để đồng bộ thêm.
+                    {{ number_format($updateCount) }} học viên đã có mã ĐK trên bản cũ — sẽ được <strong>cập nhật</strong> (kèm giấy tờ) khi đồng bộ.
                 </div>
             </div>
         @endif
@@ -318,7 +321,7 @@
 
                         @if ($canSync)
                             <form method="POST" action="{{ route('pmgplx.dm.hoc-vien.dong-bo.store') }}" class="mb-2 mr-3"
-                                  onsubmit="return confirm('Đồng bộ {{ number_format($syncableCount) }} học viên từ khóa {{ $maKhNguon }} sang khóa {{ $maKhDich }} trên bản cũ?{{ $conflictCount > 0 ? '\nBỏ qua '.number_format($conflictCount).' mã ĐK đã tồn tại.' : '' }}');">
+                                  onsubmit="return confirm('Đồng bộ {{ number_format($syncableCount) }} học viên từ khóa {{ $maKhNguon }} sang khóa {{ $maKhDich }} trên bản cũ?{{ $updateCount > 0 ? '\n'.number_format($updateCount).' học viên sẽ được cập nhật.' : '' }}');">
                                 @csrf
                                 <input type="hidden" name="ma_kh_nguon" value="{{ $maKhNguon }}">
                                 <input type="hidden" name="ma_kh_dich" value="{{ $maKhDich }}">
@@ -331,7 +334,7 @@
 
                     @if ($canTest)
                         <div class="small text-muted mt-1">
-                            Test sẽ đồng bộ học viên đầu tiên chưa trùng mã:
+                            Test sẽ đồng bộ học viên đầu tiên trong danh sách:
                             <strong>{{ $testStudent['ho_ten'] ?? '' }}</strong>
                             (<code>{{ $testStudent['ma_dk_nguon'] ?? '' }}</code> → <code>{{ $testStudent['ma_dk'] ?? '' }}</code>).
                             Sau test dùng <strong>Khôi phục</strong> để xóa trên bản cũ nếu cần.
@@ -339,8 +342,8 @@
                     @elseif ($canSync)
                         <div class="small text-muted mt-1">
                             Mã ĐK: thay tiền tố khóa, phần số sau gộp liền (vd. <code>45003-20260622090221</code>).
-                            @if ($conflictCount > 0)
-                                Dòng vàng = đã có trên bản cũ, sẽ bỏ qua.
+                            @if ($updateCount > 0)
+                                Dòng vàng = đã có trên bản cũ, sẽ cập nhật kèm giấy tờ.
                             @endif
                         </div>
                     @endif

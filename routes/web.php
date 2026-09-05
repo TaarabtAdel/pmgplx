@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\DaoTao\Dat\DanhSachDatDSPhienController;
+use App\Http\Controllers\DaoTao\Dat\NhapFileDatDSPhienController;
 use App\Http\Controllers\DaoTao\BaoCaoLuuLuongDaoTaoController as DaoTaoBaoCaoLuuLuongDaoTaoController;
 use App\Http\Controllers\DaoTao\DanhSachPhanCongDaoTaoController;
 use App\Http\Controllers\DaoTao\NhapFileInBangTenController;
@@ -146,6 +148,19 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
 
     Route::get('/phong-dao-tao/phan-cong-dao-tao/danh-sach', [DanhSachPhanCongDaoTaoController::class, 'index'])
         ->name('pdt.phan-cong-dao-tao.danh-sach');
+
+    Route::get('/phong-dao-tao/dat/quan-ly-phien', [DanhSachDatDSPhienController::class, 'index'])
+        ->name('pdt.dat.quan-ly-phien');
+    Route::get('/phong-dao-tao/dat/nhap-du-lieu-phien', [NhapFileDatDSPhienController::class, 'create'])
+        ->name('pdt.dat.nhap-du-lieu-phien');
+    Route::post('/phong-dao-tao/dat/nhap-du-lieu-phien', [NhapFileDatDSPhienController::class, 'store'])
+        ->name('pdt.dat.nhap-du-lieu-phien.store');
+    Route::get('/phong-dao-tao/dat/nhap-du-lieu-phien/xem-truoc', [NhapFileDatDSPhienController::class, 'preview'])
+        ->name('pdt.dat.nhap-du-lieu-phien.preview');
+    Route::post('/phong-dao-tao/dat/nhap-du-lieu-phien/xac-nhan', [NhapFileDatDSPhienController::class, 'confirm'])
+        ->name('pdt.dat.nhap-du-lieu-phien.confirm');
+    Route::get('/phong-dao-tao/dat/nhap-du-lieu-phien/huy', [NhapFileDatDSPhienController::class, 'cancel'])
+        ->name('pdt.dat.nhap-du-lieu-phien.cancel');
 });
 
 Route::prefix('trung-tam')->name('trungtam.')->group(function () {

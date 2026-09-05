@@ -52,6 +52,13 @@
                     <a href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach') }}" class="list-group-item list-group-item-action pl-4">
                         Danh sách phân công
                     </a>
+                    <div class="list-group-item list-group-item-light small font-weight-bold py-2">DAT</div>
+                    <a href="{{ route('daotao.pdt.dat.quan-ly-phien') }}" class="list-group-item list-group-item-action pl-4">
+                        Quản lý phiên
+                    </a>
+                    <a href="{{ route('daotao.pdt.dat.nhap-du-lieu-phien') }}" class="list-group-item list-group-item-action pl-4">
+                        Nhập dữ liệu phiên
+                    </a>
                 </div>
             </div>
         </div>

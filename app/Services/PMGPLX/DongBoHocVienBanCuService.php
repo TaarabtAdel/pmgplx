@@ -143,10 +143,11 @@ class DongBoHocVienBanCuService
                 'ma_dk_prefix_nguon' => $prefixNguon,
                 'ma_dk_prefix_dich' => $prefixDich,
                 'conflict_count' => count($conflicts),
+                'update_count' => count($conflicts),
                 'conflicts' => $conflicts,
                 'syncable_count' => count(array_filter(
                     $planned,
-                    fn ($row) => empty($row['ton_tai']) && ! empty($row['ma_dk'])
+                    fn ($row) => ! empty($row['ma_dk'])
                 )),
                 'test_student' => $this->firstTestableStudent($planned),
             ],
@@ -160,7 +161,7 @@ class DongBoHocVienBanCuService
     public function firstTestableStudent(array $planned): ?array
     {
         foreach ($planned as $row) {
-            if (! empty($row['ton_tai']) || empty($row['ma_dk']) || empty($row['ma_dk_nguon'])) {
+            if (empty($row['ma_dk']) || empty($row['ma_dk_nguon'])) {
                 continue;
             }
 
@@ -175,7 +176,17 @@ class DongBoHocVienBanCuService
     }
 
     /**
-     * @return array{inserted: int, failed: int, total: int, skipped: int, inserted_ma_dks: list<string>, source_ma_dk?: string|null, target_ma_dk?: string|null, ho_ten?: string}
+     * @return array{
+     *     inserted: int,
+     *     updated: int,
+     *     failed: int,
+     *     total: int,
+     *     skipped: int,
+     *     inserted_ma_dks: list<string>,
+     *     source_ma_dk?: string|null,
+     *     target_ma_dk?: string|null,
+     *     ho_ten?: string
+     * }
      */
     public function sync(string $maKhoaHocNguon, string $maKhoaHocDich, ?string $onlySourceMaDk = null): array
     {
@@ -188,7 +199,7 @@ class DongBoHocVienBanCuService
         }
 
         if ($students->isEmpty()) {
-            return ['inserted' => 0, 'failed' => 0, 'total' => 0, 'skipped' => 0, 'inserted_ma_dks' => []];
+            return ['inserted' => 0, 'updated' => 0, 'failed' => 0, 'total' => 0, 'skipped' => 0, 'inserted_ma_dks' => []];
         }
 
         if (! KhoaHocOld::query()->where('MaKH', $maKhoaHocDich)->exists()) {
@@ -201,26 +212,23 @@ class DongBoHocVienBanCuService
 
         $existingMaDks = $this->findExistingMaDks($plannedMaDks);
 
-        if ($onlySourceMaDk !== null && isset($existingMaDks[$plannedMaDks[0] ?? ''])) {
-            $target = $plannedMaDks[0] ?? $onlySourceMaDk;
-
-            throw new \InvalidArgumentException(
-                'Mã ĐK dự kiến đã tồn tại trên bản cũ: '.$target
-            );
-        }
-
         $maDks = $students->pluck('MaDK')->all();
 
-        [$colsNguoi, $colsHoSo] = $this->mappableColumns();
+        [$colsNguoi, $colsHoSo, $colsGiayTo] = $this->mappableColumns();
 
         $nguoiRows = NguoiLX::query()->whereIn('MaDK', $maDks)->get()->keyBy('MaDK');
         $hoSoRows = NguoiLXHoSo::query()->whereIn('MaDK', $maDks)->get()->keyBy('MaDK');
+        $giayToRows = DB::connection('sqlsrv')
+            ->table('NguoiLXHS_GiayTo')
+            ->whereIn('MaDK', $maDks)
+            ->get()
+            ->groupBy('MaDK');
 
         $oldDb = DB::connection('sqlsrv_old');
         $inserted = 0;
+        $updated = 0;
         $failed = 0;
-        $skipped = 0;
-        $insertedMaDks = [];
+        $syncedMaDks = [];
 
         $oldDb->beginTransaction();
 
@@ -234,32 +242,35 @@ class DongBoHocVienBanCuService
                     continue;
                 }
 
-                if (isset($existingMaDks[$targetMaDk])) {
-                    $skipped++;
-                    continue;
-                }
-
                 $nguoi = $nguoiRows->get($sourceMaDk);
                 if (! $nguoi) {
                     $failed++;
                     continue;
                 }
 
+                $exists = isset($existingMaDks[$targetMaDk]);
+
                 $payloadNguoi = $this->onlyColumns($nguoi->getAttributes(), $colsNguoi);
                 $payloadNguoi['MaDK'] = $targetMaDk;
-
-                $oldDb->table('NguoiLX')->insert($payloadNguoi);
+                $oldDb->table('NguoiLX')->updateOrInsert(['MaDK' => $targetMaDk], $payloadNguoi);
 
                 $hoSo = $hoSoRows->get($sourceMaDk);
                 if ($hoSo) {
                     $payloadHoSo = $this->onlyColumns($hoSo->getAttributes(), $colsHoSo);
                     $payloadHoSo['MaDK'] = $targetMaDk;
                     $payloadHoSo['MaKhoaHoc'] = $maKhoaHocDich;
-                    $oldDb->table('NguoiLX_HoSo')->insert($payloadHoSo);
+                    $oldDb->table('NguoiLX_HoSo')->updateOrInsert(['MaDK' => $targetMaDk], $payloadHoSo);
                 }
 
-                $insertedMaDks[] = $targetMaDk;
-                $inserted++;
+                $this->syncGiayToRows(
+                    $oldDb,
+                    $giayToRows->get($sourceMaDk, collect()),
+                    $targetMaDk,
+                    $colsGiayTo
+                );
+
+                $syncedMaDks[] = $targetMaDk;
+                $exists ? $updated++ : $inserted++;
             }
 
             $oldDb->commit();
@@ -271,12 +282,13 @@ class DongBoHocVienBanCuService
 
         return [
             'inserted' => $inserted,
+            'updated' => $updated,
             'failed' => $failed,
             'total' => $students->count(),
-            'skipped' => $skipped,
-            'inserted_ma_dks' => $insertedMaDks,
+            'skipped' => 0,
+            'inserted_ma_dks' => $syncedMaDks,
             'source_ma_dk' => $onlySourceMaDk ?? ($students->first()->MaDK ?? null),
-            'target_ma_dk' => $insertedMaDks[0] ?? null,
+            'target_ma_dk' => $syncedMaDks[0] ?? null,
             'ho_ten' => $students->isEmpty()
                 ? ''
                 : trim((string) ($students->first()->HoVaTen ?: trim(($students->first()->HoDemNLX ?? '').' '.($students->first()->TenNLX ?? '')))),
@@ -324,6 +336,7 @@ class DongBoHocVienBanCuService
 
         try {
             foreach (array_chunk($maDks, 500) as $chunk) {
+                $oldDb->table('NguoiLXHS_GiayTo')->whereIn('MaDK', $chunk)->delete();
                 $oldDb->table('NguoiLX_HoSo')->whereIn('MaDK', $chunk)->delete();
                 $deleted += $oldDb->table('NguoiLX')->whereIn('MaDK', $chunk)->delete();
             }
@@ -351,7 +364,7 @@ class DongBoHocVienBanCuService
             'ma_kh_nguon' => $maKhoaHocNguon,
             'ma_kh_dich' => $maKhoaHocDich,
             'ma_dks' => $result['inserted_ma_dks'] ?? [],
-            'count' => (int) ($result['inserted'] ?? 0),
+            'count' => (int) (($result['inserted'] ?? 0) + ($result['updated'] ?? 0)),
             'synced_at' => now()->format('d/m/Y H:i:s'),
             'is_test' => $isTest,
             'ho_ten' => $result['ho_ten'] ?? null,
@@ -363,14 +376,37 @@ class DongBoHocVienBanCuService
     /**
      * Cột dùng khi copy sang bản cũ (giao 2 DB, bỏ cột IDENTITY trên sqlsrv_old).
      *
-     * @return array{0: list<string>, 1: list<string>}
+     * @return array{0: list<string>, 1: list<string>, 2: list<string>}
      */
     public function mappableColumns(): array
     {
         return [
             $this->commonColumns('NguoiLX'),
             $this->commonColumns('NguoiLX_HoSo'),
+            $this->commonColumns('NguoiLXHS_GiayTo'),
         ];
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, object>  $rows
+     * @param  list<string>  $columns
+     */
+    private function syncGiayToRows($oldDb, Collection $rows, string $targetMaDk, array $columns): void
+    {
+        foreach ($rows as $row) {
+            $payload = $this->onlyColumns((array) $row, $columns);
+            $payload['MaDK'] = $targetMaDk;
+            $maGt = $payload['MaGT'] ?? null;
+
+            if ($maGt === null) {
+                continue;
+            }
+
+            $oldDb->table('NguoiLXHS_GiayTo')->updateOrInsert(
+                ['MaDK' => $targetMaDk, 'MaGT' => $maGt],
+                $payload
+            );
+        }
     }
 
     /**
