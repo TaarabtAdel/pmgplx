@@ -24,7 +24,7 @@
         background-color: #ffe8a1;
     }
     .hoc-vien-dong-bo-planned-scroll .table {
-        min-width: 980px;
+        min-width: 1050px;
     }
     .hoc-vien-dong-bo-row-conflict {
         background-color: #fff3cd;
@@ -117,8 +117,8 @@
                 </ul>
                 Chức năng này copy sang bản cũ <strong>3 bảng: NguoiLX + NguoiLX_HoSo + NguoiLXHS_GiayTo</strong>
                 (mã ĐK và mã khóa được map sang khóa đích; giấy tờ upsert theo khóa <code>MaDK</code> + <code>MaGT</code>).
-                <strong>Đơn vị cấp GPLX</strong> trên bản cũ: nếu <code>NgayTTGPLXDaCo</code> sau 01/03/2025 thì ghi <code>00</code>,
-                ngược lại lấy 2 số đầu của <code>DonViCapGPLXDaCo</code> (vd. 44, 45).
+                <strong>Đơn vị cấp GPLX</strong> (<code>DonViCapGPLXDaCo</code>) trên bản cũ: nếu <code>NgayTTGPLXDaCo</code> sau 01/03/2025 thì ghi <code>00</code>;
+                trước mốc đó lấy <strong>2 số đầu của <code>SoGPLXDaCo</code></strong> (vd. <code>450190001488</code> → <code>45</code>, <code>440155002955</code> → <code>44</code>).
                 <strong>Chưa</strong> đưa <code>NguoiLX_GPLX</code>
                 và các cột chỉ có trên bản mới (điểm thi, kết quả DAT…).
                 Đủ để hiện danh sách học viên và giấy tờ trên bản cũ; chưa đủ nếu cần xem/sửa GPLX cũ trong phần mềm cũ.
@@ -225,8 +225,8 @@
                                             <td>{{ $index + 1 }}</td>
                                             <td><code>{{ $row['ma_dk'] }}</code></td>
                                             <td class="col-ho-ten">{{ $row['ho_ten'] }}</td>
-                                            <td>{{ $row['so_gplx_da_co'] }}</td>
-                                            <td>{{ $row['don_vi_cap_gplx_da_co'] }}</td>
+                                            <td>{{ $row['so_gplx_da_co'] ?: '—' }}</td>
+                                            <td>{{ $row['don_vi_cap_gplx_da_co'] ?: '—' }}</td>
                                             <td>{{ $row['hang_gplx'] }}</td>
                                         </tr>
                                     @empty
@@ -262,7 +262,8 @@
                                             <th class="col-ho-ten">Họ và tên</th>
                                             <th>Số GPLX</th>
                                             <th>Ngày TT GPLX</th>
-                                            <th>ĐVC nguồn</th>
+                                            <th>Từ Số GPLX</th>
+                                            <th>ĐVC hiện tại</th>
                                             <th>ĐVC bản cũ</th>
                                             <th>Hạng</th>
                                         </tr>
@@ -295,10 +296,11 @@
                                                         <span class="badge badge-info ml-1" title="Sau 01/03/2025 → ĐVC bản cũ = 00">Sau mốc</span>
                                                     @endif
                                                 </td>
-                                                <td>{{ $row['don_vi_cap_gplx_da_co_nguon'] ?: '—' }}</td>
+                                                <td title="{{ $row['so_gplx_da_co'] ?? '' }}">{{ $row['dvc_tu_so_gplx'] ?: '—' }}</td>
+                                                <td>{{ $row['don_vi_cap_gplx_da_co_goc'] ?: '—' }}</td>
                                                 <td>
                                                     @if (! empty($row['don_vi_cap_doi']))
-                                                        <span class="text-muted">{{ $row['don_vi_cap_gplx_da_co_nguon'] ?: '—' }}</span>
+                                                        <span class="text-muted">{{ $row['don_vi_cap_gplx_da_co_goc'] ?: ($row['dvc_tu_so_gplx'] ?: '—') }}</span>
                                                         <span class="mx-1">→</span>
                                                         <strong class="text-primary">{{ $row['don_vi_cap_gplx_da_co'] ?: '—' }}</strong>
                                                     @else
@@ -309,15 +311,16 @@
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="8" class="text-center py-4">Không có dữ liệu</td>
+                                                <td colspan="9" class="text-center py-4">Không có dữ liệu</td>
                                             </tr>
                                         @endforelse
                                     </tbody>
                                 </table>
                             </div>
                             <div class="small text-muted px-3 py-2 border-top">
-                                Dòng xanh nhạt: ĐVC thay đổi khi sang bản cũ.
-                                Badge <span class="badge badge-info">Sau mốc</span> = <code>NgayTTGPLXDaCo</code> sau 01/03/2025 → ĐVC bản cũ = <code>00</code>.
+                                <strong>Từ Số GPLX</strong> = 2 số đầu <code>SoGPLXDaCo</code> (44/45…).
+                                <strong>ĐVC bản cũ</strong> = giá trị ghi sang DB cũ (trước 01/03/2025 = Từ Số GPLX; sau mốc = <code>00</code>).
+                                Dòng xanh nhạt: khác <strong>ĐVC hiện tại</strong> trên phần mềm mới.
                             </div>
                         @endif
                     </div>

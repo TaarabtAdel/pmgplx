@@ -73,13 +73,21 @@ class DongBoHocVienBanCuService
         foreach ($students->values() as $row) {
             $hoTen = trim((string) ($row->HoVaTen ?: trim(($row->HoDemNLX ?? '').' '.($row->TenNLX ?? ''))));
 
+            $soGplx = trim((string) ($row->SoGPLXDaCo ?? ''));
+            $donViCapGoc = trim((string) ($row->DonViCapGPLXDaCo ?? ''));
+            $dvcTuSoGplx = DonViCapGPLXBanCu::prefixFromSoGPLX($soGplx);
+            $donViCapBanCu = DonViCapGPLXBanCu::mapForOldSoftware(
+                $soGplx !== '' ? $soGplx : null,
+                $row->NgayTTGPLXDaCo
+            );
+
             $source[] = [
                 'ma_dk' => $row->MaDK,
                 'ho_ten' => $hoTen,
                 'ngay_sinh' => $row->NgaySinh,
                 'gioi_tinh' => $row->GioiTinh,
                 'so_gplx_da_co' => $row->SoGPLXDaCo,
-                'don_vi_cap_gplx_da_co' => $row->DonViCapGPLXDaCo,
+                'don_vi_cap_gplx_da_co' => $donViCapGoc,
                 'ma_khoa_hoc' => $row->MaKhoaHoc,
                 'hang_gplx' => $row->HangGPLX,
             ];
@@ -92,12 +100,6 @@ class DongBoHocVienBanCuService
                 $plannedMaDks[] = $mappedMaDk;
             }
 
-            $donViCapNguon = trim((string) ($row->DonViCapGPLXDaCo ?? ''));
-            $donViCapBanCu = DonViCapGPLXBanCu::mapForOldSoftware(
-                $donViCapNguon !== '' ? $donViCapNguon : null,
-                $row->NgayTTGPLXDaCo
-            );
-
             $planned[] = [
                 'ma_dk' => $mappedMaDk,
                 'ma_dk_nguon' => $row->MaDK,
@@ -107,9 +109,10 @@ class DongBoHocVienBanCuService
                 'so_gplx_da_co' => $row->SoGPLXDaCo,
                 'ngay_tt_gplx_da_co' => DonViCapGPLXBanCu::formatNgayTT($row->NgayTTGPLXDaCo),
                 'ngay_tt_sau_moc' => DonViCapGPLXBanCu::isNgayTTAfterCutoff($row->NgayTTGPLXDaCo),
-                'don_vi_cap_gplx_da_co_nguon' => $donViCapNguon,
+                'dvc_tu_so_gplx' => $dvcTuSoGplx,
+                'don_vi_cap_gplx_da_co_goc' => $donViCapGoc,
                 'don_vi_cap_gplx_da_co' => $donViCapBanCu,
-                'don_vi_cap_doi' => $donViCapNguon !== $donViCapBanCu,
+                'don_vi_cap_doi' => $donViCapBanCu !== '' && $donViCapBanCu !== $donViCapGoc,
                 'hang_gplx' => $row->HangGPLX,
                 'ton_tai' => false,
             ];
@@ -409,7 +412,7 @@ class DongBoHocVienBanCuService
     {
         if (array_key_exists('DonViCapGPLXDaCo', $payload)) {
             $payload['DonViCapGPLXDaCo'] = DonViCapGPLXBanCu::mapForOldSoftware(
-                isset($payload['DonViCapGPLXDaCo']) ? (string) $payload['DonViCapGPLXDaCo'] : null,
+                isset($payload['SoGPLXDaCo']) ? (string) $payload['SoGPLXDaCo'] : null,
                 $payload['NgayTTGPLXDaCo'] ?? null
             );
         }

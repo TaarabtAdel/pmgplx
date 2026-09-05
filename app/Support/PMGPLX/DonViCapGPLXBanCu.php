@@ -4,24 +4,29 @@ namespace App\Support\PMGPLX;
 
 /**
  * Quy tắc map DonViCapGPLXDaCo sang phần mềm cũ khi đồng bộ học viên.
+ *
+ * Nguồn: 2 số đầu của SoGPLXDaCo (vd. 450190001488 → 45, 440155002955 → 44).
+ * NgayTTGPLXDaCo sau 01/03/2025 → DonViCapGPLXDaCo = 00.
  */
 class DonViCapGPLXBanCu
 {
     /** Ngày trích xuất GPLX sau mốc này → đơn vị cấp = 00 trên bản cũ. */
     private const NGAY_TT_CUTOFF = '20250301';
 
-    public static function mapForOldSoftware(?string $donViCap, mixed $ngayTT): string
+    public static function prefixFromSoGPLX(?string $soGPLX): string
+    {
+        $soGPLX = trim((string) $soGPLX);
+
+        return $soGPLX !== '' ? substr($soGPLX, 0, 2) : '';
+    }
+
+    public static function mapForOldSoftware(?string $soGPLX, mixed $ngayTT): string
     {
         if (self::isNgayTTAfterCutoff($ngayTT)) {
             return '00';
         }
 
-        $donViCap = trim((string) $donViCap);
-        if ($donViCap === '') {
-            return '';
-        }
-
-        return substr($donViCap, 0, 2);
+        return self::prefixFromSoGPLX($soGPLX);
     }
 
     public static function isNgayTTAfterCutoff(mixed $ngayTT): bool
