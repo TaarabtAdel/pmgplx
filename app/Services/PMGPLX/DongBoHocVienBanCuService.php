@@ -6,6 +6,7 @@ use App\Models\PMGPLX\KhoaHoc;
 use App\Models\PMGPLX\NguoiLX;
 use App\Models\PMGPLX\NguoiLXHoSo;
 use App\Models\PMGPLXOLD\KhoaHoc as KhoaHocOld;
+use App\Support\PMGPLX\DonViCapGPLXBanCu;
 use App\Support\PMGPLX\MaDkBanCu;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -23,8 +24,9 @@ class DongBoHocVienBanCuService
      *     TenNLX: ?string,
      *     NgaySinh: mixed,
      *     GioiTinh: ?string,
-     *     SoCMT: ?string,
-     *     SoHoSo: ?string,
+     *     SoGPLXDaCo: ?string,
+     *     DonViCapGPLXDaCo: ?string,
+     *     NgayTTGPLXDaCo: mixed,
      *     MaKhoaHoc: ?string,
      *     HangGPLX: ?string,
      *     TrangThai: ?string
@@ -44,9 +46,10 @@ class DongBoHocVienBanCuService
                 'n.HoVaTen',
                 'n.NgaySinh',
                 'n.GioiTinh',
-                'n.SoCMT',
                 'n.TrangThai',
-                'h.SoHoSo',
+                'h.SoGPLXDaCo',
+                'h.DonViCapGPLXDaCo',
+                'h.NgayTTGPLXDaCo',
                 'h.MaKhoaHoc',
                 'h.HangGPLX',
             ]);
@@ -75,8 +78,8 @@ class DongBoHocVienBanCuService
                 'ho_ten' => $hoTen,
                 'ngay_sinh' => $row->NgaySinh,
                 'gioi_tinh' => $row->GioiTinh,
-                'so_cmt' => $row->SoCMT,
-                'so_ho_so' => $row->SoHoSo,
+                'so_gplx_da_co' => $row->SoGPLXDaCo,
+                'don_vi_cap_gplx_da_co' => $row->DonViCapGPLXDaCo,
                 'ma_khoa_hoc' => $row->MaKhoaHoc,
                 'hang_gplx' => $row->HangGPLX,
             ];
@@ -89,15 +92,24 @@ class DongBoHocVienBanCuService
                 $plannedMaDks[] = $mappedMaDk;
             }
 
+            $donViCapNguon = trim((string) ($row->DonViCapGPLXDaCo ?? ''));
+            $donViCapBanCu = DonViCapGPLXBanCu::mapForOldSoftware(
+                $donViCapNguon !== '' ? $donViCapNguon : null,
+                $row->NgayTTGPLXDaCo
+            );
+
             $planned[] = [
                 'ma_dk' => $mappedMaDk,
                 'ma_dk_nguon' => $row->MaDK,
                 'ho_ten' => $hoTen,
                 'ngay_sinh' => $row->NgaySinh,
                 'gioi_tinh' => $row->GioiTinh,
-                'so_cmt' => $row->SoCMT,
-                'so_ho_so' => $row->SoHoSo,
-                'ma_khoa_hoc' => $maKhoaHocDich,
+                'so_gplx_da_co' => $row->SoGPLXDaCo,
+                'ngay_tt_gplx_da_co' => DonViCapGPLXBanCu::formatNgayTT($row->NgayTTGPLXDaCo),
+                'ngay_tt_sau_moc' => DonViCapGPLXBanCu::isNgayTTAfterCutoff($row->NgayTTGPLXDaCo),
+                'don_vi_cap_gplx_da_co_nguon' => $donViCapNguon,
+                'don_vi_cap_gplx_da_co' => $donViCapBanCu,
+                'don_vi_cap_doi' => $donViCapNguon !== $donViCapBanCu,
                 'hang_gplx' => $row->HangGPLX,
                 'ton_tai' => false,
             ];
@@ -256,7 +268,9 @@ class DongBoHocVienBanCuService
 
                 $hoSo = $hoSoRows->get($sourceMaDk);
                 if ($hoSo) {
-                    $payloadHoSo = $this->onlyColumns($hoSo->getAttributes(), $colsHoSo);
+                    $payloadHoSo = $this->mapHoSoPayloadForBanCu(
+                        $this->onlyColumns($hoSo->getAttributes(), $colsHoSo)
+                    );
                     $payloadHoSo['MaDK'] = $targetMaDk;
                     $payloadHoSo['MaKhoaHoc'] = $maKhoaHocDich;
                     $oldDb->table('NguoiLX_HoSo')->updateOrInsert(['MaDK' => $targetMaDk], $payloadHoSo);
@@ -385,6 +399,22 @@ class DongBoHocVienBanCuService
             $this->commonColumns('NguoiLX_HoSo'),
             $this->commonColumns('NguoiLXHS_GiayTo'),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public function mapHoSoPayloadForBanCu(array $payload): array
+    {
+        if (array_key_exists('DonViCapGPLXDaCo', $payload)) {
+            $payload['DonViCapGPLXDaCo'] = DonViCapGPLXBanCu::mapForOldSoftware(
+                isset($payload['DonViCapGPLXDaCo']) ? (string) $payload['DonViCapGPLXDaCo'] : null,
+                $payload['NgayTTGPLXDaCo'] ?? null
+            );
+        }
+
+        return $payload;
     }
 
     /**

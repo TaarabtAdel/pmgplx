@@ -290,7 +290,9 @@ class DanhSachHocVienController extends Controller
 
                 $hoSo = $hoSoRows->get($maDK);
                 if ($hoSo) {
-                    $payloadHoSo = $this->onlyColumns($hoSo->getAttributes(), $colsHoSo);
+                    $payloadHoSo = app(DongBoHocVienBanCuService::class)->mapHoSoPayloadForBanCu(
+                        $this->onlyColumns($hoSo->getAttributes(), $colsHoSo)
+                    );
                     $oldDb->table('NguoiLX_HoSo')->updateOrInsert(['MaDK' => $maDK], $payloadHoSo);
                 }
 
