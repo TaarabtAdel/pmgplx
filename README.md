@@ -49,6 +49,28 @@ docker compose exec app php artisan migrate:status \
   --path=database/migrations/manhlinh
 ```
 
+**Reset sạch bảng MANHLINH** (xóa hết bảng, rồi migrate lại từ đầu — mất toàn bộ dữ liệu):
+
+```bash
+docker compose exec db /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U sa -P "YourPassword123!" -C -d MANHLINH -Q "
+SET NOCOUNT ON;
+DECLARE @sql NVARCHAR(MAX) = N'';
+SELECT @sql += N'ALTER TABLE [' + OBJECT_SCHEMA_NAME(parent_object_id) + N'].[' + OBJECT_NAME(parent_object_id) + N'] DROP CONSTRAINT [' + name + N'];' + CHAR(13)
+FROM sys.foreign_keys;
+EXEC sp_executesql @sql;
+SET @sql = N'';
+SELECT @sql += N'DROP TABLE [' + TABLE_SCHEMA + N'].[' + TABLE_NAME + N'];' + CHAR(13)
+FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE';
+EXEC sp_executesql @sql;"
+
+docker compose exec app php artisan migrate \
+  --database=sqlsrv_manhlinh \
+  --path=database/migrations/manhlinh
+```
+
+Sau migrate sạch, DB có 10 bảng nghiệp vụ + `migrations`: `GiaoVien`, `XeTapLai`, `KhoaDaoTao`, `PhanCongDaoTao`, `TienDoDaoTao`, `DatDSPhien`, `DatPhanLoaiPhien`, `DatDSPhienPhanLoai`, `DatDieuKienCanhBao`, `DatDieuKienDat`.
+
 ## Backup / restore MANHLINH
 
 File backup (`.bak`) lưu trên máy host: `laravel/database/dumps/` (mount vào container SQL Server tại `/var/opt/mssql/dumps`).

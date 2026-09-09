@@ -21,12 +21,18 @@ return new class extends Migration
         $conn = DB::connection($this->connection);
 
         $this->dropIndexIfExists($conn, 'GiaoVien', 'giaovien_magv_unique');
-        $conn->statement(
+        $this->createIndexIfNotExists(
+            $conn,
+            'GiaoVien',
+            'IX_GiaoVien_MaGV',
             'CREATE UNIQUE INDEX [IX_GiaoVien_MaGV] ON [GiaoVien]([MaGV]) WHERE [MaGV] IS NOT NULL'
         );
 
         $this->dropIndexIfExists($conn, 'KhoaDaoTao', 'khoadaotao_makhoa_unique');
-        $conn->statement(
+        $this->createIndexIfNotExists(
+            $conn,
+            'KhoaDaoTao',
+            'IX_KhoaDaoTao_MaKhoa',
             'CREATE UNIQUE INDEX [IX_KhoaDaoTao_MaKhoa] ON [KhoaDaoTao]([MaKhoa]) WHERE [MaKhoa] IS NOT NULL'
         );
     }
@@ -55,6 +61,14 @@ return new class extends Migration
         $conn->statement(
             "IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'{$index}' AND object_id = OBJECT_ID(N'dbo.{$table}'))
                 DROP INDEX [{$index}] ON [{$table}]"
+        );
+    }
+
+    private function createIndexIfNotExists($conn, string $table, string $index, string $createSql): void
+    {
+        $conn->statement(
+            "IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'{$index}' AND object_id = OBJECT_ID(N'dbo.{$table}'))
+                {$createSql}"
         );
     }
 };
