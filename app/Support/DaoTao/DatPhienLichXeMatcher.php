@@ -177,12 +177,29 @@ class DatPhienLichXeMatcher
         return ['start' => $startTime, 'end' => $endTime];
     }
 
-    private static function sessionFitsSchedule(Carbon $sessionStart, Carbon $sessionEnd, KhoaHocXeTap $lich): bool
+    /**
+     * @return array{start: string, end: string}
+     */
+    public static function scheduleKhungGio(KhoaHocXeTap $lich): array
     {
         $lichStart = self::toCarbon($lich->NgayBD);
         $lichEnd = self::toCarbon($lich->NgayKT);
 
         if ($lichStart === null || $lichEnd === null) {
+            return ['start' => '', 'end' => ''];
+        }
+
+        return self::resolveKhungGioFromTimes(
+            $lichStart->format('H:i'),
+            $lichEnd->format('H:i')
+        );
+    }
+
+    private static function sessionFitsSchedule(Carbon $sessionStart, Carbon $sessionEnd, KhoaHocXeTap $lich): bool
+    {
+        $lichStart = self::toCarbon($lich->NgayBD);
+
+        if ($lichStart === null) {
             return false;
         }
 
@@ -190,8 +207,18 @@ class DatPhienLichXeMatcher
             return false;
         }
 
-        // Phiên nằm trong khung lịch (cùng ngày): bat_dau_phien >= bat_dau_lich, ket_thuc_phien <= ket_thuc_lich
-        return $sessionStart->gte($lichStart) && $sessionEnd->lte($lichEnd);
+        $slot = self::scheduleKhungGio($lich);
+        if ($slot['start'] === '' || $slot['end'] === '') {
+            return false;
+        }
+
+        $sessionStartMin = $sessionStart->copy()->startOfMinute();
+        $sessionEndMin = $sessionEnd->copy()->startOfMinute();
+        $slotStart = $sessionStart->copy()->setTimeFromTimeString($slot['start'].':00');
+        $slotEnd = $sessionStart->copy()->setTimeFromTimeString($slot['end'].':00');
+
+        // Phiên nằm trong khung lịch (cùng ngày, so theo phút): bat_dau >= bat_dau_khung, ket_thuc <= ket_thuc_khung
+        return $sessionStartMin->gte($slotStart) && $sessionEndMin->lte($slotEnd);
     }
 
     private static function teachersMatch(DatDSPhien $session, KhoaHocXeTap $lich): bool

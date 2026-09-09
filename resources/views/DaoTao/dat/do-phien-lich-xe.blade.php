@@ -41,8 +41,9 @@
                     <strong>Hợp lệ</strong> (cùng khóa, cùng biển số, <strong>cùng ngày</strong>, <strong>cùng mã giáo viên</strong>, có ít nhất một dòng lịch xe thỏa):
                     phiên nằm trong khung lịch khi
                     <strong>TG bắt đầu (phiên) ≥ TG bắt đầu (lịch)</strong> (được bắt đầu muộn hơn hoặc trùng),
-                    <strong>TG kết thúc (phiên) ≤ TG kết thúc (lịch)</strong>.
-                    Một ngày có thể nhiều phiên — mỗi phiên so với dòng lịch đúng <strong>ngày + khung giờ</strong>.
+                    <strong>TG kết thúc (phiên) ≤ TG kết thúc (lịch)</strong> (so theo <strong>phút</strong>, không tính giây).
+                    Một ngày có thể nhiều phiên — mỗi phiên so với dòng lịch đúng <strong>ngày + khung giờ</strong>
+                    (ví dụ phiên 11:34–11:59 so với khung <code>05:59 → 11:59</code>, không so với khung chiều).
                 </p>
                 <p class="mb-0">
                     <strong>Cảnh báo:</strong> không có lịch xe cùng biển số, hoặc khung giờ phiên không nằm trong khoảng lịch (theo quy tắc ≥ / ≤ trên).
