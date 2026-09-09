@@ -100,17 +100,37 @@ class DatPhienLichXeMatcher
             ];
         }
 
-        $displaySchedule = $sameDayAndPlate->first();
-        $timeMatchedLich = null;
+        $sessionMaGv = self::normalizeMaGv((string) ($session->MaGiaoVien ?? ''));
 
-        foreach ($sameDayAndPlate as $lich) {
-            if (! self::sessionFitsSchedule($start, $end, $lich)) {
-                continue;
-            }
+        if ($sessionMaGv === '') {
+            return [
+                'valid' => false,
+                'message' => 'Phiên thiếu mã giáo viên',
+                'matched' => null,
+                'displaySchedule' => $sameDayAndPlate->first(),
+            ];
+        }
 
-            $timeMatchedLich = $lich;
+        $sameGvOnDay = $sameDayAndPlate->filter(
+            fn (KhoaHocXeTap $lich): bool => self::normalizeMaGv((string) ($lich->MaGV ?? '')) === $sessionMaGv
+        );
 
-            if (self::teachersMatch($session, $lich)) {
+        if ($sameGvOnDay->isEmpty()) {
+            $displaySchedule = $sameDayAndPlate->first();
+            $lichMaGv = self::normalizeMaGv((string) ($displaySchedule->MaGV ?? ''));
+
+            return [
+                'valid' => false,
+                'message' => self::teacherMismatchMessage($sessionMaGv, $lichMaGv, $displaySchedule),
+                'matched' => null,
+                'displaySchedule' => $displaySchedule,
+            ];
+        }
+
+        $displaySchedule = $sameGvOnDay->first();
+
+        foreach ($sameGvOnDay as $lich) {
+            if (self::sessionFitsSchedule($start, $end, $lich)) {
                 return [
                     'valid' => true,
                     'message' => '',
@@ -120,21 +140,9 @@ class DatPhienLichXeMatcher
             }
         }
 
-        if ($timeMatchedLich !== null) {
-            $sessionMaGv = self::normalizeMaGv((string) ($session->MaGiaoVien ?? ''));
-            $lichMaGv = self::normalizeMaGv((string) ($timeMatchedLich->MaGV ?? ''));
-
-            return [
-                'valid' => false,
-                'message' => self::teacherMismatchMessage($sessionMaGv, $lichMaGv, $timeMatchedLich),
-                'matched' => null,
-                'displaySchedule' => $timeMatchedLich,
-            ];
-        }
-
         return [
             'valid' => false,
-            'message' => 'Khung giờ phiên ngoài lịch xe tập (cùng ngày, biển số, khung giờ PMGPLX)',
+            'message' => 'Khung giờ phiên ngoài lịch xe tập (cùng ngày, biển số, mã GV, khung giờ PMGPLX)',
             'matched' => null,
             'displaySchedule' => $displaySchedule,
         ];
@@ -219,18 +227,6 @@ class DatPhienLichXeMatcher
 
         // Phiên nằm trong khung lịch (cùng ngày, so theo phút): bat_dau >= bat_dau_khung, ket_thuc <= ket_thuc_khung
         return $sessionStartMin->gte($slotStart) && $sessionEndMin->lte($slotEnd);
-    }
-
-    private static function teachersMatch(DatDSPhien $session, KhoaHocXeTap $lich): bool
-    {
-        $sessionMaGv = self::normalizeMaGv((string) ($session->MaGiaoVien ?? ''));
-        $lichMaGv = self::normalizeMaGv((string) ($lich->MaGV ?? ''));
-
-        if ($sessionMaGv === '' || $lichMaGv === '') {
-            return false;
-        }
-
-        return $sessionMaGv === $lichMaGv;
     }
 
     private static function normalizeMaGv(string $maGv): string
