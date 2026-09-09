@@ -35,13 +35,14 @@
                 <p class="mb-2">
                     Chọn <strong>mã khóa</strong> để lấy phiên DAT và so với
                     <a href="{{ route('pmgplx.lich.xe.index') }}">lịch sử dụng xe tập</a>
-                    cùng khóa (<strong>Mã KH</strong>, <strong>xe</strong>, <strong>thời gian bắt đầu / kết thúc</strong>).
+                    cùng khóa (<strong>Mã KH</strong>, <strong>xe</strong>, <strong>cùng ngày</strong>, <strong>khung giờ PMGPLX</strong>).
                 </p>
                 <p class="mb-2">
-                    <strong>Hợp lệ</strong> (cùng khóa, cùng biển số, có ít nhất một dòng lịch xe thỏa):
+                    <strong>Hợp lệ</strong> (cùng khóa, cùng biển số, <strong>cùng ngày</strong>, có ít nhất một dòng lịch xe thỏa):
                     phiên nằm trong khung lịch khi
                     <strong>TG bắt đầu (phiên) ≥ TG bắt đầu (lịch)</strong> (được bắt đầu muộn hơn hoặc trùng),
                     <strong>TG kết thúc (phiên) ≤ TG kết thúc (lịch)</strong>.
+                    Một ngày có thể nhiều phiên — mỗi phiên so với dòng lịch đúng <strong>ngày + khung giờ</strong>.
                 </p>
                 <p class="mb-0">
                     <strong>Cảnh báo:</strong> không có lịch xe cùng biển số, hoặc khung giờ phiên không nằm trong khoảng lịch (theo quy tắc ≥ / ≤ trên).
