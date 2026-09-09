@@ -101,9 +101,16 @@ class DatPhienLichXeMatcher
         }
 
         $displaySchedule = $sameDayAndPlate->first();
+        $timeMatchedLich = null;
 
         foreach ($sameDayAndPlate as $lich) {
-            if (self::sessionFitsSchedule($start, $end, $lich)) {
+            if (! self::sessionFitsSchedule($start, $end, $lich)) {
+                continue;
+            }
+
+            $timeMatchedLich = $lich;
+
+            if (self::teachersMatch($session, $lich)) {
                 return [
                     'valid' => true,
                     'message' => '',
@@ -111,6 +118,18 @@ class DatPhienLichXeMatcher
                     'displaySchedule' => $lich,
                 ];
             }
+        }
+
+        if ($timeMatchedLich !== null) {
+            $sessionMaGv = self::normalizeMaGv((string) ($session->MaGiaoVien ?? ''));
+            $lichMaGv = self::normalizeMaGv((string) ($timeMatchedLich->MaGV ?? ''));
+
+            return [
+                'valid' => false,
+                'message' => self::teacherMismatchMessage($sessionMaGv, $lichMaGv, $timeMatchedLich),
+                'matched' => null,
+                'displaySchedule' => $timeMatchedLich,
+            ];
         }
 
         return [
@@ -173,6 +192,39 @@ class DatPhienLichXeMatcher
 
         // Phiên nằm trong khung lịch (cùng ngày): bat_dau_phien >= bat_dau_lich, ket_thuc_phien <= ket_thuc_lich
         return $sessionStart->gte($lichStart) && $sessionEnd->lte($lichEnd);
+    }
+
+    private static function teachersMatch(DatDSPhien $session, KhoaHocXeTap $lich): bool
+    {
+        $sessionMaGv = self::normalizeMaGv((string) ($session->MaGiaoVien ?? ''));
+        $lichMaGv = self::normalizeMaGv((string) ($lich->MaGV ?? ''));
+
+        if ($sessionMaGv === '' || $lichMaGv === '') {
+            return false;
+        }
+
+        return $sessionMaGv === $lichMaGv;
+    }
+
+    private static function normalizeMaGv(string $maGv): string
+    {
+        return mb_strtoupper(trim($maGv));
+    }
+
+    private static function teacherMismatchMessage(string $sessionMaGv, string $lichMaGv, KhoaHocXeTap $lich): string
+    {
+        if ($sessionMaGv === '' && $lichMaGv !== '') {
+            return 'Phiên thiếu mã giáo viên (lịch xe: '.$lichMaGv.')';
+        }
+
+        if ($sessionMaGv !== '' && $lichMaGv === '') {
+            return 'Lịch xe thiếu mã giáo viên (phiên: '.$sessionMaGv.')';
+        }
+
+        $lichTen = trim((string) ($lich->TenGV ?? ''));
+
+        return 'Mã giáo viên không khớp lịch xe (phiên: '.$sessionMaGv
+            .', lịch: '.$lichMaGv.($lichTen !== '' ? ' — '.$lichTen : '').')';
     }
 
     private static function toCarbon(mixed $value): ?Carbon

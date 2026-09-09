@@ -38,7 +38,7 @@
                     cùng khóa (<strong>Mã KH</strong>, <strong>xe</strong>, <strong>cùng ngày</strong>, <strong>khung giờ PMGPLX</strong>).
                 </p>
                 <p class="mb-2">
-                    <strong>Hợp lệ</strong> (cùng khóa, cùng biển số, <strong>cùng ngày</strong>, có ít nhất một dòng lịch xe thỏa):
+                    <strong>Hợp lệ</strong> (cùng khóa, cùng biển số, <strong>cùng ngày</strong>, <strong>cùng mã giáo viên</strong>, có ít nhất một dòng lịch xe thỏa):
                     phiên nằm trong khung lịch khi
                     <strong>TG bắt đầu (phiên) ≥ TG bắt đầu (lịch)</strong> (được bắt đầu muộn hơn hoặc trùng),
                     <strong>TG kết thúc (phiên) ≤ TG kết thúc (lịch)</strong>.
@@ -107,6 +107,7 @@
                                 <th>Mã phiên</th>
                                 <th>Học viên</th>
                                 <th>Giáo viên</th>
+                                <th>Giáo viên (lịch)</th>
                                 <th>Xe</th>
                                 <th>TG bắt đầu</th>
                                 <th>TG kết thúc</th>
@@ -134,11 +135,13 @@
                                         <small class="text-muted">{{ $session->MaHocVien ?? '' }}</small>
                                     </td>
                                     <td>
+                                        <div>{{ $session->HoTenGiaoVien ?? '—' }}</div>
+                                        <small class="text-muted">{{ $session->MaGiaoVien ?? '' }}</small>
+                                    </td>
+                                    <td>
                                         @if ($lich)
                                             <div>{{ $lich->TenGV ?: '—' }}</div>
-                                            @if (! empty($lich->MaGV))
-                                                <small class="text-muted">{{ $lich->MaGV }}</small>
-                                            @endif
+                                            <small class="text-muted">{{ $lich->MaGV ?? '' }}</small>
                                         @else
                                             —
                                         @endif
@@ -165,7 +168,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="11" class="text-center py-4 text-muted">
+                                    <td colspan="12" class="text-center py-4 text-muted">
                                         Không có phiên theo bộ lọc đã chọn.
                                     </td>
                                 </tr>

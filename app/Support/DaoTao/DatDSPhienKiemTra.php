@@ -76,10 +76,10 @@ class DatDSPhienKiemTra
                 'badge' => 'badge-danger',
             ],
             self::LOI_LICH_XE => [
-                'label' => 'Không khớp lịch xe tập (PMGPLX — ngày / khung giờ)',
+                'label' => 'Không khớp lịch xe tập (PMGPLX — ngày / khung giờ / GV / xe)',
                 'label_lines' => [
                     'Không khớp lịch xe tập',
-                    '(PMGPLX — ngày / khung giờ / biển số)',
+                    '(PMGPLX — ngày / khung giờ / GV / xe)',
                 ],
                 'badge' => 'badge-warning',
             ],
