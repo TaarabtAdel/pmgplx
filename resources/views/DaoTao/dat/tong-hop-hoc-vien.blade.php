@@ -41,7 +41,8 @@
                     Chọn <strong>mã khóa học</strong> để tổng hợp tự động (tránh quét toàn bộ dữ liệu khi chưa chọn khóa).
                     Các bộ lọc khác vẫn dùng nút <strong>Lọc</strong>.
                     Tổng hợp theo <strong>mã học viên + khóa học</strong> (cộng dồn từ các phiên thực hành
-                    <strong>không có cảnh báo</strong> — cùng tiêu chí cột <strong>Đạt</strong> ở màn chi tiết phiên).
+                    <strong>không có cảnh báo</strong> — cùng tiêu chí cột <strong>Đạt</strong> ở màn chi tiết phiên:
+                    thời gian, tỉ lệ ND, phiên liền kề, trùng HV/GV, <strong>không khớp lịch xe tập PMGPLX</strong>, …).
                     Bấm <strong>Xem phiên</strong> để mở màn chi tiết từng phiên.
                 </p>
                 <p class="mb-2">

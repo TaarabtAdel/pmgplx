@@ -24,6 +24,8 @@ class DatDSPhienKiemTra
 
     public const LOI_TRUNG_GV = 'trung_gv';
 
+    public const LOI_LICH_XE = 'lich_xe';
+
     /**
      * @return array{
      *     min_phut: int,
@@ -73,6 +75,14 @@ class DatDSPhienKiemTra
                 'label' => 'Giáo viên trùng khung giờ với phiên khác',
                 'badge' => 'badge-danger',
             ],
+            self::LOI_LICH_XE => [
+                'label' => 'Không khớp lịch xe tập (PMGPLX)',
+                'label_lines' => [
+                    'Không khớp lịch xe tập',
+                    '(PMGPLX — khung giờ / biển số)',
+                ],
+                'badge' => 'badge-warning',
+            ],
         ];
     }
 
@@ -93,6 +103,7 @@ class DatDSPhienKiemTra
         self::applyAdjacentViolations($sessions, $violations, $s['khoang_phut']);
         self::applyOverlapViolations($sessions, $violations, 'MaHocVien', self::LOI_TRUNG_HV);
         self::applyOverlapViolations($sessions, $violations, 'MaGiaoVien', self::LOI_TRUNG_GV);
+        self::applyLichXeViolations($sessions, $violations);
 
         return $violations;
     }
@@ -242,6 +253,38 @@ class DatDSPhienKiemTra
                             $violations[$id][] = $code;
                         }
                     }
+                }
+            }
+        }
+    }
+
+    /**
+     * @param  Collection<int, DatDSPhien>  $sessions
+     * @param  array<int, list<string>>  $violations
+     */
+    private static function applyLichXeViolations(Collection $sessions, array &$violations): void
+    {
+        $byCourse = $sessions->groupBy(
+            fn (DatDSPhien $session): string => trim((string) ($session->MaKhoaHoc ?? ''))
+        );
+
+        foreach ($byCourse as $maKhoaHoc => $group) {
+            if ($maKhoaHoc === '') {
+                continue;
+            }
+
+            $scheduleRows = DatPhienLichXeMatcher::scheduleForCourse($maKhoaHoc);
+
+            foreach ($group as $session) {
+                $result = DatPhienLichXeMatcher::evaluate($session, $scheduleRows);
+                if ($result['valid']) {
+                    continue;
+                }
+
+                $id = (int) $session->Id;
+                $violations[$id] ??= [];
+                if (! in_array(self::LOI_LICH_XE, $violations[$id], true)) {
+                    $violations[$id][] = self::LOI_LICH_XE;
                 }
             }
         }
