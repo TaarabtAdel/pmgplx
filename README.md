@@ -51,22 +51,30 @@ docker compose exec app php artisan migrate:status \
 
 ## Backup / restore MANHLINH
 
-File backup nằm trên máy host: `khgplx/sqlserver-backup/` (mount vào container SQL Server).
+File backup (`.bak`) lưu trên máy host: `laravel/database/dumps/` (mount vào container SQL Server tại `/var/opt/mssql/dumps`).
 
 **Backup:**
 
 ```bash
+BACKUP_FILE="MANHLINH_$(date +%Y%m%d_%H%M%S).bak"
+
 docker compose exec db /opt/mssql-tools18/bin/sqlcmd \
   -S localhost -U sa -P "YourPassword123!" -C \
-  -Q "BACKUP DATABASE MANHLINH TO DISK = N'/var/opt/mssql/backup/MANHLINH.bak' WITH FORMAT, INIT, NAME = N'MANHLINH-Full'"
+  -Q "BACKUP DATABASE MANHLINH TO DISK = N'/var/opt/mssql/dumps/${BACKUP_FILE}' WITH FORMAT, INIT, NAME = N'MANHLINH-Full'"
+
+echo "File: laravel/database/dumps/${BACKUP_FILE}"
 ```
+
+Ví dụ file ra: `laravel/database/dumps/MANHLINH_20260909_141530.bak`
 
 **Restore:**
 
 ```bash
+BACKUP_FILE="MANHLINH_20260909_141530.bak"   # đổi tên file .bak cần restore
+
 docker compose exec db /opt/mssql-tools18/bin/sqlcmd \
   -S localhost -U sa -P "YourPassword123!" -C \
-  -Q "RESTORE DATABASE MANHLINH FROM DISK = N'/var/opt/mssql/backup/MANHLINH.bak' WITH REPLACE"
+  -Q "RESTORE DATABASE MANHLINH FROM DISK = N'/var/opt/mssql/dumps/${BACKUP_FILE}' WITH REPLACE"
 ```
 
 Sau restore, chạy lại migration nếu code mới hơn DB.
