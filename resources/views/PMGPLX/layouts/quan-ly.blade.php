@@ -455,13 +455,37 @@
                             DAT
                         </a>
                         <div class="dropdown-menu">
-                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.quan-ly-phien') ? 'active' : '' }}"
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.tong-hop-hoc-vien*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.tong-hop-hoc-vien') }}">
+                                Tổng hợp học viên
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.quan-ly-phien*') ? 'active' : '' }}"
                                href="{{ route('daotao.pdt.dat.quan-ly-phien') }}">
-                                Quản lý phiên
+                                Chi tiết phiên
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.do-phien-lich-xe*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.do-phien-lich-xe') }}">
+                                Dò phiên với lịch xe
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.phan-loai-phien*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.phan-loai-phien') }}">
+                                Phân loại phiên
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.dieu-kien-canh-bao*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.dieu-kien-canh-bao') }}">
+                                Điều kiện cảnh báo
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.dieu-kien-dat*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.dieu-kien-dat') }}">
+                                Điều kiện đạt
                             </a>
                             <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.nhap-du-lieu-phien*') ? 'active' : '' }}"
                                href="{{ route('daotao.pdt.dat.nhap-du-lieu-phien') }}">
                                 Nhập dữ liệu phiên
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.nhap-ket-qua-cuc*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.nhap-ket-qua-cuc') }}">
+                                Nhập kết quả cục
                             </a>
                         </div>
                     </div>

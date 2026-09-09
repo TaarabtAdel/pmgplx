@@ -6,7 +6,10 @@
     <div class="card card-panel">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>Nhập dữ liệu phiên DAT</span>
-            <a href="{{ route('daotao.pdt.dat.quan-ly-phien') }}" class="btn btn-sm btn-outline-secondary">← Quản lý phiên</a>
+            <div>
+                <a href="{{ route('daotao.pdt.dat.nhap-ket-qua-cuc') }}" class="btn btn-sm btn-outline-primary mr-1">Nhập kết quả cục</a>
+                <a href="{{ route('daotao.pdt.dat.quan-ly-phien') }}" class="btn btn-sm btn-outline-secondary">← Quản lý phiên</a>
+            </div>
         </div>
         <div class="card-body">
             <div class="alert alert-info">

@@ -53,11 +53,29 @@
                         Danh sách phân công
                     </a>
                     <div class="list-group-item list-group-item-light small font-weight-bold py-2">DAT</div>
+                    <a href="{{ route('daotao.pdt.dat.tong-hop-hoc-vien') }}" class="list-group-item list-group-item-action pl-4">
+                        Tổng hợp học viên
+                    </a>
                     <a href="{{ route('daotao.pdt.dat.quan-ly-phien') }}" class="list-group-item list-group-item-action pl-4">
-                        Quản lý phiên
+                        Chi tiết phiên
+                    </a>
+                    <a href="{{ route('daotao.pdt.dat.do-phien-lich-xe') }}" class="list-group-item list-group-item-action pl-4">
+                        Dò phiên với lịch xe
+                    </a>
+                    <a href="{{ route('daotao.pdt.dat.phan-loai-phien') }}" class="list-group-item list-group-item-action pl-4">
+                        Phân loại phiên
+                    </a>
+                    <a href="{{ route('daotao.pdt.dat.dieu-kien-canh-bao') }}" class="list-group-item list-group-item-action pl-4">
+                        Điều kiện cảnh báo
+                    </a>
+                    <a href="{{ route('daotao.pdt.dat.dieu-kien-dat') }}" class="list-group-item list-group-item-action pl-4">
+                        Điều kiện đạt
                     </a>
                     <a href="{{ route('daotao.pdt.dat.nhap-du-lieu-phien') }}" class="list-group-item list-group-item-action pl-4">
                         Nhập dữ liệu phiên
+                    </a>
+                    <a href="{{ route('daotao.pdt.dat.nhap-ket-qua-cuc') }}" class="list-group-item list-group-item-action pl-4">
+                        Nhập kết quả cục
                     </a>
                 </div>
             </div>

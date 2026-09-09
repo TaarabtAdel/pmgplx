@@ -5,6 +5,7 @@ namespace App\Models\DaoTao;
 use App\Support\DaoTao\DatDSPhienExcelParser;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -56,6 +57,16 @@ class DatDSPhien extends Model
         'ThoiGianMayChuNhanPhienHoc' => 'datetime',
         'NgayNhap' => 'datetime',
     ];
+
+    public function phanLoai(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            DatPhanLoaiPhien::class,
+            'DatDSPhienPhanLoai',
+            'DatDSPhienId',
+            'PhanLoaiId'
+        )->orderBy('ThuTu')->orderBy('TenPhanLoai');
+    }
 
     /**
      * Import trực tiếp từ file Excel (đọc theo lô, không giữ toàn bộ trong session).
