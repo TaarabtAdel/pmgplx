@@ -157,6 +157,8 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
 
     Route::get('/phong-dao-tao/dat/do-phien-lich-xe', [DoPhienVoiLichXeController::class, 'index'])
         ->name('pdt.dat.do-phien-lich-xe');
+    Route::get('/phong-dao-tao/dat/do-phien-lich-xe/xuat-excel', [DoPhienVoiLichXeController::class, 'export'])
+        ->name('pdt.dat.do-phien-lich-xe.export');
     Route::get('/phong-dao-tao/dat/quan-ly-phien', [DanhSachDatDSPhienController::class, 'index'])
         ->name('pdt.dat.quan-ly-phien');
     Route::get('/phong-dao-tao/dat/tong-hop-hoc-vien', [TongHopDatHocVienController::class, 'index'])

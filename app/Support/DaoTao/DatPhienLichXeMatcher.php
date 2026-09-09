@@ -33,7 +33,8 @@ class DatPhienLichXeMatcher
      * @return array{
      *     valid: bool,
      *     message: string,
-     *     matched: ?KhoaHocXeTap
+     *     matched: ?KhoaHocXeTap,
+     *     displaySchedule: ?KhoaHocXeTap
      * }
      */
     public static function evaluate(DatDSPhien $session, Collection $scheduleRows): array
@@ -48,6 +49,7 @@ class DatPhienLichXeMatcher
                 'valid' => false,
                 'message' => 'Phiên thiếu thời gian bắt đầu hoặc kết thúc',
                 'matched' => null,
+                'displaySchedule' => null,
             ];
         }
 
@@ -56,6 +58,7 @@ class DatPhienLichXeMatcher
                 'valid' => false,
                 'message' => 'Phiên thiếu biển số xe',
                 'matched' => null,
+                'displaySchedule' => null,
             ];
         }
 
@@ -64,6 +67,7 @@ class DatPhienLichXeMatcher
                 'valid' => false,
                 'message' => 'Không có lịch xe tập cho mã khóa '.$maKh,
                 'matched' => null,
+                'displaySchedule' => null,
             ];
         }
 
@@ -76,8 +80,11 @@ class DatPhienLichXeMatcher
                 'valid' => false,
                 'message' => 'Không có lịch xe '.$session->BienSoXe.' trong khóa',
                 'matched' => null,
+                'displaySchedule' => null,
             ];
         }
+
+        $displaySchedule = $samePlate->first();
 
         foreach ($samePlate as $lich) {
             $lichStart = self::toCarbon($lich->NgayBD);
@@ -92,6 +99,7 @@ class DatPhienLichXeMatcher
                     'valid' => true,
                     'message' => '',
                     'matched' => $lich,
+                    'displaySchedule' => $lich,
                 ];
             }
         }
@@ -100,6 +108,7 @@ class DatPhienLichXeMatcher
             'valid' => false,
             'message' => 'Khung giờ phiên nằm ngoài lịch xe tập (cùng khóa và biển số)',
             'matched' => null,
+            'displaySchedule' => $displaySchedule,
         ];
     }
 

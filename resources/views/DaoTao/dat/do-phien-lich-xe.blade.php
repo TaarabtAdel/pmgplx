@@ -19,6 +19,10 @@
                     Chi tiết phiên
                 </a>
                 @if ($filters['ma_khoa_hoc'] !== '')
+                    <a href="{{ route('daotao.pdt.dat.do-phien-lich-xe.export', request()->query()) }}"
+                       class="btn btn-sm btn-outline-success mr-1">
+                        Xuất Excel
+                    </a>
                     <a href="{{ route('pmgplx.lich.xe.index', ['ma_kh' => $filters['ma_khoa_hoc']]) }}"
                        class="btn btn-sm btn-navy" target="_blank" rel="noopener">
                         Lịch xe tập (khóa này)
@@ -96,9 +100,12 @@
                                 <th>#</th>
                                 <th>Mã phiên</th>
                                 <th>Học viên</th>
+                                <th>Giáo viên</th>
                                 <th>Xe</th>
                                 <th>TG bắt đầu</th>
                                 <th>TG kết thúc</th>
+                                <th>TG bắt đầu (lịch)</th>
+                                <th>TG kết thúc (lịch)</th>
                                 <th>Kết quả</th>
                                 <th>Ghi chú</th>
                             </tr>
@@ -109,6 +116,9 @@
                                     $session = $row->session;
                                     $start = $session->ThoiGianBatDauPhienHoc;
                                     $end = $session->ThoiGianKetThucPhienHoc;
+                                    $lich = $row->displaySchedule;
+                                    $lichStart = $lich?->NgayBD;
+                                    $lichEnd = $lich?->NgayKT;
                                 @endphp
                                 <tr @class(['dat-do-lich-row-canh-bao' => ! $row->valid])>
                                     <td>{{ ($items->firstItem() ?? 0) + $loop->index }}</td>
@@ -117,9 +127,21 @@
                                         <div>{{ $session->HoTenHocVien ?? '—' }}</div>
                                         <small class="text-muted">{{ $session->MaHocVien ?? '' }}</small>
                                     </td>
+                                    <td>
+                                        @if ($lich)
+                                            <div>{{ $lich->TenGV ?: '—' }}</div>
+                                            @if (! empty($lich->MaGV))
+                                                <small class="text-muted">{{ $lich->MaGV }}</small>
+                                            @endif
+                                        @else
+                                            —
+                                        @endif
+                                    </td>
                                     <td>{{ $session->BienSoXe ?? '—' }}</td>
                                     <td>{{ $start?->format('d/m/Y H:i') ?? '—' }}</td>
                                     <td>{{ $end?->format('d/m/Y H:i') ?? '—' }}</td>
+                                    <td>{{ $lichStart?->format('d/m/Y H:i') ?? '—' }}</td>
+                                    <td>{{ $lichEnd?->format('d/m/Y H:i') ?? '—' }}</td>
                                     <td>
                                         @if ($row->valid)
                                             <span class="badge badge-success">Hợp lệ</span>
@@ -128,11 +150,8 @@
                                         @endif
                                     </td>
                                     <td class="small">
-                                        @if ($row->valid && $row->matched)
-                                            Khớp lịch
-                                            {{ $row->matched->NgayBD?->format('d/m/Y H:i') }}
-                                            →
-                                            {{ $row->matched->NgayKT?->format('d/m/Y H:i') }}
+                                        @if ($row->valid)
+                                            Khớp lịch xe tập
                                         @else
                                             {{ $row->message ?: '—' }}
                                         @endif
@@ -140,7 +159,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="text-center py-4 text-muted">
+                                    <td colspan="11" class="text-center py-4 text-muted">
                                         Không có phiên theo bộ lọc đã chọn.
                                     </td>
                                 </tr>
