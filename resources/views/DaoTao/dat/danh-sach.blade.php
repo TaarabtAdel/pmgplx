@@ -214,7 +214,7 @@
                             Chọn <strong>mã khóa học</strong> rồi bấm Lọc để hiện số lượng từng cảnh báo và đánh dấu trên bảng (tránh quét toàn bộ dữ liệu).
                         @else
                             Chọn một hoặc nhiều loại để chỉ hiện phiên có lỗi tương ứng. Bỏ chọn hết = xem tất cả.
-                            <strong>Đạt</strong> = phiên không có bất kỳ cảnh báo nào ở trên (gồm dò lịch xe tập PMGPLX khi đã chọn khóa).
+                            <strong>Đạt</strong> = phiên không có bất kỳ cảnh báo nào ở trên (gồm dò lịch xe PMGPLX: cùng ngày, khung giờ, biển số — khi đã chọn khóa).
                             <a href="{{ route('daotao.pdt.dat.dieu-kien-canh-bao') }}">Chỉnh ngưỡng</a>
                             ·
                             <a href="{{ route('pmgplx.lich.xe.index') }}">Lịch xe tập</a>
