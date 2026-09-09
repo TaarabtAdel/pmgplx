@@ -94,6 +94,7 @@ class DatPhienLichXeMatcher
                 continue;
             }
 
+            // Phiên nằm trong lịch xe: bat_dau_phien >= bat_dau_lich AND ket_thuc_phien <= ket_thuc_lich
             if ($start->gte($lichStart) && $end->lte($lichEnd)) {
                 return [
                     'valid' => true,

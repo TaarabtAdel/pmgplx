@@ -37,9 +37,14 @@
                     <a href="{{ route('pmgplx.lich.xe.index') }}">lịch sử dụng xe tập</a>
                     cùng khóa (<strong>Mã KH</strong>, <strong>xe</strong>, <strong>thời gian bắt đầu / kết thúc</strong>).
                 </p>
+                <p class="mb-2">
+                    <strong>Hợp lệ</strong> (cùng khóa, cùng biển số, có ít nhất một dòng lịch xe thỏa):
+                    phiên nằm trong khung lịch khi
+                    <strong>TG bắt đầu (phiên) ≥ TG bắt đầu (lịch)</strong> (được bắt đầu muộn hơn hoặc trùng),
+                    <strong>TG kết thúc (phiên) ≤ TG kết thúc (lịch)</strong>.
+                </p>
                 <p class="mb-0">
-                    <strong>Hợp lệ:</strong> khung giờ phiên nằm trong một dòng lịch xe (cùng khóa, cùng biển số).
-                    <strong>Cảnh báo:</strong> không khớp lịch hoặc nằm ngoài khung giờ đã đặt.
+                    <strong>Cảnh báo:</strong> không có lịch xe cùng biển số, hoặc khung giờ phiên không nằm trong khoảng lịch (theo quy tắc ≥ / ≤ trên).
                 </p>
             </div>
 
