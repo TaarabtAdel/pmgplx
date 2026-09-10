@@ -175,10 +175,9 @@
                                 <th>Giáo viên</th>
                                 <th>Giáo viên (lịch)</th>
                                 <th>Xe</th>
-                                <th>TG bắt đầu</th>
-                                <th>TG kết thúc</th>
-                                <th>TG bắt đầu (lịch)</th>
-                                <th>TG kết thúc (lịch)</th>
+                                <th>TG phiên</th>
+                                <th>Thời gian</th>
+                                <th>TG lịch</th>
                                 <th>Kết quả</th>
                                 <th>Ghi chú</th>
                             </tr>
@@ -192,6 +191,7 @@
                                     $lich = $row->displaySchedule;
                                     $lichStart = $lich?->NgayBD;
                                     $lichEnd = $lich?->NgayKT;
+                                    $phut = ($start && $end) ? $start->diffInRealMinutes($end) : null;
                                 @endphp
                                 <tr @class(['dat-do-lich-row-canh-bao' => ! $row->valid])>
                                     <td>{{ ($items->firstItem() ?? 0) + $loop->index }}</td>
@@ -213,10 +213,29 @@
                                         @endif
                                     </td>
                                     <td>{{ $session->BienSoXe ?? '—' }}</td>
-                                    <td>{{ $start?->format('d/m/Y H:i') ?? '—' }}</td>
-                                    <td>{{ $end?->format('d/m/Y H:i') ?? '—' }}</td>
-                                    <td>{{ $lichStart?->format('d/m/Y H:i') ?? '—' }}</td>
-                                    <td>{{ $lichEnd?->format('d/m/Y H:i') ?? '—' }}</td>
+                                    <td class="text-nowrap">
+                                        @if ($start || $end)
+                                            <div>{{ $start?->format('d/m/Y H:i') ?? '—' }}</div>
+                                            <div class="text-muted small">{{ $end?->format('d/m/Y H:i') ?? '—' }}</div>
+                                        @else
+                                            —
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if ($phut !== null)
+                                            {{ number_format($phut, 0) }} phút
+                                        @else
+                                            —
+                                        @endif
+                                    </td>
+                                    <td class="text-nowrap">
+                                        @if ($lichStart || $lichEnd)
+                                            <div>{{ $lichStart?->format('d/m/Y H:i') ?? '—' }}</div>
+                                            <div class="text-muted small">{{ $lichEnd?->format('d/m/Y H:i') ?? '—' }}</div>
+                                        @else
+                                            —
+                                        @endif
+                                    </td>
                                     <td>
                                         @if ($row->valid)
                                             <span class="badge badge-success">Hợp lệ</span>
@@ -234,7 +253,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="12" class="text-center py-4 text-muted">
+                                    <td colspan="11" class="text-center py-4 text-muted">
                                         Không có phiên theo bộ lọc đã chọn.
                                     </td>
                                 </tr>

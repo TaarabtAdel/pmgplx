@@ -7,7 +7,9 @@ use App\Models\PMGPLX\GiaoVien;
 use App\Models\PMGPLX\KhoaHoc;
 use App\Models\PMGPLX\KhoaHocXeTap;
 use App\Models\PMGPLX\XeTap;
+use App\Support\DaoTao\DatPhienLichXeThongKe;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 
 class DanhSachLichXeTapController extends Controller
@@ -62,11 +64,44 @@ class DanhSachLichXeTapController extends Controller
             $query->where('x.TrangThai', (int) $request->input('trang_thai'));
         }
 
-        $items = $query
-            ->orderByDesc('x.NgayBD')
-            ->orderByDesc('x.MaLichSD')
-            ->paginate($perPage)
-            ->withQueryString();
+        $phienDat = trim((string) $request->input('phien_dat', ''));
+        if (! in_array($phienDat, ['', 'co_phien', 'chua_co_phien'], true)) {
+            $phienDat = '';
+        }
+
+        if ($phienDat !== '') {
+            $allRows = $query
+                ->orderByDesc('x.NgayBD')
+                ->orderByDesc('x.MaLichSD')
+                ->get();
+
+            $phienStats = DatPhienLichXeThongKe::forScheduleRows($allRows);
+
+            $filtered = $allRows->filter(function (object $row) use ($phienDat, $phienStats): bool {
+                $soPhien = $phienStats[(int) $row->MaLichSD]['so_phien'] ?? 0;
+
+                return $phienDat === 'co_phien' ? $soPhien > 0 : $soPhien === 0;
+            })->values();
+
+            $currentPage = LengthAwarePaginator::resolveCurrentPage();
+            $pageItems = $filtered->slice(($currentPage - 1) * $perPage, $perPage)->values();
+
+            $items = new LengthAwarePaginator(
+                $pageItems,
+                $filtered->count(),
+                $perPage,
+                $currentPage,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
+        } else {
+            $items = $query
+                ->orderByDesc('x.NgayBD')
+                ->orderByDesc('x.MaLichSD')
+                ->paginate($perPage)
+                ->withQueryString();
+
+            $phienStats = DatPhienLichXeThongKe::forScheduleRows(collect($items->items()));
+        }
 
         $khoaHocs = KhoaHoc::query()
             ->orderBy('TenKH')
@@ -83,6 +118,7 @@ class DanhSachLichXeTapController extends Controller
 
         return view('PMGPLX.lich.danh-sach-lich-xe', [
             'items' => $items,
+            'phienStats' => $phienStats,
             'khoaHocs' => $khoaHocs,
             'giaoViens' => $giaoViens,
             'xeTaps' => $xeTaps,
@@ -93,6 +129,7 @@ class DanhSachLichXeTapController extends Controller
                 'tu_ngay' => $request->input('tu_ngay', ''),
                 'den_ngay' => $request->input('den_ngay', ''),
                 'trang_thai' => $request->input('trang_thai', ''),
+                'phien_dat' => $phienDat,
                 'per_page' => $perPage,
             ],
         ]);

@@ -51,10 +51,9 @@ class DatPhienLichXeExcelExporter
             'Mã giáo viên (lịch)',
             'Giáo viên (lịch)',
             'Xe',
-            'TG bắt đầu',
-            'TG kết thúc',
-            'TG bắt đầu (lịch)',
-            'TG kết thúc (lịch)',
+            'TG phiên',
+            'Thời gian (phút)',
+            'TG lịch',
             'Kết quả',
             'Ghi chú',
         ];
@@ -72,6 +71,9 @@ class DatPhienLichXeExcelExporter
             $end = $session->ThoiGianKetThucPhienHoc;
             $lichStart = $lich?->NgayBD;
             $lichEnd = $lich?->NgayKT;
+            $phut = ($start && $end) ? $start->diffInRealMinutes($end) : null;
+            $tgPhien = self::formatTimeRange($start, $end);
+            $tgLich = self::formatTimeRange($lichStart, $lichEnd);
 
             $sheet->fromArray([
                 $index + 1,
@@ -83,10 +85,9 @@ class DatPhienLichXeExcelExporter
                 $lich?->MaGV,
                 $lich?->TenGV,
                 $session->BienSoXe,
-                $start?->format('d/m/Y H:i'),
-                $end?->format('d/m/Y H:i'),
-                $lichStart?->format('d/m/Y H:i'),
-                $lichEnd?->format('d/m/Y H:i'),
+                $tgPhien,
+                $phut !== null ? round($phut) : '',
+                $tgLich,
                 $row->valid ? 'Hợp lệ' : 'Cảnh báo',
                 $row->valid ? 'Khớp lịch xe tập' : ($row->message ?: ''),
             ], null, 'A'.$rowIndex);
@@ -99,5 +100,25 @@ class DatPhienLichXeExcelExporter
         }
 
         return $spreadsheet;
+    }
+
+    private static function formatTimeRange(mixed $start, mixed $end): string
+    {
+        $startText = $start?->format('d/m/Y H:i') ?? '';
+        $endText = $end?->format('d/m/Y H:i') ?? '';
+
+        if ($startText === '' && $endText === '') {
+            return '';
+        }
+
+        if ($startText === '') {
+            return $endText;
+        }
+
+        if ($endText === '') {
+            return $startText;
+        }
+
+        return $startText."\n".$endText;
     }
 }

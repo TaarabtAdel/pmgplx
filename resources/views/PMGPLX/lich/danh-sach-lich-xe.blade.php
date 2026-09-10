@@ -2,6 +2,14 @@
 
 @section('title', 'Quản lý lịch sử dụng xe tập lái')
 
+@push('styles')
+<style>
+    .lich-xe-chua-co-phien {
+        background-color: #fff8e1;
+    }
+</style>
+@endpush
+
 @section('content')
     <div class="card card-panel">
         <div class="card-header">Thông tin tìm kiếm lịch sử dụng xe tập lái</div>
@@ -55,6 +63,14 @@
                             <option value="0" @selected($filters['trang_thai'] === '0')>Không hiệu lực</option>
                         </select>
                     </div>
+                    <div class="form-group col-md-2">
+                        <label for="filter_phien_dat">Phiên DAT</label>
+                        <select name="phien_dat" id="filter_phien_dat" class="form-control form-control-sm">
+                            <option value="">—Tất cả—</option>
+                            <option value="co_phien" @selected($filters['phien_dat'] === 'co_phien')>Có phiên</option>
+                            <option value="chua_co_phien" @selected($filters['phien_dat'] === 'chua_co_phien')>Chưa có phiên</option>
+                        </select>
+                    </div>
                     <div class="form-group col-md-1">
                         <button type="submit" class="btn btn-sm btn-primary btn-block">Tìm</button>
                         <a href="{{ route('pmgplx.lich.xe.index') }}" class="btn btn-sm btn-outline-secondary btn-block mt-1" title="Làm mới">↻</a>
@@ -65,8 +81,17 @@
     </div>
 
     <div class="card card-panel">
-        <div class="card-header">Danh sách lịch sử dụng xe tập lái</div>
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+            <span>Danh sách lịch sử dụng xe tập lái</span>
+            <a href="{{ route('daotao.pdt.dat.do-phien-lich-xe') }}" class="btn btn-sm btn-outline-secondary mt-1 mt-md-0">
+                Dò phiên DAT
+            </a>
+        </div>
         <div class="card-body">
+            <p class="text-muted small mb-3">
+                Cột <strong>Số phiên / Tổng giờ</strong> lấy từ phiên DAT ghép theo khóa · giáo viên · xe · ngày (cùng logic dò phiên).
+                Dòng không có phiên → cảnh báo <span class="badge badge-warning">Chưa có phiên</span>.
+            </p>
             <div class="d-flex flex-wrap align-items-center mb-3">
                 <div class="btn-group btn-group-sm mr-2 mb-2" role="group">
                     <a href="{{ route('pmgplx.lich.thuc-hanh.create') }}" class="btn btn-success">＋ Thêm mới</a>
@@ -119,13 +144,21 @@
                             <th>Giáo viên phụ trách</th>
                             <th>TG bắt đầu</th>
                             <th>TG kết thúc</th>
+                            <th>Số phiên</th>
+                            <th>Tổng giờ</th>
                             <th>Ngày khai giảng</th>
                             <th>Ngày bế giảng</th>
+                            <th width="100">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($items as $index => $row)
-                            <tr>
+                            @php
+                                $stat = $phienStats[(int) $row->MaLichSD] ?? ['so_phien' => 0, 'tong_gio' => 0];
+                                $chuaCoPhien = $stat['so_phien'] === 0;
+                                $ngayLich = optional($row->NgayBD)?->format('Y-m-d') ?? '';
+                            @endphp
+                            <tr @class(['lich-xe-chua-co-phien' => $chuaCoPhien])>
                                 <td>{{ $items->firstItem() + $index }}</td>
                                 <td>{{ $row->MaKH }}</td>
                                 <td>
@@ -135,12 +168,44 @@
                                 <td>{{ $row->TenGV }}</td>
                                 <td>{{ optional($row->NgayBD)->format('d/m/Y H:i') }}</td>
                                 <td>{{ optional($row->NgayKT)->format('d/m/Y H:i') }}</td>
+                                <td>
+                                    @if ($chuaCoPhien)
+                                        <span class="badge badge-warning">Chưa có phiên</span>
+                                    @else
+                                        {{ number_format($stat['so_phien']) }}
+                                    @endif
+                                </td>
+                                <td>
+                                    @if ($chuaCoPhien)
+                                        —
+                                    @else
+                                        {{ \App\Support\DaoTao\DatHocVienTongHop::formatNumber($stat['tong_gio']) }}
+                                    @endif
+                                </td>
                                 <td>{{ $row->NgayKG ? \Carbon\Carbon::parse($row->NgayKG)->format('d/m/Y') : '' }}</td>
                                 <td>{{ $row->NgayBG ? \Carbon\Carbon::parse($row->NgayBG)->format('d/m/Y') : '' }}</td>
+                                <td class="text-nowrap">
+                                    @if ($row->MaKH !== '' && $ngayLich !== '')
+                                        <a href="{{ route('daotao.pdt.dat.do-phien-lich-xe', array_filter([
+                                            'ma_khoa_hoc' => $row->MaKH,
+                                            'ma_giao_vien' => $row->MaGV,
+                                            'bien_so_xe' => $row->BienSoXe,
+                                            'tu_ngay' => $ngayLich,
+                                            'den_ngay' => $ngayLich,
+                                        ])) }}"
+                                           class="btn btn-sm btn-outline-primary"
+                                           target="_blank"
+                                           rel="noopener">
+                                            Xem phiên
+                                        </a>
+                                    @else
+                                        —
+                                    @endif
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center py-4">Không có dữ liệu</td>
+                                <td colspan="11" class="text-center py-4">Không có dữ liệu</td>
                             </tr>
                         @endforelse
                     </tbody>
