@@ -28,6 +28,7 @@ class DieuKienDoPhienController extends Controller
         $cauHinh->update([
             'ChoPhepSomPhut' => (int) $validated['cho_phep_som_phut'],
             'ChoPhepMuonPhut' => (int) $validated['cho_phep_muon_phut'],
+            'DoTheoGiay' => $request->boolean('do_theo_giay'),
             'NgayCapNhat' => now(),
         ]);
 

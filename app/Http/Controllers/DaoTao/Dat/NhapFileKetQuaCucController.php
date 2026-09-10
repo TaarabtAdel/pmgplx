@@ -57,10 +57,29 @@ class NhapFileKetQuaCucController extends Controller
                 DatKetQuaCucExcelParser::DEFAULT_PREVIEW_SAMPLE
             );
 
-            $maKhoaHoc = (string) ($preview['meta']['ma_khoa_hoc'] ?? '');
-            $tongPhienDb = DatDSPhien::query()->where('MaKhoaHoc', $maKhoaHoc)->count();
+            $maKhoaHocList = $preview['meta']['ma_khoa_hoc_list'] ?? [];
+            if ($maKhoaHocList === [] && ! empty($preview['meta']['ma_khoa_hoc'])) {
+                $maKhoaHocList = [(string) $preview['meta']['ma_khoa_hoc']];
+            }
+
+            $tongPhienDb = 0;
+            $khongTrongFile = 0;
+            $khoaStats = $preview['meta']['khoa_stats'] ?? [];
+
+            foreach ($maKhoaHocList as $maKhoaHoc) {
+                $tongDb = DatDSPhien::query()->where('MaKhoaHoc', $maKhoaHoc)->count();
+                $fileCount = (int) ($khoaStats[$maKhoaHoc]['record_count'] ?? 0);
+
+                $khoaStats[$maKhoaHoc]['tong_phien_db'] = $tongDb;
+                $khoaStats[$maKhoaHoc]['khong_trong_file'] = max(0, $tongDb - $fileCount);
+
+                $tongPhienDb += $tongDb;
+                $khongTrongFile += max(0, $tongDb - $fileCount);
+            }
+
+            $preview['meta']['khoa_stats'] = $khoaStats;
             $preview['meta']['tong_phien_db'] = $tongPhienDb;
-            $preview['meta']['khong_trong_file'] = max(0, $tongPhienDb - (int) ($preview['meta']['record_count'] ?? 0));
+            $preview['meta']['khong_trong_file'] = $khongTrongFile;
 
             $request->session()->put(self::SESSION_KEY, [
                 'stored_path' => $storedPath,
@@ -138,16 +157,26 @@ class NhapFileKetQuaCucController extends Controller
 
         $this->clearPendingImport($request);
 
-        $msg = "Đã cập nhật phân loại cục cho khóa {$result['ma_khoa_hoc']}: "
-            ."{$result['da_truyen']} phiên → \"".DatKetQuaCucUpdater::PHAN_LOAI_DA_TRUYEN.'", '
-            ."{$result['cuoc_khong']} phiên → \"".DatKetQuaCucUpdater::PHAN_LOAI_CUOC_KHONG.'"';
+        $msg = 'Đã cập nhật phân loại cục cho '
+            .$result['so_khoa'].' khóa: '
+            .$result['da_truyen'].' phiên → "'.DatKetQuaCucUpdater::PHAN_LOAI_DA_TRUYEN.'", '
+            .$result['cuoc_khong'].' phiên → "'.DatKetQuaCucUpdater::PHAN_LOAI_CUOC_KHONG.'"';
 
         if ($result['khong_trong_file'] > 0) {
-            $msg .= " (trong đó {$result['khong_trong_file']} phiên trong DB không có trong file).";
+            $msg .= ' (trong đó '.$result['khong_trong_file'].' phiên trong DB không có trong file).';
         }
 
         if ($result['file_khong_co_db'] > 0) {
-            $msg .= " Bỏ qua {$result['file_khong_co_db']} dòng file không khớp phiên trong DB.";
+            $msg .= ' Bỏ qua '.$result['file_khong_co_db'].' dòng file không khớp phiên trong DB.';
+        }
+
+        if ($result['so_khoa'] <= 5) {
+            $chiTiet = collect($result['theo_khoa'] ?? [])
+                ->map(fn (array $khoa): string => $khoa['ma_khoa_hoc'].' ('.$khoa['da_truyen'].'/'.$khoa['tong_phien_db'].' đạt)')
+                ->implode(', ');
+            if ($chiTiet !== '') {
+                $msg .= ' Khóa: '.$chiTiet.'.';
+            }
         }
 
         return redirect()

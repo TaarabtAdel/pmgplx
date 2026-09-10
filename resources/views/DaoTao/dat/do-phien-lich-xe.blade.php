@@ -45,7 +45,8 @@
                     nếu không có thì chọn khung có TG bắt đầu gần nhất.
                     <strong>Hợp lệ</strong> khi khớp 4 trường và TG phiên nằm trong khung lịch
                     (cho phép sớm <strong>{{ $doPhienCauHinh->ChoPhepSomPhut }}</strong> phút,
-                    muộn <strong>{{ $doPhienCauHinh->ChoPhepMuonPhut }}</strong> phút —
+                    muộn <strong>{{ $doPhienCauHinh->ChoPhepMuonPhut }}</strong> phút;
+                    so TG {{ $doPhienCauHinh->DoTheoGiay ? 'theo giây' : 'theo phút' }} —
                     <a href="{{ route('daotao.pdt.dat.dieu-kien-do-phien') }}">cấu hình</a>).
                 </p>
             </div>

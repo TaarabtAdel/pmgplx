@@ -180,20 +180,17 @@ class DatPhienLichXeMatcher
         KhoaHocXeTap $lich,
         array $tolerance
     ): bool {
-        $lichStart = self::toCarbon($lich->NgayBD);
-        $lichEnd = self::toCarbon($lich->NgayKT);
+        $window = self::allowedTimeWindow($lich, $tolerance);
 
-        if ($lichStart === null || $lichEnd === null) {
+        if ($window === null) {
             return false;
         }
 
-        $sessionStartMinute = $sessionStart->copy()->startOfMinute();
-        $sessionEndMinute = $sessionEnd->copy()->startOfMinute();
-        $allowedStart = $lichStart->copy()->startOfMinute()->subMinutes($tolerance['som_phut']);
-        $allowedEnd = $lichEnd->copy()->startOfMinute()->addMinutes($tolerance['muon_phut']);
+        $sessionStartCompare = self::normalizeSessionTime($sessionStart, $tolerance);
+        $sessionEndCompare = self::normalizeSessionTime($sessionEnd, $tolerance);
 
-        return $sessionStartMinute->gte($allowedStart)
-            && $sessionEndMinute->lte($allowedEnd);
+        return $sessionStartCompare->gte($window['allowedStart'])
+            && $sessionEndCompare->lte($window['allowedEnd']);
     }
 
     private static function timeMismatchMessage(
@@ -206,28 +203,26 @@ class DatPhienLichXeMatcher
             return 'Phiên thiếu thời gian kết thúc';
         }
 
-        $lichStart = self::toCarbon($lich->NgayBD);
-        $lichEnd = self::toCarbon($lich->NgayKT);
+        $window = self::allowedTimeWindow($lich, $tolerance);
 
-        if ($lichStart === null || $lichEnd === null) {
+        if ($window === null) {
             return 'Lịch xe thiếu thời gian bắt đầu hoặc kết thúc';
         }
 
-        $sessionStartMinute = $sessionStart->copy()->startOfMinute();
-        $sessionEndMinute = $sessionEnd->copy()->startOfMinute();
-        $allowedStart = $lichStart->copy()->startOfMinute()->subMinutes($tolerance['som_phut']);
-        $allowedEnd = $lichEnd->copy()->startOfMinute()->addMinutes($tolerance['muon_phut']);
+        $sessionStartCompare = self::normalizeSessionTime($sessionStart, $tolerance);
+        $sessionEndCompare = self::normalizeSessionTime($sessionEnd, $tolerance);
+        $timeFormat = self::usesSecondPrecision($tolerance) ? 'H:i:s' : 'H:i';
 
         $issues = [];
 
-        if ($sessionStartMinute->lt($allowedStart)) {
-            $issues[] = 'bắt đầu phiên '.$sessionStartMinute->format('H:i')
-                .' sớm hơn lịch '.$lichStart->copy()->startOfMinute()->format('H:i');
+        if ($sessionStartCompare->lt($window['allowedStart'])) {
+            $issues[] = 'bắt đầu phiên '.$sessionStartCompare->format($timeFormat)
+                .' sớm hơn lịch '.$window['lichStart']->format($timeFormat);
         }
 
-        if ($sessionEndMinute->gt($allowedEnd)) {
-            $issues[] = 'kết thúc phiên '.$sessionEndMinute->format('H:i')
-                .' muộn hơn lịch '.$lichEnd->copy()->startOfMinute()->format('H:i');
+        if ($sessionEndCompare->gt($window['allowedEnd'])) {
+            $issues[] = 'kết thúc phiên '.$sessionEndCompare->format($timeFormat)
+                .' muộn hơn lịch '.$window['lichEnd']->format($timeFormat);
         }
 
         if ($issues === []) {
@@ -235,6 +230,57 @@ class DatPhienLichXeMatcher
         }
 
         return 'Lệch thời gian so với lịch xe ('.implode('; ', $issues).')';
+    }
+
+    /**
+     * @return array{
+     *     lichStart: Carbon,
+     *     lichEnd: Carbon,
+     *     allowedStart: Carbon,
+     *     allowedEnd: Carbon
+     * }|null
+     */
+    private static function allowedTimeWindow(KhoaHocXeTap $lich, array $tolerance): ?array
+    {
+        $lichStart = self::toCarbon($lich->NgayBD);
+        $lichEnd = self::toCarbon($lich->NgayKT);
+
+        if ($lichStart === null || $lichEnd === null) {
+            return null;
+        }
+
+        if (self::usesSecondPrecision($tolerance)) {
+            return [
+                'lichStart' => $lichStart,
+                'lichEnd' => $lichEnd,
+                'allowedStart' => $lichStart->copy()->subSeconds($tolerance['som_phut'] * 60),
+                'allowedEnd' => $lichEnd->copy()->addSeconds($tolerance['muon_phut'] * 60),
+            ];
+        }
+
+        $lichStartMinute = $lichStart->copy()->startOfMinute();
+        $lichEndMinute = $lichEnd->copy()->startOfMinute();
+
+        return [
+            'lichStart' => $lichStartMinute,
+            'lichEnd' => $lichEndMinute,
+            'allowedStart' => $lichStartMinute->copy()->subMinutes($tolerance['som_phut']),
+            'allowedEnd' => $lichEndMinute->copy()->addMinutes($tolerance['muon_phut']),
+        ];
+    }
+
+    private static function usesSecondPrecision(array $tolerance): bool
+    {
+        return (bool) ($tolerance['do_theo_giay'] ?? false);
+    }
+
+    private static function normalizeSessionTime(Carbon $time, array $tolerance): Carbon
+    {
+        if (self::usesSecondPrecision($tolerance)) {
+            return $time;
+        }
+
+        return $time->copy()->startOfMinute();
     }
 
     /**

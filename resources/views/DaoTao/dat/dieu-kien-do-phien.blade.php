@@ -26,7 +26,7 @@
                 </p>
                 <p class="mb-0">
                     <strong>Cho phép sớm / muộn</strong> mở rộng biên hợp lệ so với TG bắt đầu và kết thúc lịch
-                    (mặc định 0 = khớp chính xác theo phút).
+                    (mặc định 0 = khớp chính xác theo phút, hoặc theo giây nếu bật tùy chọn bên dưới).
                 </p>
             </div>
 
@@ -55,6 +55,20 @@
                             Ví dụ: lịch 17:59, cho phép muộn 1 phút → phiên đến 18:00 vẫn hợp lệ.
                         </small>
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="do_theo_giay" name="do_theo_giay"
+                               value="1" @checked(old('do_theo_giay', $cauHinh->DoTheoGiay))>
+                        <label class="custom-control-label" for="do_theo_giay">
+                            Dò thêm giây (so sánh TG phiên với lịch theo giây)
+                        </label>
+                    </div>
+                    <small class="form-text text-muted">
+                        Tắt (mặc định): bỏ qua giây, chỉ so theo phút — vd. phiên 11:59:03 và lịch 11:59:00 vẫn hợp lệ.
+                        Bật: so chính xác đến giây — lệch vài giây sẽ cảnh báo (trừ khi có cho phép sớm/muộn).
+                    </small>
                 </div>
 
                 @if ($cauHinh->NgayCapNhat)

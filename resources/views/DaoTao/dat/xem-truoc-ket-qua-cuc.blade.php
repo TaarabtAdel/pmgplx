@@ -5,26 +5,29 @@
 @section('content')
     @php
         $meta = $preview['meta'] ?? [];
+        $maKhoaHocList = $meta['ma_khoa_hoc_list'] ?? [];
+        $khoaStats = $meta['khoa_stats'] ?? [];
     @endphp
 
     <div class="card card-panel mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Xem trước — Nhập kết quả cục theo khóa</span>
+            <span>Xem trước — Nhập kết quả cục</span>
             <a href="{{ route('daotao.pdt.dat.nhap-ket-qua-cuc.cancel') }}" class="btn btn-sm btn-outline-secondary">← Chọn file khác</a>
         </div>
         <div class="card-body">
             <div><strong>File:</strong> {{ $preview['file_name'] ?? '' }}</div>
             <div><strong>Sheet:</strong> {{ $preview['sheet_name'] ?? '' }}</div>
-            <div><strong>Mã khóa học:</strong> <code>{{ $meta['ma_khoa_hoc'] ?? '' }}</code></div>
             <div>
-                <strong>Dòng trong file (khóa này):</strong>
-                {{ number_format((int) ($meta['record_count'] ?? 0)) }}
+                <strong>Số khóa:</strong> {{ number_format((int) ($meta['so_khoa'] ?? count($maKhoaHocList))) }}
+            </div>
+            <div>
+                <strong>Tổng dòng trong file:</strong> {{ number_format((int) ($meta['record_count'] ?? 0)) }}
                 @if ((int) ($meta['skipped_count'] ?? 0) > 0)
-                    — bỏ qua {{ (int) $meta['skipped_count'] }} dòng khác khóa
+                    — bỏ qua {{ (int) $meta['skipped_count'] }} dòng thiếu mã khóa
                 @endif
             </div>
             <div>
-                <strong>Phiên trong DB (cùng khóa):</strong>
+                <strong>Tổng phiên trong DB (các khóa trên):</strong>
                 {{ number_format((int) ($meta['tong_phien_db'] ?? 0)) }}
             </div>
             <div class="mt-2">
@@ -48,6 +51,43 @@
             @endif
         </div>
     </div>
+
+    @if ($maKhoaHocList !== [])
+        <div class="card card-panel mb-3">
+            <div class="card-header">Theo khóa học</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered table-hover mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Mã khóa</th>
+                                <th>Dòng file</th>
+                                <th>Phiên DB</th>
+                                <th>Đã truyền</th>
+                                <th>Cục không chấp nhận (file)</th>
+                                <th>DB không có trong file</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($maKhoaHocList as $maKh)
+                                @php
+                                    $ks = $khoaStats[$maKh] ?? [];
+                                @endphp
+                                <tr>
+                                    <td><code>{{ $maKh }}</code></td>
+                                    <td>{{ number_format((int) ($ks['record_count'] ?? 0)) }}</td>
+                                    <td>{{ number_format((int) ($ks['tong_phien_db'] ?? 0)) }}</td>
+                                    <td>{{ number_format((int) ($ks['count_da_truyen'] ?? 0)) }}</td>
+                                    <td>{{ number_format((int) ($ks['count_khong_chap_nhan'] ?? 0)) }}</td>
+                                    <td>{{ number_format((int) ($ks['khong_trong_file'] ?? 0)) }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <div class="card card-panel mb-3">
         <div class="card-header">Chi tiết — {{ count($detailRows) }} dòng mẫu (tối đa {{ $detailLimit }})</div>

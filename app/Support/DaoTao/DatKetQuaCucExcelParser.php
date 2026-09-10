@@ -30,7 +30,10 @@ class DatKetQuaCucExcelParser
      *         skipped_count: int,
      *         header_row: int,
      *         data_start_row: int,
+     *         so_khoa: int,
+     *         ma_khoa_hoc_list: list<string>,
      *         ma_khoa_hoc: string,
+     *         khoa_stats: array<string, array{record_count: int, count_da_truyen: int, count_khong_chap_nhan: int}>,
      *         preview_limit: int,
      *         count_da_truyen: int,
      *         count_khong_chap_nhan: int
@@ -42,35 +45,62 @@ class DatKetQuaCucExcelParser
         $worksheet = $spreadsheet->getSheet(0);
         $context = $this->resolveSheetContext($worksheet);
         $allRecords = $this->readRecords($worksheet, $context);
+        $grouped = $this->groupByMaKhoaHoc($allRecords);
 
-        $maKhoaHoc = $this->resolveMaKhoaHoc($allRecords);
-        $recordsForCourse = array_values(array_filter(
-            $allRecords,
-            static fn (array $row): bool => $row['MaKhoaHoc'] === $maKhoaHoc
-        ));
-
-        $countDaTruyen = 0;
-        $countKhongChapNhan = 0;
-        foreach ($recordsForCourse as $row) {
-            if ($this->isKhaDung($row['TrangThai'])) {
-                $countDaTruyen++;
-            } else {
-                $countKhongChapNhan++;
-            }
+        if ($grouped === []) {
+            throw new RuntimeException('Không tìm thấy mã khóa học ở cột K.');
         }
 
-        $previewRecords = array_slice($recordsForCourse, 0, $previewSampleLimit);
+        $khoaStats = [];
+        $countDaTruyen = 0;
+        $countKhongChapNhan = 0;
+        $recordCount = 0;
+
+        foreach ($grouped as $maKhoaHoc => $rows) {
+            $khoaDaTruyen = 0;
+            $khoaKhongChapNhan = 0;
+            foreach ($rows as $row) {
+                if ($this->isKhaDung($row['TrangThai'])) {
+                    $khoaDaTruyen++;
+                } else {
+                    $khoaKhongChapNhan++;
+                }
+            }
+
+            $khoaStats[$maKhoaHoc] = [
+                'record_count' => count($rows),
+                'count_da_truyen' => $khoaDaTruyen,
+                'count_khong_chap_nhan' => $khoaKhongChapNhan,
+            ];
+
+            $countDaTruyen += $khoaDaTruyen;
+            $countKhongChapNhan += $khoaKhongChapNhan;
+            $recordCount += count($rows);
+        }
+
+        $maKhoaHocList = array_keys($grouped);
+        sort($maKhoaHocList);
+
+        $validRecords = [];
+        foreach ($grouped as $rows) {
+            foreach ($rows as $row) {
+                $validRecords[] = $row;
+            }
+        }
 
         return [
             'file_name' => $fileName,
             'sheet_name' => $worksheet->getTitle(),
-            'records' => $previewRecords,
+            'records' => array_slice($validRecords, 0, $previewSampleLimit),
             'meta' => [
-                'record_count' => count($recordsForCourse),
-                'skipped_count' => count($allRecords) - count($recordsForCourse),
+                'record_count' => $recordCount,
+                'skipped_count' => count($allRecords) - $recordCount,
                 'header_row' => $context['header_row'],
                 'data_start_row' => $context['data_start_row'],
-                'ma_khoa_hoc' => $maKhoaHoc,
+                'so_khoa' => count($maKhoaHocList),
+                'ma_khoa_hoc_list' => $maKhoaHocList,
+                'ma_khoa_hoc' => count($maKhoaHocList) === 1 ? $maKhoaHocList[0] : '',
+                'khoa_stats' => $khoaStats,
                 'preview_limit' => $previewSampleLimit,
                 'count_da_truyen' => $countDaTruyen,
                 'count_khong_chap_nhan' => $countKhongChapNhan,
@@ -89,11 +119,10 @@ class DatKetQuaCucExcelParser
             $worksheet = $spreadsheet->getSheet(0);
             $context = $this->resolveSheetContext($worksheet);
             $allRecords = $this->readRecords($worksheet, $context);
-            $maKhoaHoc = $this->resolveMaKhoaHoc($allRecords);
 
             return array_values(array_filter(
                 $allRecords,
-                static fn (array $row): bool => $row['MaKhoaHoc'] === $maKhoaHoc
+                static fn (array $row): bool => trim($row['MaKhoaHoc']) !== ''
             ));
         } finally {
             DatDSPhienExcelParser::releaseSpreadsheet($spreadsheet);
@@ -166,33 +195,22 @@ class DatKetQuaCucExcelParser
 
     /**
      * @param  list<array{MaPhienHoc: string, MaKhoaHoc: string, TrangThai: string, KetQuaPhanLoai: string}>  $records
+     * @return array<string, list<array{MaPhienHoc: string, MaKhoaHoc: string, TrangThai: string, KetQuaPhanLoai: string}>>
      */
-    private function resolveMaKhoaHoc(array $records): string
+    private function groupByMaKhoaHoc(array $records): array
     {
-        if ($records === []) {
-            throw new RuntimeException('File không có dòng dữ liệu hợp lệ.');
-        }
+        $grouped = [];
 
-        $codes = [];
         foreach ($records as $row) {
-            $code = trim($row['MaKhoaHoc']);
-            if ($code === '') {
+            $maKhoaHoc = trim($row['MaKhoaHoc']);
+            if ($maKhoaHoc === '') {
                 continue;
             }
-            $codes[$code] = ($codes[$code] ?? 0) + 1;
+
+            $grouped[$maKhoaHoc][] = $row;
         }
 
-        if ($codes === []) {
-            throw new RuntimeException('Không tìm thấy mã khóa học ở cột K.');
-        }
-
-        if (count($codes) > 1) {
-            throw new RuntimeException(
-                'File có nhiều mã khóa học khác nhau ('.implode(', ', array_keys($codes)).'). Mỗi file chỉ xử lý một khóa.'
-            );
-        }
-
-        return (string) array_key_first($codes);
+        return $grouped;
     }
 
     private function normalizeHeader(string $value): string

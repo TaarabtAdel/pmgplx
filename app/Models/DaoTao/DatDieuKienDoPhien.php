@@ -10,6 +10,8 @@ class DatDieuKienDoPhien extends Model
 
     public const DEFAULT_MUON_PHUT = 0;
 
+    public const DEFAULT_DO_THEO_GIAY = false;
+
     protected $connection = 'sqlsrv_manhlinh';
 
     protected $table = 'DatDieuKienDoPhien';
@@ -23,12 +25,14 @@ class DatDieuKienDoPhien extends Model
     protected $fillable = [
         'ChoPhepSomPhut',
         'ChoPhepMuonPhut',
+        'DoTheoGiay',
         'NgayCapNhat',
     ];
 
     protected $casts = [
         'ChoPhepSomPhut' => 'integer',
         'ChoPhepMuonPhut' => 'integer',
+        'DoTheoGiay' => 'boolean',
         'NgayCapNhat' => 'datetime',
     ];
 
@@ -46,6 +50,7 @@ class DatDieuKienDoPhien extends Model
             $row = static::query()->create([
                 'ChoPhepSomPhut' => self::DEFAULT_SOM_PHUT,
                 'ChoPhepMuonPhut' => self::DEFAULT_MUON_PHUT,
+                'DoTheoGiay' => self::DEFAULT_DO_THEO_GIAY,
                 'NgayCapNhat' => now(),
             ]);
         }
@@ -61,13 +66,14 @@ class DatDieuKienDoPhien extends Model
     }
 
     /**
-     * @return array{som_phut: int, muon_phut: int}
+     * @return array{som_phut: int, muon_phut: int, do_theo_giay: bool}
      */
     public function toSettingsArray(): array
     {
         return [
             'som_phut' => (int) ($this->ChoPhepSomPhut ?? self::DEFAULT_SOM_PHUT),
             'muon_phut' => (int) ($this->ChoPhepMuonPhut ?? self::DEFAULT_MUON_PHUT),
+            'do_theo_giay' => (bool) ($this->DoTheoGiay ?? self::DEFAULT_DO_THEO_GIAY),
         ];
     }
 }
