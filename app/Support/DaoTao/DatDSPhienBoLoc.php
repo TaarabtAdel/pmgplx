@@ -17,6 +17,7 @@ class DatDSPhienBoLoc
         $datCt = trim((string) $request->input('dat_ct', ''));
 
         return [
+            'ma_phien' => trim((string) $request->input('ma_phien', '')),
             'ma_hoc_vien' => trim((string) $request->input('ma_hoc_vien', '')),
             'ma_khoa_hoc' => trim((string) $request->input('ma_khoa_hoc', '')),
             'loai_khoa_hoc' => trim((string) $request->input('loai_khoa_hoc', '')),
@@ -47,6 +48,10 @@ class DatDSPhienBoLoc
             if ($maKhFromHv !== '') {
                 $query->where('MaKhoaHoc', $maKhFromHv);
             }
+        }
+
+        if ($filters['ma_phien'] !== '') {
+            $query->where('MaPhienHoc', 'like', '%'.$filters['ma_phien'].'%');
         }
 
         if ($filters['ma_khoa_hoc'] !== '') {

@@ -79,7 +79,14 @@
                         </div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group col-md-4">
+                        <div class="form-group col-md-3">
+                            <label class="small text-muted mb-1" for="filter_ma_phien">Mã phiên</label>
+                            <input type="text" name="ma_phien" id="filter_ma_phien"
+                                   class="form-control form-control-sm"
+                                   value="{{ $filters['ma_phien'] ?? '' }}"
+                                   placeholder="Tìm mã phiên...">
+                        </div>
+                        <div class="form-group col-md-3">
                             <label class="small text-muted mb-1" for="filter_ma_hoc_vien">Mã học viên</label>
                             <select name="ma_hoc_vien" id="filter_ma_hoc_vien" class="form-control form-control-sm">
                                 <option value="">— Tất cả —</option>
@@ -90,7 +97,7 @@
                                 @endif
                             </select>
                         </div>
-                        <div class="form-group col-md-4">
+                        <div class="form-group col-md-3">
                             <label class="small text-muted mb-1" for="filter_ma_khoa_hoc">Mã khóa học</label>
                             <select name="ma_khoa_hoc" id="filter_ma_khoa_hoc" class="form-control form-control-sm">
                                 <option value="">— Tất cả —</option>
@@ -106,7 +113,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="form-group col-md-4">
+                        <div class="form-group col-md-3">
                             <label class="small text-muted mb-1" for="filter_ma_giao_vien">Mã giáo viên</label>
                             <select name="ma_giao_vien" id="filter_ma_giao_vien" class="form-control form-control-sm">
                                 <option value="">— Tất cả —</option>
