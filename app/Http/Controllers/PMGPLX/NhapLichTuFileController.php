@@ -4,6 +4,7 @@ namespace App\Http\Controllers\PMGPLX;
 
 use App\Http\Controllers\Controller;
 use App\Models\PMGPLX\DmMonHoc;
+use App\Rules\ExcelUpload;
 use App\Models\PMGPLX\KhoaHoc;
 use App\Models\PMGPLX\KhoaHocGiaoVien;
 use App\Models\PMGPLX\KhoaHocXeTap;
@@ -63,10 +64,9 @@ class NhapLichTuFileController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:xls,xlsx,csv', 'max:10240'],
+            'file' => ['required', 'file', new ExcelUpload(['csv']), 'max:10240'],
         ], [
             'file.required' => 'Vui lòng chọn file Excel.',
-            'file.mimes' => 'File phải là Excel (.xls, .xlsx) hoặc CSV.',
         ]);
 
         $file = $request->file('file');

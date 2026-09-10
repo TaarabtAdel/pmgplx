@@ -4,6 +4,7 @@ namespace App\Http\Controllers\DaoTao\Dat;
 
 use App\Http\Controllers\Controller;
 use App\Models\DaoTao\DatDSPhien;
+use App\Rules\ExcelUpload;
 use App\Support\DaoTao\DatDSPhienExcelParser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,10 +28,9 @@ class NhapFileDatDSPhienController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:xls,xlsx', 'max:51200'],
+            'file' => ['required', 'file', new ExcelUpload(), 'max:51200'],
         ], [
             'file.required' => 'Vui lòng chọn file Excel.',
-            'file.mimes' => 'File phải là Excel (.xls, .xlsx).',
         ]);
 
         /** @var UploadedFile $file */
