@@ -10,13 +10,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class DatPhienLichXeExcelExporter
 {
     /**
-     * @param  Collection<int, object{
-     *     session: \App\Models\DaoTao\DatDSPhien,
-     *     valid: bool,
-     *     message: string,
-     *     matched: ?\App\Models\PMGPLX\KhoaHocXeTap,
-     *     displaySchedule: ?\App\Models\PMGPLX\KhoaHocXeTap
-     * }>  $rows
+     * @param  Collection<int, object>  $rows
      */
     public static function download(Collection $rows, string $maKhoaHoc): StreamedResponse
     {
@@ -78,7 +72,6 @@ class DatPhienLichXeExcelExporter
             $end = $session->ThoiGianKetThucPhienHoc;
             $lichStart = $lich?->NgayBD;
             $lichEnd = $lich?->NgayKT;
-            $ghiChu = $row->valid ? 'Khớp lịch xe tập' : ($row->message ?: '');
 
             $sheet->fromArray([
                 $index + 1,
@@ -95,7 +88,7 @@ class DatPhienLichXeExcelExporter
                 $lichStart?->format('d/m/Y H:i'),
                 $lichEnd?->format('d/m/Y H:i'),
                 $row->valid ? 'Hợp lệ' : 'Cảnh báo',
-                $ghiChu !== '' ? $ghiChu : null,
+                $row->valid ? 'Khớp lịch xe tập' : ($row->message ?: ''),
             ], null, 'A'.$rowIndex);
 
             $rowIndex++;

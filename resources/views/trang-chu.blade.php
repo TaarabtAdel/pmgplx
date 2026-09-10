@@ -68,6 +68,9 @@
                     <a href="{{ route('daotao.pdt.dat.dieu-kien-canh-bao') }}" class="list-group-item list-group-item-action pl-4">
                         Điều kiện cảnh báo
                     </a>
+                    <a href="{{ route('daotao.pdt.dat.dieu-kien-do-phien') }}" class="list-group-item list-group-item-action pl-4">
+                        Điều kiện dò phiên
+                    </a>
                     <a href="{{ route('daotao.pdt.dat.dieu-kien-dat') }}" class="list-group-item list-group-item-action pl-4">
                         Điều kiện đạt
                     </a>

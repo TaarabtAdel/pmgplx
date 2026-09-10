@@ -4,6 +4,7 @@ use App\Http\Controllers\DaoTao\Dat\DoPhienVoiLichXeController;
 use App\Http\Controllers\DaoTao\Dat\DanhSachDatDSPhienController;
 use App\Http\Controllers\DaoTao\Dat\DieuKienCanhBaoController;
 use App\Http\Controllers\DaoTao\Dat\DieuKienDatController;
+use App\Http\Controllers\DaoTao\Dat\DieuKienDoPhienController;
 use App\Http\Controllers\DaoTao\Dat\NhapFileDatDSPhienController;
 use App\Http\Controllers\DaoTao\Dat\NhapFileKetQuaCucController;
 use App\Http\Controllers\DaoTao\Dat\PhanLoaiPhienController;
@@ -183,6 +184,11 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
         ->name('pdt.dat.dieu-kien-canh-bao');
     Route::put('/phong-dao-tao/dat/dieu-kien-canh-bao', [DieuKienCanhBaoController::class, 'update'])
         ->name('pdt.dat.dieu-kien-canh-bao.update');
+
+    Route::get('/phong-dao-tao/dat/dieu-kien-do-phien', [DieuKienDoPhienController::class, 'index'])
+        ->name('pdt.dat.dieu-kien-do-phien');
+    Route::put('/phong-dao-tao/dat/dieu-kien-do-phien', [DieuKienDoPhienController::class, 'update'])
+        ->name('pdt.dat.dieu-kien-do-phien.update');
 
     Route::get('/phong-dao-tao/dat/dieu-kien-dat', [DieuKienDatController::class, 'index'])
         ->name('pdt.dat.dieu-kien-dat');

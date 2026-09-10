@@ -4,6 +4,7 @@ namespace App\Http\Controllers\DaoTao\Dat;
 
 use App\Http\Controllers\Controller;
 use App\Models\DaoTao\DatDSPhien;
+use App\Models\DaoTao\DatDieuKienDoPhien;
 use App\Support\DaoTao\DatPhienLichXeExcelExporter;
 use App\Support\DaoTao\DatPhienLichXeMatcher;
 use Illuminate\Http\RedirectResponse;
@@ -20,6 +21,10 @@ class DoPhienVoiLichXeController extends Controller
         $parsed = $this->parseFilters($request);
         $maKhoaHoc = $parsed['ma_khoa_hoc'];
         $ketQua = $parsed['ket_qua'];
+        $maGiaoVien = $parsed['ma_giao_vien'];
+        $bienSoXe = $parsed['bien_so_xe'];
+        $tuNgay = $parsed['tu_ngay'];
+        $denNgay = $parsed['den_ngay'];
 
         $khoaHocOptions = DatDSPhien::query()
             ->selectRaw('MaKhoaHoc, MAX(TenKhoaHoc) as TenKhoaHoc')
@@ -29,12 +34,34 @@ class DoPhienVoiLichXeController extends Controller
             ->orderBy('MaKhoaHoc')
             ->get();
 
+        $giaoVienOptions = collect();
+        $xeOptions = collect();
+
+        if ($maKhoaHoc !== '') {
+            $giaoVienOptions = DatDSPhien::query()
+                ->selectRaw('MaGiaoVien, MAX(HoTenGiaoVien) as HoTenGiaoVien')
+                ->where('MaKhoaHoc', $maKhoaHoc)
+                ->whereNotNull('MaGiaoVien')
+                ->where('MaGiaoVien', '!=', '')
+                ->groupBy('MaGiaoVien')
+                ->orderBy('MaGiaoVien')
+                ->get();
+
+            $xeOptions = DatDSPhien::query()
+                ->where('MaKhoaHoc', $maKhoaHoc)
+                ->whereNotNull('BienSoXe')
+                ->where('BienSoXe', '!=', '')
+                ->distinct()
+                ->orderBy('BienSoXe')
+                ->pluck('BienSoXe');
+        }
+
         $items = null;
         $scheduleCount = 0;
         $stats = ['total' => 0, 'hop_le' => 0, 'canh_bao' => 0];
 
         if ($maKhoaHoc !== '') {
-            $built = $this->buildRows($maKhoaHoc, $ketQua);
+            $built = $this->buildRows($maKhoaHoc, $ketQua, $maGiaoVien, $bienSoXe, $tuNgay, $denNgay);
             $rows = $built['rows'];
             $stats = $built['stats'];
             $scheduleCount = $built['scheduleCount'];
@@ -57,10 +84,17 @@ class DoPhienVoiLichXeController extends Controller
             'filters' => [
                 'ma_khoa_hoc' => $maKhoaHoc,
                 'ket_qua' => $ketQua,
+                'ma_giao_vien' => $maGiaoVien,
+                'bien_so_xe' => $bienSoXe,
+                'tu_ngay' => $tuNgay,
+                'den_ngay' => $denNgay,
             ],
             'khoaHocOptions' => $khoaHocOptions,
+            'giaoVienOptions' => $giaoVienOptions,
+            'xeOptions' => $xeOptions,
             'scheduleCount' => $scheduleCount,
             'stats' => $stats,
+            'doPhienCauHinh' => DatDieuKienDoPhien::hienTai(),
         ]);
     }
 
@@ -75,13 +109,27 @@ class DoPhienVoiLichXeController extends Controller
                 ->with('error', 'Chọn mã khóa học trước khi xuất Excel.');
         }
 
-        $built = $this->buildRows($maKhoaHoc, $parsed['ket_qua']);
+        $built = $this->buildRows(
+            $maKhoaHoc,
+            $parsed['ket_qua'],
+            $parsed['ma_giao_vien'],
+            $parsed['bien_so_xe'],
+            $parsed['tu_ngay'],
+            $parsed['den_ngay']
+        );
 
         return DatPhienLichXeExcelExporter::download($built['rows'], $maKhoaHoc);
     }
 
     /**
-     * @return array{ma_khoa_hoc: string, ket_qua: string}
+     * @return array{
+     *     ma_khoa_hoc: string,
+     *     ket_qua: string,
+     *     ma_giao_vien: string,
+     *     bien_so_xe: string,
+     *     tu_ngay: string,
+     *     den_ngay: string
+     * }
      */
     private function parseFilters(Request $request): array
     {
@@ -94,6 +142,10 @@ class DoPhienVoiLichXeController extends Controller
         return [
             'ma_khoa_hoc' => $maKhoaHoc,
             'ket_qua' => $ketQua,
+            'ma_giao_vien' => trim((string) $request->input('ma_giao_vien', '')),
+            'bien_so_xe' => trim((string) $request->input('bien_so_xe', '')),
+            'tu_ngay' => trim((string) $request->input('tu_ngay', '')),
+            'den_ngay' => trim((string) $request->input('den_ngay', '')),
         ];
     }
 
@@ -104,10 +156,34 @@ class DoPhienVoiLichXeController extends Controller
      *     scheduleCount: int
      * }
      */
-    private function buildRows(string $maKhoaHoc, string $ketQua): array
-    {
-        $sessions = DatDSPhien::query()
-            ->where('MaKhoaHoc', $maKhoaHoc)
+    private function buildRows(
+        string $maKhoaHoc,
+        string $ketQua,
+        string $maGiaoVien = '',
+        string $bienSoXe = '',
+        string $tuNgay = '',
+        string $denNgay = ''
+    ): array {
+        $sessionsQuery = DatDSPhien::query()
+            ->where('MaKhoaHoc', $maKhoaHoc);
+
+        if ($maGiaoVien !== '') {
+            $sessionsQuery->where('MaGiaoVien', $maGiaoVien);
+        }
+
+        if ($bienSoXe !== '') {
+            $sessionsQuery->where('BienSoXe', $bienSoXe);
+        }
+
+        if ($tuNgay !== '') {
+            $sessionsQuery->whereDate('ThoiGianBatDauPhienHoc', '>=', $tuNgay);
+        }
+
+        if ($denNgay !== '') {
+            $sessionsQuery->whereDate('ThoiGianBatDauPhienHoc', '<=', $denNgay);
+        }
+
+        $sessions = $sessionsQuery
             ->orderByDesc('ThoiGianBatDauPhienHoc')
             ->orderByDesc('Id')
             ->get();
@@ -129,7 +205,7 @@ class DoPhienVoiLichXeController extends Controller
         $stats = [
             'total' => $rows->count(),
             'hop_le' => $rows->where('valid', true)->count(),
-            'canh_bao' => $rows->count() - $rows->where('valid', true)->count(),
+            'canh_bao' => $rows->where('valid', false)->count(),
         ];
 
         if ($ketQua === 'hop_le') {

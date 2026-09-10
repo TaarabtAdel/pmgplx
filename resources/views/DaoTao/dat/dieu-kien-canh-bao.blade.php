@@ -10,6 +10,9 @@
                 <a href="{{ route('daotao.pdt.dat.dieu-kien-dat') }}" class="btn btn-sm btn-outline-secondary mr-1">
                     Điều kiện đạt
                 </a>
+                <a href="{{ route('daotao.pdt.dat.dieu-kien-do-phien') }}" class="btn btn-sm btn-outline-secondary mr-1">
+                    Điều kiện dò phiên
+                </a>
                 <a href="{{ route('daotao.pdt.dat.quan-ly-phien') }}" class="btn btn-sm btn-outline-secondary">← Quản lý phiên</a>
             </div>
         </div>

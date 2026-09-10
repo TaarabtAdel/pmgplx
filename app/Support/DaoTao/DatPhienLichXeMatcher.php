@@ -3,7 +3,7 @@
 namespace App\Support\DaoTao;
 
 use App\Models\DaoTao\DatDSPhien;
-use App\Models\PMGPLX\KhoaHoc;
+use App\Models\DaoTao\DatDieuKienDoPhien;
 use App\Models\PMGPLX\KhoaHocXeTap;
 use App\Support\PMGPLX\LichExcelBienSo;
 use Carbon\Carbon;
@@ -30,6 +30,10 @@ class DatPhienLichXeMatcher
     }
 
     /**
+     * Dò phiên với lịch xe: map theo mã khóa, mã GV, biển số, ngày.
+     * Nhiều khung cùng ngày → ưu tiên khung mà phiên nằm trọn trong lịch;
+     * nếu không có thì lấy dòng có TG bắt đầu gần TG bắt đầu phiên nhất.
+     *
      * @return array{
      *     valid: bool,
      *     message: string,
@@ -39,215 +43,216 @@ class DatPhienLichXeMatcher
      */
     public static function evaluate(DatDSPhien $session, Collection $scheduleRows): array
     {
-        $maKh = trim((string) ($session->MaKhoaHoc ?? ''));
+        $maKhoaHoc = trim((string) ($session->MaKhoaHoc ?? ''));
+        $maGiaoVien = self::normalizeMaGv((string) ($session->MaGiaoVien ?? ''));
         $bienSo = LichExcelBienSo::normalize((string) ($session->BienSoXe ?? ''));
         $start = self::toCarbon($session->ThoiGianBatDauPhienHoc);
-        $end = self::toCarbon($session->ThoiGianKetThucPhienHoc);
 
-        if ($start === null || $end === null) {
-            return [
-                'valid' => false,
-                'message' => 'Phiên thiếu thời gian bắt đầu hoặc kết thúc',
-                'matched' => null,
-                'displaySchedule' => null,
-            ];
+        if ($start === null) {
+            return self::invalid('Phiên thiếu thời gian bắt đầu');
+        }
+
+        if ($maKhoaHoc === '') {
+            return self::invalid('Phiên thiếu mã khóa học');
+        }
+
+        if ($maGiaoVien === '') {
+            return self::invalid('Phiên thiếu mã giáo viên');
         }
 
         if ($bienSo === '') {
-            return [
-                'valid' => false,
-                'message' => 'Phiên thiếu biển số xe',
-                'matched' => null,
-                'displaySchedule' => null,
-            ];
+            return self::invalid('Phiên thiếu biển số xe');
         }
 
         if ($scheduleRows->isEmpty()) {
+            return self::invalid('Không có lịch xe tập cho mã khóa '.$maKhoaHoc);
+        }
+
+        $end = self::toCarbon($session->ThoiGianKetThucPhienHoc);
+        $tolerance = DatDieuKienDoPhien::hienTai()->toSettingsArray();
+
+        $matched = self::findSchedule($scheduleRows, $maKhoaHoc, $maGiaoVien, $bienSo, $start, $end, $tolerance);
+        if ($matched === null) {
+            return self::invalid(
+                'Không có lịch xe (khóa '.$maKhoaHoc.', GV '.$maGiaoVien.', xe '.$session->BienSoXe
+                .', ngày '.$start->format('d/m/Y').')'
+            );
+        }
+
+        $timeMessage = self::timeMismatchMessage($start, $end, $matched, $tolerance);
+
+        if ($timeMessage !== null) {
             return [
                 'valid' => false,
-                'message' => 'Không có lịch xe tập cho mã khóa '.$maKh,
-                'matched' => null,
-                'displaySchedule' => null,
+                'message' => $timeMessage,
+                'matched' => $matched,
+                'displaySchedule' => $matched,
             ];
         }
 
-        $samePlate = $scheduleRows->filter(
-            fn (KhoaHocXeTap $lich): bool => LichExcelBienSo::normalize((string) ($lich->BienSoXe ?? '')) === $bienSo
-        );
+        return [
+            'valid' => true,
+            'message' => '',
+            'matched' => $matched,
+            'displaySchedule' => $matched,
+        ];
+    }
 
-        if ($samePlate->isEmpty()) {
-            return [
-                'valid' => false,
-                'message' => 'Không có lịch xe '.$session->BienSoXe.' trong khóa',
-                'matched' => null,
-                'displaySchedule' => null,
-            ];
-        }
+    /**
+     * @param  Collection<int, KhoaHocXeTap>  $scheduleRows
+     */
+    public static function findSchedule(
+        Collection $scheduleRows,
+        string $maKhoaHoc,
+        string $maGiaoVien,
+        string $bienSo,
+        Carbon $sessionStart,
+        ?Carbon $sessionEnd = null,
+        ?array $tolerance = null
+    ): ?KhoaHocXeTap {
+        $tolerance ??= DatDieuKienDoPhien::hienTai()->toSettingsArray();
+        $sessionDate = $sessionStart->toDateString();
 
-        $sessionDate = $start->toDateString();
-        $sameDayAndPlate = $samePlate->filter(function (KhoaHocXeTap $lich) use ($sessionDate): bool {
+        $candidates = $scheduleRows->filter(function (KhoaHocXeTap $lich) use (
+            $maKhoaHoc,
+            $maGiaoVien,
+            $bienSo,
+            $sessionDate
+        ): bool {
+            if (trim((string) ($lich->MaKH ?? '')) !== $maKhoaHoc) {
+                return false;
+            }
+
+            if (self::normalizeMaGv((string) ($lich->MaGV ?? '')) !== $maGiaoVien) {
+                return false;
+            }
+
+            if (LichExcelBienSo::normalize((string) ($lich->BienSoXe ?? '')) !== $bienSo) {
+                return false;
+            }
+
             $lichStart = self::toCarbon($lich->NgayBD);
 
             return $lichStart !== null && $lichStart->toDateString() === $sessionDate;
         });
 
-        if ($sameDayAndPlate->isEmpty()) {
-            return [
-                'valid' => false,
-                'message' => 'Không có lịch xe '.$session->BienSoXe.' trong ngày '.$start->format('d/m/Y'),
-                'matched' => null,
-                'displaySchedule' => $samePlate->first(),
-            ];
+        if ($candidates->isEmpty()) {
+            return null;
         }
 
-        $sessionMaGv = self::normalizeMaGv((string) ($session->MaGiaoVien ?? ''));
+        if ($sessionEnd !== null) {
+            $fitting = $candidates->filter(
+                fn (KhoaHocXeTap $lich): bool => self::sessionFitsSchedule(
+                    $sessionStart,
+                    $sessionEnd,
+                    $lich,
+                    $tolerance
+                )
+            );
 
-        if ($sessionMaGv === '') {
-            return [
-                'valid' => false,
-                'message' => 'Phiên thiếu mã giáo viên',
-                'matched' => null,
-                'displaySchedule' => $sameDayAndPlate->first(),
-            ];
-        }
-
-        $sameGvOnDay = $sameDayAndPlate->filter(
-            fn (KhoaHocXeTap $lich): bool => self::normalizeMaGv((string) ($lich->MaGV ?? '')) === $sessionMaGv
-        );
-
-        if ($sameGvOnDay->isEmpty()) {
-            $displaySchedule = $sameDayAndPlate->first();
-            $lichMaGv = self::normalizeMaGv((string) ($displaySchedule->MaGV ?? ''));
-
-            return [
-                'valid' => false,
-                'message' => self::teacherMismatchMessage($sessionMaGv, $lichMaGv, $displaySchedule),
-                'matched' => null,
-                'displaySchedule' => $displaySchedule,
-            ];
-        }
-
-        $displaySchedule = $sameGvOnDay->first();
-
-        foreach ($sameGvOnDay as $lich) {
-            if (self::sessionFitsSchedule($start, $end, $lich)) {
-                return [
-                    'valid' => true,
-                    'message' => '',
-                    'matched' => $lich,
-                    'displaySchedule' => $lich,
-                ];
+            if ($fitting->isNotEmpty()) {
+                return self::pickNearestByStart($fitting, $sessionStart);
             }
         }
 
+        return self::pickNearestByStart($candidates, $sessionStart);
+    }
+
+    /**
+     * @param  Collection<int, KhoaHocXeTap>  $candidates
+     */
+    private static function pickNearestByStart(Collection $candidates, Carbon $sessionStart): ?KhoaHocXeTap
+    {
+        return $candidates
+            ->sortBy(function (KhoaHocXeTap $lich) use ($sessionStart): int {
+                $lichStart = self::toCarbon($lich->NgayBD);
+
+                return $lichStart === null
+                    ? PHP_INT_MAX
+                    : (int) abs($sessionStart->diffInSeconds($lichStart));
+            })
+            ->first();
+    }
+
+    private static function sessionFitsSchedule(
+        Carbon $sessionStart,
+        Carbon $sessionEnd,
+        KhoaHocXeTap $lich,
+        array $tolerance
+    ): bool {
+        $lichStart = self::toCarbon($lich->NgayBD);
+        $lichEnd = self::toCarbon($lich->NgayKT);
+
+        if ($lichStart === null || $lichEnd === null) {
+            return false;
+        }
+
+        $sessionStartMinute = $sessionStart->copy()->startOfMinute();
+        $sessionEndMinute = $sessionEnd->copy()->startOfMinute();
+        $allowedStart = $lichStart->copy()->startOfMinute()->subMinutes($tolerance['som_phut']);
+        $allowedEnd = $lichEnd->copy()->startOfMinute()->addMinutes($tolerance['muon_phut']);
+
+        return $sessionStartMinute->gte($allowedStart)
+            && $sessionEndMinute->lte($allowedEnd);
+    }
+
+    private static function timeMismatchMessage(
+        Carbon $sessionStart,
+        ?Carbon $sessionEnd,
+        KhoaHocXeTap $lich,
+        array $tolerance
+    ): ?string {
+        if ($sessionEnd === null) {
+            return 'Phiên thiếu thời gian kết thúc';
+        }
+
+        $lichStart = self::toCarbon($lich->NgayBD);
+        $lichEnd = self::toCarbon($lich->NgayKT);
+
+        if ($lichStart === null || $lichEnd === null) {
+            return 'Lịch xe thiếu thời gian bắt đầu hoặc kết thúc';
+        }
+
+        $sessionStartMinute = $sessionStart->copy()->startOfMinute();
+        $sessionEndMinute = $sessionEnd->copy()->startOfMinute();
+        $allowedStart = $lichStart->copy()->startOfMinute()->subMinutes($tolerance['som_phut']);
+        $allowedEnd = $lichEnd->copy()->startOfMinute()->addMinutes($tolerance['muon_phut']);
+
+        $issues = [];
+
+        if ($sessionStartMinute->lt($allowedStart)) {
+            $issues[] = 'bắt đầu phiên '.$sessionStartMinute->format('H:i')
+                .' sớm hơn lịch '.$lichStart->copy()->startOfMinute()->format('H:i');
+        }
+
+        if ($sessionEndMinute->gt($allowedEnd)) {
+            $issues[] = 'kết thúc phiên '.$sessionEndMinute->format('H:i')
+                .' muộn hơn lịch '.$lichEnd->copy()->startOfMinute()->format('H:i');
+        }
+
+        if ($issues === []) {
+            return null;
+        }
+
+        return 'Lệch thời gian so với lịch xe ('.implode('; ', $issues).')';
+    }
+
+    /**
+     * @return array{valid: bool, message: string, matched: null, displaySchedule: null}
+     */
+    private static function invalid(string $message): array
+    {
         return [
             'valid' => false,
-            'message' => 'Khung giờ phiên ngoài lịch xe tập (cùng ngày, biển số, mã GV, khung giờ PMGPLX)',
+            'message' => $message,
             'matched' => null,
-            'displaySchedule' => $displaySchedule,
+            'displaySchedule' => null,
         ];
-    }
-
-    public static function formatKhungGio(?KhoaHocXeTap $lich): ?string
-    {
-        if ($lich === null) {
-            return null;
-        }
-
-        $lichStart = self::toCarbon($lich->NgayBD);
-        $lichEnd = self::toCarbon($lich->NgayKT);
-        if ($lichStart === null || $lichEnd === null) {
-            return null;
-        }
-
-        $slot = self::resolveKhungGioFromTimes(
-            $lichStart->format('H:i'),
-            $lichEnd->format('H:i')
-        );
-
-        return $slot['start'].' → '.$slot['end'];
-    }
-
-    /**
-     * @return array{start: string, end: string}
-     */
-    public static function resolveKhungGioFromTimes(string $startTime, string $endTime): array
-    {
-        $startTime = substr($startTime, 0, 5);
-        $endTime = substr($endTime, 0, 5);
-
-        foreach (KhoaHoc::$TIME_SLOTS as $slot) {
-            if ($slot['start'] === $startTime && $slot['end'] === $endTime) {
-                return $slot;
-            }
-        }
-
-        return ['start' => $startTime, 'end' => $endTime];
-    }
-
-    /**
-     * @return array{start: string, end: string}
-     */
-    public static function scheduleKhungGio(KhoaHocXeTap $lich): array
-    {
-        $lichStart = self::toCarbon($lich->NgayBD);
-        $lichEnd = self::toCarbon($lich->NgayKT);
-
-        if ($lichStart === null || $lichEnd === null) {
-            return ['start' => '', 'end' => ''];
-        }
-
-        return self::resolveKhungGioFromTimes(
-            $lichStart->format('H:i'),
-            $lichEnd->format('H:i')
-        );
-    }
-
-    private static function sessionFitsSchedule(Carbon $sessionStart, Carbon $sessionEnd, KhoaHocXeTap $lich): bool
-    {
-        $lichStart = self::toCarbon($lich->NgayBD);
-
-        if ($lichStart === null) {
-            return false;
-        }
-
-        if (! $sessionStart->isSameDay($lichStart)) {
-            return false;
-        }
-
-        $slot = self::scheduleKhungGio($lich);
-        if ($slot['start'] === '' || $slot['end'] === '') {
-            return false;
-        }
-
-        $sessionStartMin = $sessionStart->copy()->startOfMinute();
-        $sessionEndMin = $sessionEnd->copy()->startOfMinute();
-        $slotStart = $sessionStart->copy()->setTimeFromTimeString($slot['start'].':00');
-        $slotEnd = $sessionStart->copy()->setTimeFromTimeString($slot['end'].':00');
-
-        // Phiên nằm trong khung lịch (cùng ngày, so theo phút): bat_dau >= bat_dau_khung, ket_thuc <= ket_thuc_khung
-        return $sessionStartMin->gte($slotStart) && $sessionEndMin->lte($slotEnd);
     }
 
     private static function normalizeMaGv(string $maGv): string
     {
         return mb_strtoupper(trim($maGv));
-    }
-
-    private static function teacherMismatchMessage(string $sessionMaGv, string $lichMaGv, KhoaHocXeTap $lich): string
-    {
-        if ($sessionMaGv === '' && $lichMaGv !== '') {
-            return 'Phiên thiếu mã giáo viên (lịch xe: '.$lichMaGv.')';
-        }
-
-        if ($sessionMaGv !== '' && $lichMaGv === '') {
-            return 'Lịch xe thiếu mã giáo viên (phiên: '.$sessionMaGv.')';
-        }
-
-        $lichTen = trim((string) ($lich->TenGV ?? ''));
-
-        return 'Mã giáo viên không khớp lịch xe (phiên: '.$sessionMaGv
-            .', lịch: '.$lichMaGv.($lichTen !== '' ? ' — '.$lichTen : '').')';
     }
 
     private static function toCarbon(mixed $value): ?Carbon

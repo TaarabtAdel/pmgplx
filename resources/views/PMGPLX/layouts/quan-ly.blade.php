@@ -475,6 +475,10 @@
                                href="{{ route('daotao.pdt.dat.dieu-kien-canh-bao') }}">
                                 Điều kiện cảnh báo
                             </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.dieu-kien-do-phien*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.dieu-kien-do-phien') }}">
+                                Điều kiện dò phiên
+                            </a>
                             <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.dieu-kien-dat*') ? 'active' : '' }}"
                                href="{{ route('daotao.pdt.dat.dieu-kien-dat') }}">
                                 Điều kiện đạt
