@@ -82,6 +82,22 @@
                 <button type="submit" class="btn btn-navy">Lưu điều kiện</button>
             </form>
 
+            <div class="border rounded p-3 bg-light small mb-3">
+                <strong class="d-block mb-2">Cảnh báo theo phân công học viên</strong>
+                <ul class="mb-2 pl-3">
+                    <li>{{ $loiDefinitions[\App\Support\DaoTao\DatDSPhienKiemTra::LOI_SAI_GIAO_VIEN]['label'] ?? 'Giáo viên khác phân công HV' }}
+                        — so với GV chính hoặc <a href="{{ route('daotao.pdt.dat.phan-cong-hoc-vien') }}">GV dạy thay</a> (theo ngày phiên).</li>
+                    <li>{{ $loiDefinitions[\App\Support\DaoTao\DatDSPhienKiemTra::LOI_SAI_XE]['label'] ?? 'Xe khác phân công HV' }}</li>
+                    <li>{{ $loiDefinitions[\App\Support\DaoTao\DatDSPhienKiemTra::LOI_LICH_XE]['label'] ?? 'Không khớp lịch xe tập' }}</li>
+                </ul>
+                <p class="mb-0 text-muted">
+                    GV dạy thay khai báo theo <strong>khóa học + GV chính</strong> tại trang
+                    <a href="{{ route('daotao.pdt.dat.phan-cong-hoc-vien') }}">Phân công học viên</a>
+                    (chọn khóa, nút <strong>Dạy thay</strong>).
+                    Phiên có ngày nằm trong khoảng dạy thay sẽ so mã GV phiên với mã GV dạy thay thay vì GV chính.
+                </p>
+            </div>
+
             <div class="border rounded p-3 bg-light small">
                 <strong class="d-block mb-2">Cảnh báo không cấu hình tại đây</strong>
                 <ul class="mb-0 pl-3">

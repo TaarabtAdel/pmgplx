@@ -78,6 +78,7 @@ class DatHocVienTongHop
         $sessionTable = (new DatDSPhien)->getTable();
         $dieuKienTable = (new DatDieuKienDat)->getTable();
         $tongXeSoTuDongSql = DatXeSoTuDong::sqlSumGioTuDong($sessionTable);
+        $tongBanDemSql = DatXeSoTuDong::sqlSumGioBanDem($sessionTable);
 
         $passSql = "
             EXISTS (SELECT 1 FROM {$dieuKienTable} dk WHERE dk.Hang = {$sessionTable}.LoaiKhoaHoc)
@@ -89,7 +90,7 @@ class DatHocVienTongHop
                 SELECT TOP 1 dk.TongQuangDuongKm FROM {$dieuKienTable} dk
                 WHERE dk.Hang = {$sessionTable}.LoaiKhoaHoc ORDER BY dk.ThuTu
             )
-            AND SUM(COALESCE({$sessionTable}.ThoiGianLaiBanDemGio, 0)) >= (
+            AND {$tongBanDemSql} >= (
                 SELECT TOP 1 dk.TapLaiBanDemGio FROM {$dieuKienTable} dk
                 WHERE dk.Hang = {$sessionTable}.LoaiKhoaHoc ORDER BY dk.ThuTu
             )

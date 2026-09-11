@@ -22,6 +22,7 @@ class TongHopDatHocVienController extends Controller
         if ($canTongHop) {
             $validSessionIds = DatHocVienTongHop::validSessionIdsFromFilters($filters);
             $tongXeSoTuDongSql = DatXeSoTuDong::sqlSumGioTuDong();
+            $tongBanDemSql = DatXeSoTuDong::sqlSumGioBanDem();
 
             $query = DatDSPhienBoLoc::filteredQuery($filters, orderBy: null);
             DatHocVienTongHop::restrictToSessionIds($query, $validSessionIds);
@@ -35,7 +36,7 @@ class TongHopDatHocVienController extends Controller
                     COUNT(*) as SoPhien,
                     SUM(COALESCE(ThoiGianThucHanhGio, 0)) as TongGioHoc,
                     SUM(COALESCE(QuangDuongThucHanhKm, 0)) as TongQuangDuongKm,
-                    SUM(COALESCE(ThoiGianLaiBanDemGio, 0)) as TongBanDemGio,
+                    {$tongBanDemSql} as TongBanDemGio,
                     {$tongXeSoTuDongSql} as TongXeSoTuDongGio
                 ")
                 ->whereNotNull('MaHocVien')

@@ -25,8 +25,8 @@ class DatDSPhienExcelParser
         'ThoiGianKetThucPhienHoc' => 5,
         'ThoiGianThucHanhGio' => 6,
         'QuangDuongThucHanhKm' => 7,
-        'ThoiGianLaiBanDemGio' => 8,
-        'ThoiGianLaiXeSoTuDong' => 9,
+        'LaBanDem' => 8,
+        'LaTuDong' => 9,
         'ThoiGianMayChuNhanPhienHoc' => 10,
         'MaHocVien' => 11,
         'HoTenHocVien' => 12,
@@ -288,11 +288,11 @@ class DatDSPhienExcelParser
         }
 
         if (str_contains($combined, 'ban dem')) {
-            return 'ThoiGianLaiBanDemGio';
+            return 'LaBanDem';
         }
 
         if (str_contains($combined, 'tu dong')) {
-            return 'ThoiGianLaiXeSoTuDong';
+            return 'LaTuDong';
         }
 
         if (str_contains($combined, 'may chu')) {
@@ -368,8 +368,8 @@ class DatDSPhienExcelParser
             'ThoiGianKetThucPhienHoc' => $this->cellDateTime($values['ThoiGianKetThucPhienHoc'] ?? null),
             'ThoiGianThucHanhGio' => $this->cellFloat($values['ThoiGianThucHanhGio'] ?? null),
             'QuangDuongThucHanhKm' => $this->cellFloat($values['QuangDuongThucHanhKm'] ?? null),
-            'ThoiGianLaiBanDemGio' => $this->cellFloat($values['ThoiGianLaiBanDemGio'] ?? null),
-            'ThoiGianLaiXeSoTuDong' => $this->cellFloat($values['ThoiGianLaiXeSoTuDong'] ?? null),
+            'LaBanDem' => $this->cellFlag($values['LaBanDem'] ?? null),
+            'LaTuDong' => $this->cellFlag($values['LaTuDong'] ?? null),
             'ThoiGianMayChuNhanPhienHoc' => $this->cellDateTime($values['ThoiGianMayChuNhanPhienHoc'] ?? null),
             'MaHocVien' => $this->cellTextValue($values['MaHocVien'] ?? null),
             'HoTenHocVien' => $this->cellTextValue($values['HoTenHocVien'] ?? null),
@@ -441,6 +441,18 @@ class DatDSPhienExcelParser
         $text = str_replace([' ', ','], ['', '.'], $this->cellTextValue($value));
 
         return is_numeric($text) ? (float) $text : null;
+    }
+
+    private function cellFlag(mixed $value): int
+    {
+        $float = $this->cellFloat($value);
+        if ($float !== null && $float > 0) {
+            return 1;
+        }
+
+        $text = mb_strtolower($this->cellTextValue($value));
+
+        return in_array($text, ['1', 'x', 'yes', 'true', 'co', 'có'], true) ? 1 : 0;
     }
 
     private function cellDateTime(mixed $value): ?string

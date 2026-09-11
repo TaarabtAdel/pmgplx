@@ -30,8 +30,8 @@ class DatDSPhien extends Model
         'ThoiGianKetThucPhienHoc',
         'ThoiGianThucHanhGio',
         'QuangDuongThucHanhKm',
-        'ThoiGianLaiBanDemGio',
-        'ThoiGianLaiXeSoTuDong',
+        'LaBanDem',
+        'LaTuDong',
         'ThoiGianMayChuNhanPhienHoc',
         'MaHocVien',
         'HoTenHocVien',
@@ -52,8 +52,8 @@ class DatDSPhien extends Model
         'ThoiGianKetThucPhienHoc' => 'datetime',
         'ThoiGianThucHanhGio' => 'float',
         'QuangDuongThucHanhKm' => 'float',
-        'ThoiGianLaiBanDemGio' => 'float',
-        'ThoiGianLaiXeSoTuDong' => 'float',
+        'LaBanDem' => 'boolean',
+        'LaTuDong' => 'boolean',
         'ThoiGianMayChuNhanPhienHoc' => 'datetime',
         'NgayNhap' => 'datetime',
     ];
@@ -191,8 +191,8 @@ class DatDSPhien extends Model
             'ThoiGianKetThucPhienHoc' => self::nullableDateTime($record['ThoiGianKetThucPhienHoc'] ?? null),
             'ThoiGianThucHanhGio' => self::nullableFloat($record['ThoiGianThucHanhGio'] ?? null),
             'QuangDuongThucHanhKm' => self::nullableFloat($record['QuangDuongThucHanhKm'] ?? null),
-            'ThoiGianLaiBanDemGio' => self::nullableFloat($record['ThoiGianLaiBanDemGio'] ?? null),
-            'ThoiGianLaiXeSoTuDong' => self::nullableFloat($record['ThoiGianLaiXeSoTuDong'] ?? null),
+            'LaBanDem' => self::nullableBool($record['LaBanDem'] ?? null),
+            'LaTuDong' => self::nullableBool($record['LaTuDong'] ?? null),
             'ThoiGianMayChuNhanPhienHoc' => self::nullableDateTime($record['ThoiGianMayChuNhanPhienHoc'] ?? null),
             'MaHocVien' => self::nullableLimit($record['MaHocVien'] ?? null, 50),
             'HoTenHocVien' => self::nullableLimit($record['HoTenHocVien'] ?? null, 255),
@@ -256,6 +256,21 @@ class DatDSPhien extends Model
         $normalized = str_replace([' ', ','], ['', '.'], trim((string) $value));
 
         return is_numeric($normalized) ? (float) $normalized : null;
+    }
+
+    private static function nullableBool(mixed $value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_numeric($value)) {
+            return (int) $value === 1;
+        }
+
+        $text = mb_strtolower(trim((string) ($value ?? '')));
+
+        return in_array($text, ['1', 'x', 'yes', 'true', 'co', 'có'], true);
     }
 
     private static function nullableInt(mixed $value): ?int

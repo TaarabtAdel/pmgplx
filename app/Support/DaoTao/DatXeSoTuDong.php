@@ -61,18 +61,11 @@ class DatXeSoTuDong
 
     public static function sqlSumGioTuDong(string $sessionTable = 'DatDSPhien'): string
     {
-        $plates = self::bienSoTuDong();
-        $normalizedExpr = self::sqlNormalizedBienSo("{$sessionTable}.BienSoXe");
+        return "SUM(CASE WHEN COALESCE({$sessionTable}.LaTuDong, 0) = 1 THEN COALESCE({$sessionTable}.ThoiGianThucHanhGio, 0) ELSE 0 END)";
+    }
 
-        if ($plates === []) {
-            return '0';
-        }
-
-        $quoted = implode(', ', array_map(
-            static fn (string $plate): string => "'".str_replace("'", "''", $plate)."'",
-            $plates
-        ));
-
-        return "SUM(CASE WHEN {$normalizedExpr} IN ({$quoted}) THEN COALESCE({$sessionTable}.ThoiGianThucHanhGio, 0) ELSE 0 END)";
+    public static function sqlSumGioBanDem(string $sessionTable = 'DatDSPhien'): string
+    {
+        return "SUM(CASE WHEN COALESCE({$sessionTable}.LaBanDem, 0) = 1 THEN COALESCE({$sessionTable}.ThoiGianThucHanhGio, 0) ELSE 0 END)";
     }
 }

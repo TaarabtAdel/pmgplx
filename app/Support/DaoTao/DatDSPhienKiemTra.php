@@ -132,6 +132,18 @@ class DatDSPhienKiemTra
         if ($code === self::LOI_SAI_GIAO_VIEN) {
             $maGv = trim((string) ($expectedPhanCong['ma_giao_vien'] ?? ''));
             if ($maGv !== '') {
+                if (! empty($expectedPhanCong['dang_day_thay'])) {
+                    $tuNgay = trim((string) ($expectedPhanCong['tu_ngay_day_thay'] ?? ''));
+                    if ($tuNgay !== '') {
+                        try {
+                            $tuNgay = Carbon::parse($tuNgay)->format('d/m/Y');
+                        } catch (\Throwable) {
+                        }
+                    }
+
+                    return 'GV đúng: '.$maGv.($tuNgay !== '' ? ' (dạy thay từ '.$tuNgay.')' : ' (dạy thay)');
+                }
+
                 return 'GV đúng: '.$maGv;
             }
         }
@@ -321,12 +333,14 @@ class DatDSPhienKiemTra
 
             $assignments = DatPhanCongHocVien::query()
                 ->where('MaKhoaHoc', $maKhoaHoc)
-                ->get(['MaHocVien', 'MaGiaoVien', 'BienSoXe', 'BienSoXeTuDong'])
+                ->get(['Id', 'MaHocVien', 'MaGiaoVien', 'BienSoXe', 'BienSoXeTuDong'])
                 ->keyBy(fn (DatPhanCongHocVien $row): string => trim((string) ($row->MaHocVien ?? '')));
 
             if ($assignments->isEmpty()) {
                 continue;
             }
+
+            $substitutesByKey = DatPhanCongGiaoVienThayResolver::groupedForCourses([$maKhoaHoc]);
 
             foreach ($group as $session) {
                 $maHocVien = trim((string) ($session->MaHocVien ?? ''));
@@ -342,14 +356,21 @@ class DatDSPhienKiemTra
                 $id = (int) $session->Id;
                 $violations[$id] ??= [];
 
-                $assignedGv = self::normalizeMaGv((string) ($assignment->MaGiaoVien ?? ''));
+                $substitutes = DatPhanCongGiaoVienThayResolver::substitutesForAssignment($assignment, $substitutesByKey);
+                $expectedGv = DatPhanCongGiaoVienThayResolver::resolveForDate(
+                    $assignment,
+                    self::sessionDateString($session),
+                    $substitutes
+                );
+                $expectedGvCode = $expectedGv['ma_giao_vien'];
                 $sessionGv = self::normalizeMaGv((string) ($session->MaGiaoVien ?? ''));
-                if ($assignedGv !== '' && $sessionGv !== $assignedGv) {
+
+                if ($expectedGvCode !== '' && $sessionGv !== $expectedGvCode) {
                     if (! in_array(self::LOI_SAI_GIAO_VIEN, $violations[$id], true)) {
                         $violations[$id][] = self::LOI_SAI_GIAO_VIEN;
                     }
                     if ($expectedById !== null) {
-                        $expectedById[$id] ??= self::expectedPhanCongFromAssignment($assignment);
+                        $expectedById[$id] ??= self::expectedPhanCongFromAssignment($assignment, $expectedGv);
                     }
                 }
 
@@ -368,14 +389,34 @@ class DatDSPhienKiemTra
     }
 
     /**
-     * @return array{ma_giao_vien: string, bien_so_xe: string, bien_so_xe_tu_dong: string}
+     * @param  array{
+     *     ma_giao_vien: string,
+     *     tu_ngay: string|null,
+     *     dang_day_thay: bool
+     * }|null  $expectedGv
+     * @return array{
+     *     ma_giao_vien: string,
+     *     bien_so_xe: string,
+     *     bien_so_xe_tu_dong: string,
+     *     ma_giao_vien_goc?: string,
+     *     dang_day_thay?: bool,
+     *     tu_ngay_day_thay?: string|null
+     * }
      */
-    private static function expectedPhanCongFromAssignment(DatPhanCongHocVien $assignment): array
-    {
+    private static function expectedPhanCongFromAssignment(
+        DatPhanCongHocVien $assignment,
+        ?array $expectedGv = null
+    ): array {
+        $primaryGv = trim((string) $assignment->MaGiaoVien);
+        $effectiveGv = $expectedGv['ma_giao_vien'] ?? DatPhanCongHocVienSaver::normalizeMaGiaoVien($primaryGv);
+
         return [
-            'ma_giao_vien' => trim((string) $assignment->MaGiaoVien),
+            'ma_giao_vien' => $effectiveGv,
             'bien_so_xe' => trim((string) $assignment->BienSoXe),
             'bien_so_xe_tu_dong' => trim((string) ($assignment->BienSoXeTuDong ?? '')),
+            'ma_giao_vien_goc' => $primaryGv,
+            'dang_day_thay' => (bool) ($expectedGv['dang_day_thay'] ?? false),
+            'tu_ngay_day_thay' => $expectedGv['tu_ngay'] ?? null,
         ];
     }
 
@@ -447,7 +488,22 @@ class DatDSPhienKiemTra
 
     private static function normalizeMaGv(string $maGv): string
     {
-        return mb_strtoupper(trim($maGv));
+        return DatPhanCongHocVienSaver::normalizeMaGiaoVien($maGv);
+    }
+
+    private static function sessionDateString(DatDSPhien $session): ?string
+    {
+        $value = $session->ThoiGianBatDauPhienHoc;
+
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        try {
+            return ($value instanceof Carbon ? $value : Carbon::parse($value))->toDateString();
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     private static function overlaps(DatDSPhien $a, DatDSPhien $b): bool
