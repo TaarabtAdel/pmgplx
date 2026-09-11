@@ -56,6 +56,9 @@
                     <a href="{{ route('daotao.pdt.dat.tong-hop-hoc-vien') }}" class="list-group-item list-group-item-action pl-4">
                         Tổng hợp học viên
                     </a>
+                    <a href="{{ route('daotao.pdt.dat.theo-doi') }}" class="list-group-item list-group-item-action pl-4">
+                        Theo dõi DAT
+                    </a>
                     <a href="{{ route('daotao.pdt.dat.quan-ly-phien') }}" class="list-group-item list-group-item-action pl-4">
                         Chi tiết phiên
                     </a>
@@ -79,6 +82,12 @@
                     </a>
                     <a href="{{ route('daotao.pdt.dat.nhap-ket-qua-cuc') }}" class="list-group-item list-group-item-action pl-4">
                         Nhập kết quả cục
+                    </a>
+                    <a href="{{ route('daotao.pdt.dat.phan-cong-hoc-vien') }}" class="list-group-item list-group-item-action pl-4">
+                        Phân công học viên
+                    </a>
+                    <a href="{{ route('daotao.pdt.dat.nhap-phan-cong-hoc-vien') }}" class="list-group-item list-group-item-action pl-4">
+                        Nhập phân công học viên
                     </a>
                 </div>
             </div>

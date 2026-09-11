@@ -92,6 +92,7 @@ class DanhSachDatDSPhienController extends Controller
             'items' => $items,
             'filters' => $filters,
             'violationsById' => $resolved['violationsById'],
+            'expectedPhanCongById' => $resolved['expectedPhanCongById'],
             'loiDefinitions' => DatDSPhienKiemTra::definitions(),
             'loiCounts' => $loiCounts,
             'canAnalyzeViolations' => $canAnalyzeViolations,
@@ -154,7 +155,8 @@ class DanhSachDatDSPhienController extends Controller
         return DatDSPhienExcelExporter::download(
             $items,
             $resolved['violationsById'],
-            DatDSPhienKiemTra::definitions()
+            DatDSPhienKiemTra::definitions(),
+            $resolved['expectedPhanCongById']
         );
     }
 
@@ -216,6 +218,7 @@ class DanhSachDatDSPhienController extends Controller
      * @return array{
      *     query: Builder,
      *     violationsById: array<int, list<string>>,
+     *     expectedPhanCongById: array<int, array{ma_giao_vien: string, bien_so_xe: string}>,
      *     filteredCount: int|null
      * }
      */
@@ -227,12 +230,14 @@ class DanhSachDatDSPhienController extends Controller
             return [
                 'query' => $query,
                 'violationsById' => [],
+                'expectedPhanCongById' => [],
                 'filteredCount' => null,
             ];
         }
 
         $validationSessions = (clone $query)->get();
-        $violationsById = DatDSPhienKiemTra::analyze($validationSessions);
+        $expectedPhanCongById = [];
+        $violationsById = DatDSPhienKiemTra::analyze($validationSessions, $expectedPhanCongById);
         $matchingIds = $this->matchingIds($validationSessions, $violationsById, $filters, $canAnalyzeViolations);
 
         if ($matchingIds !== null) {
@@ -246,6 +251,7 @@ class DanhSachDatDSPhienController extends Controller
         return [
             'query' => $query,
             'violationsById' => $violationsById,
+            'expectedPhanCongById' => $expectedPhanCongById,
             'filteredCount' => $matchingIds === null ? $validationSessions->count() : count($matchingIds),
         ];
     }

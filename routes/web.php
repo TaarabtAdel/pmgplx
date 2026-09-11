@@ -2,12 +2,15 @@
 
 use App\Http\Controllers\DaoTao\Dat\DoPhienVoiLichXeController;
 use App\Http\Controllers\DaoTao\Dat\DanhSachDatDSPhienController;
+use App\Http\Controllers\DaoTao\Dat\DanhSachPhanCongHocVienController;
 use App\Http\Controllers\DaoTao\Dat\DieuKienCanhBaoController;
 use App\Http\Controllers\DaoTao\Dat\DieuKienDatController;
 use App\Http\Controllers\DaoTao\Dat\DieuKienDoPhienController;
 use App\Http\Controllers\DaoTao\Dat\NhapFileDatDSPhienController;
 use App\Http\Controllers\DaoTao\Dat\NhapFileKetQuaCucController;
+use App\Http\Controllers\DaoTao\Dat\NhapFilePhanCongHocVienController;
 use App\Http\Controllers\DaoTao\Dat\PhanLoaiPhienController;
+use App\Http\Controllers\DaoTao\Dat\TheoDoiDatController;
 use App\Http\Controllers\DaoTao\Dat\TongHopDatHocVienController;
 use App\Http\Controllers\DaoTao\BaoCaoLuuLuongDaoTaoController as DaoTaoBaoCaoLuuLuongDaoTaoController;
 use App\Http\Controllers\DaoTao\DanhSachPhanCongDaoTaoController;
@@ -164,6 +167,8 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
         ->name('pdt.dat.quan-ly-phien');
     Route::get('/phong-dao-tao/dat/tong-hop-hoc-vien', [TongHopDatHocVienController::class, 'index'])
         ->name('pdt.dat.tong-hop-hoc-vien');
+    Route::get('/phong-dao-tao/dat/theo-doi', [TheoDoiDatController::class, 'index'])
+        ->name('pdt.dat.theo-doi');
     Route::get('/phong-dao-tao/dat/quan-ly-phien/xuat-excel', [DanhSachDatDSPhienController::class, 'export'])
         ->name('pdt.dat.quan-ly-phien.export');
     Route::get('/phong-dao-tao/dat/quan-ly-phien/hoc-vien-options', [DanhSachDatDSPhienController::class, 'timHocVienOptions'])
@@ -220,6 +225,24 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
         ->name('pdt.dat.nhap-ket-qua-cuc.confirm');
     Route::get('/phong-dao-tao/dat/nhap-ket-qua-cuc/huy', [NhapFileKetQuaCucController::class, 'cancel'])
         ->name('pdt.dat.nhap-ket-qua-cuc.cancel');
+
+    Route::get('/phong-dao-tao/dat/phan-cong-hoc-vien', [DanhSachPhanCongHocVienController::class, 'index'])
+        ->name('pdt.dat.phan-cong-hoc-vien');
+    Route::post('/phong-dao-tao/dat/phan-cong-hoc-vien/xoa-theo-khoa', [DanhSachPhanCongHocVienController::class, 'destroyByCourse'])
+        ->name('pdt.dat.phan-cong-hoc-vien.destroy-by-course');
+
+    Route::get('/phong-dao-tao/dat/nhap-phan-cong-hoc-vien', [NhapFilePhanCongHocVienController::class, 'create'])
+        ->name('pdt.dat.nhap-phan-cong-hoc-vien');
+    Route::post('/phong-dao-tao/dat/nhap-phan-cong-hoc-vien/luu', [NhapFilePhanCongHocVienController::class, 'saveManual'])
+        ->name('pdt.dat.nhap-phan-cong-hoc-vien.save');
+    Route::post('/phong-dao-tao/dat/nhap-phan-cong-hoc-vien', [NhapFilePhanCongHocVienController::class, 'store'])
+        ->name('pdt.dat.nhap-phan-cong-hoc-vien.store');
+    Route::get('/phong-dao-tao/dat/nhap-phan-cong-hoc-vien/xem-truoc', [NhapFilePhanCongHocVienController::class, 'preview'])
+        ->name('pdt.dat.nhap-phan-cong-hoc-vien.preview');
+    Route::post('/phong-dao-tao/dat/nhap-phan-cong-hoc-vien/xac-nhan', [NhapFilePhanCongHocVienController::class, 'confirm'])
+        ->name('pdt.dat.nhap-phan-cong-hoc-vien.confirm');
+    Route::get('/phong-dao-tao/dat/nhap-phan-cong-hoc-vien/huy', [NhapFilePhanCongHocVienController::class, 'cancel'])
+        ->name('pdt.dat.nhap-phan-cong-hoc-vien.cancel');
 });
 
 Route::prefix('trung-tam')->name('trungtam.')->group(function () {

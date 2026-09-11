@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\DaoTao\Dat;
 
 use App\Http\Controllers\Controller;
-use App\Models\DaoTao\DatDSPhien;
 use App\Rules\ExcelUpload;
 use App\Support\DaoTao\DatDSPhienExcelParser;
 use App\Support\DaoTao\DatKetQuaCucExcelParser;
@@ -57,29 +56,32 @@ class NhapFileKetQuaCucController extends Controller
                 DatKetQuaCucExcelParser::DEFAULT_PREVIEW_SAMPLE
             );
 
-            $maKhoaHocList = $preview['meta']['ma_khoa_hoc_list'] ?? [];
-            if ($maKhoaHocList === [] && ! empty($preview['meta']['ma_khoa_hoc'])) {
-                $maKhoaHocList = [(string) $preview['meta']['ma_khoa_hoc']];
-            }
-
-            $tongPhienDb = 0;
-            $khongTrongFile = 0;
+            $analysis = (new DatKetQuaCucUpdater())->analyzeFromFile($fullPath);
             $khoaStats = $preview['meta']['khoa_stats'] ?? [];
 
-            foreach ($maKhoaHocList as $maKhoaHoc) {
-                $tongDb = DatDSPhien::query()->where('MaKhoaHoc', $maKhoaHoc)->count();
-                $fileCount = (int) ($khoaStats[$maKhoaHoc]['record_count'] ?? 0);
-
-                $khoaStats[$maKhoaHoc]['tong_phien_db'] = $tongDb;
-                $khoaStats[$maKhoaHoc]['khong_trong_file'] = max(0, $tongDb - $fileCount);
-
-                $tongPhienDb += $tongDb;
-                $khongTrongFile += max(0, $tongDb - $fileCount);
+            foreach ($analysis['theo_khoa'] ?? [] as $maKhoaHoc => $courseStats) {
+                $khoaStats[$maKhoaHoc] = array_merge($khoaStats[$maKhoaHoc] ?? [], [
+                    'tong_phien_db' => (int) ($courseStats['tong_phien_db'] ?? 0),
+                    'count_da_truyen' => (int) ($courseStats['da_truyen'] ?? 0),
+                    'count_khong_chap_nhan' => max(
+                        0,
+                        (int) ($courseStats['cuoc_khong'] ?? 0) - (int) ($courseStats['khong_trong_file'] ?? 0)
+                    ),
+                    'khong_trong_file' => (int) ($courseStats['khong_trong_file'] ?? 0),
+                    'bo_qua_da_truyen' => (int) ($courseStats['bo_qua_da_truyen'] ?? 0),
+                ]);
             }
 
             $preview['meta']['khoa_stats'] = $khoaStats;
-            $preview['meta']['tong_phien_db'] = $tongPhienDb;
-            $preview['meta']['khong_trong_file'] = $khongTrongFile;
+            $preview['meta']['tong_phien_db'] = (int) ($analysis['tong_phien_db'] ?? 0);
+            $preview['meta']['count_da_truyen'] = (int) ($analysis['da_truyen'] ?? 0);
+            $preview['meta']['count_khong_chap_nhan'] = max(
+                0,
+                (int) ($analysis['cuoc_khong'] ?? 0) - (int) ($analysis['khong_trong_file'] ?? 0)
+            );
+            $preview['meta']['khong_trong_file'] = (int) ($analysis['khong_trong_file'] ?? 0);
+            $preview['meta']['bo_qua_da_truyen'] = (int) ($analysis['bo_qua_da_truyen'] ?? 0);
+            $preview['meta']['file_khong_co_db'] = (int) ($analysis['file_khong_co_db'] ?? 0);
 
             $request->session()->put(self::SESSION_KEY, [
                 'stored_path' => $storedPath,
@@ -168,6 +170,10 @@ class NhapFileKetQuaCucController extends Controller
 
         if ($result['file_khong_co_db'] > 0) {
             $msg .= ' Bỏ qua '.$result['file_khong_co_db'].' dòng file không khớp phiên trong DB.';
+        }
+
+        if (($result['bo_qua_da_truyen'] ?? 0) > 0) {
+            $msg .= ' Giữ nguyên '.$result['bo_qua_da_truyen'].' phiên đã có phân loại "'.DatKetQuaCucUpdater::PHAN_LOAI_DA_TRUYEN.'".';
         }
 
         if ($result['so_khoa'] <= 5) {

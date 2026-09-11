@@ -2,6 +2,41 @@
 
 @section('title', 'Quản lý giáo viên')
 
+@push('styles')
+<style>
+    .pmgplx-gv-table {
+        table-layout: fixed;
+        width: 100%;
+    }
+    .pmgplx-gv-table .pmgplx-gv-xe-col {
+        width: 200px;
+        max-width: 200px;
+        overflow: hidden;
+    }
+    .pmgplx-gv-xe-inner {
+        display: block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .pmgplx-gv-xe-inner .btn-gan-xe {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .pmgplx-gv-xe-inner .btn-gan-xe-label {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+</style>
+@endpush
+
 @section('content')
     <div class="card card-panel">
         <div class="card-header">Thông tin tìm kiếm giáo viên</div>
@@ -88,7 +123,18 @@
             </div>
 
             <div class="table-responsive">
-                <table class="table table-sm table-bordered table-striped table-hover table-data mb-0">
+                <table class="table table-sm table-bordered table-striped table-hover table-data mb-0 pmgplx-gv-table">
+                    <colgroup>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col style="width: 200px;">
+                    </colgroup>
                     <thead>
                         <tr>
                             <th>STT</th>
@@ -99,7 +145,7 @@
                             <th>Điện thoại</th>
                             <th>Hạng GPLX</th>
                             <th>Số QĐ GCN</th>
-                            <th>Xe</th>
+                            <th class="pmgplx-gv-xe-col">Xe</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -131,16 +177,18 @@
                                 <td>{{ $row->DienThoai }}</td>
                                 <td>{{ $row->HangGPLX }}</td>
                                 <td>{{ $row->SoQD_GCN }}</td>
-                                <td class="text-center js-no-row-select">
+                                <td class="text-center js-no-row-select pmgplx-gv-xe-col">
                                     @if ($bienSo !== '')
-                                        <button type="button"
-                                            class="btn btn-link btn-sm p-0 text-primary btn-gan-xe"
-                                            data-ma-gv="{{ $row->MaGV }}"
-                                            data-ten-gv="{{ $row->ho_ten }}"
-                                            data-bien-so="{{ $bienSo }}"
-                                            title="Đổi xe">
-                                            {{ $bienSo }}
-                                        </button>
+                                        <div class="pmgplx-gv-xe-inner">
+                                            <button type="button"
+                                                class="btn btn-link btn-sm p-0 text-primary btn-gan-xe"
+                                                data-ma-gv="{{ $row->MaGV }}"
+                                                data-ten-gv="{{ $row->ho_ten }}"
+                                                data-bien-so="{{ $bienSo }}"
+                                                title="{{ $bienSo }} — Đổi xe">
+                                                <span class="btn-gan-xe-label">{{ $bienSo }}</span>
+                                            </button>
+                                        </div>
                                     @else
                                         <button type="button"
                                             class="btn btn-sm btn-outline-success btn-gan-xe"

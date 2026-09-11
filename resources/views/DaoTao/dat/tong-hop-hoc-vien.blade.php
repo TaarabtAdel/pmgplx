@@ -27,7 +27,10 @@
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
             <span>Tổng hợp học viên DAT</span>
             <div class="mt-1 mt-md-0">
-                <a href="{{ route('daotao.pdt.dat.quan-ly-phien') }}" class="btn btn-sm btn-navy mr-1">
+                <a href="{{ route('daotao.pdt.dat.theo-doi') }}" class="btn btn-sm btn-navy mr-1">
+                    Theo dõi DAT
+                </a>
+                <a href="{{ route('daotao.pdt.dat.quan-ly-phien') }}" class="btn btn-sm btn-outline-secondary mr-1">
                     Chi tiết phiên
                 </a>
                 <a href="{{ route('daotao.pdt.dat.dieu-kien-dat') }}" class="btn btn-sm btn-outline-secondary">

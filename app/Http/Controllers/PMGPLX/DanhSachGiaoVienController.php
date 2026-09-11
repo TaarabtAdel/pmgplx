@@ -21,13 +21,7 @@ class DanhSachGiaoVienController extends Controller
         $query = GiaoVien::query();
 
         if ($keyword = trim((string) $request->input('tu_khoa'))) {
-            $query->where(function ($q) use ($keyword) {
-                $q->where('MaGV', 'like', '%'.$keyword.'%')
-                    ->orWhere('TenGV', 'like', '%'.$keyword.'%')
-                    ->orWhere('HoTenDem', 'like', '%'.$keyword.'%')
-                    ->orWhere('SoCMT', 'like', '%'.$keyword.'%')
-                    ->orWhere('DienThoai', 'like', '%'.$keyword.'%');
-            });
+            $query->timTheoTuKhoa($keyword);
         }
 
         if ($hang = trim((string) $request->input('hang_gplx'))) {

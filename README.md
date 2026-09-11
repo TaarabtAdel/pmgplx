@@ -69,7 +69,7 @@ docker compose exec app php artisan migrate \
   --path=database/migrations/manhlinh
 ```
 
-Sau migrate sạch, DB có 10 bảng nghiệp vụ + `migrations`: `GiaoVien`, `XeTapLai`, `KhoaDaoTao`, `PhanCongDaoTao`, `TienDoDaoTao`, `DatDSPhien`, `DatPhanLoaiPhien`, `DatDSPhienPhanLoai`, `DatDieuKienCanhBao`, `DatDieuKienDat`.
+Sau migrate sạch, DB có các bảng nghiệp vụ DAT + `migrations`, gồm: `GiaoVien`, `XeTapLai`, `KhoaDaoTao`, `PhanCongDaoTao`, `TienDoDaoTao`, `DatDSPhien`, `DatPhanLoaiPhien`, `DatDSPhienPhanLoai`, `DatDieuKienCanhBao`, `DatDieuKienDat`, `DatPhanCongHocVien`, …
 
 ## Backup / restore MANHLINH
 

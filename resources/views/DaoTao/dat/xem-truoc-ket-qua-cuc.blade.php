@@ -42,6 +42,11 @@
                         {{ number_format((int) $meta['khong_trong_file']) }} phiên DB không có trong file → Cục không chấp nhận
                     </span>
                 @endif
+                @if ((int) ($meta['bo_qua_da_truyen'] ?? 0) > 0)
+                    <span class="badge badge-secondary">
+                        {{ number_format((int) $meta['bo_qua_da_truyen']) }} phiên đã truyền — giữ nguyên
+                    </span>
+                @endif
             </div>
             @if ($detailTotal > $detailLimit)
                 <div class="text-muted small mt-2">
@@ -49,6 +54,9 @@
                     (tổng {{ number_format($detailTotal) }} dòng trong file).
                 </div>
             @endif
+            <p class="small text-muted mt-2 mb-0">
+                Phiên đã có phân loại <strong>Đã truyền lên cục</strong> sẽ được <strong>giữ nguyên</strong> khi xác nhận.
+            </p>
         </div>
     </div>
 
@@ -66,6 +74,7 @@
                                 <th>Đã truyền</th>
                                 <th>Cục không chấp nhận (file)</th>
                                 <th>DB không có trong file</th>
+                                <th>Giữ nguyên (đã truyền)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -80,6 +89,7 @@
                                     <td>{{ number_format((int) ($ks['count_da_truyen'] ?? 0)) }}</td>
                                     <td>{{ number_format((int) ($ks['count_khong_chap_nhan'] ?? 0)) }}</td>
                                     <td>{{ number_format((int) ($ks['khong_trong_file'] ?? 0)) }}</td>
+                                    <td>{{ number_format((int) ($ks['bo_qua_da_truyen'] ?? 0)) }}</td>
                                 </tr>
                             @endforeach
                         </tbody>

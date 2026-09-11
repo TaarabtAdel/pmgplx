@@ -4,6 +4,8 @@ namespace App\Support\DaoTao;
 
 use App\Models\DaoTao\DatDieuKienCanhBao;
 use App\Models\DaoTao\DatDSPhien;
+use App\Models\DaoTao\DatPhanCongHocVien;
+use App\Support\PMGPLX\LichExcelBienSo;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -25,6 +27,10 @@ class DatDSPhienKiemTra
     public const LOI_TRUNG_GV = 'trung_gv';
 
     public const LOI_LICH_XE = 'lich_xe';
+
+    public const LOI_SAI_GIAO_VIEN = 'sai_giao_vien';
+
+    public const LOI_SAI_XE = 'sai_xe';
 
     /**
      * @return array{
@@ -83,14 +89,23 @@ class DatDSPhienKiemTra
                 ],
                 'badge' => 'badge-warning',
             ],
+            self::LOI_SAI_GIAO_VIEN => [
+                'label' => 'Giáo viên khác phân công HV',
+                'badge' => 'badge-danger',
+            ],
+            self::LOI_SAI_XE => [
+                'label' => 'Xe khác phân công HV',
+                'badge' => 'badge-danger',
+            ],
         ];
     }
 
     /**
      * @param  Collection<int, DatDSPhien>  $sessions
+     * @param  array<int, list<string>>|null  $expectedPhanCongById
      * @return array<int, list<string>>
      */
-    public static function analyze(Collection $sessions): array
+    public static function analyze(Collection $sessions, ?array &$expectedPhanCongById = null): array
     {
         $violations = [];
         $s = self::settings();
@@ -104,8 +119,35 @@ class DatDSPhienKiemTra
         self::applyOverlapViolations($sessions, $violations, 'MaHocVien', self::LOI_TRUNG_HV);
         self::applyOverlapViolations($sessions, $violations, 'MaGiaoVien', self::LOI_TRUNG_GV);
         self::applyLichXeViolations($sessions, $violations);
+        self::applyPhanCongViolations($sessions, $violations, $expectedPhanCongById);
 
         return $violations;
+    }
+
+    /**
+     * @param  array{ma_giao_vien?: string, bien_so_xe?: string, bien_so_xe_tu_dong?: string}  $expectedPhanCong
+     */
+    public static function violationLabel(string $code, array $expectedPhanCong = []): string
+    {
+        if ($code === self::LOI_SAI_GIAO_VIEN) {
+            $maGv = trim((string) ($expectedPhanCong['ma_giao_vien'] ?? ''));
+            if ($maGv !== '') {
+                return 'GV đúng: '.$maGv;
+            }
+        }
+
+        if ($code === self::LOI_SAI_XE) {
+            $xeParts = array_values(array_filter([
+                trim((string) ($expectedPhanCong['bien_so_xe'] ?? '')),
+                trim((string) ($expectedPhanCong['bien_so_xe_tu_dong'] ?? '')),
+            ], static fn (string $value): bool => $value !== ''));
+
+            if ($xeParts !== []) {
+                return 'Xe đúng: '.implode(' / ', $xeParts);
+            }
+        }
+
+        return self::definitions()[$code]['label'] ?? $code;
     }
 
     public static function datAnhDieuKien(?float $tiLe): bool
@@ -261,7 +303,99 @@ class DatDSPhienKiemTra
     /**
      * @param  Collection<int, DatDSPhien>  $sessions
      * @param  array<int, list<string>>  $violations
+     * @param  array<int, array{ma_giao_vien: string, bien_so_xe: string}>|null  $expectedById
      */
+    private static function applyPhanCongViolations(
+        Collection $sessions,
+        array &$violations,
+        ?array &$expectedById = null
+    ): void {
+        $byCourse = $sessions->groupBy(
+            fn (DatDSPhien $session): string => trim((string) ($session->MaKhoaHoc ?? ''))
+        );
+
+        foreach ($byCourse as $maKhoaHoc => $group) {
+            if ($maKhoaHoc === '') {
+                continue;
+            }
+
+            $assignments = DatPhanCongHocVien::query()
+                ->where('MaKhoaHoc', $maKhoaHoc)
+                ->get(['MaHocVien', 'MaGiaoVien', 'BienSoXe', 'BienSoXeTuDong'])
+                ->keyBy(fn (DatPhanCongHocVien $row): string => trim((string) ($row->MaHocVien ?? '')));
+
+            if ($assignments->isEmpty()) {
+                continue;
+            }
+
+            foreach ($group as $session) {
+                $maHocVien = trim((string) ($session->MaHocVien ?? ''));
+                if ($maHocVien === '') {
+                    continue;
+                }
+
+                $assignment = $assignments->get($maHocVien);
+                if ($assignment === null) {
+                    continue;
+                }
+
+                $id = (int) $session->Id;
+                $violations[$id] ??= [];
+
+                $assignedGv = self::normalizeMaGv((string) ($assignment->MaGiaoVien ?? ''));
+                $sessionGv = self::normalizeMaGv((string) ($session->MaGiaoVien ?? ''));
+                if ($assignedGv !== '' && $sessionGv !== $assignedGv) {
+                    if (! in_array(self::LOI_SAI_GIAO_VIEN, $violations[$id], true)) {
+                        $violations[$id][] = self::LOI_SAI_GIAO_VIEN;
+                    }
+                    if ($expectedById !== null) {
+                        $expectedById[$id] ??= self::expectedPhanCongFromAssignment($assignment);
+                    }
+                }
+
+                $sessionXe = LichExcelBienSo::normalize((string) ($session->BienSoXe ?? ''));
+                $allowedXe = self::allowedAssignedXeNormalized($assignment);
+                if ($allowedXe !== [] && ! in_array($sessionXe, $allowedXe, true)) {
+                    if (! in_array(self::LOI_SAI_XE, $violations[$id], true)) {
+                        $violations[$id][] = self::LOI_SAI_XE;
+                    }
+                    if ($expectedById !== null) {
+                        $expectedById[$id] ??= self::expectedPhanCongFromAssignment($assignment);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * @return array{ma_giao_vien: string, bien_so_xe: string, bien_so_xe_tu_dong: string}
+     */
+    private static function expectedPhanCongFromAssignment(DatPhanCongHocVien $assignment): array
+    {
+        return [
+            'ma_giao_vien' => trim((string) $assignment->MaGiaoVien),
+            'bien_so_xe' => trim((string) $assignment->BienSoXe),
+            'bien_so_xe_tu_dong' => trim((string) ($assignment->BienSoXeTuDong ?? '')),
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function allowedAssignedXeNormalized(DatPhanCongHocVien $assignment): array
+    {
+        $allowed = [];
+
+        foreach (['BienSoXe', 'BienSoXeTuDong'] as $field) {
+            $normalized = LichExcelBienSo::normalize((string) ($assignment->{$field} ?? ''));
+            if ($normalized !== '') {
+                $allowed[$normalized] = true;
+            }
+        }
+
+        return array_keys($allowed);
+    }
+
     private static function applyLichXeViolations(Collection $sessions, array &$violations): void
     {
         $byCourse = $sessions->groupBy(
@@ -309,6 +443,11 @@ class DatDSPhienKiemTra
     private static function maHocVienKey(DatDSPhien $session): string
     {
         return trim((string) ($session->MaHocVien ?? ''));
+    }
+
+    private static function normalizeMaGv(string $maGv): string
+    {
+        return mb_strtoupper(trim($maGv));
     }
 
     private static function overlaps(DatDSPhien $a, DatDSPhien $b): bool

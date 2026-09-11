@@ -14,10 +14,15 @@ class DatDSPhienExcelExporter
      * @param  Collection<int, DatDSPhien>  $items
      * @param  array<int, list<string>>  $violationsById
      * @param  array<string, array{label: string, badge: string}>  $loiDefinitions
+     * @param  array<int, array{ma_giao_vien: string, bien_so_xe: string}>  $expectedPhanCongById
      */
-    public static function download(Collection $items, array $violationsById, array $loiDefinitions): StreamedResponse
-    {
-        $spreadsheet = self::buildSpreadsheet($items, $violationsById, $loiDefinitions);
+    public static function download(
+        Collection $items,
+        array $violationsById,
+        array $loiDefinitions,
+        array $expectedPhanCongById = []
+    ): StreamedResponse {
+        $spreadsheet = self::buildSpreadsheet($items, $violationsById, $loiDefinitions, $expectedPhanCongById);
         $filename = 'dat-phien-'.now()->format('Ymd-His').'.xlsx';
 
         return response()->streamDownload(function () use ($spreadsheet): void {
@@ -33,9 +38,14 @@ class DatDSPhienExcelExporter
      * @param  Collection<int, DatDSPhien>  $items
      * @param  array<int, list<string>>  $violationsById
      * @param  array<string, array{label: string, badge: string}>  $loiDefinitions
+     * @param  array<int, array{ma_giao_vien: string, bien_so_xe: string}>  $expectedPhanCongById
      */
-    private static function buildSpreadsheet(Collection $items, array $violationsById, array $loiDefinitions): Spreadsheet
-    {
+    private static function buildSpreadsheet(
+        Collection $items,
+        array $violationsById,
+        array $loiDefinitions,
+        array $expectedPhanCongById = []
+    ): Spreadsheet {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Danh sach phien');
@@ -70,9 +80,10 @@ class DatDSPhienExcelExporter
             $phut = ($start && $end) ? $start->diffInRealMinutes($end) : null;
             $tiLe = $item->TiLeNhanDien !== null ? (float) $item->TiLeNhanDien : null;
             $loiCodes = $violationsById[(int) $item->Id] ?? [];
+            $expectedPhanCong = $expectedPhanCongById[(int) $item->Id] ?? [];
             $datPhien = DatDSPhienKiemTra::datPhien($violationsById, (int) $item->Id);
             $canhBaoText = collect($loiCodes)
-                ->map(fn (string $code): string => $loiDefinitions[$code]['label'] ?? $code)
+                ->map(fn (string $code): string => DatDSPhienKiemTra::violationLabel($code, $expectedPhanCong))
                 ->implode('; ');
 
             $phanLoaiText = $item->phanLoai

@@ -21,6 +21,7 @@ class DatKetQuaCucUpdater
      *     cuoc_khong: int,
      *     khong_trong_file: int,
      *     file_khong_co_db: int,
+     *     bo_qua_da_truyen: int,
      *     tong_phien_db: int,
      *     theo_khoa: array<string, array{
      *         ma_khoa_hoc: string,
@@ -28,6 +29,7 @@ class DatKetQuaCucUpdater
      *         cuoc_khong: int,
      *         khong_trong_file: int,
      *         file_khong_co_db: int,
+     *         bo_qua_da_truyen: int,
      *         tong_phien_db: int
      *     }>
      * }
@@ -35,6 +37,44 @@ class DatKetQuaCucUpdater
      * @throws Throwable
      */
     public function applyFromFile(string $filePath): array
+    {
+        return $this->processFromFile($filePath, persist: true);
+    }
+
+    /**
+     * Dự báo thống kê cập nhật (không ghi DB) — dùng cho màn xem trước.
+     *
+     * @return array{
+     *     so_khoa: int,
+     *     ma_khoa_hoc_list: list<string>,
+     *     da_truyen: int,
+     *     cuoc_khong: int,
+     *     khong_trong_file: int,
+     *     file_khong_co_db: int,
+     *     bo_qua_da_truyen: int,
+     *     tong_phien_db: int,
+     *     theo_khoa: array<string, array{
+     *         ma_khoa_hoc: string,
+     *         da_truyen: int,
+     *         cuoc_khong: int,
+     *         khong_trong_file: int,
+     *         file_khong_co_db: int,
+     *         bo_qua_da_truyen: int,
+     *         tong_phien_db: int
+     *     }>
+     * }
+     *
+     * @throws Throwable
+     */
+    public function analyzeFromFile(string $filePath): array
+    {
+        return $this->processFromFile($filePath, persist: false);
+    }
+
+    /**
+     * @throws Throwable
+     */
+    private function processFromFile(string $filePath, bool $persist): array
     {
         $parser = new DatKetQuaCucExcelParser();
         $fileRows = $parser->readAllRecordsFromFile($filePath);
@@ -59,18 +99,20 @@ class DatKetQuaCucUpdater
             'cuoc_khong' => 0,
             'khong_trong_file' => 0,
             'file_khong_co_db' => 0,
+            'bo_qua_da_truyen' => 0,
             'tong_phien_db' => 0,
             'theo_khoa' => [],
         ];
 
         sort($aggregate['ma_khoa_hoc_list']);
 
-        DB::connection('sqlsrv_manhlinh')->transaction(function () use (
+        $run = function () use (
             $byKhoa,
             $parser,
             $cuocPhanLoaiIds,
             $daTruyenId,
             $cuocKhongId,
+            $persist,
             &$aggregate
         ): void {
             foreach ($byKhoa as $maKhoaHoc => $rows) {
@@ -80,7 +122,8 @@ class DatKetQuaCucUpdater
                     $parser,
                     $cuocPhanLoaiIds,
                     $daTruyenId,
-                    $cuocKhongId
+                    $cuocKhongId,
+                    $persist
                 );
 
                 $aggregate['theo_khoa'][$maKhoaHoc] = $courseStats;
@@ -88,9 +131,16 @@ class DatKetQuaCucUpdater
                 $aggregate['cuoc_khong'] += $courseStats['cuoc_khong'];
                 $aggregate['khong_trong_file'] += $courseStats['khong_trong_file'];
                 $aggregate['file_khong_co_db'] += $courseStats['file_khong_co_db'];
+                $aggregate['bo_qua_da_truyen'] += $courseStats['bo_qua_da_truyen'];
                 $aggregate['tong_phien_db'] += $courseStats['tong_phien_db'];
             }
-        });
+        };
+
+        if ($persist) {
+            DB::connection('sqlsrv_manhlinh')->transaction($run);
+        } else {
+            $run();
+        }
 
         return $aggregate;
     }
@@ -104,6 +154,7 @@ class DatKetQuaCucUpdater
      *     cuoc_khong: int,
      *     khong_trong_file: int,
      *     file_khong_co_db: int,
+     *     bo_qua_da_truyen: int,
      *     tong_phien_db: int
      * }
      */
@@ -113,7 +164,8 @@ class DatKetQuaCucUpdater
         DatKetQuaCucExcelParser $parser,
         array $cuocPhanLoaiIds,
         int $daTruyenId,
-        int $cuocKhongId
+        int $cuocKhongId,
+        bool $persist = true
     ): array {
         /** @var array<string, string> $fileStatusByMaPhien */
         $fileStatusByMaPhien = [];
@@ -131,8 +183,11 @@ class DatKetQuaCucUpdater
             'cuoc_khong' => 0,
             'khong_trong_file' => 0,
             'file_khong_co_db' => 0,
+            'bo_qua_da_truyen' => 0,
             'tong_phien_db' => $sessions->count(),
         ];
+
+        $lockedSessionIds = array_flip($this->sessionIdsWithPhanLoai($maKhoaHoc, $daTruyenId));
 
         $dbMaPhienSet = [];
         foreach ($sessions as $session) {
@@ -148,8 +203,16 @@ class DatKetQuaCucUpdater
         foreach ($sessions as $session) {
             $maPhien = (string) $session->MaPhienHoc;
 
+            if (isset($lockedSessionIds[$session->Id])) {
+                $stats['bo_qua_da_truyen']++;
+
+                continue;
+            }
+
             if (! array_key_exists($maPhien, $fileStatusByMaPhien)) {
-                $this->setCuocPhanLoai($session->Id, $cuocKhongId, $cuocPhanLoaiIds);
+                if ($persist) {
+                    $this->setCuocPhanLoai($session->Id, $cuocKhongId, $cuocPhanLoaiIds);
+                }
                 $stats['cuoc_khong']++;
                 $stats['khong_trong_file']++;
 
@@ -160,7 +223,9 @@ class DatKetQuaCucUpdater
                 ? $daTruyenId
                 : $cuocKhongId;
 
-            $this->setCuocPhanLoai($session->Id, $targetId, $cuocPhanLoaiIds);
+            if ($persist) {
+                $this->setCuocPhanLoai($session->Id, $targetId, $cuocPhanLoaiIds);
+            }
 
             if ($targetId === $daTruyenId) {
                 $stats['da_truyen']++;
@@ -170,6 +235,20 @@ class DatKetQuaCucUpdater
         }
 
         return $stats;
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function sessionIdsWithPhanLoai(string $maKhoaHoc, int $phanLoaiId): array
+    {
+        return DatDSPhien::query()
+            ->where('MaKhoaHoc', $maKhoaHoc)
+            ->whereHas('phanLoai', function ($query) use ($phanLoaiId): void {
+                $query->where('DatPhanLoaiPhien.Id', $phanLoaiId);
+            })
+            ->pluck('Id')
+            ->all();
     }
 
     /**

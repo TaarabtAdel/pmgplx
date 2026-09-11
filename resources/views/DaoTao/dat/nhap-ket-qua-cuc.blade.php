@@ -6,7 +6,10 @@
     <div class="card card-panel">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>Nhập kết quả cục</span>
-            <a href="{{ route('daotao.pdt.dat.quan-ly-phien') }}" class="btn btn-sm btn-outline-secondary">← Quản lý phiên</a>
+            <div>
+                <a href="{{ route('daotao.pdt.dat.nhap-phan-cong-hoc-vien') }}" class="btn btn-sm btn-outline-primary mr-1">Nhập phân công HV</a>
+                <a href="{{ route('daotao.pdt.dat.quan-ly-phien') }}" class="btn btn-sm btn-outline-secondary">← Quản lý phiên</a>
+            </div>
         </div>
         <div class="card-body">
             <div class="alert alert-info">
@@ -16,6 +19,7 @@
                 <ul class="mb-0 mt-2">
                     <li>Trạng thái có <strong>Khả dụng</strong> → phân loại <strong>Đã truyền lên cục</strong></li>
                     <li>Trạng thái khác <strong>Khả dụng</strong>, hoặc phiên của khóa không có trong file → <strong>Cục không chấp nhận</strong></li>
+                    <li>Phiên đã có phân loại <strong>Đã truyền lên cục</strong> → <strong>giữ nguyên</strong>, không cập nhật lại</li>
                 </ul>
             </div>
 

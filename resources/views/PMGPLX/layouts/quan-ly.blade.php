@@ -459,6 +459,10 @@
                                href="{{ route('daotao.pdt.dat.tong-hop-hoc-vien') }}">
                                 Tổng hợp học viên
                             </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.theo-doi*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.theo-doi') }}">
+                                Theo dõi DAT
+                            </a>
                             <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.quan-ly-phien*') ? 'active' : '' }}"
                                href="{{ route('daotao.pdt.dat.quan-ly-phien') }}">
                                 Chi tiết phiên
@@ -490,6 +494,14 @@
                             <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.nhap-ket-qua-cuc*') ? 'active' : '' }}"
                                href="{{ route('daotao.pdt.dat.nhap-ket-qua-cuc') }}">
                                 Nhập kết quả cục
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.phan-cong-hoc-vien*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.phan-cong-hoc-vien') }}">
+                                Phân công học viên
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.nhap-phan-cong-hoc-vien*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.nhap-phan-cong-hoc-vien') }}">
+                                Nhập phân công học viên
                             </a>
                         </div>
                     </div>
