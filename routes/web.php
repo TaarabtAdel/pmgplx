@@ -3,6 +3,7 @@
 use App\Http\Controllers\DaoTao\Dat\DoPhienVoiLichXeController;
 use App\Http\Controllers\DaoTao\Dat\DanhSachDatDSPhienController;
 use App\Http\Controllers\DaoTao\Dat\DanhSachPhanCongHocVienController;
+use App\Http\Controllers\DaoTao\Dat\GiaoVienDayThayController;
 use App\Http\Controllers\DaoTao\Dat\DieuKienCanhBaoController;
 use App\Http\Controllers\DaoTao\Dat\DieuKienDatController;
 use App\Http\Controllers\DaoTao\Dat\DieuKienDoPhienController;
@@ -230,12 +231,15 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
 
     Route::get('/phong-dao-tao/dat/phan-cong-hoc-vien', [DanhSachPhanCongHocVienController::class, 'index'])
         ->name('pdt.dat.phan-cong-hoc-vien');
-    Route::post('/phong-dao-tao/dat/phan-cong-hoc-vien/giao-vien-thay', [DanhSachPhanCongHocVienController::class, 'storeGiaoVienThay'])
-        ->name('pdt.dat.phan-cong-hoc-vien.giao-vien-thay.store');
-    Route::delete('/phong-dao-tao/dat/phan-cong-hoc-vien/giao-vien-thay/{id}', [DanhSachPhanCongHocVienController::class, 'destroyGiaoVienThay'])
-        ->name('pdt.dat.phan-cong-hoc-vien.giao-vien-thay.destroy');
     Route::post('/phong-dao-tao/dat/phan-cong-hoc-vien/xoa-theo-khoa', [DanhSachPhanCongHocVienController::class, 'destroyByCourse'])
         ->name('pdt.dat.phan-cong-hoc-vien.destroy-by-course');
+
+    Route::get('/phong-dao-tao/dat/giao-vien-day-thay', [GiaoVienDayThayController::class, 'index'])
+        ->name('pdt.dat.giao-vien-day-thay');
+    Route::post('/phong-dao-tao/dat/giao-vien-day-thay', [GiaoVienDayThayController::class, 'store'])
+        ->name('pdt.dat.giao-vien-day-thay.store');
+    Route::delete('/phong-dao-tao/dat/giao-vien-day-thay/{id}', [GiaoVienDayThayController::class, 'destroy'])
+        ->name('pdt.dat.giao-vien-day-thay.destroy');
 
     Route::get('/phong-dao-tao/dat/nhap-phan-cong-hoc-vien', [NhapFilePhanCongHocVienController::class, 'create'])
         ->name('pdt.dat.nhap-phan-cong-hoc-vien');

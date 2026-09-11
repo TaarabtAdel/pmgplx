@@ -86,6 +86,9 @@
                     <a href="{{ route('daotao.pdt.dat.phan-cong-hoc-vien') }}" class="list-group-item list-group-item-action pl-4">
                         Phân công học viên
                     </a>
+                    <a href="{{ route('daotao.pdt.dat.giao-vien-day-thay') }}" class="list-group-item list-group-item-action pl-4">
+                        Giáo viên dạy thay
+                    </a>
                     <a href="{{ route('daotao.pdt.dat.nhap-phan-cong-hoc-vien') }}" class="list-group-item list-group-item-action pl-4">
                         Nhập phân công học viên
                     </a>

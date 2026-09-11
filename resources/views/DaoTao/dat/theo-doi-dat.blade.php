@@ -302,7 +302,9 @@
                         @endif
                         Các cột tự động, đêm và tổng GVTH = tổng <strong>toàn khóa</strong> (theo phiên HV).
                         <strong>Mã HV, Mã GV, BKS</strong> cố định theo
-                        <a href="{{ route('daotao.pdt.dat.phan-cong-hoc-vien', ['ma_khoa_hoc' => $filters['ma_khoa_hoc']]) }}">phân công học viên</a>.
+                        <a href="{{ route('daotao.pdt.dat.phan-cong-hoc-vien', ['ma_khoa_hoc' => $filters['ma_khoa_hoc']]) }}">phân công học viên</a>
+                        ·
+                        <a href="{{ route('daotao.pdt.dat.giao-vien-day-thay', ['ma_khoa_hoc' => $filters['ma_khoa_hoc']]) }}">GV dạy thay</a>.
                         Dòng <span class="badge badge-warning">nền vàng</span> = HV có phiên với GV/xe nhóm nhưng không nằm trong phân công nhóm đó.
                         @if ($hasNgayFilter)
                             Cột ngày {{ $ngayHeading }} = giờ/km các phiên HV trong ngày đó.

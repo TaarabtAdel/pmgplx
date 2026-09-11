@@ -86,14 +86,14 @@
                 <strong class="d-block mb-2">Cảnh báo theo phân công học viên</strong>
                 <ul class="mb-2 pl-3">
                     <li>{{ $loiDefinitions[\App\Support\DaoTao\DatDSPhienKiemTra::LOI_SAI_GIAO_VIEN]['label'] ?? 'Giáo viên khác phân công HV' }}
-                        — so với GV chính hoặc <a href="{{ route('daotao.pdt.dat.phan-cong-hoc-vien') }}">GV dạy thay</a> (theo ngày phiên).</li>
+                        — so với GV chính hoặc <a href="{{ route('daotao.pdt.dat.giao-vien-day-thay') }}">GV dạy thay</a> (theo ngày phiên).</li>
                     <li>{{ $loiDefinitions[\App\Support\DaoTao\DatDSPhienKiemTra::LOI_SAI_XE]['label'] ?? 'Xe khác phân công HV' }}</li>
                     <li>{{ $loiDefinitions[\App\Support\DaoTao\DatDSPhienKiemTra::LOI_LICH_XE]['label'] ?? 'Không khớp lịch xe tập' }}</li>
                 </ul>
                 <p class="mb-0 text-muted">
-                    GV dạy thay khai báo theo <strong>khóa học + GV chính</strong> tại trang
-                    <a href="{{ route('daotao.pdt.dat.phan-cong-hoc-vien') }}">Phân công học viên</a>
-                    (chọn khóa, nút <strong>Dạy thay</strong>).
+                    GV dạy thay khai báo tại trang
+                    <a href="{{ route('daotao.pdt.dat.giao-vien-day-thay') }}">Giáo viên dạy thay</a>
+                    (theo khóa + GV chính).
                     Phiên có ngày nằm trong khoảng dạy thay sẽ so mã GV phiên với mã GV dạy thay thay vì GV chính.
                 </p>
             </div>

@@ -499,6 +499,10 @@
                                href="{{ route('daotao.pdt.dat.phan-cong-hoc-vien') }}">
                                 Phân công học viên
                             </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.giao-vien-day-thay*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.giao-vien-day-thay') }}">
+                                Giáo viên dạy thay
+                            </a>
                             <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.nhap-phan-cong-hoc-vien*') ? 'active' : '' }}"
                                href="{{ route('daotao.pdt.dat.nhap-phan-cong-hoc-vien') }}">
                                 Nhập phân công học viên
