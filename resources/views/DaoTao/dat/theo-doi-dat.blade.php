@@ -269,10 +269,8 @@
                                             <td class="cell-server">{{ $student['km_may_chu'] }}</td>
                                             <td class="cell-server">{{ $student['chay_dem'] }}</td>
                                             <td class="cell-server @if($student['km_dem'] === '—') cell-placeholder @endif">{{ $student['km_dem'] }}</td>
-                                            @if ($index === 0)
-                                                <td class="cell-gvth" rowspan="{{ $rowspan }}">{{ $group['gio_gvth'] }}</td>
-                                                <td class="cell-gvth" rowspan="{{ $rowspan }}">{{ $group['km_gvth'] }}</td>
-                                            @endif
+                                            <td class="cell-server">{{ $student['gio_may_chu'] }}</td>
+                                            <td class="cell-server">{{ $student['tong_km_may_chu'] }}</td>
                                             @if ($hasNgayFilter)
                                                 <td>{{ $student['gio_trong_ngay'] }}</td>
                                                 <td>{{ $student['km_trong_ngay'] }}</td>
@@ -300,7 +298,7 @@
                         @else
                             <strong>Tất cả phiên:</strong> cộng mọi phiên, kể cả phiên bị cảnh báo.
                         @endif
-                        Các cột tự động, đêm và tổng GVTH = tổng <strong>toàn khóa</strong> (theo phiên HV).
+                        Các cột tự động, đêm và tổng giờ/KM máy chủ = tổng <strong>toàn khóa của từng học viên</strong> (theo phiên HV).
                         <strong>Mã HV, Mã GV, BKS</strong> cố định theo
                         <a href="{{ route('daotao.pdt.dat.phan-cong-hoc-vien', ['ma_khoa_hoc' => $filters['ma_khoa_hoc']]) }}">phân công học viên</a>
                         ·

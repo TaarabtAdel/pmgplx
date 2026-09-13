@@ -26,8 +26,14 @@
                 <label class="small text-muted mb-0 mr-2 text-nowrap" for="filter_ma_khoa_hoc">Khóa học</label>
                 <select name="ma_khoa_hoc" id="filter_ma_khoa_hoc" class="form-control form-control-sm mr-2" style="min-width: 220px;">
                     <option value="">— Chọn khóa —</option>
-                    @foreach ($khoaHocOptions as $maKh)
-                        <option value="{{ $maKh }}" @selected($selectedKhoa === $maKh)>{{ $maKh }}</option>
+                    @foreach ($khoaHocOptions as $kh)
+                        <option value="{{ $kh->MaKhoaHoc }}" @selected($selectedKhoa === $kh->MaKhoaHoc)>
+                            @if ($kh->TenKhoaHoc !== '')
+                                {{ $kh->TenKhoaHoc }} ({{ $kh->MaKhoaHoc }})
+                            @else
+                                {{ $kh->MaKhoaHoc }}
+                            @endif
+                        </option>
                     @endforeach
                 </select>
                 <span class="small text-muted">Chọn khóa để hiện danh sách GV chính.</span>

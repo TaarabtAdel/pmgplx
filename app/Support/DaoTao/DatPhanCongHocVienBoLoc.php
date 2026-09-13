@@ -2,9 +2,12 @@
 
 namespace App\Support\DaoTao;
 
+use App\Models\DaoTao\DatDSPhien;
 use App\Models\DaoTao\DatPhanCongHocVien;
+use App\Models\PMGPLX\KhoaHoc;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class DatPhanCongHocVienBoLoc
 {
@@ -76,5 +79,45 @@ class DatPhanCongHocVienBoLoc
             ->filter(fn (string $value): bool => $value !== '')
             ->values()
             ->all();
+    }
+
+    /**
+     * @return Collection<int, object{MaKhoaHoc: string, TenKhoaHoc: string}>
+     */
+    public static function khoaHocOptions(): Collection
+    {
+        $codes = self::distinctValues('MaKhoaHoc');
+        if ($codes === []) {
+            return collect();
+        }
+
+        $namesFromPhien = DatDSPhien::query()
+            ->selectRaw('MaKhoaHoc, MAX(TenKhoaHoc) as TenKhoaHoc')
+            ->whereIn('MaKhoaHoc', $codes)
+            ->groupBy('MaKhoaHoc')
+            ->pluck('TenKhoaHoc', 'MaKhoaHoc');
+
+        $missing = array_values(array_filter(
+            $codes,
+            static fn (string $ma): bool => trim((string) ($namesFromPhien[$ma] ?? '')) === ''
+        ));
+
+        $namesFromPmgplx = $missing === []
+            ? collect()
+            : KhoaHoc::query()
+                ->whereIn('MaKH', $missing)
+                ->pluck('TenKH', 'MaKH');
+
+        return collect($codes)->map(static function (string $ma) use ($namesFromPhien, $namesFromPmgplx) {
+            $ten = trim((string) ($namesFromPhien[$ma] ?? ''));
+            if ($ten === '') {
+                $ten = trim((string) ($namesFromPmgplx[$ma] ?? ''));
+            }
+
+            return (object) [
+                'MaKhoaHoc' => $ma,
+                'TenKhoaHoc' => $ten,
+            ];
+        });
     }
 }

@@ -18,7 +18,7 @@ class GiaoVienDayThayController extends Controller
     public function index(Request $request): View
     {
         $selectedKhoa = trim((string) $request->query('ma_khoa_hoc', old('ma_khoa_hoc', '')));
-        $khoaHocOptions = DatPhanCongHocVienBoLoc::distinctValues('MaKhoaHoc');
+        $khoaHocOptions = DatPhanCongHocVienBoLoc::khoaHocOptions();
 
         $substitutesByKey = $selectedKhoa !== ''
             ? DatPhanCongGiaoVienThayResolver::groupedForCourses([$selectedKhoa])

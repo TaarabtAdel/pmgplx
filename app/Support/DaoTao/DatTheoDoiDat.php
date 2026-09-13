@@ -110,6 +110,8 @@ class DatTheoDoiDat
      *         km_may_chu: string,
      *         chay_dem: string,
      *         km_dem: string,
+     *         gio_may_chu: string,
+     *         tong_km_may_chu: string,
      *         gio_trong_ngay: string,
      *         km_trong_ngay: string,
      *         ngoai_phan_cong: bool
@@ -515,6 +517,8 @@ class DatTheoDoiDat
      *     km_may_chu: string,
      *     chay_dem: string,
      *     km_dem: string,
+     *     gio_may_chu: string,
+     *     tong_km_may_chu: string,
      *     gio_trong_ngay: string,
      *     km_trong_ngay: string,
      *     ngoai_phan_cong: bool
@@ -535,6 +539,8 @@ class DatTheoDoiDat
         $chayDem = self::sumThucHanhGio($studentSessions, 'LaBanDem');
         $coBanDem = self::hasFlag($studentSessions, 'LaBanDem');
         $kmDem = self::sumQuangDuongKm($studentSessions, 'LaBanDem');
+        $gioMayChu = self::sumThucHanhGio($studentSessions);
+        $tongKmMayChu = self::sumQuangDuongKm($studentSessions);
 
         return [
             'stt' => $stt,
@@ -544,6 +550,8 @@ class DatTheoDoiDat
             'km_may_chu' => self::formatKm($kmTuDong),
             'chay_dem' => self::formatGio($chayDem),
             'km_dem' => $coBanDem ? self::formatKm($kmDem) : self::placeholder(),
+            'gio_may_chu' => self::formatGio($gioMayChu),
+            'tong_km_may_chu' => self::formatKm($tongKmMayChu),
             'gio_trong_ngay' => $ngay !== '' ? self::formatGio($dayTotals['gio']) : self::placeholder(),
             'km_trong_ngay' => $ngay !== '' ? self::formatKm($dayTotals['km']) : self::placeholder(),
             'ngoai_phan_cong' => $ngoaiPhanCong,

@@ -46,9 +46,13 @@
                             <label class="small text-muted mb-1" for="filter_ma_khoa_hoc">Mã khóa học</label>
                             <select name="ma_khoa_hoc" id="filter_ma_khoa_hoc" class="form-control form-control-sm">
                                 <option value="">— Tất cả —</option>
-                                @foreach ($khoaHocOptions as $maKh)
-                                    <option value="{{ $maKh }}" @selected(($filters['ma_khoa_hoc'] ?? '') === $maKh)>
-                                        {{ $maKh }}
+                                @foreach ($khoaHocOptions as $kh)
+                                    <option value="{{ $kh->MaKhoaHoc }}" @selected(($filters['ma_khoa_hoc'] ?? '') === $kh->MaKhoaHoc)>
+                                        @if ($kh->TenKhoaHoc !== '')
+                                            {{ $kh->TenKhoaHoc }} ({{ $kh->MaKhoaHoc }})
+                                        @else
+                                            {{ $kh->MaKhoaHoc }}
+                                        @endif
                                     </option>
                                 @endforeach
                             </select>
@@ -94,7 +98,7 @@
                 </div>
             </form>
 
-            @if ($khoaHocOptions !== [])
+            @if ($khoaHocOptions->isNotEmpty())
                 <div class="d-flex flex-wrap align-items-center justify-content-between mb-2">
                     <span class="text-muted small mb-2 mb-md-0">
                         Tổng: <strong>{{ number_format($items->total()) }}</strong> bản ghi
@@ -109,11 +113,15 @@
                             <select name="ma_khoa_hoc" id="delete_ma_khoa_hoc"
                                     class="form-control form-control-sm mr-2" required>
                                 <option value="">— Chọn khóa —</option>
-                                @foreach ($khoaHocOptions as $maKh)
-                                    @php $cnt = (int) ($khoaHocCounts[$maKh] ?? 0); @endphp
-                                    <option value="{{ $maKh }}"
-                                            @selected(($filters['ma_khoa_hoc'] ?? '') === $maKh)>
-                                        {{ $maKh }} ({{ number_format($cnt) }})
+                                @foreach ($khoaHocOptions as $kh)
+                                    @php $cnt = (int) ($khoaHocCounts[$kh->MaKhoaHoc] ?? 0); @endphp
+                                    <option value="{{ $kh->MaKhoaHoc }}"
+                                            @selected(($filters['ma_khoa_hoc'] ?? '') === $kh->MaKhoaHoc)>
+                                        @if ($kh->TenKhoaHoc !== '')
+                                            {{ $kh->TenKhoaHoc }} ({{ $kh->MaKhoaHoc }}) — {{ number_format($cnt) }}
+                                        @else
+                                            {{ $kh->MaKhoaHoc }} ({{ number_format($cnt) }})
+                                        @endif
                                     </option>
                                 @endforeach
                             </select>

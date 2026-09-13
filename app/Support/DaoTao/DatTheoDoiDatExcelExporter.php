@@ -105,8 +105,8 @@ class DatTheoDoiDatExcelExporter
             'Số km tự động ghi nhận',
             'Số giờ đêm ghi nhận',
             'Số km đêm ghi nhận',
-            'Tổng Số giờ GVTH',
-            'Tổng Số KM GVTH',
+            'Tổng giờ máy chủ',
+            'Tổng KM máy chủ',
         ];
 
         if ($hasNgayFilter) {
@@ -138,8 +138,8 @@ class DatTheoDoiDatExcelExporter
                     self::exportCell($student['km_may_chu']),
                     self::exportCell($student['chay_dem']),
                     self::exportCell($student['km_dem']),
-                    self::exportCell($group['gio_gvth']),
-                    self::exportCell($group['km_gvth']),
+                    self::exportCell($student['gio_may_chu'] ?? ''),
+                    self::exportCell($student['tong_km_may_chu'] ?? ''),
                 ];
 
                 if ($hasNgayFilter) {

@@ -37,7 +37,7 @@ class DanhSachPhanCongHocVienController extends Controller
         return view('DaoTao.dat.phan-cong-hoc-vien', [
             'items' => $items,
             'filters' => $filters,
-            'khoaHocOptions' => DatPhanCongHocVienBoLoc::distinctValues('MaKhoaHoc'),
+            'khoaHocOptions' => DatPhanCongHocVienBoLoc::khoaHocOptions(),
             'khoaHocCounts' => DatPhanCongHocVien::query()
                 ->selectRaw('MaKhoaHoc, COUNT(*) as cnt')
                 ->groupBy('MaKhoaHoc')
