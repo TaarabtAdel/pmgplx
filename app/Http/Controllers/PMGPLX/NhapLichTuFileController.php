@@ -864,7 +864,7 @@ class NhapLichTuFileController extends Controller
                 'MaGV' => $row['MaGV'],
                 'TenGV' => $row['TenGV'],
                 'DiaDiem' => $row['DiaDiem'] ?? '',
-                'GhiChu' => '',
+                'GhiChu' => $this->ghiChuFromNoiDungChiTiet($row),
                 'TrangThai' => 1,
                 'NgayBD' => $row['NgayBD'],
                 'NgayKT' => $row['NgayKT'],
@@ -933,6 +933,19 @@ class NhapLichTuFileController extends Controller
                 'update_mode_xe' => $updateModeXe,
             ],
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    private function ghiChuFromNoiDungChiTiet(array $row): string
+    {
+        $text = LichExcelNoiDungSkip::format(
+            (string) ($row['noi_dung'] ?? ''),
+            (string) ($row['chi_tiet'] ?? '')
+        );
+
+        return $text === '—' ? '' : $text;
     }
 
     public function cancel(Request $request): RedirectResponse

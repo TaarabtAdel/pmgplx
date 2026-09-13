@@ -142,8 +142,8 @@ class DatTheoDoiDat
         }
 
         $assignments = $assignmentQuery
-            ->orderBy('MaGiaoVien')
             ->orderBy('BienSoXe')
+            ->orderBy('MaGiaoVien')
             ->orderBy('HoTenHocVien')
             ->orderBy('MaHocVien')
             ->get();
@@ -320,6 +320,30 @@ class DatTheoDoiDat
                 'students' => $students,
             ];
         }
+
+        usort($groups, static function (array $a, array $b): int {
+            $xeA = DatPhanCongHocVienSaver::normalizeBienSo((string) ($a['bien_so_xe'] ?? ''));
+            $xeB = DatPhanCongHocVienSaver::normalizeBienSo((string) ($b['bien_so_xe'] ?? ''));
+            if ($xeA === self::placeholder()) {
+                $xeA = '';
+            }
+            if ($xeB === self::placeholder()) {
+                $xeB = '';
+            }
+            if ($xeA === '' && $xeB !== '') {
+                return 1;
+            }
+            if ($xeB === '' && $xeA !== '') {
+                return -1;
+            }
+
+            $cmp = strnatcasecmp($xeA, $xeB);
+            if ($cmp !== 0) {
+                return $cmp;
+            }
+
+            return strcasecmp((string) ($a['ma_giao_vien'] ?? ''), (string) ($b['ma_giao_vien'] ?? ''));
+        });
 
         return $groups;
     }
