@@ -53,6 +53,15 @@
     .dat-theo-doi-row-canh-bao .cell-server {
         background: #ffe69c;
     }
+    .dat-theo-doi-table tbody tr:hover > td {
+        background-color: #c5ddf5 !important;
+    }
+    .dat-theo-doi-table tbody tr:hover > .cell-server {
+        background-color: #b7e0c0 !important;
+    }
+    .dat-theo-doi-table tbody tr.dat-theo-doi-row-canh-bao:hover > td {
+        background-color: #ffe08a !important;
+    }
 </style>
 @endpush
 
