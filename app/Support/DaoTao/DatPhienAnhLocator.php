@@ -190,7 +190,7 @@ class DatPhienAnhLocator
 
     public function resolveBasePath(string $basePath): ?string
     {
-        $basePath = rtrim(trim($basePath), '/\\');
+        $basePath = DatAnhDuongDan::normalize($basePath);
         if ($basePath === '') {
             return null;
         }

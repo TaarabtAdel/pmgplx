@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\DaoTao\DatDSPhien;
+use App\Support\DaoTao\DatAnhDuongDan;
 use App\Support\DaoTao\DatPhienAnhLocator;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\File;
@@ -65,5 +66,17 @@ class DatPhienAnhLocatorTest extends TestCase
 
         $this->assertTrue($result['ok']);
         $this->assertSame(0, $result['so_anh']);
+    }
+
+    public function test_accepts_windows_backslash_and_forward_slash(): void
+    {
+        $this->assertSame(
+            'E:/DAT_ETM/PhanMem/ServerCenter/ImageFilesThuNghiem/2026',
+            DatAnhDuongDan::normalize('E:\\DAT_ETM\\PhanMem\\ServerCenter\\ImageFilesThuNghiem\\2026\\')
+        );
+        $this->assertSame(
+            '/Users/tpt/Downloads/image-logs',
+            DatAnhDuongDan::normalize('/Users/tpt/Downloads/image-logs/')
+        );
     }
 }
