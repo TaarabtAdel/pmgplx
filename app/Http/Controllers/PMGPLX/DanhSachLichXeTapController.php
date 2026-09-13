@@ -36,6 +36,7 @@ class DanhSachLichXeTapController extends Controller
                 'x.NgayKT',
                 'x.TrangThai',
                 'x.DiaDiem',
+                'x.GhiChu',
                 'k.NgayKG',
                 'k.NgayBG',
             ]);
@@ -63,6 +64,13 @@ class DanhSachLichXeTapController extends Controller
         if ($request->filled('trang_thai') && $request->input('trang_thai') !== '') {
             $query->where('x.TrangThai', (int) $request->input('trang_thai'));
         }
+
+        $loaiGhiChu = trim((string) $request->input('loai', ''));
+        if (! in_array($loaiGhiChu, ['', 'cao_toc', 'ban_dem'], true)) {
+            $loaiGhiChu = '';
+        }
+
+        $this->applyLoaiGhiChuFilter($query, $loaiGhiChu);
 
         $phienDat = trim((string) $request->input('phien_dat', ''));
         if (! in_array($phienDat, ['', 'co_phien', 'chua_co_phien'], true)) {
@@ -130,8 +138,28 @@ class DanhSachLichXeTapController extends Controller
                 'den_ngay' => $request->input('den_ngay', ''),
                 'trang_thai' => $request->input('trang_thai', ''),
                 'phien_dat' => $phienDat,
+                'loai' => $loaiGhiChu,
                 'per_page' => $perPage,
             ],
         ]);
+    }
+
+    private function applyLoaiGhiChuFilter($query, string $loai): void
+    {
+        $needles = match ($loai) {
+            'cao_toc' => ['cao tốc', 'cao toc'],
+            'ban_dem' => ['ban đêm', 'ban dem'],
+            default => [],
+        };
+
+        if ($needles === []) {
+            return;
+        }
+
+        $query->where(function ($sub) use ($needles): void {
+            foreach ($needles as $needle) {
+                $sub->orWhere('x.GhiChu', 'like', '%'.$needle.'%');
+            }
+        });
     }
 }

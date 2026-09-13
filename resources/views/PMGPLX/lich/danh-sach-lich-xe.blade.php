@@ -71,6 +71,14 @@
                             <option value="chua_co_phien" @selected($filters['phien_dat'] === 'chua_co_phien')>Chưa có phiên</option>
                         </select>
                     </div>
+                    <div class="form-group col-md-2">
+                        <label for="filter_loai">Loại</label>
+                        <select name="loai" id="filter_loai" class="form-control form-control-sm">
+                            <option value="">—Tất cả—</option>
+                            <option value="cao_toc" @selected(($filters['loai'] ?? '') === 'cao_toc')>Cao Tốc</option>
+                            <option value="ban_dem" @selected(($filters['loai'] ?? '') === 'ban_dem')>Ban Đêm</option>
+                        </select>
+                    </div>
                     <div class="form-group col-md-1">
                         <button type="submit" class="btn btn-sm btn-primary btn-block">Tìm</button>
                         <a href="{{ route('pmgplx.lich.xe.index') }}" class="btn btn-sm btn-outline-secondary btn-block mt-1" title="Làm mới">↻</a>
@@ -148,6 +156,7 @@
                             <th>Tổng giờ</th>
                             <th>Ngày khai giảng</th>
                             <th>Ngày bế giảng</th>
+                            <th>Ghi chú</th>
                             <th width="100">Thao tác</th>
                         </tr>
                     </thead>
@@ -184,6 +193,7 @@
                                 </td>
                                 <td>{{ $row->NgayKG ? \Carbon\Carbon::parse($row->NgayKG)->format('d/m/Y') : '' }}</td>
                                 <td>{{ $row->NgayBG ? \Carbon\Carbon::parse($row->NgayBG)->format('d/m/Y') : '' }}</td>
+                                <td class="small text-left">{{ trim((string) ($row->GhiChu ?? '')) !== '' ? $row->GhiChu : '—' }}</td>
                                 <td class="text-nowrap">
                                     @if ($row->MaKH !== '' && $ngayLich !== '')
                                         <a href="{{ route('daotao.pdt.dat.do-phien-lich-xe', array_filter([
@@ -205,7 +215,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="11" class="text-center py-4">Không có dữ liệu</td>
+                                <td colspan="12" class="text-center py-4">Không có dữ liệu</td>
                             </tr>
                         @endforelse
                     </tbody>
