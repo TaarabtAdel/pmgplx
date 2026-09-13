@@ -39,4 +39,15 @@ return [
         'decompress_bin' => env('JP2_DECOMPRESS_BIN'),
     ],
 
+    'xeonline' => [
+        'base_url' => env('XEONLINE_API_BASE_URL', 'http://117.2.146.185:7782'),
+        'timeout' => (int) env('XEONLINE_API_TIMEOUT', 30),
+    ],
+
+    'nominatim' => [
+        'base_url' => env('NOMINATIM_BASE_URL', 'https://nominatim.openstreetmap.org'),
+        'user_agent' => env('NOMINATIM_USER_AGENT', 'khgplx-dat/1.0'),
+        'timeout' => (int) env('NOMINATIM_TIMEOUT', 10),
+    ],
+
 ];

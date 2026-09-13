@@ -28,6 +28,17 @@
     .dat-filter-section .form-group {
         margin-bottom: 0.75rem;
     }
+    .dat-phien-table .cell-sub {
+        display: block;
+        font-size: 0.75rem;
+        color: #6c757d;
+        margin-top: 0.15rem;
+    }
+    .dat-phien-table .col-ho-ten,
+    .dat-phien-table .col-giao-vien,
+    .dat-phien-table .col-thoi-gian {
+        white-space: normal;
+    }
     @media (min-width: 768px) {
         .dat-filter-section .form-row:last-child .form-group {
             margin-bottom: 0;
@@ -51,6 +62,12 @@
                 </a>
                 <a href="{{ route('daotao.pdt.dat.dieu-kien-canh-bao') }}" class="btn btn-sm btn-outline-secondary mr-1">
                     Điều kiện cảnh báo
+                </a>
+                <a href="{{ route('daotao.pdt.dat.do-phien-tuyen-duong') }}" class="btn btn-sm btn-outline-secondary mr-1">
+                    Dò tuyến đường
+                </a>
+                <a href="{{ route('daotao.pdt.dat.do-phien-anh') }}" class="btn btn-sm btn-outline-secondary mr-1">
+                    Dò ảnh
                 </a>
                 <a href="{{ route('daotao.pdt.dat.do-phien-lich-xe') }}" class="btn btn-sm btn-outline-secondary mr-1">
                     Dò phiên với lịch xe
@@ -277,7 +294,7 @@
                 @endif
 
                 <div class="table-responsive">
-                    <table class="table table-sm table-bordered table-hover mb-0">
+                    <table class="table table-sm table-bordered table-hover mb-0 dat-phien-table">
                         <thead class="thead-light">
                             <tr>
                                 @if ($phanLoais->isNotEmpty())
@@ -287,11 +304,11 @@
                                 @endif
                                 <th>#</th>
                                 <th>Mã phiên học</th>
-                                <th>Học viên</th>
+                                <th class="col-ho-ten">Học viên</th>
                                 <th>Khóa học</th>
-                                <th>Giáo viên</th>
+                                <th class="col-giao-vien">Giáo viên</th>
                                 <th>Xe</th>
-                                <th>Thời gian</th>
+                                <th class="col-thoi-gian">Thời gian</th>
                                 <th>TH (phút)</th>
                                 <th>Tỉ lệ ND</th>
                                 <th>Đạt</th>
@@ -327,24 +344,28 @@
                                     @endif
                                     <td>{{ ($items->firstItem() ?? 0) + $loop->index }}</td>
                                     <td><code>{{ $item->MaPhienHoc }}</code></td>
-                                    <td>
-                                        <div>{{ $item->HoTenHocVien ?? '—' }}</div>
-                                        <small class="text-muted">{{ $item->MaHocVien ?? '' }}</small>
+                                    <td class="col-ho-ten">
+                                        <div>{{ $item->HoTenHocVien ?: '—' }}</div>
+                                        <span class="cell-sub"><code>{{ $item->MaHocVien ?: '—' }}</code></span>
                                     </td>
                                     <td>
                                         <div>
                                             {{ $item->TenKhoaHoc ?? '—' }}@if (! empty($item->LoaiKhoaHoc)) ({{ $item->LoaiKhoaHoc }})@endif
                                         </div>
-                                        <small class="text-muted">{{ $item->MaKhoaHoc ?? '' }}</small>
+                                        <span class="cell-sub"><code>{{ $item->MaKhoaHoc ?: '—' }}</code></span>
                                     </td>
-                                    <td>
-                                        <div>{{ $item->HoTenGiaoVien ?? '—' }}</div>
-                                        <small class="text-muted">{{ $item->MaGiaoVien ?? '' }}</small>
+                                    <td class="col-giao-vien">
+                                        <div>{{ $item->HoTenGiaoVien ?: '—' }}</div>
+                                        <span class="cell-sub"><code>{{ $item->MaGiaoVien ?: '—' }}</code></span>
                                     </td>
                                     <td>{{ $item->BienSoXe ?? '—' }}</td>
-                                    <td>
-                                        <div>{{ $start?->format('d/m/Y H:i') ?? '—' }}</div>
-                                        <small class="text-muted">{{ $end?->format('d/m/Y H:i') ?? '—' }}</small>
+                                    <td class="col-thoi-gian text-nowrap">
+                                        @if ($start || $end)
+                                            <div><span class="text-muted small">Bắt Đầu:</span> {{ $start?->format('d/m/Y H:i') ?? '—' }}</div>
+                                            <div><span class="text-muted small">Kết Thúc:</span> {{ $end?->format('d/m/Y H:i') ?? '—' }}</div>
+                                        @else
+                                            —
+                                        @endif
                                     </td>
                                     <td>
                                         @if ($phut !== null)

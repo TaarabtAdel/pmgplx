@@ -15,6 +15,13 @@ class DatDSPhienBoLoc
     {
         $dat = trim((string) $request->input('dat', $request->input('dat_anh', '')));
         $datCt = trim((string) $request->input('dat_ct', ''));
+        $ngay = trim((string) $request->input('ngay', ''));
+        $tuNgay = trim((string) $request->input('tu_ngay', ''));
+        $denNgay = trim((string) $request->input('den_ngay', ''));
+
+        if ($ngay === '' && $tuNgay !== '' && ($denNgay === '' || $denNgay === $tuNgay)) {
+            $ngay = $tuNgay;
+        }
 
         return [
             'ma_phien' => trim((string) $request->input('ma_phien', '')),
@@ -22,8 +29,9 @@ class DatDSPhienBoLoc
             'ma_khoa_hoc' => trim((string) $request->input('ma_khoa_hoc', '')),
             'loai_khoa_hoc' => trim((string) $request->input('loai_khoa_hoc', '')),
             'ma_giao_vien' => trim((string) $request->input('ma_giao_vien', '')),
-            'tu_ngay' => trim((string) $request->input('tu_ngay', '')),
-            'den_ngay' => trim((string) $request->input('den_ngay', '')),
+            'ngay' => $ngay,
+            'tu_ngay' => $tuNgay,
+            'den_ngay' => $denNgay,
             'loi' => array_values(array_filter((array) $request->input('loi', []))),
             'phan_loai' => array_values(array_unique(array_map('intval', array_filter((array) $request->input('phan_loai', []))))),
             'dat' => in_array($dat, ['dat', 'chua_dat'], true) ? $dat : '',
@@ -66,12 +74,16 @@ class DatDSPhienBoLoc
             $query->where('MaGiaoVien', $filters['ma_giao_vien']);
         }
 
-        if ($filters['tu_ngay'] !== '') {
-            $query->whereDate('ThoiGianBatDauPhienHoc', '>=', $filters['tu_ngay']);
-        }
+        if ($filters['ngay'] !== '') {
+            $query->whereDate('ThoiGianBatDauPhienHoc', $filters['ngay']);
+        } else {
+            if ($filters['tu_ngay'] !== '') {
+                $query->whereDate('ThoiGianBatDauPhienHoc', '>=', $filters['tu_ngay']);
+            }
 
-        if ($filters['den_ngay'] !== '') {
-            $query->whereDate('ThoiGianBatDauPhienHoc', '<=', $filters['den_ngay']);
+            if ($filters['den_ngay'] !== '') {
+                $query->whereDate('ThoiGianBatDauPhienHoc', '<=', $filters['den_ngay']);
+            }
         }
 
         if ($filters['phan_loai'] !== []) {

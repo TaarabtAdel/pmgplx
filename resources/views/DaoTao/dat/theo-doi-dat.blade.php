@@ -223,12 +223,12 @@
                                     <th class="col-ho-ten">Họ và tên<br>học viên</th>
                                     <th class="col-gvth">GVTH</th>
                                     <th rowspan="2">BKS</th>
-                                    <th rowspan="2">Số giờ tự động<br>máy chủ ghi nhận</th>
-                                    <th rowspan="2">Số km tự động<br>ghi nhận</th>
-                                    <th rowspan="2">Số giờ đêm<br>ghi nhận</th>
-                                    <th rowspan="2">Số km đêm<br>ghi nhận</th>
-                                    <th rowspan="2">Tổng<br>Số giờ GVTH</th>
-                                    <th rowspan="2">Tổng<br>Số KM GVTH</th>
+                                    <th rowspan="2">Số giờ tự động</th>
+                                    <th rowspan="2">Số km tự động</th>
+                                    <th rowspan="2">Số giờ đêm</th>
+                                    <th rowspan="2">Số km đêm</th>
+                                    <th rowspan="2">Tổng giờ<br>máy chủ</th>
+                                    <th rowspan="2">Tổng KM<br>máy chủ</th>
                                     @if ($hasNgayFilter)
                                         <th colspan="3" class="dat-theo-doi-date-head">{{ $ngayHeading }}</th>
                                     @endif

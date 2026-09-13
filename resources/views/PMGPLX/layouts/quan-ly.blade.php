@@ -78,6 +78,10 @@
             margin-top: -0.25rem;
             margin-left: 0;
             display: none;
+            min-width: 13rem;
+        }
+        .app-nav .dropdown-submenu .dropdown-submenu > .dropdown-menu {
+            min-width: 12rem;
         }
         .app-nav .dropdown-submenu:hover > .dropdown-menu,
         .app-nav .dropdown-submenu.show > .dropdown-menu {
@@ -393,11 +397,10 @@
             </li>
             <li class="nav-item dropdown">
                 @php
-                    $pdtActive = request()->routeIs('daotao.pdt.*');
+                    $pdtActive = request()->routeIs('daotao.pdt.*') && ! request()->routeIs('daotao.pdt.dat.*');
                     $baoCaoActive = request()->routeIs('daotao.pdt.bc.*');
                     $congCuNhapActive = request()->routeIs('daotao.pdt.cong-cu-nhap.*');
                     $phanCongActive = request()->routeIs('daotao.pdt.phan-cong-dao-tao.*');
-                    $datActive = request()->routeIs('daotao.pdt.dat.*');
                 @endphp
                 <a class="nav-link dropdown-toggle {{ $pdtActive ? 'active' : '' }}"
                    href="#"
@@ -450,9 +453,52 @@
                             </a>
                         </div>
                     </div>
+                </div>
+            </li>
+            <li class="nav-item dropdown">
+                @php
+                    $datActive = request()->routeIs('daotao.pdt.dat.*');
+                    $datTongHopActive = request()->routeIs(
+                        'daotao.pdt.dat.tong-hop-hoc-vien*',
+                        'daotao.pdt.dat.theo-doi*'
+                    );
+                    $datPhienActive = request()->routeIs(
+                        'daotao.pdt.dat.quan-ly-phien*',
+                        'daotao.pdt.dat.phan-loai-phien*'
+                    );
+                    $datDoPhienActive = request()->routeIs(
+                        'daotao.pdt.dat.do-phien-tuyen-duong*',
+                        'daotao.pdt.dat.do-phien-anh*',
+                        'daotao.pdt.dat.do-phien-lich-xe*'
+                    );
+                    $datPhanCongActive = request()->routeIs(
+                        'daotao.pdt.dat.phan-cong-hoc-vien*',
+                        'daotao.pdt.dat.giao-vien-day-thay*',
+                        'daotao.pdt.dat.nhap-phan-cong-hoc-vien*'
+                    );
+                    $datNhapLieuActive = request()->routeIs(
+                        'daotao.pdt.dat.nhap-du-lieu-phien*',
+                        'daotao.pdt.dat.nhap-ket-qua-cuc*'
+                    );
+                    $datCauHinhActive = request()->routeIs(
+                        'daotao.pdt.dat.dieu-kien-canh-bao*',
+                        'daotao.pdt.dat.dieu-kien-do-phien*',
+                        'daotao.pdt.dat.dieu-kien-dat*'
+                    );
+                @endphp
+                <a class="nav-link dropdown-toggle {{ $datActive ? 'active' : '' }}"
+                   href="#"
+                   id="navDatDropdown"
+                   role="button"
+                   data-toggle="dropdown"
+                   aria-haspopup="true"
+                   aria-expanded="false">
+                    DAT
+                </a>
+                <div class="dropdown-menu" aria-labelledby="navDatDropdown">
                     <div class="dropdown-submenu">
-                        <a class="dropdown-item dropdown-toggle {{ $datActive ? 'active' : '' }}" href="#">
-                            DAT
+                        <a class="dropdown-item dropdown-toggle {{ $datTongHopActive ? 'active' : '' }}" href="#">
+                            Tổng hợp &amp; theo dõi
                         </a>
                         <div class="dropdown-menu">
                             <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.tong-hop-hoc-vien*') ? 'active' : '' }}"
@@ -463,38 +509,47 @@
                                href="{{ route('daotao.pdt.dat.theo-doi') }}">
                                 Theo dõi DAT
                             </a>
+                        </div>
+                    </div>
+                    <div class="dropdown-submenu">
+                        <a class="dropdown-item dropdown-toggle {{ $datPhienActive ? 'active' : '' }}" href="#">
+                            Quản lý phiên
+                        </a>
+                        <div class="dropdown-menu">
                             <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.quan-ly-phien*') ? 'active' : '' }}"
                                href="{{ route('daotao.pdt.dat.quan-ly-phien') }}">
                                 Chi tiết phiên
-                            </a>
-                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.do-phien-lich-xe*') ? 'active' : '' }}"
-                               href="{{ route('daotao.pdt.dat.do-phien-lich-xe') }}">
-                                Dò phiên với lịch xe
                             </a>
                             <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.phan-loai-phien*') ? 'active' : '' }}"
                                href="{{ route('daotao.pdt.dat.phan-loai-phien') }}">
                                 Phân loại phiên
                             </a>
-                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.dieu-kien-canh-bao*') ? 'active' : '' }}"
-                               href="{{ route('daotao.pdt.dat.dieu-kien-canh-bao') }}">
-                                Điều kiện cảnh báo
+                        </div>
+                    </div>
+                    <div class="dropdown-submenu">
+                        <a class="dropdown-item dropdown-toggle {{ $datDoPhienActive ? 'active' : '' }}" href="#">
+                            Dò phiên
+                        </a>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.do-phien-tuyen-duong*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.do-phien-tuyen-duong') }}">
+                                Dò tuyến đường
                             </a>
-                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.dieu-kien-do-phien*') ? 'active' : '' }}"
-                               href="{{ route('daotao.pdt.dat.dieu-kien-do-phien') }}">
-                                Điều kiện dò phiên
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.do-phien-anh*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.do-phien-anh') }}">
+                                Dò ảnh
                             </a>
-                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.dieu-kien-dat*') ? 'active' : '' }}"
-                               href="{{ route('daotao.pdt.dat.dieu-kien-dat') }}">
-                                Điều kiện đạt
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.do-phien-lich-xe*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.do-phien-lich-xe') }}">
+                                Dò phiên với lịch xe
                             </a>
-                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.nhap-du-lieu-phien*') ? 'active' : '' }}"
-                               href="{{ route('daotao.pdt.dat.nhap-du-lieu-phien') }}">
-                                Nhập dữ liệu phiên
-                            </a>
-                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.nhap-ket-qua-cuc*') ? 'active' : '' }}"
-                               href="{{ route('daotao.pdt.dat.nhap-ket-qua-cuc') }}">
-                                Nhập kết quả cục
-                            </a>
+                        </div>
+                    </div>
+                    <div class="dropdown-submenu">
+                        <a class="dropdown-item dropdown-toggle {{ $datPhanCongActive ? 'active' : '' }}" href="#">
+                            Phân công
+                        </a>
+                        <div class="dropdown-menu">
                             <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.phan-cong-hoc-vien*') ? 'active' : '' }}"
                                href="{{ route('daotao.pdt.dat.phan-cong-hoc-vien') }}">
                                 Phân công học viên
@@ -506,6 +561,40 @@
                             <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.nhap-phan-cong-hoc-vien*') ? 'active' : '' }}"
                                href="{{ route('daotao.pdt.dat.nhap-phan-cong-hoc-vien') }}">
                                 Nhập phân công học viên
+                            </a>
+                        </div>
+                    </div>
+                    <div class="dropdown-submenu">
+                        <a class="dropdown-item dropdown-toggle {{ $datNhapLieuActive ? 'active' : '' }}" href="#">
+                            Nhập liệu
+                        </a>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.nhap-du-lieu-phien*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.nhap-du-lieu-phien') }}">
+                                Nhập dữ liệu phiên
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.nhap-ket-qua-cuc*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.nhap-ket-qua-cuc') }}">
+                                Nhập kết quả cục
+                            </a>
+                        </div>
+                    </div>
+                    <div class="dropdown-submenu">
+                        <a class="dropdown-item dropdown-toggle {{ $datCauHinhActive ? 'active' : '' }}" href="#">
+                            Cấu hình
+                        </a>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.dieu-kien-canh-bao*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.dieu-kien-canh-bao') }}">
+                                Điều kiện cảnh báo
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.dieu-kien-do-phien*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.dieu-kien-do-phien') }}">
+                                Điều kiện dò phiên
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.dieu-kien-dat*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.dieu-kien-dat') }}">
+                                Điều kiện đạt
                             </a>
                         </div>
                     </div>

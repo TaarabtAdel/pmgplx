@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\DaoTao\Dat\DoPhienAnhController;
+use App\Http\Controllers\DaoTao\Dat\DoPhienTuyenDuongController;
 use App\Http\Controllers\DaoTao\Dat\DoPhienVoiLichXeController;
 use App\Http\Controllers\DaoTao\Dat\DanhSachDatDSPhienController;
 use App\Http\Controllers\DaoTao\Dat\DanhSachPhanCongHocVienController;
@@ -160,6 +162,30 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
     Route::get('/phong-dao-tao/phan-cong-dao-tao/danh-sach', [DanhSachPhanCongDaoTaoController::class, 'index'])
         ->name('pdt.phan-cong-dao-tao.danh-sach');
 
+    Route::get('/phong-dao-tao/dat/do-phien-anh', [DoPhienAnhController::class, 'index'])
+        ->name('pdt.dat.do-phien-anh');
+    Route::post('/phong-dao-tao/dat/do-phien-anh/luu-duong-dan', [DoPhienAnhController::class, 'luuDuongDan'])
+        ->name('pdt.dat.do-phien-anh.luu-duong-dan');
+    Route::post('/phong-dao-tao/dat/do-phien-anh/xoa-duong-dan', [DoPhienAnhController::class, 'xoaDuongDan'])
+        ->name('pdt.dat.do-phien-anh.xoa-duong-dan');
+    Route::post('/phong-dao-tao/dat/do-phien-anh/tai-anh/{id}', [DoPhienAnhController::class, 'taiAnh'])
+        ->name('pdt.dat.do-phien-anh.tai-anh');
+    Route::get('/phong-dao-tao/dat/do-phien-anh/anh/{id}/{thang}/{ngay}/{ten}', [DoPhienAnhController::class, 'xemAnh'])
+        ->where([
+            'id' => '[0-9]+',
+            'thang' => '[0-9]{2}',
+            'ngay' => '[0-9]{2}',
+            'ten' => '[0-9]{2}-[0-9]{2}-[0-9]{2}\.(jpe?g|png|webp|JPE?G|PNG|WEBP)',
+        ])
+        ->name('pdt.dat.do-phien-anh.xem-anh');
+    Route::get('/phong-dao-tao/dat/do-phien-tuyen-duong', [DoPhienTuyenDuongController::class, 'index'])
+        ->name('pdt.dat.do-phien-tuyen-duong');
+    Route::post('/phong-dao-tao/dat/do-phien-tuyen-duong/luu-bearer', [DoPhienTuyenDuongController::class, 'luuBearerToken'])
+        ->name('pdt.dat.do-phien-tuyen-duong.luu-bearer');
+    Route::post('/phong-dao-tao/dat/do-phien-tuyen-duong/xoa-bearer', [DoPhienTuyenDuongController::class, 'xoaBearerToken'])
+        ->name('pdt.dat.do-phien-tuyen-duong.xoa-bearer');
+    Route::post('/phong-dao-tao/dat/do-phien-tuyen-duong/tien-hanh-do/{id}', [DoPhienTuyenDuongController::class, 'tienHanhDo'])
+        ->name('pdt.dat.do-phien-tuyen-duong.tien-hanh-do');
     Route::get('/phong-dao-tao/dat/do-phien-lich-xe', [DoPhienVoiLichXeController::class, 'index'])
         ->name('pdt.dat.do-phien-lich-xe');
     Route::get('/phong-dao-tao/dat/do-phien-lich-xe/xuat-excel', [DoPhienVoiLichXeController::class, 'export'])
