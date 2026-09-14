@@ -16,6 +16,7 @@ class DatTheoDoiDat
      *     ma_khoa_hoc: string,
      *     ngay: string,
      *     chi_cong_phien_dat: bool,
+     *     tinh_gio_ban_dem_theo_lich: bool,
      *     ma_giao_vien: string,
      *     bien_so_xe: string
      * }
@@ -26,6 +27,7 @@ class DatTheoDoiDat
             'ma_khoa_hoc' => trim((string) $request->input('ma_khoa_hoc', '')),
             'ngay' => self::normalizeDate((string) $request->input('ngay', '')),
             'chi_cong_phien_dat' => $request->boolean('chi_cong_phien_dat', true),
+            'tinh_gio_ban_dem_theo_lich' => $request->boolean('tinh_gio_ban_dem_theo_lich', false),
             'ma_giao_vien' => trim((string) $request->input('ma_giao_vien', '')),
             'bien_so_xe' => trim((string) $request->input('bien_so_xe', '')),
         ];
@@ -110,6 +112,7 @@ class DatTheoDoiDat
      *         km_may_chu: string,
      *         chay_dem: string,
      *         km_dem: string,
+     *         cao_toc: string,
      *         gio_may_chu: string,
      *         tong_km_may_chu: string,
      *         gio_trong_ngay: string,
@@ -122,6 +125,7 @@ class DatTheoDoiDat
     {
         $maKhoaHoc = $filters['ma_khoa_hoc'] ?? '';
         $chiCongPhienDat = (bool) ($filters['chi_cong_phien_dat'] ?? true);
+        $tinhGioBanDemTheoLich = (bool) ($filters['tinh_gio_ban_dem_theo_lich'] ?? false);
         $ngay = self::normalizeDate((string) ($filters['ngay'] ?? ''));
         $maGiaoVienFilter = trim((string) ($filters['ma_giao_vien'] ?? ''));
         $bienSoXeFilter = trim((string) ($filters['bien_so_xe'] ?? ''));
@@ -153,6 +157,7 @@ class DatTheoDoiDat
         }
 
         $sessions = self::loadCourseSessions($maKhoaHoc, $chiCongPhienDat);
+        $scheduleRows = DatPhienLichXeMatcher::scheduleForCourse($maKhoaHoc);
 
         /** @var Collection<string, Collection<int, DatDSPhien>> $sessionsByMaHocVien */
         $sessionsByMaHocVien = $sessions->groupBy(
@@ -273,7 +278,9 @@ class DatTheoDoiDat
                     $studentDayTotals,
                     $ngay,
                     $stt,
-                    false
+                    false,
+                    $tinhGioBanDemTheoLich,
+                    $scheduleRows
                 );
             }
 
@@ -300,7 +307,9 @@ class DatTheoDoiDat
                     $studentDayTotals,
                     $ngay,
                     $stt,
-                    true
+                    true,
+                    $tinhGioBanDemTheoLich,
+                    $scheduleRows
                 );
             }
 
@@ -541,6 +550,7 @@ class DatTheoDoiDat
      *     km_may_chu: string,
      *     chay_dem: string,
      *     km_dem: string,
+     *     cao_toc: string,
      *     gio_may_chu: string,
      *     tong_km_may_chu: string,
      *     gio_trong_ngay: string,
@@ -555,14 +565,18 @@ class DatTheoDoiDat
         array $studentDayTotals,
         string $ngay,
         int $stt,
-        bool $ngoaiPhanCong
+        bool $ngoaiPhanCong,
+        bool $tinhGioBanDemTheoLich,
+        Collection $scheduleRows
     ): array {
         $dayTotals = $studentDayTotals[$maHocVien] ?? ['gio' => 0.0, 'km' => 0.0];
         $gioTuDong = self::sumThucHanhGio($studentSessions, 'LaTuDong');
         $kmTuDong = self::sumQuangDuongKm($studentSessions, 'LaTuDong');
-        $chayDem = self::sumThucHanhGio($studentSessions, 'LaBanDem');
-        $coBanDem = self::hasFlag($studentSessions, 'LaBanDem');
-        $kmDem = self::sumQuangDuongKm($studentSessions, 'LaBanDem');
+        $nightSessions = self::nightSessions($studentSessions, $tinhGioBanDemTheoLich, $scheduleRows);
+        $chayDem = self::sumThucHanhGio($nightSessions);
+        $kmDem = self::sumQuangDuongKm($nightSessions);
+        $caoTocSessions = self::sessionsMatchingGhiChu($studentSessions, $scheduleRows, ['cao tốc', 'cao toc']);
+        $gioCaoToc = self::sumThucHanhGio($caoTocSessions);
         $gioMayChu = self::sumThucHanhGio($studentSessions);
         $tongKmMayChu = self::sumQuangDuongKm($studentSessions);
 
@@ -573,13 +587,105 @@ class DatTheoDoiDat
             'gio_tu_dong' => self::formatGio($gioTuDong),
             'km_may_chu' => self::formatKm($kmTuDong),
             'chay_dem' => self::formatGio($chayDem),
-            'km_dem' => $coBanDem ? self::formatKm($kmDem) : self::placeholder(),
+            'km_dem' => $nightSessions->isNotEmpty() ? self::formatKm($kmDem) : self::placeholder(),
+            'cao_toc' => self::formatGio($gioCaoToc),
             'gio_may_chu' => self::formatGio($gioMayChu),
             'tong_km_may_chu' => self::formatKm($tongKmMayChu),
             'gio_trong_ngay' => $ngay !== '' ? self::formatGio($dayTotals['gio']) : self::placeholder(),
             'km_trong_ngay' => $ngay !== '' ? self::formatKm($dayTotals['km']) : self::placeholder(),
             'ngoai_phan_cong' => $ngoaiPhanCong,
         ];
+    }
+
+    /**
+     * @param  Collection<int, DatDSPhien>  $sessions
+     * @param  Collection<int, \App\Models\PMGPLX\KhoaHocXeTap>  $scheduleRows
+     * @return Collection<int, DatDSPhien>
+     */
+    private static function nightSessions(
+        Collection $sessions,
+        bool $tinhTheoLichGd,
+        Collection $scheduleRows
+    ): Collection {
+        return $sessions->filter(function (DatDSPhien $session) use ($tinhTheoLichGd, $scheduleRows): bool {
+            if (! (bool) ($session->LaBanDem ?? false)) {
+                return false;
+            }
+
+            if (! $tinhTheoLichGd) {
+                return true;
+            }
+
+            $start = self::sessionStart($session);
+            if ($start === null || $start->hour < 18) {
+                return false;
+            }
+
+            $matched = DatPhienLichXeMatcher::evaluate($session, $scheduleRows)['matched'] ?? null;
+            if ($matched === null) {
+                return false;
+            }
+
+            return self::ghiChuContains((string) ($matched->GhiChu ?? ''), ['ban đêm', 'ban dem']);
+        })->values();
+    }
+
+    /**
+     * @param  Collection<int, DatDSPhien>  $sessions
+     * @param  Collection<int, \App\Models\PMGPLX\KhoaHocXeTap>  $scheduleRows
+     * @param  list<string>  $needles
+     * @return Collection<int, DatDSPhien>
+     */
+    private static function sessionsMatchingGhiChu(
+        Collection $sessions,
+        Collection $scheduleRows,
+        array $needles
+    ): Collection {
+        return $sessions->filter(function (DatDSPhien $session) use ($scheduleRows, $needles): bool {
+            $matched = DatPhienLichXeMatcher::evaluate($session, $scheduleRows)['matched'] ?? null;
+            if ($matched === null) {
+                return false;
+            }
+
+            return self::ghiChuContains((string) ($matched->GhiChu ?? ''), $needles);
+        })->values();
+    }
+
+    private static function sessionStart(DatDSPhien $session): ?Carbon
+    {
+        $value = $session->ThoiGianBatDauPhienHoc;
+        if ($value instanceof Carbon) {
+            return $value;
+        }
+
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * @param  list<string>  $needles
+     */
+    private static function ghiChuContains(string $ghiChu, array $needles): bool
+    {
+        $text = mb_strtolower(trim($ghiChu));
+        if ($text === '') {
+            return false;
+        }
+
+        foreach ($needles as $needle) {
+            if ($needle !== '' && str_contains($text, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -608,14 +714,6 @@ class DatTheoDoiDat
 
             return (float) ($session->QuangDuongThucHanhKm ?? 0);
         });
-    }
-
-    /**
-     * @param  Collection<int, DatDSPhien>  $sessions
-     */
-    private static function hasFlag(Collection $sessions, string $flagField): bool
-    {
-        return $sessions->contains(fn (DatDSPhien $session): bool => (bool) ($session->{$flagField} ?? false));
     }
 
     private static function normalizeDate(string $value): string

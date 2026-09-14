@@ -157,9 +157,9 @@
                                    value="{{ $filters['ngay'] ?? '' }}">
                             <small class="text-muted">Để trống = tổng toàn khóa. Chọn ngày để thêm cột chi tiết ngày.</small>
                         </div>
-                        <div class="form-group col-md-4 d-flex align-items-end">
+                        <div class="form-group col-md-8 d-flex align-items-end flex-wrap">
                             <input type="hidden" name="chi_cong_phien_dat" value="0">
-                            <div class="custom-control custom-checkbox mb-2">
+                            <div class="custom-control custom-checkbox mb-2 mr-4">
                                 <input type="checkbox"
                                        class="custom-control-input"
                                        name="chi_cong_phien_dat"
@@ -168,6 +168,18 @@
                                        @checked($filters['chi_cong_phien_dat'] ?? true)>
                                 <label class="custom-control-label small" for="filter_chi_cong_phien_dat">
                                     Chỉ cộng phiên đạt
+                                </label>
+                            </div>
+                            <input type="hidden" name="tinh_gio_ban_dem_theo_lich" value="0">
+                            <div class="custom-control custom-checkbox mb-2">
+                                <input type="checkbox"
+                                       class="custom-control-input"
+                                       name="tinh_gio_ban_dem_theo_lich"
+                                       id="filter_tinh_gio_ban_dem_theo_lich"
+                                       value="1"
+                                       @checked($filters['tinh_gio_ban_dem_theo_lich'] ?? false)>
+                                <label class="custom-control-label small" for="filter_tinh_gio_ban_dem_theo_lich">
+                                    Tính giờ ban đêm theo lịch GD
                                 </label>
                             </div>
                         </div>
@@ -191,6 +203,9 @@
                         · <span class="badge badge-success">Chỉ phiên đạt</span>
                     @else
                         · <span class="badge badge-secondary">Tất cả phiên</span>
+                    @endif
+                    @if ($filters['tinh_gio_ban_dem_theo_lich'] ?? false)
+                        · <span class="badge badge-info">Giờ đêm theo lịch GD</span>
                     @endif
                     @if (($filters['ma_giao_vien'] ?? '') !== '')
                         @php
@@ -236,6 +251,7 @@
                                     <th rowspan="2">Số km tự động</th>
                                     <th rowspan="2">Số giờ đêm</th>
                                     <th rowspan="2">Số km đêm</th>
+                                    <th rowspan="2">Cao tốc</th>
                                     <th rowspan="2">Tổng giờ<br>máy chủ</th>
                                     <th rowspan="2">Tổng KM<br>máy chủ</th>
                                     @if ($hasNgayFilter)
@@ -278,6 +294,7 @@
                                             <td class="cell-server">{{ $student['km_may_chu'] }}</td>
                                             <td class="cell-server">{{ $student['chay_dem'] }}</td>
                                             <td class="cell-server @if($student['km_dem'] === '—') cell-placeholder @endif">{{ $student['km_dem'] }}</td>
+                                            <td class="cell-server">{{ $student['cao_toc'] }}</td>
                                             <td class="cell-server">{{ $student['gio_may_chu'] }}</td>
                                             <td class="cell-server">{{ $student['tong_km_may_chu'] }}</td>
                                             @if ($hasNgayFilter)
@@ -307,7 +324,7 @@
                         @else
                             <strong>Tất cả phiên:</strong> cộng mọi phiên, kể cả phiên bị cảnh báo.
                         @endif
-                        Các cột tự động, đêm và tổng giờ/KM máy chủ = tổng <strong>toàn khóa của từng học viên</strong> (theo phiên HV).
+                        Các cột tự động, đêm, cao tốc và tổng giờ/KM máy chủ = tổng <strong>toàn khóa của từng học viên</strong> (theo phiên HV).
                         <strong>Mã HV, Mã GV, BKS</strong> cố định theo
                         <a href="{{ route('daotao.pdt.dat.phan-cong-hoc-vien', ['ma_khoa_hoc' => $filters['ma_khoa_hoc']]) }}">phân công học viên</a>
                         ·
@@ -316,7 +333,15 @@
                         @if ($hasNgayFilter)
                             Cột ngày {{ $ngayHeading }} = giờ/km các phiên HV trong ngày đó.
                         @endif
-                        Giờ/km tự động và đêm lấy từ phiên có <code>LaTuDong</code> / <code>LaBanDem</code> = 1.
+                        Giờ/km tự động lấy từ phiên có <code>LaTuDong</code> = 1.
+                        Giờ/km đêm lấy từ phiên có <code>LaBanDem</code> = 1
+                        @if ($filters['tinh_gio_ban_dem_theo_lich'] ?? false)
+                            , TG bắt đầu ≥ 18h, và lịch xe tập có ghi chú chứa <strong>Ban đêm</strong>
+                        @endif
+                        .
+                        Cột <strong>Cao tốc</strong> = tổng giờ phiên khớp lịch xe tập
+                        (<a href="{{ route('pmgplx.lich.xe.index', ['ma_kh' => $filters['ma_khoa_hoc']]) }}" target="_blank" rel="noopener">xe-tap</a>: khóa · GV · xe · ngày)
+                        có ghi chú chứa <strong>Cao tốc</strong>.
                         Các cột chưa có quy tắc tính hiển thị <strong>—</strong>.
                     </p>
                 @endif
@@ -372,6 +397,6 @@
     datTheoDoiInitSelect2($('#filter_bien_so_xe'), '— Tất cả xe —');
 
     $('#filter_ma_giao_vien, #filter_bien_so_xe').on('change', datTheoDoiSubmitIfCourseSelected);
-    $('#filter_ngay, #filter_chi_cong_phien_dat').on('change', datTheoDoiSubmitIfCourseSelected);
+    $('#filter_ngay, #filter_chi_cong_phien_dat, #filter_tinh_gio_ban_dem_theo_lich').on('change', datTheoDoiSubmitIfCourseSelected);
 </script>
 @endpush
