@@ -9,6 +9,10 @@ class BienBanDocxGenerator
 {
     public const TEMPLATE = 'templates/bien_ban_tong_hop.docx';
 
+    /** Kích thước khung ảnh chân dung trong biên bản (đơn vị: inch) */
+    private const PORTRAIT_WIDTH_IN = 1.15;
+    private const PORTRAIT_HEIGHT_IN = 1.45;
+
     /**
      * @param  array<string, mixed>  $thiSinh
      */
@@ -86,6 +90,7 @@ class BienBanDocxGenerator
             "NOI_CAP_HC#{$i}" => $this->cell($row['noi_cap_hc'] ?? ''),
             "HANG_GPLX#{$i}" => $this->cell($row['hang_gplx'] ?? ''),
             "HANG_GPLX_KL#{$i}" => $this->cell($row['hang_gplx'] ?? ''),
+            "DIEM_LT_TOIDA#{$i}" => $this->cell($row['diem_lt_toida'] ?? XmlSatHachParser::diemLtToiDa((string) ($row['hang_gplx'] ?? ''))),
             "DIEM_LT_DAT#{$i}" => $this->cell($row['diem_lt_dat'] ?? '-'),
             "NHAN_XET_LT#{$i}" => $this->cell($row['nhan_xet_lt'] ?? ''),
             "DIEM_HINH_DAT#{$i}" => $this->cell($row['diem_hinh_dat'] ?? '-'),
@@ -145,16 +150,104 @@ class BienBanDocxGenerator
             $workDir
         );
 
+        // PhpWord's setImageValue 'ratio' option only supports two modes:
+        //   ratio=true  -> letterbox (fits inside box, leaves blank margin if aspect differs)
+        //   ratio=false -> stretch (fills box exactly, but distorts if aspect differs)
+        // Neither is "crop to fill" (object-fit: cover). Real ID/passport photos rarely
+        // match the box's exact aspect ratio, so we crop the photo ourselves first.
+        $photo = $this->cropToFill($photo, $workDir, self::PORTRAIT_WIDTH_IN / self::PORTRAIT_HEIGHT_IN);
+
         $image = [
             'path' => $photo,
-            'width' => '3cm',
-            'height' => '4cm',
+            'width' => self::PORTRAIT_WIDTH_IN.'in',
+            'height' => self::PORTRAIT_HEIGHT_IN.'in',
+            // Ratio no longer matters since the image is already cropped to the exact
+            // target ratio, but 'false' avoids any residual letterbox rounding.
             'ratio' => false,
         ];
 
         foreach (["%ANH_CHAN_DUNG#{$i}", '%ANH_CHAN_DUNG', "ANH_CHAN_DUNG#{$i}"] as $macro) {
             $processor->setImageValue($macro, $image);
         }
+    }
+
+    /**
+     * Crop an image to exactly match $targetRatio (width/height) — equivalent to CSS
+     * `object-fit: cover`. Center-crops the long axis, biased toward the top on the
+     * vertical axis (so portraits keep the face rather than centering on the torso).
+     * Tries GD first, then Imagick, so it works if either extension is available.
+     * Returns the path to a new temp PNG file, or the original path if neither
+     * extension is available / the file can't be read (fails soft, never throws).
+     */
+    private function cropToFill(string $srcPath, string $workDir, float $targetRatio): string
+    {
+        $info = @getimagesize($srcPath);
+        if ($info === false) {
+            return $srcPath;
+        }
+
+        [$w, $h] = $info;
+        $srcRatio = $w / $h;
+
+        // Already matches (within rounding) — skip cropping entirely.
+        if (abs($srcRatio - $targetRatio) < 0.005) {
+            return $srcPath;
+        }
+
+        if ($srcRatio > $targetRatio) {
+            // Image is relatively wider than the box -> trim left/right, keep full height.
+            $cropH = $h;
+            $cropW = (int) round($h * $targetRatio);
+            $srcX = (int) round(($w - $cropW) / 2);
+            $srcY = 0;
+        } else {
+            // Image is relatively taller than the box -> trim top/bottom, keep full width.
+            $cropW = $w;
+            $cropH = (int) round($w / $targetRatio);
+            $srcX = 0;
+            // Bias the crop toward the top so we keep the face, not the chest/torso.
+            $srcY = (int) round(($h - $cropH) * 0.25);
+        }
+
+        $outPath = $workDir.DIRECTORY_SEPARATOR.'portrait_'.uniqid('', true).'.png';
+
+        if (extension_loaded('gd')) {
+            [, , $type] = $info;
+            $srcImg = match ($type) {
+                IMAGETYPE_JPEG => @imagecreatefromjpeg($srcPath),
+                IMAGETYPE_PNG => @imagecreatefrompng($srcPath),
+                IMAGETYPE_WEBP => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($srcPath) : null,
+                default => null,
+            };
+
+            if ($srcImg !== null && $srcImg !== false) {
+                $dst = imagecreatetruecolor($cropW, $cropH);
+                imagecopy($dst, $srcImg, 0, 0, $srcX, $srcY, $cropW, $cropH);
+                imagepng($dst, $outPath);
+                imagedestroy($srcImg);
+                imagedestroy($dst);
+
+                return $outPath;
+            }
+        }
+
+        if (extension_loaded('imagick')) {
+            try {
+                $img = new \Imagick($srcPath);
+                $img->cropImage($cropW, $cropH, $srcX, $srcY);
+                $img->setImageFormat('png');
+                $img->writeImage($outPath);
+                $img->clear();
+
+                return $outPath;
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        // Không có GD lẫn Imagick (hoặc crop thất bại) -> dùng ảnh gốc, chấp nhận
+        // quay lại lỗi viền trắng/méo thay vì làm hỏng cả biên bản.
+        return $srcPath;
     }
 
     private function cell(mixed $value): string

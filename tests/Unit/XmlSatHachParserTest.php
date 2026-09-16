@@ -19,6 +19,8 @@ class XmlSatHachParserTest extends TestCase
         $this->assertSame('30/04/1987', $parsed['thi_sinh'][0]['ngay_sinh']);
         $this->assertSame('106', $parsed['thi_sinh'][0]['so_bao_danh']);
         $this->assertSame('28', $parsed['thi_sinh'][0]['diem_lt_dat']);
+        $this->assertSame('30', $parsed['thi_sinh'][0]['diem_lt_toida']);
+        $this->assertSame('35', $parsed['thi_sinh'][1]['diem_lt_toida']);
         $this->assertSame('-', $parsed['thi_sinh'][0]['diem_hinh_dat']);
         $this->assertSame('25', $parsed['thi_sinh'][0]['ngay_ky']);
         $this->assertSame('07', $parsed['thi_sinh'][0]['thang_ky']);
@@ -26,6 +28,14 @@ class XmlSatHachParserTest extends TestCase
         $this->assertStringContainsString('☑', $parsed['thi_sinh'][0]['ket_qua_text']);
         $this->assertSame('NGUYỄN VĂN A', $parsed['thi_sinh'][1]['ho_va_ten']);
         $this->assertStringContainsString('Không đạt ☑', $parsed['thi_sinh'][1]['ket_qua_text']);
+    }
+
+    public function test_diem_lt_toi_da_theo_hang(): void
+    {
+        $this->assertSame('30', XmlSatHachParser::diemLtToiDa('B'));
+        $this->assertSame('30', XmlSatHachParser::diemLtToiDa('b.01'));
+        $this->assertSame('35', XmlSatHachParser::diemLtToiDa('C1'));
+        $this->assertSame('', XmlSatHachParser::diemLtToiDa('A1'));
     }
 
     public function test_rejects_wrong_root(): void
@@ -46,6 +56,21 @@ class XmlSatHachParserTest extends TestCase
 
         $this->assertFileExists($out);
         $this->assertGreaterThan(1000, filesize($out));
+
+        $xml = $this->docxMainXml($out);
+        $this->assertStringContainsString('>30<', $xml);
+        $this->assertStringContainsString('>35<', $xml);
+        $this->assertStringNotContainsString('DIEM_LT_TOIDA', $xml);
         @unlink($out);
+    }
+
+    private function docxMainXml(string $path): string
+    {
+        $zip = new \ZipArchive();
+        $this->assertTrue($zip->open($path));
+        $xml = (string) $zip->getFromName('word/document.xml');
+        $zip->close();
+
+        return $xml;
     }
 }

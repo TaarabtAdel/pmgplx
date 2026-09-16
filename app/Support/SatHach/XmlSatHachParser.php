@@ -161,6 +161,7 @@ class XmlSatHachParser
             'noi_cap_hc' => $this->text($node, 'NOI_CAP_HC') ?: $this->text($node, 'NOI_CAP_CMT'),
             'so_bao_danh' => $this->hoSoText($hoSo, 'SO_BAO_DANH'),
             'hang_gplx' => $hang,
+            'diem_lt_toida' => self::diemLtToiDa($hang),
             'diem_lt_dat' => $this->score($this->hoSoText($hoSo, 'KQ_SH_LYTHUYET')),
             'diem_hinh_dat' => $this->score($this->hoSoText($hoSo, 'KQ_SH_HINH')),
             'diem_duong_dat' => $this->score($this->hoSoText($hoSo, 'KQ_SH_DUONG')),
@@ -232,6 +233,21 @@ class XmlSatHachParser
         }
 
         return ['', '', ''];
+    }
+
+    /**
+     * Điểm lý thuyết tối đa theo hạng GPLX: 30 (B, B.01), 35 (C1).
+     */
+    public static function diemLtToiDa(string $hang): string
+    {
+        $key = strtoupper(str_replace([' ', '_'], '', trim($hang)));
+        $key = str_replace('-', '.', $key);
+
+        return match ($key) {
+            'B', 'B.01', 'B01' => '30',
+            'C1' => '35',
+            default => '',
+        };
     }
 
     public static function ketQuaText(string $raw): string

@@ -63,6 +63,7 @@ class SatHachBienBan extends Model
             'noi_cap_hc' => $this->NoiCapHC,
             'so_bao_danh' => $this->SoBaoDanh,
             'hang_gplx' => $this->HangGPLX,
+            'diem_lt_toida' => XmlSatHachParser::diemLtToiDa((string) ($this->HangGPLX ?? '')),
             'diem_lt_dat' => $this->DiemLtDat ?: '-',
             'diem_hinh_dat' => $this->DiemHinhDat ?: '-',
             'diem_duong_dat' => $this->DiemDuongDat ?: '-',
