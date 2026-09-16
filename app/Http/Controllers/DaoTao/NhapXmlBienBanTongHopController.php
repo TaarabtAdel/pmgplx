@@ -26,7 +26,7 @@ class NhapXmlBienBanTongHopController extends Controller
             ->whereNotNull('MaKySH')
             ->where('MaKySH', '!=', '')
             ->distinct()
-            ->orderByDesc('MaKySH')
+            ->orderBy('MaKySH')
             ->pluck('MaKySH');
 
         $query = SatHachBienBan::query()
@@ -35,9 +35,9 @@ class NhapXmlBienBanTongHopController extends Controller
                 'SoCMT', 'SoBaoDanh', 'HangGPLX', 'KetQuaSH', 'FileNguon', 'NgayNhap',
             ])
             ->selectRaw("CASE WHEN AnhChanDung IS NULL OR AnhChanDung = '' THEN 0 ELSE 1 END as CoAnh")
-            ->orderBy('MaKySH')
-            ->orderBy('SoTT')
-            ->orderBy('Id');
+            ->orderBy('SoBaoDanh');
+            // ->orderBy('SoTT')
+            // ->orderBy('Id');
 
         if ($maKySh !== '') {
             $query->where('MaKySH', $maKySh);
