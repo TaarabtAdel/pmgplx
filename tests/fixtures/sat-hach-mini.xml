@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SAT_HACH>
+  <HEADER>
+    <MA_GIAO_DICH>TEST</MA_GIAO_DICH>
+    <MA_DV_GUI>44</MA_DV_GUI>
+    <TEN_DV_GUI>Quảng Trị</TEN_DV_GUI>
+    <TONG_SO_BAN_GHI>2</TONG_SO_BAN_GHI>
+  </HEADER>
+  <DATA>
+    <KY_SH>
+      <MAKYSH>1</MAKYSH>
+      <NGAYSH>2026-07-29</NGAYSH>
+      <SOQD>2576/QD</SOQD>
+      <NGAYQD>2026-07-25</NGAYQD>
+    </KY_SH>
+    <NGUOI_LXS>
+      <NGUOI_LX>
+        <SO_TT>1</SO_TT>
+        <MA_DK>44001-1</MA_DK>
+        <HO_TEN_DEM>HO THI</HO_TEN_DEM>
+        <TEN>SAU</TEN>
+        <HO_VA_TEN>HỒ THỊ SÁU</HO_VA_TEN>
+        <NGAY_SINH>19870430</NGAY_SINH>
+        <SO_CMT>045187003042</SO_CMT>
+        <HO_SO>
+          <SO_BAO_DANH>106</SO_BAO_DANH>
+          <HANG_GPLX>B</HANG_GPLX>
+          <KET_QUA_SH>1</KET_QUA_SH>
+          <KQ_SH_LYTHUYET>28</KQ_SH_LYTHUYET>
+          <KQ_SH_HINH/>
+          <KQ_SH_DUONG>80</KQ_SH_DUONG>
+          <ANH_CHAN_DUNG/>
+          <NGAY_QD_SH>2026-07-25</NGAY_QD_SH>
+        </HO_SO>
+      </NGUOI_LX>
+      <NGUOI_LX>
+        <SO_TT>2</SO_TT>
+        <MA_DK>44001-2</MA_DK>
+        <HO_VA_TEN>NGUYỄN VĂN A</HO_VA_TEN>
+        <NGAY_SINH>19900115</NGAY_SINH>
+        <SO_CMT>001</SO_CMT>
+        <HO_SO>
+          <SO_BAO_DANH>107</SO_BAO_DANH>
+          <HANG_GPLX>C1</HANG_GPLX>
+          <KET_QUA_SH>0</KET_QUA_SH>
+          <KQ_SH_LYTHUYET/>
+        </HO_SO>
+      </NGUOI_LX>
+    </NGUOI_LXS>
+  </DATA>
+</SAT_HACH>

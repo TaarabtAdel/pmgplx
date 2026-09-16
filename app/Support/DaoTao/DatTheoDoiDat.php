@@ -402,6 +402,38 @@ class DatTheoDoiDat
     }
 
     /**
+     * Tổng giờ / KM máy chủ theo mã học viên (cùng quy tắc Theo dõi DAT, mặc định chỉ phiên đạt).
+     *
+     * @return array<string, array{gio: float, km: float}>
+     */
+    public static function studentServerTotalsByMaHocVien(string $maKhoaHoc, bool $chiCongPhienDat = true): array
+    {
+        $maKhoaHoc = trim($maKhoaHoc);
+        if ($maKhoaHoc === '') {
+            return [];
+        }
+
+        $sessions = self::loadCourseSessions($maKhoaHoc, $chiCongPhienDat);
+        $totals = [];
+
+        foreach ($sessions->groupBy(
+            fn (DatDSPhien $session): string => trim((string) ($session->MaHocVien ?? ''))
+        ) as $maHocVien => $studentSessions) {
+            $maHocVien = trim((string) $maHocVien);
+            if ($maHocVien === '') {
+                continue;
+            }
+
+            $totals[$maHocVien] = [
+                'gio' => self::sumThucHanhGio($studentSessions),
+                'km' => self::sumQuangDuongKm($studentSessions),
+            ];
+        }
+
+        return $totals;
+    }
+
+    /**
      * @return Collection<int, DatDSPhien>
      */
     private static function loadCourseSessions(string $maKhoaHoc, bool $chiCongPhienDat): Collection

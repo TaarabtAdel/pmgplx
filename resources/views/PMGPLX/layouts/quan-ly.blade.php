@@ -440,6 +440,14 @@
                                href="{{ route('daotao.pdt.cong-cu-nhap.nhap-file-in-bang-ten') }}">
                                 Nhập file in bảng tên
                             </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.cong-cu-nhap.nhap-ket-qua-dao-tao*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-dao-tao') }}">
+                                Nhập kết quả đào tạo
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban') }}">
+                                Nhập XML xuất biên bản
+                            </a>
                         </div>
                     </div>
                     <div class="dropdown-submenu">

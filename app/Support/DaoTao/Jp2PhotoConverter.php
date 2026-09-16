@@ -4,8 +4,6 @@ namespace App\Support\DaoTao;
 
 class Jp2PhotoConverter
 {
-    private static ?bool $available = null;
-
     private static ?string $binary = null;
 
     public static function isJp2(string $binary): bool
@@ -15,14 +13,10 @@ class Jp2PhotoConverter
 
     public static function isAvailable(): bool
     {
-        if (self::$available !== null) {
-            return self::$available;
-        }
-
-        return self::$available = self::resolveBinary() !== null;
+        return self::resolveBinary() !== null;
     }
 
-    public static function toDataUri(string $jp2Binary): ?string
+    public static function toPngBinary(string $jp2Binary): ?string
     {
         $decompress = self::resolveBinary();
         if ($decompress === null) {
@@ -33,9 +27,7 @@ class Jp2PhotoConverter
         if (is_file($cacheFile)) {
             $cached = file_get_contents($cacheFile);
 
-            return $cached !== false && $cached !== ''
-                ? 'data:image/png;base64,'.base64_encode($cached)
-                : null;
+            return $cached !== false && $cached !== '' ? $cached : null;
         }
 
         $dir = sys_get_temp_dir().DIRECTORY_SEPARATOR.'bang-ten-'.uniqid('', true);
@@ -71,12 +63,22 @@ class Jp2PhotoConverter
 
             self::writeCache($cacheFile, $png);
 
-            return 'data:image/png;base64,'.base64_encode($png);
+            return $png;
         } finally {
             @unlink($input);
             @unlink($output);
             @rmdir($dir);
         }
+    }
+
+    public static function toDataUri(string $jp2Binary): ?string
+    {
+        $png = self::toPngBinary($jp2Binary);
+        if ($png === null || $png === '') {
+            return null;
+        }
+
+        return 'data:image/png;base64,'.base64_encode($png);
     }
 
     /**
@@ -87,8 +89,8 @@ class Jp2PhotoConverter
      */
     private static function resolveBinary(): ?string
     {
-        if (self::$binary !== null) {
-            return self::$binary !== '' ? self::$binary : null;
+        if (self::$binary !== null && self::$binary !== '') {
+            return self::$binary;
         }
 
         $candidates = [];
@@ -122,8 +124,6 @@ class Jp2PhotoConverter
         if ($fromPath !== null) {
             return self::$binary = $fromPath;
         }
-
-        self::$binary = '';
 
         return null;
     }

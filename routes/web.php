@@ -20,6 +20,8 @@ use App\Http\Controllers\DaoTao\DanhSachPhanCongDaoTaoController;
 use App\Http\Controllers\DaoTao\NhapFileInBangTenController;
 use App\Http\Controllers\DaoTao\NhapFileSoPhanCongGiaoVienController;
 use App\Http\Controllers\DaoTao\NhapFileTienDoDaoTaoController;
+use App\Http\Controllers\DaoTao\NhapKetQuaDaoTaoController;
+use App\Http\Controllers\DaoTao\NhapXmlBienBanTongHopController;
 use App\Http\Controllers\PMGPLX\DanhSachGiaoVienController;
 use App\Http\Controllers\PMGPLX\DanhSachHocVienController;
 use App\Http\Controllers\PMGPLX\DanhSachLichGiaoVienController;
@@ -158,6 +160,25 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
         ->name('pdt.cong-cu-nhap.nhap-file-in-bang-ten.print');
     Route::get('/phong-dao-tao/cong-cu-nhap/nhap-file-in-bang-ten/huy', [NhapFileInBangTenController::class, 'cancel'])
         ->name('pdt.cong-cu-nhap.nhap-file-in-bang-ten.cancel');
+
+    Route::get('/phong-dao-tao/cong-cu-nhap/nhap-ket-qua-dao-tao', [NhapKetQuaDaoTaoController::class, 'create'])
+        ->name('pdt.cong-cu-nhap.nhap-ket-qua-dao-tao');
+    Route::post('/phong-dao-tao/cong-cu-nhap/nhap-ket-qua-dao-tao', [NhapKetQuaDaoTaoController::class, 'store'])
+        ->name('pdt.cong-cu-nhap.nhap-ket-qua-dao-tao.store');
+    Route::get('/phong-dao-tao/cong-cu-nhap/nhap-ket-qua-dao-tao/xem-truoc', [NhapKetQuaDaoTaoController::class, 'preview'])
+        ->name('pdt.cong-cu-nhap.nhap-ket-qua-dao-tao.preview');
+    Route::post('/phong-dao-tao/cong-cu-nhap/nhap-ket-qua-dao-tao/xac-nhan', [NhapKetQuaDaoTaoController::class, 'confirm'])
+        ->name('pdt.cong-cu-nhap.nhap-ket-qua-dao-tao.confirm');
+    Route::get('/phong-dao-tao/cong-cu-nhap/nhap-ket-qua-dao-tao/huy', [NhapKetQuaDaoTaoController::class, 'cancel'])
+        ->name('pdt.cong-cu-nhap.nhap-ket-qua-dao-tao.cancel');
+
+    Route::get('/phong-dao-tao/cong-cu-nhap/nhap-xml-bien-ban', [NhapXmlBienBanTongHopController::class, 'create'])
+        ->name('pdt.cong-cu-nhap.nhap-xml-bien-ban');
+    Route::post('/phong-dao-tao/cong-cu-nhap/nhap-xml-bien-ban', [NhapXmlBienBanTongHopController::class, 'store'])
+        ->name('pdt.cong-cu-nhap.nhap-xml-bien-ban.store');
+    Route::get('/phong-dao-tao/cong-cu-nhap/nhap-xml-bien-ban/{id}/xuat', [NhapXmlBienBanTongHopController::class, 'export'])
+        ->whereNumber('id')
+        ->name('pdt.cong-cu-nhap.nhap-xml-bien-ban.export');
 
     Route::get('/phong-dao-tao/phan-cong-dao-tao/danh-sach', [DanhSachPhanCongDaoTaoController::class, 'index'])
         ->name('pdt.phan-cong-dao-tao.danh-sach');

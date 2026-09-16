@@ -48,6 +48,12 @@
                     <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-file-in-bang-ten') }}" class="list-group-item list-group-item-action pl-4">
                         Nhập file in bảng tên
                     </a>
+                    <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-dao-tao') }}" class="list-group-item list-group-item-action pl-4">
+                        Nhập kết quả đào tạo
+                    </a>
+                    <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban') }}" class="list-group-item list-group-item-action pl-4">
+                        Nhập XML xuất biên bản
+                    </a>
                     <div class="list-group-item list-group-item-light small font-weight-bold py-2">Phân Công Đào Tạo</div>
                     <a href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach') }}" class="list-group-item list-group-item-action pl-4">
                         Danh sách phân công
