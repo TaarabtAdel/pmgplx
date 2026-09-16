@@ -141,7 +141,7 @@ class XmlSatHachParser
             $hoVaTen = trim($this->text($node, 'HO_TEN_DEM').' '.$this->text($node, 'TEN'));
         }
 
-        $ngayKyNguon = $this->hoSoText($hoSo, 'NGAY_QD_SH');
+        $ngayKyNguon = $this->hoSoText($hoSo, 'NGAYSH');
         if ($ngayKyNguon === '') {
             $ngayKyNguon = $kySh['NGAYSH'] ?? $kySh['NGAYQD'] ?? '';
         }

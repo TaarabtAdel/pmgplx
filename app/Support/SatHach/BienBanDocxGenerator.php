@@ -86,7 +86,7 @@ class BienBanDocxGenerator
             "NGAY_SINH#{$i}" => $this->cell($row['ngay_sinh'] ?? ''),
             "SO_CMT#{$i}" => $this->cell($row['so_cmt'] ?? ''),
             "SO_HO_CHIEU#{$i}" => $this->cell($row['so_ho_chieu'] ?? ''),
-            "NGAY_CAP_HC#{$i}" => $this->cell($row['ngay_cap_hc'] ?? ''),
+            "NGAY_CAP_HC#{$i}" => $this->cell($row['ngay_cap_hc'] ?? '.................'),
             "NOI_CAP_HC#{$i}" => $this->cell($row['noi_cap_hc'] ?? ''),
             "HANG_GPLX#{$i}" => $this->cell($row['hang_gplx'] ?? ''),
             "HANG_GPLX_KL#{$i}" => $this->cell($row['hang_gplx'] ?? ''),
