@@ -20,8 +20,16 @@ class DatPhienLichXeMatcher
     /**
      * @return Collection<int, KhoaHocXeTap>
      */
+    public static function resetCache(): void
+    {
+        self::$evalBySessionId = [];
+        self::$indexByCollection = [];
+    }
+
     public static function scheduleForCourse(string $maKhoaHoc): Collection
     {
+        self::resetCache();
+
         $maKhoaHoc = trim($maKhoaHoc);
         if ($maKhoaHoc === '') {
             return collect();
