@@ -176,6 +176,13 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
         ->name('pdt.cong-cu-nhap.nhap-xml-bien-ban');
     Route::post('/phong-dao-tao/cong-cu-nhap/nhap-xml-bien-ban', [NhapXmlBienBanTongHopController::class, 'store'])
         ->name('pdt.cong-cu-nhap.nhap-xml-bien-ban.store');
+    Route::post('/phong-dao-tao/cong-cu-nhap/nhap-xml-bien-ban/xuat-tong/bat-dau', [NhapXmlBienBanTongHopController::class, 'exportTongStart'])
+        ->name('pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.start');
+    Route::post('/phong-dao-tao/cong-cu-nhap/nhap-xml-bien-ban/xuat-tong/add', [NhapXmlBienBanTongHopController::class, 'exportTongAdd'])
+        ->name('pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.add');
+    Route::get('/phong-dao-tao/cong-cu-nhap/nhap-xml-bien-ban/xuat-tong/tai/{job}', [NhapXmlBienBanTongHopController::class, 'exportTongDownload'])
+        ->where('job', '[0-9a-fA-F-]{36}')
+        ->name('pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.download');
     Route::get('/phong-dao-tao/cong-cu-nhap/nhap-xml-bien-ban/{id}/xuat', [NhapXmlBienBanTongHopController::class, 'export'])
         ->whereNumber('id')
         ->name('pdt.cong-cu-nhap.nhap-xml-bien-ban.export');

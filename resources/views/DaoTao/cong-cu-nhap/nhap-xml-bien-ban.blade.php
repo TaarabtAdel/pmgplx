@@ -48,6 +48,10 @@
                     <div class="form-group col-md-4 mb-2">
                         <button type="submit" class="btn btn-sm btn-navy mr-1">Lọc</button>
                         <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
+                        <button type="button" id="btn-xuat-tong" class="btn btn-sm btn-outline-success ml-1"
+                                @disabled(($filters['ma_ky_sh'] ?? '') === '')>
+                            Xuất tổng Word
+                        </button>
                     </div>
                 </div>
             </form>
@@ -104,17 +108,128 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="modalXuatTong" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title">Xuất tổng Word theo kỳ</h5>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-1 small text-muted" id="xuat-tong-ky"></p>
+                    <p class="mb-2" id="xuat-tong-status">Đang chuẩn bị…</p>
+                    <div class="progress" style="height: 18px;">
+                        <div class="progress-bar bg-success" id="xuat-tong-bar" role="progressbar" style="width: 0%">0%</div>
+                    </div>
+                    <p class="small text-danger mt-2 mb-0" id="xuat-tong-error" style="display:none;"></p>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="xuat-tong-close" data-dismiss="modal" disabled>Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
 <script>
     $(function () {
-        $('#ma_ky_sh').select2({
+        var $ky = $('#ma_ky_sh');
+        var $btn = $('#btn-xuat-tong');
+        var running = false;
+
+        $ky.select2({
             theme: 'bootstrap4',
             allowClear: true,
             width: '100%',
             placeholder: '— Tất cả —'
         });
+
+        function syncBtn() {
+            $btn.prop('disabled', running || !$.trim($ky.val() || ''));
+        }
+
+        $ky.on('change', syncBtn);
+        syncBtn();
+
+        $btn.on('click', function () {
+            var maKy = $.trim($ky.val() || '');
+            if (!maKy || running) {
+                return;
+            }
+            xuatTong(maKy);
+        });
+
+        function setProgress(done, total, text) {
+            var pct = total > 0 ? Math.round(done * 100 / total) : 0;
+            $('#xuat-tong-status').text(text);
+            $('#xuat-tong-bar').css('width', pct + '%').text(pct + '%');
+        }
+
+        function fail(message) {
+            running = false;
+            syncBtn();
+            $('#xuat-tong-error').text(message || 'Xuất tổng thất bại.').show();
+            $('#xuat-tong-close').prop('disabled', false);
+        }
+
+        function xuatTong(maKy) {
+            running = true;
+            syncBtn();
+            $('#xuat-tong-error').hide().text('');
+            $('#xuat-tong-close').prop('disabled', true);
+            $('#xuat-tong-ky').text('Kỳ sát hạch: ' + maKy);
+            setProgress(0, 1, 'Đang lấy danh sách thí sinh…');
+            $('#modalXuatTong').modal({ backdrop: 'static', keyboard: false });
+
+            $.ajax({
+                url: @json(route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.start')),
+                method: 'POST',
+                data: { ma_ky_sh: maKy, _token: $('meta[name="csrf-token"]').attr('content') }
+            }).done(function (start) {
+                var items = start.items || [];
+                var total = start.total || items.length;
+                var jobId = start.job_id;
+                if (!jobId || !total) {
+                    fail('Không có thí sinh để xuất.');
+                    return;
+                }
+                setProgress(0, total, 'Xuất file 0 / ' + total);
+                addNext(jobId, items, 0, total);
+            }).fail(function (xhr) {
+                fail((xhr.responseJSON && xhr.responseJSON.message) || 'Không bắt đầu được phiên xuất.');
+            });
+        }
+
+        function addNext(jobId, items, index, total) {
+            if (index >= items.length) {
+                return;
+            }
+            var item = items[index];
+            var label = (item.sbd || '') + ' — ' + (item.ten || '');
+            setProgress(index, total, 'Xuất file ' + (index + 1) + ' / ' + total + ': ' + label);
+
+            $.ajax({
+                url: @json(route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.add')),
+                method: 'POST',
+                data: { job_id: jobId, id: item.id, _token: $('meta[name="csrf-token"]').attr('content') }
+            }).done(function (res) {
+                var done = res.done || (index + 1);
+                setProgress(done, total, 'Đã thêm trang: ' + (res.name || label));
+                if (res.download_url) {
+                    setProgress(total, total, 'Đang tải file Word tổng…');
+                    window.location = res.download_url;
+                    running = false;
+                    syncBtn();
+                    $('#xuat-tong-close').prop('disabled', false);
+                    setTimeout(function () { $('#modalXuatTong').modal('hide'); }, 800);
+                    return;
+                }
+                addNext(jobId, items, index + 1, total);
+            }).fail(function (xhr) {
+                fail((xhr.responseJSON && xhr.responseJSON.message) || 'Lỗi khi xuất/thêm file.');
+            });
+        }
     });
 </script>
 @endpush
