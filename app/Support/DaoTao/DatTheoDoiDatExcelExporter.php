@@ -31,7 +31,6 @@ class DatTheoDoiDatExcelExporter
      *     ma_khoa_hoc: string,
      *     ngay: string,
      *     chi_cong_phien_dat: bool,
-     *     tinh_gio_ban_dem_theo_lich: bool,
      *     ma_giao_vien: string,
      *     bien_so_xe: string
      * }  $filters
@@ -42,7 +41,8 @@ class DatTheoDoiDatExcelExporter
         string $tenKhoaHoc,
         bool $hasNgayFilter,
         string $ngayHeading,
-        Collection $giaoVienNames
+        Collection $giaoVienNames,
+        bool $anCotTuDong = false
     ): StreamedResponse {
         $spreadsheet = self::buildSpreadsheet(
             $groups,
@@ -50,7 +50,8 @@ class DatTheoDoiDatExcelExporter
             $tenKhoaHoc,
             $hasNgayFilter,
             $ngayHeading,
-            $giaoVienNames
+            $giaoVienNames,
+            $anCotTuDong
         );
 
         $safeMaKh = preg_replace('/[^A-Za-z0-9_-]+/', '-', $filters['ma_khoa_hoc']) ?: 'khoa';
@@ -71,7 +72,6 @@ class DatTheoDoiDatExcelExporter
      *     ma_khoa_hoc: string,
      *     ngay: string,
      *     chi_cong_phien_dat: bool,
-     *     tinh_gio_ban_dem_theo_lich: bool,
      *     ma_giao_vien: string,
      *     bien_so_xe: string
      * }  $filters
@@ -82,14 +82,34 @@ class DatTheoDoiDatExcelExporter
         string $tenKhoaHoc,
         bool $hasNgayFilter,
         string $ngayHeading,
-        Collection $giaoVienNames
+        Collection $giaoVienNames,
+        bool $anCotTuDong
     ): Spreadsheet {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Theo doi DAT');
 
-        $lastCol = $hasNgayFilter ? 16 : 13;
+        $col = 1;
+        $colStt = $col++;
+        $colHv = $col++;
+        $colGv = $col++;
+        $colBks = $col++;
+        $colGioTuDong = $anCotTuDong ? 0 : $col++;
+        $colKmTuDong = $anCotTuDong ? 0 : $col++;
+        $colGioDem = $col++;
+        $colKmDem = $col++;
+        $colCaoToc = $col++;
+        $colGioMayChu = $col++;
+        $colKmMayChu = $col++;
+        $colGioNgay = $hasNgayFilter ? $col++ : 0;
+        $colKmNgay = $hasNgayFilter ? $col++ : 0;
+        $colTongKmNgay = $hasNgayFilter ? $col++ : 0;
+        $cungLichCol = $col++;
+        $cungGvCol = $col++;
+        $lastCol = $cungGvCol;
         $lastLetter = self::columnLetter($lastCol);
+        $serverStartCol = $colGioTuDong > 0 ? $colGioTuDong : $colGioDem;
+        $serverEndCol = $colKmMayChu;
 
         $khoaLabel = $tenKhoaHoc !== '' ? $tenKhoaHoc.' ('.$filters['ma_khoa_hoc'].')' : $filters['ma_khoa_hoc'];
         $sheet->setCellValue('A1', 'Khóa: '.$khoaLabel);
@@ -99,9 +119,7 @@ class DatTheoDoiDatExcelExporter
             ? 'Phạm vi: Tổng toàn khóa + chi tiết ngày '.$ngayHeading
             : 'Phạm vi: Tổng toàn khóa (tất cả ngày)';
         $scope .= ($filters['chi_cong_phien_dat'] ?? true) ? ' · Chỉ phiên đạt' : ' · Tất cả phiên';
-        if ($filters['tinh_gio_ban_dem_theo_lich'] ?? false) {
-            $scope .= ' · Giờ đêm theo lịch GD (Ghi chú Ban đêm + TG bắt đầu ≥ 18h)';
-        }
+        $scope .= ' · Giờ/km đêm: lịch Ban đêm + LaBanDem';
         if (($filters['ma_giao_vien'] ?? '') !== '') {
             $scope .= ' · GV: '.self::formatGiaoVienLabel($filters['ma_giao_vien'], $giaoVienNames);
         }
@@ -114,36 +132,37 @@ class DatTheoDoiDatExcelExporter
         $headerRow1 = 4;
         $headerRow2 = 5;
 
-        $sheet->setCellValue('A'.$headerRow1, 'STT');
-        $sheet->mergeCells('A'.$headerRow1.':A'.$headerRow2);
-        $sheet->setCellValue('B'.$headerRow1, 'Họ và tên học viên');
-        $sheet->setCellValue('C'.$headerRow1, 'GVTH');
-        $sheet->setCellValue('D'.$headerRow1, 'BKS');
-        $sheet->mergeCells('D'.$headerRow1.':D'.$headerRow2);
-        $sheet->setCellValue('E'.$headerRow1, 'Số giờ tự động');
-        $sheet->mergeCells('E'.$headerRow1.':E'.$headerRow2);
-        $sheet->setCellValue('F'.$headerRow1, 'Số km tự động');
-        $sheet->mergeCells('F'.$headerRow1.':F'.$headerRow2);
-        $sheet->setCellValue('G'.$headerRow1, 'Số giờ đêm');
-        $sheet->mergeCells('G'.$headerRow1.':G'.$headerRow2);
-        $sheet->setCellValue('H'.$headerRow1, 'Số km đêm');
-        $sheet->mergeCells('H'.$headerRow1.':H'.$headerRow2);
-        $sheet->setCellValue('I'.$headerRow1, 'Cao tốc');
-        $sheet->mergeCells('I'.$headerRow1.':I'.$headerRow2);
-        $sheet->setCellValue('J'.$headerRow1, "Tổng giờ\nmáy chủ");
-        $sheet->mergeCells('J'.$headerRow1.':J'.$headerRow2);
-        $sheet->setCellValue('K'.$headerRow1, "Tổng KM\nmáy chủ");
-        $sheet->mergeCells('K'.$headerRow1.':K'.$headerRow2);
+        $sheet->setCellValue(self::columnLetter($colStt).$headerRow1, 'STT');
+        $sheet->mergeCells(self::columnLetter($colStt).$headerRow1.':'.self::columnLetter($colStt).$headerRow2);
+        $sheet->setCellValue(self::columnLetter($colHv).$headerRow1, 'Họ và tên học viên');
+        $sheet->setCellValue(self::columnLetter($colGv).$headerRow1, 'GVTH');
+        $sheet->setCellValue(self::columnLetter($colBks).$headerRow1, 'BKS');
+        $sheet->mergeCells(self::columnLetter($colBks).$headerRow1.':'.self::columnLetter($colBks).$headerRow2);
 
-        $cungLichCol = $hasNgayFilter ? 15 : 12;
-        $cungGvCol = $hasNgayFilter ? 16 : 13;
+        if ($colGioTuDong > 0) {
+            $sheet->setCellValue(self::columnLetter($colGioTuDong).$headerRow1, 'Số giờ tự động');
+            $sheet->mergeCells(self::columnLetter($colGioTuDong).$headerRow1.':'.self::columnLetter($colGioTuDong).$headerRow2);
+            $sheet->setCellValue(self::columnLetter($colKmTuDong).$headerRow1, 'Số km tự động');
+            $sheet->mergeCells(self::columnLetter($colKmTuDong).$headerRow1.':'.self::columnLetter($colKmTuDong).$headerRow2);
+        }
+
+        $sheet->setCellValue(self::columnLetter($colGioDem).$headerRow1, 'Số giờ đêm');
+        $sheet->mergeCells(self::columnLetter($colGioDem).$headerRow1.':'.self::columnLetter($colGioDem).$headerRow2);
+        $sheet->setCellValue(self::columnLetter($colKmDem).$headerRow1, 'Số km đêm');
+        $sheet->mergeCells(self::columnLetter($colKmDem).$headerRow1.':'.self::columnLetter($colKmDem).$headerRow2);
+        $sheet->setCellValue(self::columnLetter($colCaoToc).$headerRow1, 'Cao tốc');
+        $sheet->mergeCells(self::columnLetter($colCaoToc).$headerRow1.':'.self::columnLetter($colCaoToc).$headerRow2);
+        $sheet->setCellValue(self::columnLetter($colGioMayChu).$headerRow1, "Tổng giờ\nmáy chủ");
+        $sheet->mergeCells(self::columnLetter($colGioMayChu).$headerRow1.':'.self::columnLetter($colGioMayChu).$headerRow2);
+        $sheet->setCellValue(self::columnLetter($colKmMayChu).$headerRow1, "Tổng KM\nmáy chủ");
+        $sheet->mergeCells(self::columnLetter($colKmMayChu).$headerRow1.':'.self::columnLetter($colKmMayChu).$headerRow2);
 
         if ($hasNgayFilter) {
-            $sheet->setCellValue('L'.$headerRow1, $ngayHeading);
-            $sheet->mergeCells('L'.$headerRow1.':N'.$headerRow1);
-            $sheet->setCellValue('L'.$headerRow2, "Số giờ\ntrong ngày");
-            $sheet->setCellValue('M'.$headerRow2, "Số km\ntrong ngày");
-            $sheet->setCellValue('N'.$headerRow2, "Tổng số km\ntrong ngày");
+            $sheet->setCellValue(self::columnLetter($colGioNgay).$headerRow1, $ngayHeading);
+            $sheet->mergeCells(self::columnLetter($colGioNgay).$headerRow1.':'.self::columnLetter($colTongKmNgay).$headerRow1);
+            $sheet->setCellValue(self::columnLetter($colGioNgay).$headerRow2, "Số giờ\ntrong ngày");
+            $sheet->setCellValue(self::columnLetter($colKmNgay).$headerRow2, "Số km\ntrong ngày");
+            $sheet->setCellValue(self::columnLetter($colTongKmNgay).$headerRow2, "Tổng số km\ntrong ngày");
         }
 
         $sheet->setCellValue(self::columnLetter($cungLichCol).$headerRow1, "Cung đường theo\nlịch giảng dạy");
@@ -151,12 +170,12 @@ class DatTheoDoiDatExcelExporter
         $sheet->setCellValue(self::columnLetter($cungGvCol).$headerRow1, "Cung đường\ngiáo viên chạy");
         $sheet->mergeCells(self::columnLetter($cungGvCol).$headerRow1.':'.self::columnLetter($cungGvCol).$headerRow2);
 
-        $sheet->setCellValue('B'.$headerRow2, 'Mã học viên');
-        $sheet->setCellValue('C'.$headerRow2, 'Mã giáo viên');
+        $sheet->setCellValue(self::columnLetter($colHv).$headerRow2, 'Mã học viên');
+        $sheet->setCellValue(self::columnLetter($colGv).$headerRow2, 'Mã giáo viên');
 
         self::styleHeader($sheet, 'A'.$headerRow1.':'.$lastLetter.$headerRow2);
         if ($hasNgayFilter) {
-            $sheet->getStyle('L'.$headerRow1.':N'.$headerRow1)
+            $sheet->getStyle(self::columnLetter($colGioNgay).$headerRow1.':'.self::columnLetter($colTongKmNgay).$headerRow1)
                 ->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_HEADER_DATE);
         }
 
@@ -183,8 +202,8 @@ class DatTheoDoiDatExcelExporter
                     $nameCell .= "\nChưa phân công";
                 }
 
-                $sheet->setCellValue('A'.$rowIndex, $student['stt'] ?? '');
-                $sheet->setCellValue('B'.$rowIndex, $nameCell);
+                $sheet->setCellValue(self::columnLetter($colStt).$rowIndex, $student['stt'] ?? '');
+                $sheet->setCellValue(self::columnLetter($colHv).$rowIndex, $nameCell);
 
                 if ($isFirst) {
                     $gvTen = (string) ($group['ho_ten_giao_vien'] ?? '');
@@ -193,23 +212,25 @@ class DatTheoDoiDatExcelExporter
                     if ($gvMa !== '' && $gvMa !== DatTheoDoiDat::placeholder()) {
                         $gvCell .= "\n".$gvMa;
                     }
-                    $sheet->setCellValue('C'.$rowIndex, $gvCell);
-                    $sheet->setCellValue('D'.$rowIndex, self::exportCell((string) ($group['bien_so_xe'] ?? '')));
+                    $sheet->setCellValue(self::columnLetter($colGv).$rowIndex, $gvCell);
+                    $sheet->setCellValue(self::columnLetter($colBks).$rowIndex, self::exportCell((string) ($group['bien_so_xe'] ?? '')));
                 }
 
-                $sheet->setCellValue('E'.$rowIndex, self::exportCell((string) ($student['gio_tu_dong'] ?? '')));
-                $sheet->setCellValue('F'.$rowIndex, self::exportCell((string) ($student['km_may_chu'] ?? '')));
-                $sheet->setCellValue('G'.$rowIndex, self::exportCell((string) ($student['chay_dem'] ?? '')));
-                $sheet->setCellValue('H'.$rowIndex, self::exportCell((string) ($student['km_dem'] ?? '')));
-                $sheet->setCellValue('I'.$rowIndex, self::exportCell((string) ($student['cao_toc'] ?? '')));
-                $sheet->setCellValue('J'.$rowIndex, self::exportCell((string) ($student['gio_may_chu'] ?? '')));
-                $sheet->setCellValue('K'.$rowIndex, self::exportCell((string) ($student['tong_km_may_chu'] ?? '')));
+                if ($colGioTuDong > 0) {
+                    $sheet->setCellValue(self::columnLetter($colGioTuDong).$rowIndex, self::exportCell((string) ($student['gio_tu_dong'] ?? '')));
+                    $sheet->setCellValue(self::columnLetter($colKmTuDong).$rowIndex, self::exportCell((string) ($student['km_may_chu'] ?? '')));
+                }
+                $sheet->setCellValue(self::columnLetter($colGioDem).$rowIndex, self::exportCell((string) ($student['chay_dem'] ?? '')));
+                $sheet->setCellValue(self::columnLetter($colKmDem).$rowIndex, self::exportCell((string) ($student['km_dem'] ?? '')));
+                $sheet->setCellValue(self::columnLetter($colCaoToc).$rowIndex, self::exportCell((string) ($student['cao_toc'] ?? '')));
+                $sheet->setCellValue(self::columnLetter($colGioMayChu).$rowIndex, self::exportCell((string) ($student['gio_may_chu'] ?? '')));
+                $sheet->setCellValue(self::columnLetter($colKmMayChu).$rowIndex, self::exportCell((string) ($student['tong_km_may_chu'] ?? '')));
 
                 if ($hasNgayFilter) {
-                    $sheet->setCellValue('L'.$rowIndex, self::exportCell((string) ($student['gio_trong_ngay'] ?? '')));
-                    $sheet->setCellValue('M'.$rowIndex, self::exportCell((string) ($student['km_trong_ngay'] ?? '')));
+                    $sheet->setCellValue(self::columnLetter($colGioNgay).$rowIndex, self::exportCell((string) ($student['gio_trong_ngay'] ?? '')));
+                    $sheet->setCellValue(self::columnLetter($colKmNgay).$rowIndex, self::exportCell((string) ($student['km_trong_ngay'] ?? '')));
                     if ($isFirst) {
-                        $sheet->setCellValue('N'.$rowIndex, self::exportCell((string) ($group['tong_km_ngay'] ?? '')));
+                        $sheet->setCellValue(self::columnLetter($colTongKmNgay).$rowIndex, self::exportCell((string) ($group['tong_km_ngay'] ?? '')));
                     }
                 }
 
@@ -224,13 +245,13 @@ class DatTheoDoiDatExcelExporter
                     );
                 }
 
-                $sheet->getStyle('E'.$rowIndex.':K'.$rowIndex)
+                $sheet->getStyle(self::columnLetter($serverStartCol).$rowIndex.':'.self::columnLetter($serverEndCol).$rowIndex)
                     ->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_SERVER);
 
                 if (! empty($student['ngoai_phan_cong'])) {
                     $sheet->getStyle('A'.$rowIndex.':'.$lastLetter.$rowIndex)
                         ->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_WARNING);
-                    $sheet->getStyle('E'.$rowIndex.':K'.$rowIndex)
+                    $sheet->getStyle(self::columnLetter($serverStartCol).$rowIndex.':'.self::columnLetter($serverEndCol).$rowIndex)
                         ->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFFFE69C');
                 }
 
@@ -238,10 +259,10 @@ class DatTheoDoiDatExcelExporter
             }
 
             if ($rowspan > 1) {
-                $sheet->mergeCells('C'.$groupStart.':C'.$groupEnd);
-                $sheet->mergeCells('D'.$groupStart.':D'.$groupEnd);
+                $sheet->mergeCells(self::columnLetter($colGv).$groupStart.':'.self::columnLetter($colGv).$groupEnd);
+                $sheet->mergeCells(self::columnLetter($colBks).$groupStart.':'.self::columnLetter($colBks).$groupEnd);
                 if ($hasNgayFilter) {
-                    $sheet->mergeCells('N'.$groupStart.':N'.$groupEnd);
+                    $sheet->mergeCells(self::columnLetter($colTongKmNgay).$groupStart.':'.self::columnLetter($colTongKmNgay).$groupEnd);
                 }
                 $sheet->mergeCells(self::columnLetter($cungLichCol).$groupStart.':'.self::columnLetter($cungLichCol).$groupEnd);
                 $sheet->mergeCells(self::columnLetter($cungGvCol).$groupStart.':'.self::columnLetter($cungGvCol).$groupEnd);

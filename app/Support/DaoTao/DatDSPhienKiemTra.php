@@ -164,9 +164,15 @@ class DatDSPhienKiemTra
 
     public static function datAnhDieuKien(?float $tiLe): bool
     {
-        $s = self::settings();
+        return self::datAnhDieuKienFromSettings($tiLe, self::settings());
+    }
 
-        return $tiLe !== null && $tiLe >= $s['ti_le'];
+    /**
+     * @param  array{min_phut: int, max_phut: int, khoang_phut: int, ti_le: float}  $settings
+     */
+    private static function datAnhDieuKienFromSettings(?float $tiLe, array $settings): bool
+    {
+        return $tiLe !== null && $tiLe >= $settings['ti_le'];
     }
 
     /**
@@ -228,7 +234,10 @@ class DatDSPhienKiemTra
             }
         }
 
-        if (! self::datAnhDieuKien($session->TiLeNhanDien !== null ? (float) $session->TiLeNhanDien : null)) {
+        if (! self::datAnhDieuKienFromSettings(
+            $session->TiLeNhanDien !== null ? (float) $session->TiLeNhanDien : null,
+            $settings
+        )) {
             $loi[] = self::LOI_TI_LE_ND;
         }
 
@@ -293,10 +302,23 @@ class DatDSPhienKiemTra
 
         foreach ($groups as $group) {
             $rows = $group->values()->all();
+            usort($rows, static function (DatDSPhien $a, DatDSPhien $b): int {
+                return (self::startTs($a) ?? PHP_INT_MAX) <=> (self::startTs($b) ?? PHP_INT_MAX);
+            });
             $count = count($rows);
 
             for ($i = 0; $i < $count; $i++) {
+                $endI = self::endTs($rows[$i]);
+                if ($endI === null) {
+                    continue;
+                }
+
                 for ($j = $i + 1; $j < $count; $j++) {
+                    $startJ = self::startTs($rows[$j]);
+                    if ($startJ === null || $startJ >= $endI) {
+                        break;
+                    }
+
                     if (! self::overlaps($rows[$i], $rows[$j])) {
                         continue;
                     }
@@ -546,5 +568,15 @@ class DatDSPhienKiemTra
         $value = $session->ThoiGianKetThucPhienHoc;
 
         return $value instanceof Carbon ? $value : ($value ? Carbon::parse($value) : null);
+    }
+
+    private static function startTs(DatDSPhien $session): ?int
+    {
+        return self::startAt($session)?->getTimestamp();
+    }
+
+    private static function endTs(DatDSPhien $session): ?int
+    {
+        return self::endAt($session)?->getTimestamp();
     }
 }

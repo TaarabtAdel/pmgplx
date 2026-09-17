@@ -4,6 +4,7 @@ namespace App\Http\Controllers\DaoTao\Dat;
 
 use App\Http\Controllers\Controller;
 use App\Models\DaoTao\DatDSPhien;
+use App\Models\DaoTao\DatPhanCongHocVien;
 use App\Support\DaoTao\DatTheoDoiDat;
 use App\Support\DaoTao\DatTheoDoiDatExcelExporter;
 use Illuminate\Http\RedirectResponse;
@@ -19,13 +20,31 @@ class TheoDoiDatController extends Controller
         $canShowReport = $filters['ma_khoa_hoc'] !== '';
         $hasNgayFilter = $filters['ngay'] !== '';
 
-        $khoaHocOptions = DatDSPhien::query()
-            ->selectRaw('MaKhoaHoc, MAX(TenKhoaHoc) as TenKhoaHoc')
+        $khoaHocCodes = DatPhanCongHocVien::query()
             ->whereNotNull('MaKhoaHoc')
             ->where('MaKhoaHoc', '!=', '')
-            ->groupBy('MaKhoaHoc')
+            ->distinct()
             ->orderBy('MaKhoaHoc')
-            ->get();
+            ->pluck('MaKhoaHoc');
+
+        $khoaHocNames = collect();
+        if ($khoaHocCodes->isNotEmpty()) {
+            $khoaHocNames = DatDSPhien::query()
+                ->selectRaw('MaKhoaHoc, MAX(TenKhoaHoc) as TenKhoaHoc')
+                ->whereIn('MaKhoaHoc', $khoaHocCodes->all())
+                ->groupBy('MaKhoaHoc')
+                ->get()
+                ->keyBy('MaKhoaHoc');
+        }
+
+        $khoaHocOptions = $khoaHocCodes->map(function ($maKhoaHoc) use ($khoaHocNames) {
+            $maKhoaHoc = (string) $maKhoaHoc;
+
+            return (object) [
+                'MaKhoaHoc' => $maKhoaHoc,
+                'TenKhoaHoc' => (string) ($khoaHocNames->get($maKhoaHoc)?->TenKhoaHoc ?? ''),
+            ];
+        });
 
         $courseFilterOptions = DatTheoDoiDat::courseFilterOptions($filters['ma_khoa_hoc']);
 
@@ -52,6 +71,7 @@ class TheoDoiDatController extends Controller
             'hasPhanCong' => $hasPhanCong,
             'ngayHeading' => DatTheoDoiDat::formatNgayHeading($filters['ngay']),
             'tenKhoaHoc' => $tenKhoaHoc,
+            'anCotTuDong' => DatTheoDoiDat::anCotTuDong($filters['ma_khoa_hoc'], $tenKhoaHoc),
         ]);
     }
 
@@ -87,7 +107,8 @@ class TheoDoiDatController extends Controller
             $tenKhoaHoc,
             $filters['ngay'] !== '',
             DatTheoDoiDat::formatNgayHeading($filters['ngay']),
-            $courseFilterOptions['giao_vien_names']
+            $courseFilterOptions['giao_vien_names'],
+            DatTheoDoiDat::anCotTuDong($filters['ma_khoa_hoc'], $tenKhoaHoc)
         );
     }
 }

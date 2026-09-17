@@ -11,6 +11,12 @@ use Illuminate\Support\Collection;
 
 class DatPhienLichXeMatcher
 {
+    /** @var array<int, array<string, mixed>> */
+    private static array $evalBySessionId = [];
+
+    /** @var array<int, array<string, list<KhoaHocXeTap>>> */
+    private static array $indexByCollection = [];
+
     /**
      * @return Collection<int, KhoaHocXeTap>
      */
@@ -43,59 +49,74 @@ class DatPhienLichXeMatcher
      */
     public static function evaluate(DatDSPhien $session, Collection $scheduleRows): array
     {
+        $sessionId = (int) ($session->Id ?? 0);
+        if ($sessionId > 0 && isset(self::$evalBySessionId[$sessionId])) {
+            return self::$evalBySessionId[$sessionId];
+        }
+
         $maKhoaHoc = trim((string) ($session->MaKhoaHoc ?? ''));
         $maGiaoVien = self::normalizeMaGv((string) ($session->MaGiaoVien ?? ''));
         $bienSo = LichExcelBienSo::normalize((string) ($session->BienSoXe ?? ''));
         $start = self::toCarbon($session->ThoiGianBatDauPhienHoc);
 
         if ($start === null) {
-            return self::invalid('Phiên thiếu thời gian bắt đầu');
+            return self::rememberEval($sessionId, self::invalid('Phiên thiếu thời gian bắt đầu'));
         }
 
         if ($maKhoaHoc === '') {
-            return self::invalid('Phiên thiếu mã khóa học');
+            return self::rememberEval($sessionId, self::invalid('Phiên thiếu mã khóa học'));
         }
 
         if ($maGiaoVien === '') {
-            return self::invalid('Phiên thiếu mã giáo viên');
+            return self::rememberEval($sessionId, self::invalid('Phiên thiếu mã giáo viên'));
         }
 
         if ($bienSo === '') {
-            return self::invalid('Phiên thiếu biển số xe');
+            return self::rememberEval($sessionId, self::invalid('Phiên thiếu biển số xe'));
         }
 
         if ($scheduleRows->isEmpty()) {
-            return self::invalid('Không có lịch xe tập cho mã khóa '.$maKhoaHoc);
+            return self::rememberEval($sessionId, self::invalid('Không có lịch xe tập cho mã khóa '.$maKhoaHoc));
         }
 
         $end = self::toCarbon($session->ThoiGianKetThucPhienHoc);
         $tolerance = DatDieuKienDoPhien::hienTai()->toSettingsArray();
+        $index = self::indexFor($scheduleRows);
 
-        $matched = self::findSchedule($scheduleRows, $maKhoaHoc, $maGiaoVien, $bienSo, $start, $end, $tolerance);
+        $matched = self::findSchedule(
+            $scheduleRows,
+            $maKhoaHoc,
+            $maGiaoVien,
+            $bienSo,
+            $start,
+            $end,
+            $tolerance,
+            $index
+        );
         if ($matched === null) {
-            return self::invalid(
+            return self::rememberEval($sessionId, self::invalid(
                 'Không có lịch xe (khóa '.$maKhoaHoc.', GV '.$maGiaoVien.', xe '.$session->BienSoXe
                 .', ngày '.$start->format('d/m/Y').')'
-            );
+            ));
         }
 
         $timeMessage = self::timeMismatchMessage($start, $end, $matched, $tolerance);
 
         if ($timeMessage !== null) {
-            return [
+            return self::rememberEval($sessionId, [
                 'valid' => false,
                 'message' => $timeMessage,
                 'matched' => $matched,
                 'displaySchedule' => $matched,
-            ];
+            ]);
         }
 
-        return [
+        return self::rememberEval($sessionId, [
             'valid' => true,
             'message' => '',
             'matched' => $matched,
             'displaySchedule' => $matched,
-        ];
+        ]);
     }
 
     /**
@@ -108,33 +129,13 @@ class DatPhienLichXeMatcher
         string $bienSo,
         Carbon $sessionStart,
         ?Carbon $sessionEnd = null,
-        ?array $tolerance = null
+        ?array $tolerance = null,
+        ?array $index = null
     ): ?KhoaHocXeTap {
         $tolerance ??= DatDieuKienDoPhien::hienTai()->toSettingsArray();
         $sessionDate = $sessionStart->toDateString();
-
-        $candidates = $scheduleRows->filter(function (KhoaHocXeTap $lich) use (
-            $maKhoaHoc,
-            $maGiaoVien,
-            $bienSo,
-            $sessionDate
-        ): bool {
-            if (trim((string) ($lich->MaKH ?? '')) !== $maKhoaHoc) {
-                return false;
-            }
-
-            if (self::normalizeMaGv((string) ($lich->MaGV ?? '')) !== $maGiaoVien) {
-                return false;
-            }
-
-            if (LichExcelBienSo::normalize((string) ($lich->BienSoXe ?? '')) !== $bienSo) {
-                return false;
-            }
-
-            $lichStart = self::toCarbon($lich->NgayBD);
-
-            return $lichStart !== null && $lichStart->toDateString() === $sessionDate;
-        });
+        $index ??= self::indexFor($scheduleRows);
+        $candidates = collect($index[$sessionDate.'|'.$maKhoaHoc.'|'.$maGiaoVien.'|'.$bienSo] ?? []);
 
         if ($candidates->isEmpty()) {
             return null;
@@ -286,6 +287,46 @@ class DatPhienLichXeMatcher
     /**
      * @return array{valid: bool, message: string, matched: null, displaySchedule: null}
      */
+    /**
+     * @param  array<string, mixed>  $result
+     * @return array<string, mixed>
+     */
+    private static function rememberEval(int $sessionId, array $result): array
+    {
+        if ($sessionId > 0) {
+            self::$evalBySessionId[$sessionId] = $result;
+        }
+
+        return $result;
+    }
+
+    /**
+     * @return array<string, list<KhoaHocXeTap>>
+     */
+    private static function indexFor(Collection $scheduleRows): array
+    {
+        $oid = spl_object_id($scheduleRows);
+        if (isset(self::$indexByCollection[$oid])) {
+            return self::$indexByCollection[$oid];
+        }
+
+        $index = [];
+        foreach ($scheduleRows as $lich) {
+            $lichStart = self::toCarbon($lich->NgayBD);
+            if ($lichStart === null) {
+                continue;
+            }
+
+            $key = $lichStart->toDateString()
+                .'|'.trim((string) ($lich->MaKH ?? ''))
+                .'|'.self::normalizeMaGv((string) ($lich->MaGV ?? ''))
+                .'|'.LichExcelBienSo::normalize((string) ($lich->BienSoXe ?? ''));
+            $index[$key][] = $lich;
+        }
+
+        return self::$indexByCollection[$oid] = $index;
+    }
+
     private static function invalid(string $message): array
     {
         return [

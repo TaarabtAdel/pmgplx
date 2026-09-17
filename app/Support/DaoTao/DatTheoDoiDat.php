@@ -16,7 +16,6 @@ class DatTheoDoiDat
      *     ma_khoa_hoc: string,
      *     ngay: string,
      *     chi_cong_phien_dat: bool,
-     *     tinh_gio_ban_dem_theo_lich: bool,
      *     ma_giao_vien: string,
      *     bien_so_xe: string
      * }
@@ -27,10 +26,20 @@ class DatTheoDoiDat
             'ma_khoa_hoc' => trim((string) $request->input('ma_khoa_hoc', '')),
             'ngay' => self::normalizeDate((string) $request->input('ngay', '')),
             'chi_cong_phien_dat' => $request->boolean('chi_cong_phien_dat', true),
-            'tinh_gio_ban_dem_theo_lich' => $request->boolean('tinh_gio_ban_dem_theo_lich', false),
             'ma_giao_vien' => trim((string) $request->input('ma_giao_vien', '')),
             'bien_so_xe' => trim((string) $request->input('bien_so_xe', '')),
         ];
+    }
+
+    /**
+     * Hạng B.01 / B01 (ví dụ K26B01K37) không dùng xe tự động — ẩn cột giờ/km tự động.
+     */
+    public static function anCotTuDong(string $maKhoaHoc, string $tenKhoaHoc = ''): bool
+    {
+        $haystack = mb_strtoupper($maKhoaHoc.' '.$tenKhoaHoc);
+        $haystack = str_replace(['.', '-', '_', ' '], '', $haystack);
+
+        return str_contains($haystack, 'B01');
     }
 
     /**
@@ -50,27 +59,25 @@ class DatTheoDoiDat
             ];
         }
 
-        $base = DatPhanCongHocVien::query()->where('MaKhoaHoc', $maKhoaHoc);
+        $baseRows = DatPhanCongHocVien::query()
+            ->where('MaKhoaHoc', $maKhoaHoc)
+            ->get(['MaGiaoVien', 'BienSoXe']);
 
-        $giaoVienOptions = (clone $base)
-            ->whereNotNull('MaGiaoVien')
-            ->where('MaGiaoVien', '!=', '')
-            ->distinct()
-            ->orderBy('MaGiaoVien')
+        $giaoVienOptions = $baseRows
             ->pluck('MaGiaoVien')
             ->map(fn ($value): string => trim((string) $value))
             ->filter(fn (string $value): bool => $value !== '')
+            ->unique()
+            ->sort()
             ->values()
             ->all();
 
-        $bienSoXeOptions = (clone $base)
-            ->whereNotNull('BienSoXe')
-            ->where('BienSoXe', '!=', '')
-            ->distinct()
-            ->orderBy('BienSoXe')
+        $bienSoXeOptions = $baseRows
             ->pluck('BienSoXe')
             ->map(fn ($value): string => trim((string) $value))
             ->filter(fn (string $value): bool => $value !== '')
+            ->unique()
+            ->sort()
             ->values()
             ->all();
 
@@ -125,7 +132,6 @@ class DatTheoDoiDat
     {
         $maKhoaHoc = $filters['ma_khoa_hoc'] ?? '';
         $chiCongPhienDat = (bool) ($filters['chi_cong_phien_dat'] ?? true);
-        $tinhGioBanDemTheoLich = (bool) ($filters['tinh_gio_ban_dem_theo_lich'] ?? false);
         $ngay = self::normalizeDate((string) ($filters['ngay'] ?? ''));
         $maGiaoVienFilter = trim((string) ($filters['ma_giao_vien'] ?? ''));
         $bienSoXeFilter = trim((string) ($filters['bien_so_xe'] ?? ''));
@@ -188,14 +194,17 @@ class DatTheoDoiDat
 
         $substitutesByKey = DatPhanCongGiaoVienThayResolver::groupedForCourses([$maKhoaHoc]);
 
+        $extraGv = [];
         foreach ($substitutesByKey as $substitutes) {
             foreach ($substitutes as $substitute) {
                 $maGv = trim((string) ($substitute['ma_giao_vien'] ?? ''));
-                if ($maGv !== '' && ! $giaoVienNames->has($maGv)) {
-                    $extra = self::loadGiaoVienNames([$maGv]);
-                    $giaoVienNames = $giaoVienNames->merge($extra);
+                if ($maGv !== '') {
+                    $extraGv[$maGv] = true;
                 }
             }
+        }
+        if ($extraGv !== []) {
+            $giaoVienNames = $giaoVienNames->union(self::loadGiaoVienNames(array_keys($extraGv)));
         }
 
         /** @var Collection<string, Collection<int, DatPhanCongHocVien>> $byGroup */
@@ -205,6 +214,40 @@ class DatTheoDoiDat
                 (string) ($assignment->BienSoXe ?? '')
             )
         );
+
+        /** @var array<string, DatPhanCongHocVien> $assignmentByMaHocVien */
+        $assignmentByMaHocVien = [];
+        foreach ($assignments as $assignment) {
+            $maHocVien = trim((string) ($assignment->MaHocVien ?? ''));
+            if ($maHocVien !== '') {
+                $assignmentByMaHocVien[$maHocVien] = $assignment;
+            }
+        }
+
+        /** @var array<string, list<DatDSPhien>> $sessionsByGroupKey */
+        $sessionsByGroupKey = [];
+        foreach ($sessions as $session) {
+            $maHocVien = trim((string) ($session->MaHocVien ?? ''));
+            if ($maHocVien !== '' && isset($assignmentByMaHocVien[$maHocVien])) {
+                $assignment = $assignmentByMaHocVien[$maHocVien];
+                $groupKey = self::assignmentGroupKey(
+                    (string) ($assignment->MaGiaoVien ?? ''),
+                    (string) ($assignment->BienSoXe ?? '')
+                );
+                if (self::sessionBelongsToAssignmentGroup(
+                    $session,
+                    $assignment,
+                    DatPhanCongGiaoVienThayResolver::substitutesForAssignment($assignment, $substitutesByKey)
+                )) {
+                    $sessionsByGroupKey[$groupKey][] = $session;
+                }
+
+                continue;
+            }
+
+            $groupKey = self::sessionGroupKey($session);
+            $sessionsByGroupKey[$groupKey][] = $session;
+        }
 
         $groups = [];
 
@@ -219,37 +262,14 @@ class DatTheoDoiDat
             $groupKey = self::assignmentGroupKey($maGiaoVien, $bienSoXe);
 
             $assignedMaHocVien = [];
-            /** @var array<string, DatPhanCongHocVien> $assignmentByMaHocVien */
-            $assignmentByMaHocVien = [];
             foreach ($groupAssignments as $assignment) {
                 $maHocVien = trim((string) ($assignment->MaHocVien ?? ''));
                 if ($maHocVien !== '') {
                     $assignedMaHocVien[$maHocVien] = true;
-                    $assignmentByMaHocVien[$maHocVien] = $assignment;
                 }
             }
 
-            $groupSessions = $sessions->filter(function (DatDSPhien $session) use (
-                $groupKey,
-                $assignedMaHocVien,
-                $assignmentByMaHocVien,
-                $substitutesByKey,
-                $first
-            ): bool {
-                $maHocVien = trim((string) ($session->MaHocVien ?? ''));
-
-                if ($maHocVien !== '' && isset($assignedMaHocVien[$maHocVien])) {
-                    $assignment = $assignmentByMaHocVien[$maHocVien];
-
-                    return self::sessionBelongsToAssignmentGroup(
-                        $session,
-                        $assignment,
-                        DatPhanCongGiaoVienThayResolver::substitutesForAssignment($assignment, $substitutesByKey)
-                    );
-                }
-
-                return self::sessionGroupKey($session) === $groupKey;
-            })->values();
+            $groupSessions = collect($sessionsByGroupKey[$groupKey] ?? []);
 
             $groupGio = self::sumThucHanhGio($groupSessions);
             $groupKm = self::sumQuangDuongKm($groupSessions);
@@ -279,7 +299,6 @@ class DatTheoDoiDat
                     $ngay,
                     $stt,
                     false,
-                    $tinhGioBanDemTheoLich,
                     $scheduleRows
                 );
             }
@@ -308,7 +327,6 @@ class DatTheoDoiDat
                     $ngay,
                     $stt,
                     true,
-                    $tinhGioBanDemTheoLich,
                     $scheduleRows
                 );
             }
@@ -441,7 +459,21 @@ class DatTheoDoiDat
         $sessions = DatDSPhien::query()
             ->where('MaKhoaHoc', $maKhoaHoc)
             ->orderBy('ThoiGianBatDauPhienHoc')
-            ->get();
+            ->get([
+                'Id',
+                'MaHocVien',
+                'HoTenHocVien',
+                'MaGiaoVien',
+                'BienSoXe',
+                'MaKhoaHoc',
+                'ThoiGianBatDauPhienHoc',
+                'ThoiGianKetThucPhienHoc',
+                'ThoiGianThucHanhGio',
+                'QuangDuongThucHanhKm',
+                'LaBanDem',
+                'LaTuDong',
+                'TiLeNhanDien',
+            ]);
 
         if ($sessions->isEmpty() || ! $chiCongPhienDat) {
             return $sessions;
@@ -598,13 +630,17 @@ class DatTheoDoiDat
         string $ngay,
         int $stt,
         bool $ngoaiPhanCong,
-        bool $tinhGioBanDemTheoLich,
         Collection $scheduleRows
     ): array {
         $dayTotals = $studentDayTotals[$maHocVien] ?? ['gio' => 0.0, 'km' => 0.0];
         $gioTuDong = self::sumThucHanhGio($studentSessions, 'LaTuDong');
         $kmTuDong = self::sumQuangDuongKm($studentSessions, 'LaTuDong');
-        $nightSessions = self::nightSessions($studentSessions, $tinhGioBanDemTheoLich, $scheduleRows);
+        $nightSessions = self::sessionsMatchingGhiChu(
+            $studentSessions,
+            $scheduleRows,
+            ['ban đêm', 'ban dem'],
+            'LaBanDem'
+        );
         $chayDem = self::sumThucHanhGio($nightSessions);
         $kmDem = self::sumQuangDuongKm($nightSessions);
         $caoTocSessions = self::sessionsMatchingGhiChu($studentSessions, $scheduleRows, ['cao tốc', 'cao toc']);
@@ -619,7 +655,7 @@ class DatTheoDoiDat
             'gio_tu_dong' => self::formatGio($gioTuDong),
             'km_may_chu' => self::formatKm($kmTuDong),
             'chay_dem' => self::formatGio($chayDem),
-            'km_dem' => $nightSessions->isNotEmpty() ? self::formatKm($kmDem) : self::placeholder(),
+            'km_dem' => self::formatKm($kmDem),
             'cao_toc' => self::formatGio($gioCaoToc),
             'gio_may_chu' => self::formatGio($gioMayChu),
             'tong_km_may_chu' => self::formatKm($tongKmMayChu),
@@ -632,48 +668,20 @@ class DatTheoDoiDat
     /**
      * @param  Collection<int, DatDSPhien>  $sessions
      * @param  Collection<int, \App\Models\PMGPLX\KhoaHocXeTap>  $scheduleRows
-     * @return Collection<int, DatDSPhien>
-     */
-    private static function nightSessions(
-        Collection $sessions,
-        bool $tinhTheoLichGd,
-        Collection $scheduleRows
-    ): Collection {
-        return $sessions->filter(function (DatDSPhien $session) use ($tinhTheoLichGd, $scheduleRows): bool {
-            if (! (bool) ($session->LaBanDem ?? false)) {
-                return false;
-            }
-
-            if (! $tinhTheoLichGd) {
-                return true;
-            }
-
-            $start = self::sessionStart($session);
-            if ($start === null || $start->hour < 18) {
-                return false;
-            }
-
-            $matched = DatPhienLichXeMatcher::evaluate($session, $scheduleRows)['matched'] ?? null;
-            if ($matched === null) {
-                return false;
-            }
-
-            return self::ghiChuContains((string) ($matched->GhiChu ?? ''), ['ban đêm', 'ban dem']);
-        })->values();
-    }
-
-    /**
-     * @param  Collection<int, DatDSPhien>  $sessions
-     * @param  Collection<int, \App\Models\PMGPLX\KhoaHocXeTap>  $scheduleRows
      * @param  list<string>  $needles
      * @return Collection<int, DatDSPhien>
      */
     private static function sessionsMatchingGhiChu(
         Collection $sessions,
         Collection $scheduleRows,
-        array $needles
+        array $needles,
+        ?string $flagField = null
     ): Collection {
-        return $sessions->filter(function (DatDSPhien $session) use ($scheduleRows, $needles): bool {
+        return $sessions->filter(function (DatDSPhien $session) use ($scheduleRows, $needles, $flagField): bool {
+            if ($flagField !== null && ! (bool) ($session->{$flagField} ?? false)) {
+                return false;
+            }
+
             $matched = DatPhienLichXeMatcher::evaluate($session, $scheduleRows)['matched'] ?? null;
             if ($matched === null) {
                 return false;
@@ -681,24 +689,6 @@ class DatTheoDoiDat
 
             return self::ghiChuContains((string) ($matched->GhiChu ?? ''), $needles);
         })->values();
-    }
-
-    private static function sessionStart(DatDSPhien $session): ?Carbon
-    {
-        $value = $session->ThoiGianBatDauPhienHoc;
-        if ($value instanceof Carbon) {
-            return $value;
-        }
-
-        if ($value === null || $value === '') {
-            return null;
-        }
-
-        try {
-            return Carbon::parse($value);
-        } catch (\Throwable) {
-            return null;
-        }
     }
 
     /**
