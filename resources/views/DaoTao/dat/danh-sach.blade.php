@@ -181,22 +181,27 @@
                     </div>
                 </div>
 
-                @if ($phanLoais->isNotEmpty())
-                    <div class="border rounded p-2 bg-white mb-2">
-                        <strong class="small d-block mb-2">Lọc theo phân loại</strong>
-                        <div class="form-row">
-                            @foreach ($phanLoais as $pl)
-                                <div class="col-md-4 col-lg-3 mb-1">
-                                    <label class="mb-0 small d-flex align-items-start">
-                                        <input type="checkbox" name="phan_loai[]" value="{{ $pl->Id }}" class="mr-2 mt-1"
-                                               @checked(in_array($pl->Id, $selectedPhanLoai, true))>
-                                        <span>{{ $pl->TenPhanLoai }}</span>
-                                    </label>
-                                </div>
-                            @endforeach
+                <div class="border rounded p-2 bg-white mb-2">
+                    <strong class="small d-block mb-2">Lọc theo phân loại</strong>
+                    <div class="form-row">
+                        <div class="col-md-4 col-lg-3 mb-1">
+                            <label class="mb-0 small d-flex align-items-start">
+                                <input type="checkbox" name="chua_phan_loai" value="1" class="mr-2 mt-1"
+                                       @checked(! empty($filters['chua_phan_loai']))>
+                                <span>Phiên chưa có phân loại</span>
+                            </label>
                         </div>
+                        @foreach ($phanLoais as $pl)
+                            <div class="col-md-4 col-lg-3 mb-1">
+                                <label class="mb-0 small d-flex align-items-start">
+                                    <input type="checkbox" name="phan_loai[]" value="{{ $pl->Id }}" class="mr-2 mt-1"
+                                           @checked(in_array($pl->Id, $selectedPhanLoai, true))>
+                                    <span>{{ $pl->TenPhanLoai }}</span>
+                                </label>
+                            </div>
+                        @endforeach
                     </div>
-                @endif
+                </div>
 
                 <div class="border rounded p-2 bg-light">
                     <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
@@ -429,7 +434,7 @@
                             @empty
                                 <tr>
                                     <td colspan="{{ $phanLoais->isNotEmpty() ? 13 : 12 }}" class="text-center py-4 text-muted">
-                                        @if ($selectedLoi !== [] || $selectedPhanLoai !== [] || ($filters['dat'] ?? '') !== '' || ($filters['loai_khoa_hoc'] ?? '') !== '')
+                                        @if ($selectedLoi !== [] || $selectedPhanLoai !== [] || ! empty($filters['chua_phan_loai']) || ($filters['dat'] ?? '') !== '' || ($filters['loai_khoa_hoc'] ?? '') !== '')
                                             Không có phiên nào khớp bộ lọc đã chọn.
                                         @else
                                             Chưa có dữ liệu phiên học.

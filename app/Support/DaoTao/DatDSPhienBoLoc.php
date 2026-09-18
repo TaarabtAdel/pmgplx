@@ -34,6 +34,7 @@ class DatDSPhienBoLoc
             'den_ngay' => $denNgay,
             'loi' => array_values(array_filter((array) $request->input('loi', []))),
             'phan_loai' => array_values(array_unique(array_map('intval', array_filter((array) $request->input('phan_loai', []))))),
+            'chua_phan_loai' => $request->boolean('chua_phan_loai'),
             'dat' => in_array($dat, ['dat', 'chua_dat'], true) ? $dat : '',
             'dat_ct' => in_array($datCt, ['dat', 'chua_dat'], true) ? $datCt : '',
         ];
@@ -86,9 +87,21 @@ class DatDSPhienBoLoc
             }
         }
 
-        if ($filters['phan_loai'] !== []) {
-            $query->whereHas('phanLoai', function ($sub) use ($filters): void {
-                $sub->whereIn('DatPhanLoaiPhien.Id', $filters['phan_loai']);
+        $chuaPhanLoai = (bool) ($filters['chua_phan_loai'] ?? false);
+        $phanLoaiIds = $filters['phan_loai'] ?? [];
+
+        if ($chuaPhanLoai && $phanLoaiIds !== []) {
+            $query->where(function (Builder $group) use ($phanLoaiIds): void {
+                $group->whereDoesntHave('phanLoai')
+                    ->orWhereHas('phanLoai', function ($sub) use ($phanLoaiIds): void {
+                        $sub->whereIn('DatPhanLoaiPhien.Id', $phanLoaiIds);
+                    });
+            });
+        } elseif ($chuaPhanLoai) {
+            $query->whereDoesntHave('phanLoai');
+        } elseif ($phanLoaiIds !== []) {
+            $query->whereHas('phanLoai', function ($sub) use ($phanLoaiIds): void {
+                $sub->whereIn('DatPhanLoaiPhien.Id', $phanLoaiIds);
             });
         }
 
