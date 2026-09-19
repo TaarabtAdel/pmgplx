@@ -14,15 +14,22 @@ class DatDSPhienExcelExporter
      * @param  Collection<int, DatDSPhien>  $items
      * @param  array<int, list<string>>  $violationsById
      * @param  array<string, array{label: string, badge: string}>  $loiDefinitions
-     * @param  array<int, array{ma_giao_vien: string, bien_so_xe: string}>  $expectedPhanCongById
+     * @param  array<int, array{gio_tu_dong: float, km_tu_dong: float, gio_dem: float, km_dem: float, gio_cao_toc: float}>  $chiTieuById
      */
     public static function download(
         Collection $items,
         array $violationsById,
         array $loiDefinitions,
-        array $expectedPhanCongById = []
+        array $expectedPhanCongById = [],
+        array $chiTieuById = []
     ): StreamedResponse {
-        $spreadsheet = self::buildSpreadsheet($items, $violationsById, $loiDefinitions, $expectedPhanCongById);
+        $spreadsheet = self::buildSpreadsheet(
+            $items,
+            $violationsById,
+            $loiDefinitions,
+            $expectedPhanCongById,
+            $chiTieuById
+        );
         $filename = 'dat-phien-'.now()->format('Ymd-His').'.xlsx';
 
         return response()->streamDownload(function () use ($spreadsheet): void {
@@ -38,13 +45,14 @@ class DatDSPhienExcelExporter
      * @param  Collection<int, DatDSPhien>  $items
      * @param  array<int, list<string>>  $violationsById
      * @param  array<string, array{label: string, badge: string}>  $loiDefinitions
-     * @param  array<int, array{ma_giao_vien: string, bien_so_xe: string}>  $expectedPhanCongById
+     * @param  array<int, array{gio_tu_dong: float, km_tu_dong: float, gio_dem: float, km_dem: float, gio_cao_toc: float}>  $chiTieuById
      */
     private static function buildSpreadsheet(
         Collection $items,
         array $violationsById,
         array $loiDefinitions,
-        array $expectedPhanCongById = []
+        array $expectedPhanCongById = [],
+        array $chiTieuById = []
     ): Spreadsheet {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -64,6 +72,12 @@ class DatDSPhienExcelExporter
             'Kết thúc',
             'TH (phút)',
             'Tỉ lệ ND (%)',
+            'Số KM',
+            'Số giờ tự động',
+            'Số km tự động',
+            'Số giờ đêm',
+            'Số km đêm',
+            'Cao tốc',
             'Đạt',
             'Phân loại',
             'Cảnh báo',
@@ -91,6 +105,14 @@ class DatDSPhienExcelExporter
                 ->filter()
                 ->implode(', ');
 
+            $chiTieu = $chiTieuById[(int) $item->Id] ?? [
+                'gio_tu_dong' => 0.0,
+                'km_tu_dong' => 0.0,
+                'gio_dem' => 0.0,
+                'km_dem' => 0.0,
+                'gio_cao_toc' => 0.0,
+            ];
+
             $sheet->fromArray([
                 $index + 1,
                 $item->MaPhienHoc,
@@ -105,6 +127,12 @@ class DatDSPhienExcelExporter
                 $end?->format('d/m/Y H:i'),
                 $phut !== null ? round($phut) : null,
                 $tiLe,
+                $item->QuangDuongThucHanhKm !== null ? round((float) $item->QuangDuongThucHanhKm, 2) : null,
+                self::excelNumber($chiTieu['gio_tu_dong']),
+                self::excelNumber($chiTieu['km_tu_dong']),
+                self::excelNumber($chiTieu['gio_dem']),
+                self::excelNumber($chiTieu['km_dem']),
+                self::excelNumber($chiTieu['gio_cao_toc']),
                 $datPhien ? 'Đạt' : 'Không đạt',
                 $phanLoaiText !== '' ? $phanLoaiText : null,
                 $canhBaoText !== '' ? $canhBaoText : null,
@@ -118,5 +146,10 @@ class DatDSPhienExcelExporter
         }
 
         return $spreadsheet;
+    }
+
+    private static function excelNumber(float $value): ?float
+    {
+        return $value > 0 ? round($value, 2) : null;
     }
 }

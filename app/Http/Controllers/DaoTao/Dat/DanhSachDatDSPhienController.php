@@ -8,6 +8,7 @@ use App\Models\DaoTao\DatPhanLoaiPhien;
 use App\Support\DaoTao\DatDSPhienBoLoc;
 use App\Support\DaoTao\DatDSPhienExcelExporter;
 use App\Support\DaoTao\DatDSPhienKiemTra;
+use App\Support\DaoTao\DatPhienChiTieu;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -26,6 +27,10 @@ class DanhSachDatDSPhienController extends Controller
         $resolved = $this->resolveFiltered($filters, $canAnalyzeViolations);
 
         $items = (clone $resolved['query'])->with('phanLoai')->paginate(50)->withQueryString();
+        $chiTieuById = DatPhienChiTieu::forSessions(
+            collect($items->items()),
+            fresh: ! $canAnalyzeViolations
+        );
 
         $loiCounts = null;
         if ($canAnalyzeViolations) {
@@ -102,6 +107,7 @@ class DanhSachDatDSPhienController extends Controller
             'giaoVienOptions' => $giaoVienOptions,
             'loaiKhoaHocOptions' => $loaiKhoaHocOptions,
             'selectedHocVienOption' => $selectedHocVienOption,
+            'chiTieuById' => $chiTieuById,
         ]);
     }
 
@@ -151,12 +157,14 @@ class DanhSachDatDSPhienController extends Controller
         $canAnalyzeViolations = ($filters['ma_khoa_hoc'] ?? '') !== '';
         $resolved = $this->resolveFiltered($filters, $canAnalyzeViolations);
         $items = (clone $resolved['query'])->with('phanLoai')->get();
+        $chiTieuById = DatPhienChiTieu::forSessions($items, fresh: ! $canAnalyzeViolations);
 
         return DatDSPhienExcelExporter::download(
             $items,
             $resolved['violationsById'],
             DatDSPhienKiemTra::definitions(),
-            $resolved['expectedPhanCongById']
+            $resolved['expectedPhanCongById'],
+            $chiTieuById
         );
     }
 

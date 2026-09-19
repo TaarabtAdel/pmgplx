@@ -5,26 +5,98 @@ namespace App\Support\DaoTao;
 use App\Models\DaoTao\DatDieuKienDat;
 use App\Models\DaoTao\DatDSPhien;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 class DatHocVienTongHop
 {
+    public static function validSessionsFromFilters(array $filters): Collection
+    {
+        $sessions = DatDSPhienBoLoc::filteredQuery($filters, orderBy: null)->get();
+        $violationsById = DatDSPhienKiemTra::analyze($sessions);
+
+        return $sessions->filter(function (DatDSPhien $session) use ($violationsById): bool {
+            return DatDSPhienKiemTra::datPhien($violationsById, (int) $session->Id);
+        })->values();
+    }
+
     /**
      * @param  array<string, mixed>  $filters
      * @return list<int>
      */
     public static function validSessionIdsFromFilters(array $filters): array
     {
-        $sessions = DatDSPhienBoLoc::filteredQuery($filters, orderBy: null)->get();
-        $violationsById = DatDSPhienKiemTra::analyze($sessions);
+        return self::validSessionsFromFilters($filters)
+            ->map(fn (DatDSPhien $session): int => (int) $session->Id)
+            ->all();
+    }
 
-        $ids = [];
-        foreach ($sessions as $session) {
-            if (DatDSPhienKiemTra::datPhien($violationsById, (int) $session->Id)) {
-                $ids[] = (int) $session->Id;
+    /**
+     * Giờ ban đêm theo từng học viên: khớp lịch xe tập (khóa · GV · xe · ngày,
+     * ghi chú Ban đêm) và LaBanDem — cùng quy tắc theo dõi DAT.
+     *
+     * @param  Collection<int, DatDSPhien>  $sessions
+     * @return array<string, float>
+     */
+    public static function gioBanDemByHocVien(Collection $sessions): array
+    {
+        $hours = [];
+        $byCourse = $sessions->groupBy(
+            fn (DatDSPhien $session): string => trim((string) ($session->MaKhoaHoc ?? ''))
+        );
+
+        foreach ($byCourse as $maKhoaHoc => $courseSessions) {
+            $maKhoaHoc = (string) $maKhoaHoc;
+            if ($maKhoaHoc === '') {
+                continue;
+            }
+
+            $scheduleRows = DatPhienLichXeMatcher::scheduleForCourse($maKhoaHoc, resetCache: false);
+
+            foreach ($courseSessions as $session) {
+                if (! DatPhienLichXeMatcher::matchesGhiChu(
+                    $session,
+                    $scheduleRows,
+                    ['ban đêm', 'ban dem'],
+                    'LaBanDem'
+                )) {
+                    continue;
+                }
+
+                $key = self::hocVienRowKey($session);
+                $hours[$key] = ($hours[$key] ?? 0.0) + (float) ($session->ThoiGianThucHanhGio ?? 0);
             }
         }
 
-        return $ids;
+        return $hours;
+    }
+
+    public static function hocVienRowKey(object $row): string
+    {
+        return trim((string) ($row->MaHocVien ?? ''))."\0"
+            .trim((string) ($row->MaKhoaHoc ?? ''))."\0"
+            .(string) ($row->LoaiKhoaHoc ?? '');
+    }
+
+    /**
+     * @param  Collection<int, object>  $rows
+     * @param  Collection<string, DatDieuKienDat>  $dieuKienByHang
+     * @return Collection<int, object>
+     */
+    public static function filterDatChuongTrinh(Collection $rows, string $datCt, Collection $dieuKienByHang): Collection
+    {
+        if (! in_array($datCt, ['dat', 'chua_dat'], true)) {
+            return $rows;
+        }
+
+        return $rows->filter(function (object $row) use ($datCt, $dieuKienByHang): bool {
+            $dieuKien = $dieuKienByHang->get($row->LoaiKhoaHoc ?? '');
+            $pass = self::datChuongTrinh($row, $dieuKien);
+            if ($pass === null) {
+                return false;
+            }
+
+            return $datCt === 'dat' ? $pass : ! $pass;
+        })->values();
     }
 
     /**

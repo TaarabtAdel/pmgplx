@@ -49,6 +49,16 @@
                     Bấm <strong>Xem phiên</strong> để mở màn chi tiết từng phiên.
                 </p>
                 <p class="mb-2">
+                    <strong>Ban đêm (giờ):</strong> cùng quy tắc
+                    <a href="{{ route('daotao.pdt.dat.theo-doi') }}">theo dõi DAT</a>
+                    — phiên khớp lịch xe tập (khóa · GV · xe · ngày) có ghi chú
+                    <strong>Ban đêm</strong>
+                    @if (($filters['ma_khoa_hoc'] ?? '') !== '')
+                        (<a href="{{ route('pmgplx.lich.xe.index', ['ma_kh' => $filters['ma_khoa_hoc'], 'loai' => 'ban_dem']) }}" target="_blank" rel="noopener">loại Ban Đêm</a>)
+                    @endif
+                    và <code>LaBanDem</code> = 1.
+                </p>
+                <p class="mb-2">
                     <strong>Xe số tự động (giờ):</strong> cộng giờ thực hành của các phiên có biển số xe thuộc
                     <strong>hạng B11</strong> trong
                     <a href="{{ route('pmgplx.dm.xe.index') }}">danh mục xe tập</a>.

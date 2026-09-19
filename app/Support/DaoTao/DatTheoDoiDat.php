@@ -678,36 +678,8 @@ class DatTheoDoiDat
         ?string $flagField = null
     ): Collection {
         return $sessions->filter(function (DatDSPhien $session) use ($scheduleRows, $needles, $flagField): bool {
-            if ($flagField !== null && ! (bool) ($session->{$flagField} ?? false)) {
-                return false;
-            }
-
-            $matched = DatPhienLichXeMatcher::evaluate($session, $scheduleRows)['matched'] ?? null;
-            if ($matched === null) {
-                return false;
-            }
-
-            return self::ghiChuContains((string) ($matched->GhiChu ?? ''), $needles);
+            return DatPhienLichXeMatcher::matchesGhiChu($session, $scheduleRows, $needles, $flagField);
         })->values();
-    }
-
-    /**
-     * @param  list<string>  $needles
-     */
-    private static function ghiChuContains(string $ghiChu, array $needles): bool
-    {
-        $text = mb_strtolower(trim($ghiChu));
-        if ($text === '') {
-            return false;
-        }
-
-        foreach ($needles as $needle) {
-            if ($needle !== '' && str_contains($text, $needle)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

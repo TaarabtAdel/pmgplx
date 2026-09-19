@@ -36,8 +36,17 @@
     }
     .dat-phien-table .col-ho-ten,
     .dat-phien-table .col-giao-vien,
+    .dat-phien-table .col-phien,
     .dat-phien-table .col-thoi-gian {
         white-space: normal;
+        min-width: 9rem;
+    }
+    .dat-phien-table .col-chi-tieu {
+        text-align: right;
+        white-space: nowrap;
+    }
+    .dat-phien-table thead th {
+        vertical-align: middle;
     }
     @media (min-width: 768px) {
         .dat-filter-section .form-row:last-child .form-group {
@@ -308,15 +317,16 @@
                                     </th>
                                 @endif
                                 <th>#</th>
-                                <th>Mã phiên học</th>
+                                <th class="col-phien">Phiên / khóa</th>
                                 <th class="col-ho-ten">Học viên</th>
-                                <th>Khóa học</th>
-                                <th class="col-giao-vien">Giáo viên</th>
-                                <th>Xe</th>
                                 <th class="col-thoi-gian">Thời gian</th>
-                                <th>TH (phút)</th>
-                                <th>Tỉ lệ ND</th>
+                                <th class="col-giao-vien">Giáo viên / xe</th>
+                                <th>TH / ND</th>
+                                <th class="col-chi-tieu">Số KM</th>
                                 <th>Đạt</th>
+                                <th class="col-chi-tieu">Tự động<br><span class="font-weight-normal">giờ · km</span></th>
+                                <th class="col-chi-tieu">Ban đêm<br><span class="font-weight-normal">giờ · km</span></th>
+                                <th class="col-chi-tieu">Cao tốc</th>
                                 <th>Phân loại</th>
                                 <th>Cảnh báo</th>
                             </tr>
@@ -329,6 +339,13 @@
                                     $start = $item->ThoiGianBatDauPhienHoc;
                                     $end = $item->ThoiGianKetThucPhienHoc;
                                     $phut = ($start && $end) ? $start->diffInRealMinutes($end) : null;
+                                    $chiTieu = $chiTieuById[$item->Id] ?? [
+                                        'gio_tu_dong' => 0,
+                                        'km_tu_dong' => 0,
+                                        'gio_dem' => 0,
+                                        'km_dem' => 0,
+                                        'gio_cao_toc' => 0,
+                                    ];
                                     $coLoiNang = ! empty(array_intersect($loi, [
                                         \App\Support\DaoTao\DatDSPhienKiemTra::LOI_TI_LE_ND,
                                         \App\Support\DaoTao\DatDSPhienKiemTra::LOI_TRUNG_HV,
@@ -348,22 +365,19 @@
                                         </td>
                                     @endif
                                     <td>{{ ($items->firstItem() ?? 0) + $loop->index }}</td>
-                                    <td><code>{{ $item->MaPhienHoc }}</code></td>
+                                    <td class="col-phien">
+                                        <div><code>{{ $item->MaPhienHoc }}</code></div>
+                                        <span class="cell-sub">
+                                            {{ $item->TenKhoaHoc ?? '—' }}@if (! empty($item->LoaiKhoaHoc)) ({{ $item->LoaiKhoaHoc }})@endif
+                                            @if (! empty($item->MaKhoaHoc))
+                                                · <code>{{ $item->MaKhoaHoc }}</code>
+                                            @endif
+                                        </span>
+                                    </td>
                                     <td class="col-ho-ten">
                                         <div>{{ $item->HoTenHocVien ?: '—' }}</div>
                                         <span class="cell-sub"><code>{{ $item->MaHocVien ?: '—' }}</code></span>
                                     </td>
-                                    <td>
-                                        <div>
-                                            {{ $item->TenKhoaHoc ?? '—' }}@if (! empty($item->LoaiKhoaHoc)) ({{ $item->LoaiKhoaHoc }})@endif
-                                        </div>
-                                        <span class="cell-sub"><code>{{ $item->MaKhoaHoc ?: '—' }}</code></span>
-                                    </td>
-                                    <td class="col-giao-vien">
-                                        <div>{{ $item->HoTenGiaoVien ?: '—' }}</div>
-                                        <span class="cell-sub"><code>{{ $item->MaGiaoVien ?: '—' }}</code></span>
-                                    </td>
-                                    <td>{{ $item->BienSoXe ?? '—' }}</td>
                                     <td class="col-thoi-gian text-nowrap">
                                         @if ($start || $end)
                                             <div><span class="text-muted small">Bắt Đầu:</span> {{ $start?->format('d/m/Y H:i') ?? '—' }}</div>
@@ -372,19 +386,27 @@
                                             —
                                         @endif
                                     </td>
-                                    <td>
-                                        @if ($phut !== null)
-                                            {{ number_format($phut, 0) }}
-                                        @else
-                                            —
-                                        @endif
+                                    <td class="col-giao-vien">
+                                        <div>{{ $item->HoTenGiaoVien ?: '—' }}</div>
+                                        <span class="cell-sub"><code>{{ $item->MaGiaoVien ?: '—' }}</code></span>
+                                        <span class="cell-sub">{{ $item->BienSoXe ?: '—' }}</span>
                                     </td>
-                                    <td>
-                                        @if ($item->TiLeNhanDien !== null)
-                                            {{ rtrim(rtrim(number_format((float) $item->TiLeNhanDien, 2, '.', ''), '0'), '.') }}%
+                                    <td class="text-nowrap">
+                                        @if ($phut !== null)
+                                            {{ number_format($phut, 0) }} phút
                                         @else
                                             —
                                         @endif
+                                        <span class="cell-sub">
+                                            @if ($item->TiLeNhanDien !== null)
+                                                ND {{ rtrim(rtrim(number_format((float) $item->TiLeNhanDien, 2, '.', ''), '0'), '.') }}%
+                                            @else
+                                                ND —
+                                            @endif
+                                        </span>
+                                    </td>
+                                    <td class="col-chi-tieu">
+                                        {{ \App\Support\DaoTao\DatTheoDoiDat::formatKm($item->QuangDuongThucHanhKm) }}
                                     </td>
                                     <td>
                                         @if ($canAnalyzeViolations)
@@ -396,6 +418,17 @@
                                         @else
                                             <span class="text-muted">—</span>
                                         @endif
+                                    </td>
+                                    <td class="col-chi-tieu">
+                                        <div>{{ \App\Support\DaoTao\DatTheoDoiDat::formatGio($chiTieu['gio_tu_dong']) }}</div>
+                                        <span class="cell-sub">{{ \App\Support\DaoTao\DatTheoDoiDat::formatKm($chiTieu['km_tu_dong']) }}</span>
+                                    </td>
+                                    <td class="col-chi-tieu">
+                                        <div>{{ \App\Support\DaoTao\DatTheoDoiDat::formatGio($chiTieu['gio_dem']) }}</div>
+                                        <span class="cell-sub">{{ \App\Support\DaoTao\DatTheoDoiDat::formatKm($chiTieu['km_dem']) }}</span>
+                                    </td>
+                                    <td class="col-chi-tieu">
+                                        {{ \App\Support\DaoTao\DatTheoDoiDat::formatGio($chiTieu['gio_cao_toc']) }}
                                     </td>
                                     <td class="dat-phien-badge-wrap">
                                         @forelse ($item->phanLoai as $pl)
@@ -433,7 +466,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="{{ $phanLoais->isNotEmpty() ? 13 : 12 }}" class="text-center py-4 text-muted">
+                                    <td colspan="{{ $phanLoais->isNotEmpty() ? 14 : 13 }}" class="text-center py-4 text-muted">
                                         @if ($selectedLoi !== [] || $selectedPhanLoai !== [] || ! empty($filters['chua_phan_loai']) || ($filters['dat'] ?? '') !== '' || ($filters['loai_khoa_hoc'] ?? '') !== '')
                                             Không có phiên nào khớp bộ lọc đã chọn.
                                         @else

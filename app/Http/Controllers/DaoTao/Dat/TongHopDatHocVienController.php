@@ -9,6 +9,7 @@ use App\Support\DaoTao\DatDSPhienBoLoc;
 use App\Support\DaoTao\DatHocVienTongHop;
 use App\Support\DaoTao\DatXeSoTuDong;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 
 class TongHopDatHocVienController extends Controller
@@ -19,14 +20,23 @@ class TongHopDatHocVienController extends Controller
         $canTongHop = ($filters['ma_khoa_hoc'] ?? '') !== '';
 
         $items = null;
+        $dieuKienByHang = DatDieuKienDat::query()
+            ->orderBy('ThuTu')
+            ->orderBy('Hang')
+            ->get()
+            ->keyBy('Hang');
+
         if ($canTongHop) {
-            $validSessionIds = DatHocVienTongHop::validSessionIdsFromFilters($filters);
+            $validSessions = DatHocVienTongHop::validSessionsFromFilters($filters);
+            $validSessionIds = $validSessions
+                ->map(fn (DatDSPhien $session): int => (int) $session->Id)
+                ->all();
+            $gioBanDemByKey = DatHocVienTongHop::gioBanDemByHocVien($validSessions);
             $tongXeSoTuDongSql = DatXeSoTuDong::sqlSumGioTuDong();
-            $tongBanDemSql = DatXeSoTuDong::sqlSumGioBanDem();
 
             $query = DatDSPhienBoLoc::filteredQuery($filters, orderBy: null);
             DatHocVienTongHop::restrictToSessionIds($query, $validSessionIds);
-            $query
+            $aggregated = $query
                 ->selectRaw("
                     MaHocVien,
                     MAX(HoTenHocVien) as HoTenHocVien,
@@ -36,20 +46,34 @@ class TongHopDatHocVienController extends Controller
                     COUNT(*) as SoPhien,
                     SUM(COALESCE(ThoiGianThucHanhGio, 0)) as TongGioHoc,
                     SUM(COALESCE(QuangDuongThucHanhKm, 0)) as TongQuangDuongKm,
-                    {$tongBanDemSql} as TongBanDemGio,
                     {$tongXeSoTuDongSql} as TongXeSoTuDongGio
                 ")
                 ->whereNotNull('MaHocVien')
                 ->where('MaHocVien', '!=', '')
-                ->groupBy('MaHocVien', 'MaKhoaHoc', 'LoaiKhoaHoc');
-
-            DatHocVienTongHop::applyDatCtFilter($query, $filters['dat_ct']);
-
-            $items = $query
+                ->groupBy('MaHocVien', 'MaKhoaHoc', 'LoaiKhoaHoc')
                 ->orderBy('MaHocVien')
                 ->orderBy('MaKhoaHoc')
-                ->paginate(50)
-                ->withQueryString();
+                ->get();
+
+            foreach ($aggregated as $row) {
+                $row->TongBanDemGio = $gioBanDemByKey[DatHocVienTongHop::hocVienRowKey($row)] ?? 0.0;
+            }
+
+            $aggregated = DatHocVienTongHop::filterDatChuongTrinh(
+                $aggregated,
+                (string) ($filters['dat_ct'] ?? ''),
+                $dieuKienByHang
+            );
+
+            $page = LengthAwarePaginator::resolveCurrentPage();
+            $perPage = 50;
+            $items = new LengthAwarePaginator(
+                $aggregated->forPage($page, $perPage)->values(),
+                $aggregated->count(),
+                $perPage,
+                $page,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
         }
 
         $khoaHocOptions = DatDSPhien::query()
@@ -91,12 +115,6 @@ class TongHopDatHocVienController extends Controller
                 ];
             }
         }
-
-        $dieuKienByHang = DatDieuKienDat::query()
-            ->orderBy('ThuTu')
-            ->orderBy('Hang')
-            ->get()
-            ->keyBy('Hang');
 
         return view('DaoTao.dat.tong-hop-hoc-vien', [
             'items' => $items,

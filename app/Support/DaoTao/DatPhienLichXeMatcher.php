@@ -26,9 +26,11 @@ class DatPhienLichXeMatcher
         self::$indexByCollection = [];
     }
 
-    public static function scheduleForCourse(string $maKhoaHoc): Collection
+    public static function scheduleForCourse(string $maKhoaHoc, bool $resetCache = true): Collection
     {
-        self::resetCache();
+        if ($resetCache) {
+            self::resetCache();
+        }
 
         $maKhoaHoc = trim($maKhoaHoc);
         if ($maKhoaHoc === '') {
@@ -125,6 +127,49 @@ class DatPhienLichXeMatcher
             'matched' => $matched,
             'displaySchedule' => $matched,
         ]);
+    }
+
+    /**
+     * Phiên khớp lịch (khóa · GV · xe · ngày) và ghi chú lịch chứa một trong $needles.
+     *
+     * @param  Collection<int, KhoaHocXeTap>  $scheduleRows
+     * @param  list<string>  $needles
+     */
+    public static function matchesGhiChu(
+        DatDSPhien $session,
+        Collection $scheduleRows,
+        array $needles,
+        ?string $flagField = null
+    ): bool {
+        if ($flagField !== null && ! (bool) ($session->{$flagField} ?? false)) {
+            return false;
+        }
+
+        $matched = self::evaluate($session, $scheduleRows)['matched'] ?? null;
+        if ($matched === null) {
+            return false;
+        }
+
+        return self::ghiChuContains((string) ($matched->GhiChu ?? ''), $needles);
+    }
+
+    /**
+     * @param  list<string>  $needles
+     */
+    public static function ghiChuContains(string $ghiChu, array $needles): bool
+    {
+        $text = mb_strtolower(trim($ghiChu));
+        if ($text === '') {
+            return false;
+        }
+
+        foreach ($needles as $needle) {
+            if ($needle !== '' && str_contains($text, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
