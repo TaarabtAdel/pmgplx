@@ -4,6 +4,7 @@ namespace App\Http\Controllers\DaoTao\Dat;
 
 use App\Http\Controllers\Controller;
 use App\Models\DaoTao\DatDSPhien;
+use App\Models\DaoTao\DatDieuKienDat;
 use App\Models\DaoTao\DatPhanCongHocVien;
 use App\Support\DaoTao\DatTheoDoiDat;
 use App\Support\DaoTao\DatTheoDoiDatExcelExporter;
@@ -72,6 +73,19 @@ class TheoDoiDatController extends Controller
             'ngayHeading' => DatTheoDoiDat::formatNgayHeading($filters['ngay']),
             'tenKhoaHoc' => $tenKhoaHoc,
             'anCotTuDong' => DatTheoDoiDat::anCotTuDong($filters['ma_khoa_hoc'], $tenKhoaHoc),
+            'headerTheme' => DatDieuKienDat::headerTheme(
+                DatDieuKienDat::hangFromCourse(
+                    $filters['ma_khoa_hoc'],
+                    $tenKhoaHoc,
+                    (string) ($canShowReport
+                        ? DatDSPhien::query()
+                            ->where('MaKhoaHoc', $filters['ma_khoa_hoc'])
+                            ->whereNotNull('LoaiKhoaHoc')
+                            ->where('LoaiKhoaHoc', '!=', '')
+                            ->value('LoaiKhoaHoc')
+                        : '')
+                )
+            ),
         ]);
     }
 
@@ -98,6 +112,11 @@ class TheoDoiDatController extends Controller
             ->first();
 
         $tenKhoaHoc = (string) ($khoaHocOptions?->TenKhoaHoc ?? '');
+        $loaiKhoaHoc = (string) (DatDSPhien::query()
+            ->where('MaKhoaHoc', $filters['ma_khoa_hoc'])
+            ->whereNotNull('LoaiKhoaHoc')
+            ->where('LoaiKhoaHoc', '!=', '')
+            ->value('LoaiKhoaHoc') ?? '');
         $courseFilterOptions = DatTheoDoiDat::courseFilterOptions($filters['ma_khoa_hoc']);
         $groups = DatTheoDoiDat::buildGroups($filters);
 
@@ -108,7 +127,10 @@ class TheoDoiDatController extends Controller
             $filters['ngay'] !== '',
             DatTheoDoiDat::formatNgayHeading($filters['ngay']),
             $courseFilterOptions['giao_vien_names'],
-            DatTheoDoiDat::anCotTuDong($filters['ma_khoa_hoc'], $tenKhoaHoc)
+            DatTheoDoiDat::anCotTuDong($filters['ma_khoa_hoc'], $tenKhoaHoc),
+            DatDieuKienDat::headerTheme(
+                DatDieuKienDat::hangFromCourse($filters['ma_khoa_hoc'], $tenKhoaHoc, $loaiKhoaHoc)
+            )
         );
     }
 }

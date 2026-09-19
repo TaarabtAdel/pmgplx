@@ -9,18 +9,23 @@
     }
     .dat-theo-doi-table {
         font-size: 0.8125rem;
+        background: #fff;
+        border: 2px solid #000;
     }
     .dat-theo-doi-table th,
     .dat-theo-doi-table td {
         vertical-align: middle;
         text-align: center;
         white-space: nowrap;
+        background: #fff;
+        border-color: #000 !important;
+        border-width: 1px !important;
     }
     .dat-theo-doi-table thead th {
-        background: #d9e8f7;
-        color: #1a3a5c;
+        background: {{ $headerTheme['bg'] ?? '#1565c0' }};
+        color: {{ $headerTheme['fg'] ?? '#ffffff' }};
         font-weight: 600;
-        border-color: #b8cfe6 !important;
+        border-color: #000 !important;
     }
     .dat-theo-doi-table .col-ho-ten,
     .dat-theo-doi-table .col-gvth,
@@ -34,33 +39,17 @@
         color: #6c757d;
         margin-top: 0.15rem;
     }
-    .dat-theo-doi-table .cell-server {
+    .dat-theo-doi-table .cell-dat {
         background: #e8f5e9;
-    }
-    .dat-theo-doi-table .cell-gvth {
-        background: #fff;
     }
     .dat-theo-doi-table .cell-placeholder {
         color: #6c757d;
     }
-    .dat-theo-doi-date-head {
-        background: #eef4fb;
-        font-weight: 600;
-    }
-    .dat-theo-doi-row-canh-bao {
-        background: #fff3cd !important;
-    }
-    .dat-theo-doi-row-canh-bao .cell-server {
-        background: #ffe69c;
-    }
     .dat-theo-doi-table tbody tr:hover > td {
-        background-color: #c5ddf5 !important;
+        background-color: #f5f5f5 !important;
     }
-    .dat-theo-doi-table tbody tr:hover > .cell-server {
-        background-color: #b7e0c0 !important;
-    }
-    .dat-theo-doi-table tbody tr.dat-theo-doi-row-canh-bao:hover > td {
-        background-color: #ffe08a !important;
+    .dat-theo-doi-table tbody tr:hover > .cell-dat {
+        background-color: #c8e6c9 !important;
     }
 </style>
 @endpush
@@ -242,7 +231,7 @@
                                     <th rowspan="2">Tổng giờ<br>máy chủ</th>
                                     <th rowspan="2">Tổng KM<br>máy chủ</th>
                                     @if ($hasNgayFilter)
-                                        <th colspan="3" class="dat-theo-doi-date-head">{{ $ngayHeading }}</th>
+                                        <th colspan="3">{{ $ngayHeading }}</th>
                                     @endif
                                     <th rowspan="2" class="col-cung-duong">Cung đường theo<br>lịch giảng dạy</th>
                                     <th rowspan="2" class="col-cung-duong">Cung đường<br>giáo viên chạy</th>
@@ -261,7 +250,7 @@
                                 @foreach ($groups as $group)
                                     @php $rowspan = count($group['students']); @endphp
                                     @foreach ($group['students'] as $index => $student)
-                                        <tr @class(['dat-theo-doi-row-canh-bao' => ! empty($student['ngoai_phan_cong'])])>
+                                        <tr>
                                             <td>{{ $student['stt'] }}</td>
                                             <td class="col-ho-ten text-left">
                                                 <div>{{ $student['ho_ten'] }}</div>
@@ -278,14 +267,14 @@
                                                 <td rowspan="{{ $rowspan }}">{{ $group['bien_so_xe'] }}</td>
                                             @endif
                                             @unless ($anCotTuDong)
-                                                <td class="cell-server">{{ $student['gio_tu_dong'] }}</td>
-                                                <td class="cell-server">{{ $student['km_may_chu'] }}</td>
+                                                <td @class(['cell-dat' => ! empty($student['dat_gio_tu_dong'])])>{{ $student['gio_tu_dong'] }}</td>
+                                                <td>{{ $student['km_may_chu'] }}</td>
                                             @endunless
-                                            <td class="cell-server">{{ $student['chay_dem'] }}</td>
-                                            <td class="cell-server @if($student['km_dem'] === '—') cell-placeholder @endif">{{ $student['km_dem'] }}</td>
-                                            <td class="cell-server">{{ $student['cao_toc'] }}</td>
-                                            <td class="cell-server">{{ $student['gio_may_chu'] }}</td>
-                                            <td class="cell-server">{{ $student['tong_km_may_chu'] }}</td>
+                                            <td @class(['cell-dat' => ! empty($student['dat_gio_dem'])])>{{ $student['chay_dem'] }}</td>
+                                            <td @class(['cell-placeholder' => $student['km_dem'] === '—'])>{{ $student['km_dem'] }}</td>
+                                            <td @class(['cell-dat' => ! empty($student['dat_cao_toc'])])>{{ $student['cao_toc'] }}</td>
+                                            <td @class(['cell-dat' => ! empty($student['dat_gio_may_chu'])])>{{ $student['gio_may_chu'] }}</td>
+                                            <td @class(['cell-dat' => ! empty($student['dat_tong_km_may_chu'])])>{{ $student['tong_km_may_chu'] }}</td>
                                             @if ($hasNgayFilter)
                                                 <td>{{ $student['gio_trong_ngay'] }}</td>
                                                 <td>{{ $student['km_trong_ngay'] }}</td>
@@ -294,7 +283,7 @@
                                                 @endif
                                             @endif
                                             @if ($index === 0)
-                                                <td class="col-cung-duong cell-placeholder" rowspan="{{ $rowspan }}">
+                                                <td class="col-cung-duong" rowspan="{{ $rowspan }}">
                                                     {{ $group['cung_duong_lich'] }}
                                                 </td>
                                                 <td class="col-cung-duong cell-placeholder" rowspan="{{ $rowspan }}">

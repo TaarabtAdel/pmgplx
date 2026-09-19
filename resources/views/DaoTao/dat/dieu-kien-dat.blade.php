@@ -24,7 +24,7 @@
             <div class="border rounded p-3 bg-light small mb-3">
                 <p class="mb-2">
                     Ngưỡng tối thiểu theo <strong>hạng GPLX</strong> để xét đạt chương trình thực hành DAT
-                    (tập lái ban đêm, xe số tự động, số giờ học, tổng quãng đường).
+                    (tập lái ban đêm, xe số tự động, giờ cao tốc, số giờ học, tổng quãng đường).
                 </p>
                 <p class="mb-0 font-weight-bold">
                     Áp dụng từ ngày {{ $apDungTuNgayFormatted }}
@@ -49,6 +49,11 @@
                     <div class="form-group col-md-2 mb-md-0">
                         <label class="small mb-1">Xe số tự động (giờ)</label>
                         <input type="number" name="xe_so_tu_dong_gio" class="form-control form-control-sm"
+                               min="0" step="0.01" value="0" required>
+                    </div>
+                    <div class="form-group col-md-2 mb-md-0">
+                        <label class="small mb-1">Giờ cao tốc</label>
+                        <input type="number" name="gio_cao_toc_gio" class="form-control form-control-sm"
                                min="0" step="0.01" value="0" required>
                     </div>
                     <div class="form-group col-md-2 mb-md-0">
@@ -77,6 +82,7 @@
                             <th width="90">Hạng</th>
                             <th>Tập lái ban đêm (giờ)</th>
                             <th>Xe số tự động (giờ)</th>
+                            <th>Giờ cao tốc</th>
                             <th>Số giờ học</th>
                             <th>Tổng quãng đường (km)</th>
                             <th width="140">Thao tác</th>
@@ -85,7 +91,7 @@
                     <tbody>
                         @forelse ($items as $item)
                             <tr>
-                                <td colspan="7" class="p-0">
+                                <td colspan="8" class="p-0">
                                     <table class="table table-sm mb-0">
                                         <tr>
                                             <td width="70" class="border-0">
@@ -111,6 +117,11 @@
                                             <td class="border-0">
                                                 <input type="number" name="xe_so_tu_dong_gio" class="form-control form-control-sm"
                                                        min="0" step="0.01" value="{{ $item->XeSoTuDongGio }}" required
+                                                       form="frm-dk-dat-update-{{ $item->Id }}">
+                                            </td>
+                                            <td class="border-0">
+                                                <input type="number" name="gio_cao_toc_gio" class="form-control form-control-sm"
+                                                       min="0" step="0.01" value="{{ $item->GioCaoTocGio ?? 0 }}" required
                                                        form="frm-dk-dat-update-{{ $item->Id }}">
                                             </td>
                                             <td class="border-0">
@@ -140,7 +151,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center py-4 text-muted">
+                                <td colspan="8" class="text-center py-4 text-muted">
                                     Chưa có điều kiện đạt. Thêm ở form phía trên.
                                 </td>
                             </tr>

@@ -2,6 +2,7 @@
 
 namespace App\Support\DaoTao;
 
+use App\Models\DaoTao\DatDieuKienDat;
 use App\Models\DaoTao\DatDSPhien;
 use App\Models\DaoTao\DatPhanCongHocVien;
 use App\Models\PMGPLX\GiaoVien;
@@ -11,6 +12,8 @@ use Illuminate\Support\Collection;
 
 class DatTheoDoiDat
 {
+    public const CUNG_DUONG_LICH_MAC_DINH = 'Các tuyến đường được quy định trên giấy phép xe tập lái';
+
     /**
      * @return array{
      *     ma_khoa_hoc: string,
@@ -164,6 +167,19 @@ class DatTheoDoiDat
 
         $sessions = self::loadCourseSessions($maKhoaHoc, $chiCongPhienDat);
         $scheduleRows = DatPhienLichXeMatcher::scheduleForCourse($maKhoaHoc);
+        $loaiKhoaHoc = (string) $sessions
+            ->pluck('LoaiKhoaHoc')
+            ->map(fn ($value): string => trim((string) $value))
+            ->filter()
+            ->first();
+        $tenKhoaHoc = (string) $sessions
+            ->pluck('TenKhoaHoc')
+            ->map(fn ($value): string => trim((string) $value))
+            ->filter()
+            ->first();
+        $dieuKien = DatDieuKienDat::forHang(
+            DatDieuKienDat::hangFromCourse($maKhoaHoc, $tenKhoaHoc, $loaiKhoaHoc)
+        );
 
         /** @var Collection<string, Collection<int, DatDSPhien>> $sessionsByMaHocVien */
         $sessionsByMaHocVien = $sessions->groupBy(
@@ -299,7 +315,8 @@ class DatTheoDoiDat
                     $ngay,
                     $stt,
                     false,
-                    $scheduleRows
+                    $scheduleRows,
+                    $dieuKien
                 );
             }
 
@@ -327,7 +344,8 @@ class DatTheoDoiDat
                     $ngay,
                     $stt,
                     true,
-                    $scheduleRows
+                    $scheduleRows,
+                    $dieuKien
                 );
             }
 
@@ -340,7 +358,7 @@ class DatTheoDoiDat
                 'ho_ten_giao_vien' => self::formatGiaoVienTen($giaoVienNames, $maGiaoVien),
                 'bien_so_xe' => $bienSoXe !== '' ? $bienSoXe : self::placeholder(),
                 'tong_km_ngay' => $ngay !== '' ? self::formatKm($groupDayKm) : self::placeholder(),
-                'cung_duong_lich' => self::placeholder(),
+                'cung_duong_lich' => self::CUNG_DUONG_LICH_MAC_DINH,
                 'cung_duong_gv' => self::placeholder(),
                 'gio_gvth' => self::formatGio($groupGio),
                 'km_gvth' => self::formatKm($groupKm),
@@ -466,6 +484,8 @@ class DatTheoDoiDat
                 'MaGiaoVien',
                 'BienSoXe',
                 'MaKhoaHoc',
+                'TenKhoaHoc',
+                'LoaiKhoaHoc',
                 'ThoiGianBatDauPhienHoc',
                 'ThoiGianKetThucPhienHoc',
                 'ThoiGianThucHanhGio',
@@ -630,7 +650,8 @@ class DatTheoDoiDat
         string $ngay,
         int $stt,
         bool $ngoaiPhanCong,
-        Collection $scheduleRows
+        Collection $scheduleRows,
+        ?DatDieuKienDat $dieuKien
     ): array {
         $dayTotals = $studentDayTotals[$maHocVien] ?? ['gio' => 0.0, 'km' => 0.0];
         $gioTuDong = self::sumThucHanhGio($studentSessions, 'LaTuDong');
@@ -662,6 +683,11 @@ class DatTheoDoiDat
             'gio_trong_ngay' => $ngay !== '' ? self::formatGio($dayTotals['gio']) : self::placeholder(),
             'km_trong_ngay' => $ngay !== '' ? self::formatKm($dayTotals['km']) : self::placeholder(),
             'ngoai_phan_cong' => $ngoaiPhanCong,
+            'dat_gio_tu_dong' => DatDieuKienDat::datNguong($gioTuDong, $dieuKien?->XeSoTuDongGio),
+            'dat_gio_dem' => DatDieuKienDat::datNguong($chayDem, $dieuKien?->TapLaiBanDemGio),
+            'dat_cao_toc' => DatDieuKienDat::datNguong($gioCaoToc, $dieuKien?->GioCaoTocGio),
+            'dat_gio_may_chu' => DatDieuKienDat::datNguong($gioMayChu, $dieuKien?->SoGioHoc),
+            'dat_tong_km_may_chu' => DatDieuKienDat::datNguong($tongKmMayChu, $dieuKien?->TongQuangDuongKm),
         ];
     }
 

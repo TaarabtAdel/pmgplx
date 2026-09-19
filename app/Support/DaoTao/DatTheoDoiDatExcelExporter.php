@@ -13,17 +13,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DatTheoDoiDatExcelExporter
 {
-    private const COLOR_HEADER = 'FFD9E8F7';
+    private const COLOR_DAT = 'FFE8F5E9';
 
-    private const COLOR_HEADER_DATE = 'FFEEF4FB';
+    private const COLOR_BORDER = 'FF000000';
 
-    private const COLOR_SERVER = 'FFE8F5E9';
-
-    private const COLOR_WARNING = 'FFFFF3CD';
-
-    private const COLOR_BORDER = 'FFB8CFE6';
-
-    private const COLOR_HEADER_FONT = 'FF1A3A5C';
+    private const COLOR_HEADER_FONT = 'FFFFFFFF';
 
     /**
      * @param  list<array<string, mixed>>  $groups
@@ -42,7 +36,8 @@ class DatTheoDoiDatExcelExporter
         bool $hasNgayFilter,
         string $ngayHeading,
         Collection $giaoVienNames,
-        bool $anCotTuDong = false
+        bool $anCotTuDong = false,
+        array $headerTheme = []
     ): StreamedResponse {
         $spreadsheet = self::buildSpreadsheet(
             $groups,
@@ -51,7 +46,8 @@ class DatTheoDoiDatExcelExporter
             $hasNgayFilter,
             $ngayHeading,
             $giaoVienNames,
-            $anCotTuDong
+            $anCotTuDong,
+            $headerTheme
         );
 
         $safeMaKh = preg_replace('/[^A-Za-z0-9_-]+/', '-', $filters['ma_khoa_hoc']) ?: 'khoa';
@@ -83,7 +79,8 @@ class DatTheoDoiDatExcelExporter
         bool $hasNgayFilter,
         string $ngayHeading,
         Collection $giaoVienNames,
-        bool $anCotTuDong
+        bool $anCotTuDong,
+        array $headerTheme
     ): Spreadsheet {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -108,8 +105,7 @@ class DatTheoDoiDatExcelExporter
         $cungGvCol = $col++;
         $lastCol = $cungGvCol;
         $lastLetter = self::columnLetter($lastCol);
-        $serverStartCol = $colGioTuDong > 0 ? $colGioTuDong : $colGioDem;
-        $serverEndCol = $colKmMayChu;
+        $headerExcel = (string) ($headerTheme['excel'] ?? 'FF1565C0');
 
         $khoaLabel = $tenKhoaHoc !== '' ? $tenKhoaHoc.' ('.$filters['ma_khoa_hoc'].')' : $filters['ma_khoa_hoc'];
         $sheet->setCellValue('A1', 'Khóa: '.$khoaLabel);
@@ -173,11 +169,7 @@ class DatTheoDoiDatExcelExporter
         $sheet->setCellValue(self::columnLetter($colHv).$headerRow2, 'Mã học viên');
         $sheet->setCellValue(self::columnLetter($colGv).$headerRow2, 'Mã giáo viên');
 
-        self::styleHeader($sheet, 'A'.$headerRow1.':'.$lastLetter.$headerRow2);
-        if ($hasNgayFilter) {
-            $sheet->getStyle(self::columnLetter($colGioNgay).$headerRow1.':'.self::columnLetter($colTongKmNgay).$headerRow1)
-                ->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_HEADER_DATE);
-        }
+        self::styleHeader($sheet, 'A'.$headerRow1.':'.$lastLetter.$headerRow2, $headerExcel);
 
         $rowIndex = 6;
         foreach ($groups as $group) {
@@ -219,12 +211,17 @@ class DatTheoDoiDatExcelExporter
                 if ($colGioTuDong > 0) {
                     $sheet->setCellValue(self::columnLetter($colGioTuDong).$rowIndex, self::exportCell((string) ($student['gio_tu_dong'] ?? '')));
                     $sheet->setCellValue(self::columnLetter($colKmTuDong).$rowIndex, self::exportCell((string) ($student['km_may_chu'] ?? '')));
+                    self::fillDat($sheet, $colGioTuDong, $rowIndex, ! empty($student['dat_gio_tu_dong']));
                 }
                 $sheet->setCellValue(self::columnLetter($colGioDem).$rowIndex, self::exportCell((string) ($student['chay_dem'] ?? '')));
                 $sheet->setCellValue(self::columnLetter($colKmDem).$rowIndex, self::exportCell((string) ($student['km_dem'] ?? '')));
                 $sheet->setCellValue(self::columnLetter($colCaoToc).$rowIndex, self::exportCell((string) ($student['cao_toc'] ?? '')));
                 $sheet->setCellValue(self::columnLetter($colGioMayChu).$rowIndex, self::exportCell((string) ($student['gio_may_chu'] ?? '')));
                 $sheet->setCellValue(self::columnLetter($colKmMayChu).$rowIndex, self::exportCell((string) ($student['tong_km_may_chu'] ?? '')));
+                self::fillDat($sheet, $colGioDem, $rowIndex, ! empty($student['dat_gio_dem']));
+                self::fillDat($sheet, $colCaoToc, $rowIndex, ! empty($student['dat_cao_toc']));
+                self::fillDat($sheet, $colGioMayChu, $rowIndex, ! empty($student['dat_gio_may_chu']));
+                self::fillDat($sheet, $colKmMayChu, $rowIndex, ! empty($student['dat_tong_km_may_chu']));
 
                 if ($hasNgayFilter) {
                     $sheet->setCellValue(self::columnLetter($colGioNgay).$rowIndex, self::exportCell((string) ($student['gio_trong_ngay'] ?? '')));
@@ -237,22 +234,12 @@ class DatTheoDoiDatExcelExporter
                 if ($isFirst) {
                     $sheet->setCellValue(
                         self::columnLetter($cungLichCol).$rowIndex,
-                        self::exportCell((string) ($group['cung_duong_lich'] ?? ''))
+                        (string) ($group['cung_duong_lich'] ?? DatTheoDoiDat::CUNG_DUONG_LICH_MAC_DINH)
                     );
                     $sheet->setCellValue(
                         self::columnLetter($cungGvCol).$rowIndex,
                         self::exportCell((string) ($group['cung_duong_gv'] ?? ''))
                     );
-                }
-
-                $sheet->getStyle(self::columnLetter($serverStartCol).$rowIndex.':'.self::columnLetter($serverEndCol).$rowIndex)
-                    ->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_SERVER);
-
-                if (! empty($student['ngoai_phan_cong'])) {
-                    $sheet->getStyle('A'.$rowIndex.':'.$lastLetter.$rowIndex)
-                        ->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_WARNING);
-                    $sheet->getStyle(self::columnLetter($serverStartCol).$rowIndex.':'.self::columnLetter($serverEndCol).$rowIndex)
-                        ->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFFFE69C');
                 }
 
                 $rowIndex++;
@@ -273,7 +260,7 @@ class DatTheoDoiDatExcelExporter
         $sheet->getStyle('A'.$headerRow1.':'.$lastLetter.$lastDataRow)->applyFromArray([
             'borders' => [
                 'allBorders' => [
-                    'borderStyle' => Border::BORDER_THIN,
+                    'borderStyle' => Border::BORDER_MEDIUM,
                     'color' => ['argb' => self::COLOR_BORDER],
                 ],
             ],
@@ -297,7 +284,7 @@ class DatTheoDoiDatExcelExporter
         foreach (range(5, $lastCol) as $col) {
             $sheet->getColumnDimensionByColumn($col)->setWidth(14);
         }
-        $sheet->getColumnDimensionByColumn($cungLichCol)->setWidth(22);
+        $sheet->getColumnDimensionByColumn($cungLichCol)->setWidth(42);
         $sheet->getColumnDimensionByColumn($cungGvCol)->setWidth(22);
         $sheet->getRowDimension($headerRow1)->setRowHeight(28);
         $sheet->getRowDimension($headerRow2)->setRowHeight(28);
@@ -308,7 +295,7 @@ class DatTheoDoiDatExcelExporter
         return $spreadsheet;
     }
 
-    private static function styleHeader(Worksheet $sheet, string $range): void
+    private static function styleHeader(Worksheet $sheet, string $range, string $headerColor): void
     {
         $sheet->getStyle($range)->applyFromArray([
             'font' => [
@@ -317,7 +304,7 @@ class DatTheoDoiDatExcelExporter
             ],
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => self::COLOR_HEADER],
+                'startColor' => ['argb' => $headerColor],
             ],
             'alignment' => [
                 'vertical' => Alignment::VERTICAL_CENTER,
@@ -325,6 +312,16 @@ class DatTheoDoiDatExcelExporter
                 'wrapText' => true,
             ],
         ]);
+    }
+
+    private static function fillDat(Worksheet $sheet, int $column, int $row, bool $dat): void
+    {
+        if (! $dat || $column < 1) {
+            return;
+        }
+
+        $sheet->getStyle(self::columnLetter($column).$row)
+            ->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::COLOR_DAT);
     }
 
     /**
