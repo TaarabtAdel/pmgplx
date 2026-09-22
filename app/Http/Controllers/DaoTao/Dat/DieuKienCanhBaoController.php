@@ -4,6 +4,7 @@ namespace App\Http\Controllers\DaoTao\Dat;
 
 use App\Http\Controllers\Controller;
 use App\Models\DaoTao\DatDieuKienCanhBao;
+use App\Models\DaoTao\DatPhanLoaiPhien;
 use App\Support\DaoTao\DatDSPhienKiemTra;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,10 +15,16 @@ class DieuKienCanhBaoController extends Controller
     public function index(): View
     {
         $cauHinh = DatDieuKienCanhBao::hienTai();
+        $phanLoais = DatPhanLoaiPhien::query()
+            ->orderBy('ThuTu')
+            ->orderBy('TenPhanLoai')
+            ->get(['Id', 'TenPhanLoai']);
 
         return view('DaoTao.dat.dieu-kien-canh-bao', [
             'cauHinh' => $cauHinh,
             'loiDefinitions' => DatDSPhienKiemTra::definitions(),
+            'phanLoais' => $phanLoais,
+            'selectedPhanLoaiKhongDat' => $cauHinh->phanLoaiKhongDatIdList(),
         ]);
     }
 
@@ -28,6 +35,8 @@ class DieuKienCanhBaoController extends Controller
             'thoi_gian_toi_da_phut' => ['required', 'integer', 'min:1', 'max:9999', 'gt:thoi_gian_toi_thieu_phut'],
             'khoang_phien_lien_ke_phut' => ['required', 'integer', 'min:0', 'max:999'],
             'ti_le_nhan_dien_toi_thieu' => ['required', 'numeric', 'min:0', 'max:100'],
+            'phan_loai_khong_dat' => ['nullable', 'array'],
+            'phan_loai_khong_dat.*' => ['integer'],
         ], [
             'thoi_gian_toi_da_phut.gt' => 'Thời gian tối đa phải lớn hơn thời gian tối thiểu.',
         ]);
@@ -38,6 +47,9 @@ class DieuKienCanhBaoController extends Controller
             'ThoiGianPhienToiDaPhut' => (int) $validated['thoi_gian_toi_da_phut'],
             'KhoangPhienLienKePhut' => (int) $validated['khoang_phien_lien_ke_phut'],
             'TiLeNhanDienToiThieu' => round((float) $validated['ti_le_nhan_dien_toi_thieu'], 2),
+            'PhanLoaiKhongDatIds' => DatDieuKienCanhBao::encodePhanLoaiKhongDatIds(
+                $validated['phan_loai_khong_dat'] ?? []
+            ),
             'NgayCapNhat' => now(),
         ]);
 

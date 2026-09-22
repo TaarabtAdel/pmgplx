@@ -73,6 +73,35 @@
                     </div>
                 </div>
 
+                <div class="border rounded p-3 bg-white mb-4">
+                    <strong class="d-block mb-2">Phân loại tính không đạt</strong>
+                    <p class="small text-muted mb-2">
+                        Phiên có một trong các phân loại đã chọn sẽ là <strong>Không đạt</strong>
+                        (thêm vào các cảnh báo bên trên). Áp dụng cả khi lọc Đạt/Không đạt
+                        và khi cộng giờ ở theo dõi DAT / tổng hợp học viên (chỉ phiên đạt).
+                    </p>
+                    @if ($phanLoais->isEmpty())
+                        <p class="small text-muted mb-0">
+                            Chưa có phân loại.
+                            <a href="{{ route('daotao.pdt.dat.phan-loai-phien') }}">Tạo phân loại</a>
+                            (ví dụ «Phiên lỗi») rồi quay lại chọn tại đây.
+                        </p>
+                    @else
+                        <div class="form-row">
+                            @foreach ($phanLoais as $pl)
+                                <div class="col-md-4 col-lg-3 mb-2">
+                                    <label class="mb-0 small d-flex align-items-start">
+                                        <input type="checkbox" name="phan_loai_khong_dat[]" value="{{ $pl->Id }}"
+                                               class="mr-2 mt-1"
+                                               @checked(in_array((int) $pl->Id, $selectedPhanLoaiKhongDat, true))>
+                                        <span>{{ $pl->TenPhanLoai }}</span>
+                                    </label>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
                 @if ($cauHinh->NgayCapNhat)
                     <p class="small text-muted mb-3">
                         Cập nhật lần cuối: {{ $cauHinh->NgayCapNhat->format('d/m/Y H:i') }}

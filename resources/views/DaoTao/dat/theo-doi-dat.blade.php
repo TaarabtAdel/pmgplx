@@ -298,7 +298,7 @@
                     </div>
                     <p class="small text-muted mt-2 mb-0">
                         @if ($filters['chi_cong_phien_dat'] ?? true)
-                            <strong>Chỉ cộng phiên đạt:</strong> bỏ qua phiên có cảnh báo (cùng điều kiện trang Quản lý phiên).
+                            <strong>Chỉ cộng phiên đạt:</strong> bỏ qua phiên không đạt (cảnh báo hoặc phân loại đánh dấu không đạt — cùng điều kiện trang Quản lý phiên).
                         @else
                             <strong>Tất cả phiên:</strong> cộng mọi phiên, kể cả phiên bị cảnh báo.
                         @endif

@@ -29,6 +29,7 @@ class DatDieuKienCanhBao extends Model
         'ThoiGianPhienToiDaPhut',
         'KhoangPhienLienKePhut',
         'TiLeNhanDienToiThieu',
+        'PhanLoaiKhongDatIds',
         'NgayCapNhat',
     ];
 
@@ -86,5 +87,34 @@ class DatDieuKienCanhBao extends Model
             'khoang_phut' => (int) ($this->KhoangPhienLienKePhut ?? self::DEFAULT_KHOANG_PHUT),
             'ti_le' => (float) ($this->TiLeNhanDienToiThieu ?? self::DEFAULT_TI_LE),
         ];
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function phanLoaiKhongDatIdList(): array
+    {
+        $raw = trim((string) ($this->PhanLoaiKhongDatIds ?? ''));
+        if ($raw === '') {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(
+            array_map('intval', explode(',', $raw)),
+            static fn (int $id): bool => $id > 0
+        )));
+    }
+
+    /**
+     * @param  list<int>  $ids
+     */
+    public static function encodePhanLoaiKhongDatIds(array $ids): ?string
+    {
+        $ids = array_values(array_unique(array_filter(
+            array_map('intval', $ids),
+            static fn (int $id): bool => $id > 0
+        )));
+
+        return $ids === [] ? null : implode(',', $ids);
     }
 }

@@ -8,6 +8,7 @@ use App\Models\DaoTao\DatPhanCongHocVien;
 use App\Support\PMGPLX\LichExcelBienSo;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Kiểm tra chất lượng / hợp lệ phiên DAT trên danh sách quản lý.
@@ -31,6 +32,9 @@ class DatDSPhienKiemTra
     public const LOI_SAI_GIAO_VIEN = 'sai_giao_vien';
 
     public const LOI_SAI_XE = 'sai_xe';
+
+    /** @var array<int, true> */
+    private static array $sessionIdsKhongDatPhanLoai = [];
 
     /**
      * @return array{
@@ -107,6 +111,7 @@ class DatDSPhienKiemTra
      */
     public static function analyze(Collection $sessions, ?array &$expectedPhanCongById = null): array
     {
+        self::$sessionIdsKhongDatPhanLoai = [];
         $violations = [];
         $s = self::settings();
 
@@ -120,6 +125,7 @@ class DatDSPhienKiemTra
         self::applyOverlapViolations($sessions, $violations, 'MaGiaoVien', self::LOI_TRUNG_GV);
         self::applyLichXeViolations($sessions, $violations);
         self::applyPhanCongViolations($sessions, $violations, $expectedPhanCongById);
+        self::markPhanLoaiKhongDat($sessions);
 
         return $violations;
     }
@@ -176,13 +182,22 @@ class DatDSPhienKiemTra
     }
 
     /**
-     * Phiên đạt khi không vi phạm bất kỳ điều kiện cảnh báo nào.
+     * Phiên đạt khi không vi phạm cảnh báo và không thuộc phân loại đánh dấu không đạt.
      *
      * @param  array<int, list<string>>  $violationsById
      */
     public static function datPhien(array $violationsById, int $id): bool
     {
-        return ($violationsById[$id] ?? []) === [];
+        if (($violationsById[$id] ?? []) !== []) {
+            return false;
+        }
+
+        return empty(self::$sessionIdsKhongDatPhanLoai[$id]);
+    }
+
+    public static function khongDatDoPhanLoai(int $id): bool
+    {
+        return ! empty(self::$sessionIdsKhongDatPhanLoai[$id]);
     }
 
     /**
@@ -457,6 +472,44 @@ class DatDSPhienKiemTra
         }
 
         return array_keys($allowed);
+    }
+
+    /**
+     * @param  Collection<int, DatDSPhien>  $sessions
+     */
+    private static function markPhanLoaiKhongDat(Collection $sessions): void
+    {
+        $phanLoaiIds = DatDieuKienCanhBao::hienTai()->phanLoaiKhongDatIdList();
+        if ($phanLoaiIds === [] || $sessions->isEmpty()) {
+            return;
+        }
+
+        $phienIds = $sessions
+            ->map(fn (DatDSPhien $session): int => (int) $session->Id)
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($phienIds === []) {
+            return;
+        }
+
+        $hitIds = [];
+        foreach (array_chunk($phienIds, 1000) as $chunk) {
+            $rows = DB::connection('sqlsrv_manhlinh')
+                ->table('DatDSPhienPhanLoai')
+                ->whereIn('DatDSPhienId', $chunk)
+                ->whereIn('PhanLoaiId', $phanLoaiIds)
+                ->distinct()
+                ->pluck('DatDSPhienId');
+
+            foreach ($rows as $id) {
+                $hitIds[(int) $id] = true;
+            }
+        }
+
+        self::$sessionIdsKhongDatPhanLoai = $hitIds;
     }
 
     private static function applyLichXeViolations(Collection $sessions, array &$violations): void
