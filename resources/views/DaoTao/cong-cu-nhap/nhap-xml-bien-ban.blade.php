@@ -223,20 +223,26 @@
             }).done(function (res) {
                 var done = res.done || (index + 1);
                 if (res.download_url) {
-                    var isZip = (res.download_kind || 'pages') !== 'merge';
+                    var kind = res.download_kind || 'pages';
                     if (res.pages_dir) {
                         $('#xuat-tong-folder').text(
-                            'Thư mục trên server (mở từng file Word): ' + res.pages_dir
+                            'Thư mục trên server: ' + res.pages_dir
                         ).show();
                     }
-                    setProgress(total, total, isZip
-                        ? 'Đã xuất xong. Đang tải ZIP từng biên bản…'
-                        : 'Đang tải file Word tổng…');
+                    var msg = 'Đã xuất xong. ';
+                    if (kind === 'pdf') {
+                        msg += 'Đang tải PDF tổng (in)…';
+                    } else if (kind === 'merge') {
+                        msg += 'Đang tải file Word tổng…';
+                    } else {
+                        msg += 'Đang tải ZIP từng biên bản…';
+                    }
+                    setProgress(total, total, msg);
                     window.location = res.download_url;
                     running = false;
                     syncBtn();
                     $('#xuat-tong-close').prop('disabled', false);
-                    if (!isZip) {
+                    if (kind === 'merge') {
                         setTimeout(function () { $('#modalXuatTong').modal('hide'); }, 800);
                     }
                     return;

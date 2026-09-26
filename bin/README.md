@@ -78,8 +78,31 @@ Kiểm tra cài đặt:
 laravel\bin\clippit.exe --version
 ```
 
-Tuỳ chọn `.env` (khi tích hợp vào Laravel):
+Tuỳ chọn `.env` (gộp DOCX, không dùng cho in PDF):
 
 ```
 CLIPPIT_BIN=F:\pmgplx\bin\clippit.exe
 ```
+
+---
+
+# In PDF tổng (xuất biên bản)
+
+Luồng: từng `.docx` (PhpWord) → **LibreOffice** → PDF → **qpdf** (hoặc Ghostscript) gộp 1 file.
+
+## Windows server
+
+1. Cài [LibreOffice](https://www.libreoffice.org/download/download/) (có `soffice.exe`).
+2. Tuỳ chọn: cài [qpdf for Windows](https://github.com/qpdf/qpdf/releases) → `bin\qpdf.exe`, hoặc Ghostscript.
+3. `.env`:
+
+```
+BIEN_BAN_TONG_GOP_FILE=true
+BIEN_BAN_TONG_MERGE_DRIVER=pdf
+LIBREOFFICE_BIN=C:\Program Files\LibreOffice\program\soffice.exe
+QPDF_BIN=F:\pmgplx\bin\qpdf.exe
+```
+
+4. `php artisan config:clear` → **Xuất tổng** → tải `bien-ban-tong-….pdf`.
+
+Docker dev: image đã có `libreoffice-writer-nogui`, `qpdf`, `ghostscript` (rebuild container).

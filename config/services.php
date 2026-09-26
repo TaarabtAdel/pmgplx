@@ -58,10 +58,19 @@ return [
         'bin' => env('CLIPPIT_BIN'),
     ],
 
+    'libreoffice' => [
+        'bin' => env('LIBREOFFICE_BIN'),
+    ],
+
+    'pdf_tools' => [
+        'qpdf' => env('QPDF_BIN'),
+        'ghostscript' => env('GHOSTSCRIPT_BIN'),
+    ],
+
     'bien_ban_tong' => [
         'merge_files' => env('BIEN_BAN_TONG_GOP_FILE', false),
-        // clippit (khuyến nghị) | word | xml | auto | none
-        'merge_driver' => env('BIEN_BAN_TONG_MERGE_DRIVER', 'clippit'),
+        // pdf (in nhiều trang) | clippit | word | xml | auto | none
+        'merge_driver' => env('BIEN_BAN_TONG_MERGE_DRIVER', 'pdf'),
         'allow_xml_merge' => env('BIEN_BAN_TONG_ALLOW_XML_MERGE', false),
     ],
 

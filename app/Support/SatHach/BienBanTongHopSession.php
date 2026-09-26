@@ -38,6 +38,7 @@ class BienBanTongHopSession
             'done' => 0,
             'files' => [],
             'combined_docx' => $dir.DIRECTORY_SEPARATOR.'bien-ban-tong.docx',
+            'combined_pdf' => $dir.DIRECTORY_SEPARATOR.'bien-ban-tong.pdf',
             'created_at' => time(),
         ];
         self::save($job);

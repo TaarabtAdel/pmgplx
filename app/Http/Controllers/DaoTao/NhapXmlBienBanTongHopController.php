@@ -7,6 +7,7 @@ use App\Models\DaoTao\SatHachBienBan;
 use App\Support\DaoTao\Jp2PhotoConverter;
 use App\Support\SatHach\BienBanDocxGenerator;
 use App\Support\SatHach\BienBanTongDocxCombiner;
+use App\Support\SatHach\BienBanTongPdfExporter;
 use App\Support\SatHach\BienBanTongHopPagePath;
 use App\Support\SatHach\BienBanTongHopSession;
 use App\Support\SatHach\BienBanTongHopZip;
@@ -259,6 +260,17 @@ class NhapXmlBienBanTongHopController extends Controller
         $kind = (string) ($session['download_kind'] ?? 'pages');
         $safeKy = preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) ($session['ma_ky_sh'] ?? 'ky')) ?: 'ky';
 
+        if ($kind === 'pdf') {
+            $pdf = (string) ($session['combined_pdf'] ?? '');
+            if (! is_file($pdf)) {
+                return redirect()
+                    ->route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban')
+                    ->with('error', 'Chưa có file PDF tổng.');
+            }
+
+            return response()->download($pdf, 'bien-ban-tong-'.$safeKy.'.pdf');
+        }
+
         if ($kind === 'merge') {
             $docx = (string) ($session['combined_docx'] ?? '');
             if (! is_file($docx)) {
@@ -331,9 +343,19 @@ class NhapXmlBienBanTongHopController extends Controller
         $job['zip_path'] = $zipPath;
         $job['download_kind'] = 'pages';
 
-        if ($this->shouldMergeTongFiles() && count($files) >= 2) {
-            (new BienBanTongDocxCombiner())->merge($files, (string) $job['combined_docx']);
-            $job['download_kind'] = 'merge';
+        if ($this->shouldMergeTongFiles() && count($files) >= 1) {
+            $driver = strtolower(trim((string) config('services.bien_ban_tong.merge_driver', 'pdf')));
+            if ($driver === 'pdf') {
+                (new BienBanTongPdfExporter())->build(
+                    $files,
+                    (string) $job['combined_pdf'],
+                    $dir
+                );
+                $job['download_kind'] = 'pdf';
+            } else {
+                (new BienBanTongDocxCombiner())->merge($files, (string) $job['combined_docx']);
+                $job['download_kind'] = 'merge';
+            }
         }
 
         return $this->downloadMeta($job, (string) $job['id']);
