@@ -98,7 +98,7 @@ class BienBanWordCommandMerger
         exec($cmd.' 2>&1', $output, $code);
 
         if ($code !== 0 || ! is_file($outputPath)) {
-            $detail = Utf8::sanitize(implode(' ', $output));
+            $detail = self::formatPsError($output);
             @unlink($list);
             throw new RuntimeException(
                 'Gộp bằng Microsoft Word thất bại'.($detail !== '' ? ': '.$detail : '.')
@@ -106,6 +106,26 @@ class BienBanWordCommandMerger
         }
 
         @unlink($list);
+    }
+
+    /**
+     * @param  list<string>  $output
+     */
+    private static function formatPsError(array $output): string
+    {
+        $text = Utf8::sanitize(implode("\n", $output));
+        if ($text === '') {
+            return '';
+        }
+
+        return match (true) {
+            str_contains($text, 'List file not found') => 'Không tìm thấy file danh sách gộp.',
+            str_contains($text, 'DOCX not found') => 'Thiếu file Word trang (đường dẫn không tồn tại trên server).',
+            str_contains($text, 'No DOCX in list') => 'Danh sách gộp Word rỗng.',
+            str_contains($text, 'Word did not write') => 'Word không lưu được file tổng.',
+            str_contains($text, '80040154',) || str_contains($text, 'Retrieving the COM class factory') => 'Chưa cài Microsoft Word hoặc COM Word bị chặn trên server.',
+            default => preg_replace('/\s+/', ' ', $text) ?? $text,
+        };
     }
 
     private function powershellPath(): ?string

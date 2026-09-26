@@ -1,5 +1,6 @@
-# Gộp nhiều DOCX bằng Microsoft Word (InsertFile). Chạy trên Windows có cài Word.
-# Args: <files.txt UTF-8, mỗi dòng một đường dẫn tuyệt đối> <output.docx>
+# Merge DOCX files via Microsoft Word InsertFile (Windows + Word required).
+# Usage: merge-docx.ps1 <files.txt> <output.docx>
+# files.txt: UTF-8, one absolute path per line (ASCII paths recommended).
 $ErrorActionPreference = 'Stop'
 if ($args.Count -lt 2) {
     throw 'Usage: merge-docx.ps1 <files.txt> <output.docx>'
@@ -9,7 +10,7 @@ $listPath = [string]$args[0]
 $outPath = [string]$args[1]
 
 if (-not (Test-Path -LiteralPath $listPath)) {
-    throw "Không tìm thấy file danh sách: $listPath"
+    throw ('List file not found: ' + $listPath)
 }
 
 $raw = [System.IO.File]::ReadAllText($listPath)
@@ -26,14 +27,14 @@ $candidates = @(
 $files = @()
 foreach ($candidate in $candidates) {
     if (-not (Test-Path -LiteralPath $candidate)) {
-        throw "File Word không tồn tại: $candidate"
+        throw ('DOCX not found: ' + $candidate)
     }
     $files += (Resolve-Path -LiteralPath $candidate).Path
 }
 
 if ($files.Count -lt 1) {
     $bytes = ([System.IO.FileInfo]$listPath).Length
-    throw "Không có file Word để gộp (danh sách rỗng, $bytes byte tại $listPath)."
+    throw ('No DOCX in list (' + $bytes + ' bytes): ' + $listPath)
 }
 
 $word = $null
@@ -81,5 +82,5 @@ try {
 }
 
 if (-not (Test-Path -LiteralPath $outPath)) {
-    throw 'Word không ghi được file tổng.'
+    throw 'Word did not write the output DOCX.'
 }
