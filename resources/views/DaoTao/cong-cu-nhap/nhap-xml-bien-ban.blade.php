@@ -222,6 +222,11 @@
                 }
             }).done(function (res) {
                 var done = res.done || (index + 1);
+                if (res.phase === 'pdf') {
+                    setProgress(res.pdf_done || 0, res.pdf_total || total, res.status || 'Đang chuyển PDF…');
+                    pdfStepNext(jobId, res.pdf_total || total);
+                    return;
+                }
                 if (res.download_url) {
                     var kind = res.download_kind || 'pages';
                     if (res.pages_dir) {
@@ -251,6 +256,41 @@
                 addNext(jobId, items, index + 1, total);
             }).fail(function (xhr) {
                 fail((xhr.responseJSON && xhr.responseJSON.message) || 'Lỗi khi xuất Word tổng.');
+            });
+        }
+
+        function pdfStepNext(jobId, pdfTotal) {
+            $.ajax({
+                url: @json(route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.pdf-step')),
+                method: 'POST',
+                timeout: 0,
+                data: {
+                    job_id: jobId,
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                }
+            }).done(function (res) {
+                if (res.download_url) {
+                    var kind = res.download_kind || 'pdf';
+                    if (res.pages_dir) {
+                        $('#xuat-tong-folder').text('Thư mục trên server: ' + res.pages_dir).show();
+                    }
+                    setProgress(pdfTotal, pdfTotal, 'Đã xuất xong. Đang tải PDF tổng (in)…');
+                    window.location = res.download_url;
+                    running = false;
+                    syncBtn();
+                    $('#xuat-tong-close').prop('disabled', false);
+                    return;
+                }
+                if (res.phase === 'pdf') {
+                    var label = res.name ? (' — ' + res.name) : '';
+                    setProgress(res.pdf_done || 0, res.pdf_total || pdfTotal,
+                        (res.status || 'Đang chuyển PDF…') + label);
+                    pdfStepNext(jobId, res.pdf_total || pdfTotal);
+                    return;
+                }
+                fail('Không hoàn tất được bước chuyển PDF.');
+            }).fail(function (xhr) {
+                fail((xhr.responseJSON && xhr.responseJSON.message) || 'Lỗi khi chuyển PDF (LibreOffice).');
             });
         }
     });

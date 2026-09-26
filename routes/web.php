@@ -180,6 +180,8 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
         ->name('pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.start');
     Route::post('/phong-dao-tao/cong-cu-nhap/nhap-xml-bien-ban/xuat-tong/add', [NhapXmlBienBanTongHopController::class, 'exportTongAdd'])
         ->name('pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.add');
+    Route::post('/phong-dao-tao/cong-cu-nhap/nhap-xml-bien-ban/xuat-tong/pdf-step', [NhapXmlBienBanTongHopController::class, 'exportTongPdfStep'])
+        ->name('pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.pdf-step');
     Route::get('/phong-dao-tao/cong-cu-nhap/nhap-xml-bien-ban/xuat-tong/tai/{job}', [NhapXmlBienBanTongHopController::class, 'exportTongDownload'])
         ->where('job', '[0-9a-fA-F-]{36}')
         ->name('pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.download');

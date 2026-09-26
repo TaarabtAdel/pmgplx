@@ -196,7 +196,12 @@ class NhapXmlBienBanTongHopController extends Controller
                 return $this->jsonTong(['message' => 'Kỳ này không có thí sinh.'], 422);
             }
             if ($done >= $total) {
-                return $this->jsonTong($this->finishedTongPayload($job, $jobId));
+                if (($job['phase'] ?? '') === 'pdf') {
+                    return $this->jsonTong($this->pdfPhaseProgressPayload($job));
+                }
+                if ($this->isTongDownloadReady($job)) {
+                    return $this->jsonTong($this->finishedTongPayload($job, $jobId));
+                }
             }
 
             $itemId = (int) $request->input('id', 0);
@@ -244,6 +249,79 @@ class NhapXmlBienBanTongHopController extends Controller
             ]);
         } catch (Throwable $e) {
             return $this->jsonTong(['message' => Utf8::sanitize($e->getMessage()) ?: 'Xuất tổng thất bại.'], 500);
+        }
+    }
+
+    public function exportTongPdfStep(Request $request): JsonResponse
+    {
+        $jobId = trim((string) $request->input('job_id', ''));
+        if ($jobId === '') {
+            return $this->jsonTong(['message' => 'Thiếu phiên xuất.'], 422);
+        }
+
+        try {
+            @ini_set('memory_limit', '512M');
+            @set_time_limit(0);
+
+            $job = BienBanTongHopSession::load($jobId);
+            if (($job['phase'] ?? '') !== 'pdf') {
+                if ($this->isTongDownloadReady($job)) {
+                    return $this->jsonTong($this->finishedTongPayload($job, $jobId));
+                }
+
+                return $this->jsonTong(['message' => 'Phiên không ở bước chuyển PDF.'], 422);
+            }
+
+            /** @var list<string> $docxFiles */
+            $docxFiles = $job['files'] ?? [];
+            $pdfTotal = count($docxFiles);
+            $pdfDone = (int) ($job['pdf_done'] ?? 0);
+            if ($pdfTotal === 0) {
+                return $this->jsonTong(['message' => 'Không có file Word để chuyển PDF.'], 422);
+            }
+
+            $dir = BienBanTongHopSession::dir($jobId);
+            $exporter = new BienBanTongPdfExporter();
+
+            if ($pdfDone < $pdfTotal) {
+                $docx = $docxFiles[$pdfDone];
+                $pdfPath = $exporter->convertOneDocx($docx, $dir);
+                /** @var list<string> $pdfFiles */
+                $pdfFiles = $job['pdf_files'] ?? [];
+                $pdfFiles[] = $pdfPath;
+                $job['pdf_files'] = $pdfFiles;
+                $job['pdf_done'] = $pdfDone + 1;
+                BienBanTongHopSession::save($job);
+
+                $items = $job['items'] ?? [];
+                $label = Utf8::sanitize((string) ($items[$pdfDone]['ten'] ?? $items[$pdfDone]['sbd'] ?? ''));
+
+                return $this->jsonTong(array_merge(
+                    $this->pdfPhaseProgressPayload($job),
+                    ['name' => $label]
+                ));
+            }
+
+            /** @var list<string> $pdfFiles */
+            $pdfFiles = $job['pdf_files'] ?? [];
+            $exporter->mergePdfs($pdfFiles, (string) $job['combined_pdf']);
+            $job['download_kind'] = 'pdf';
+            $job['phase'] = 'done';
+            BienBanTongHopSession::save($job);
+
+            return $this->jsonTong(array_merge(
+                [
+                    'done' => (int) ($job['done'] ?? $pdfTotal),
+                    'total' => $pdfTotal,
+                    'phase' => 'done',
+                    'pdf_done' => $pdfTotal,
+                    'pdf_total' => $pdfTotal,
+                    'status' => 'Đang gộp PDF…',
+                ],
+                $this->downloadMeta($job, $jobId)
+            ));
+        } catch (Throwable $e) {
+            return $this->jsonTong(['message' => Utf8::sanitize($e->getMessage()) ?: 'Chuyển PDF thất bại.'], 500);
         }
     }
 
@@ -346,19 +424,60 @@ class NhapXmlBienBanTongHopController extends Controller
         if ($this->shouldMergeTongFiles() && count($files) >= 1) {
             $driver = strtolower(trim((string) config('services.bien_ban_tong.merge_driver', 'pdf')));
             if ($driver === 'pdf') {
-                (new BienBanTongPdfExporter())->build(
-                    $files,
-                    (string) $job['combined_pdf'],
-                    $dir
-                );
-                $job['download_kind'] = 'pdf';
-            } else {
-                (new BienBanTongDocxCombiner())->merge($files, (string) $job['combined_docx']);
-                $job['download_kind'] = 'merge';
+                BienBanTongPdfExporter::assertLibreOfficeAvailable();
+                $job['phase'] = 'pdf';
+                $job['pdf_done'] = 0;
+                $job['pdf_files'] = [];
+                $job['download_kind'] = 'pages';
+
+                return $this->pdfPhaseProgressPayload($job);
             }
+
+            (new BienBanTongDocxCombiner())->merge($files, (string) $job['combined_docx']);
+            $job['download_kind'] = 'merge';
         }
 
         return $this->downloadMeta($job, (string) $job['id']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $job
+     * @return array<string, mixed>
+     */
+    private function pdfPhaseProgressPayload(array $job): array
+    {
+        /** @var list<string> $docxFiles */
+        $docxFiles = $job['files'] ?? [];
+        $pdfTotal = count($docxFiles);
+        $pdfDone = (int) ($job['pdf_done'] ?? 0);
+        $total = count($job['items'] ?? []);
+
+        return [
+            'done' => (int) ($job['done'] ?? $total),
+            'total' => $total,
+            'phase' => 'pdf',
+            'pdf_done' => $pdfDone,
+            'pdf_total' => $pdfTotal,
+            'status' => $pdfDone >= $pdfTotal
+                ? 'Đang gộp file PDF tổng (qpdf)…'
+                : 'Đang chuyển PDF '.($pdfDone + 1).'/'.$pdfTotal.' (LibreOffice)…',
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $job
+     */
+    private function isTongDownloadReady(array $job): bool
+    {
+        $kind = (string) ($job['download_kind'] ?? 'pages');
+        if ($kind === 'pdf') {
+            return is_file((string) ($job['combined_pdf'] ?? ''));
+        }
+        if ($kind === 'merge') {
+            return is_file((string) ($job['combined_docx'] ?? ''));
+        }
+
+        return is_file((string) ($job['zip_path'] ?? ''));
     }
 
     private function shouldMergeTongFiles(): bool
