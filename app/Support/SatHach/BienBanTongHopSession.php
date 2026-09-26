@@ -26,8 +26,8 @@ class BienBanTongHopSession
         foreach ($rows as $row) {
             $items[] = [
                 'id' => (int) $row->Id,
-                'sbd' => (string) ($row->SoBaoDanh ?: ''),
-                'ten' => (string) ($row->HoVaTen ?: ''),
+                'sbd' => Utf8::sanitize((string) ($row->SoBaoDanh ?: '')),
+                'ten' => Utf8::sanitize((string) ($row->HoVaTen ?: '')),
             ];
         }
 
@@ -69,7 +69,11 @@ class BienBanTongHopSession
     public static function save(array $job): void
     {
         $path = self::dir((string) $job['id']).DIRECTORY_SEPARATOR.'job.json';
-        file_put_contents($path, json_encode($job, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), LOCK_EX);
+        $json = json_encode($job, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_INVALID_UTF8_SUBSTITUTE);
+        if (! is_string($json) || $json === '') {
+            throw new RuntimeException('Không ghi được phiên xuất tổng.');
+        }
+        file_put_contents($path, $json, LOCK_EX);
     }
 
     public static function dir(string $id): string

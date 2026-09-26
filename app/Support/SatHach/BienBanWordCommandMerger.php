@@ -49,10 +49,6 @@ class BienBanWordCommandMerger
             return $this->powershellPath() !== null ? 'windows' : null;
         }
 
-        if (PHP_OS_FAMILY === 'Darwin' && is_dir('/Applications/Microsoft Word.app')) {
-            return 'mac';
-        }
-
         return null;
     }
 

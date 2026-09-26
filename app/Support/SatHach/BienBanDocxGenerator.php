@@ -256,7 +256,7 @@ class BienBanDocxGenerator
 
     private function cell(mixed $value): string
     {
-        $text = trim((string) $value);
+        $text = Utf8::sanitize(trim((string) $value));
         if (in_array(mb_strtolower($text), ['null', 'undefined'], true)) {
             return '';
         }
