@@ -194,40 +194,28 @@
                     fail('Không có thí sinh để xuất.');
                     return;
                 }
-                setProgress(0, total, 'Xuất file 0 / ' + total);
-                addNext(jobId, items, 0, total);
-            }).fail(function (xhr) {
-                fail((xhr.responseJSON && xhr.responseJSON.message) || 'Không bắt đầu được phiên xuất.');
-            });
-        }
-
-        function addNext(jobId, items, index, total) {
-            if (index >= items.length) {
-                return;
-            }
-            var item = items[index];
-            var label = (item.sbd || '') + ' — ' + (item.ten || '');
-            setProgress(index, total, 'Xuất file ' + (index + 1) + ' / ' + total + ': ' + label);
-
-            $.ajax({
-                url: @json(route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.add')),
-                method: 'POST',
-                data: { job_id: jobId, id: item.id, _token: $('meta[name="csrf-token"]').attr('content') }
-            }).done(function (res) {
-                var done = res.done || (index + 1);
-                setProgress(done, total, 'Đã thêm trang: ' + (res.name || label));
-                if (res.download_url) {
+                setProgress(0, total, 'Đang tạo ' + total + ' biên bản (cùng định dạng xuất từng file)…');
+                $.ajax({
+                    url: @json(route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.add')),
+                    method: 'POST',
+                    timeout: 0,
+                    data: { job_id: jobId, _token: $('meta[name="csrf-token"]').attr('content') }
+                }).done(function (res) {
+                    if (!res.download_url) {
+                        fail('Không tạo được file Word tổng.');
+                        return;
+                    }
                     setProgress(total, total, 'Đang tải file Word tổng…');
                     window.location = res.download_url;
                     running = false;
                     syncBtn();
                     $('#xuat-tong-close').prop('disabled', false);
                     setTimeout(function () { $('#modalXuatTong').modal('hide'); }, 800);
-                    return;
-                }
-                addNext(jobId, items, index + 1, total);
+                }).fail(function (xhr) {
+                    fail((xhr.responseJSON && xhr.responseJSON.message) || 'Lỗi khi xuất Word tổng.');
+                });
             }).fail(function (xhr) {
-                fail((xhr.responseJSON && xhr.responseJSON.message) || 'Lỗi khi xuất/thêm file.');
+                fail((xhr.responseJSON && xhr.responseJSON.message) || 'Không bắt đầu được phiên xuất.');
             });
         }
     });

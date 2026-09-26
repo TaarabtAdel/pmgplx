@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\DaoTao\SatHachBienBan;
 use App\Support\DaoTao\Jp2PhotoConverter;
 use App\Support\SatHach\BienBanDocxGenerator;
-use App\Support\SatHach\BienBanDocxMerger;
 use App\Support\SatHach\BienBanTongHopSession;
 use App\Support\SatHach\SatHachBienBanImporter;
 use App\Support\SatHach\XmlSatHachParser;
@@ -176,66 +175,54 @@ class NhapXmlBienBanTongHopController extends Controller
     public function exportTongAdd(Request $request): JsonResponse
     {
         $jobId = trim((string) $request->input('job_id', ''));
-        $id = (int) $request->input('id', 0);
-        if ($jobId === '' || $id < 1) {
-            return response()->json(['message' => 'Thiếu dữ liệu xuất.'], 422);
+        if ($jobId === '') {
+            return response()->json(['message' => 'Thiếu phiên xuất.'], 422);
         }
 
         try {
-            @ini_set('memory_limit', '512M');
-            @set_time_limit(120);
+            @ini_set('memory_limit', '1024M');
+            @set_time_limit(0);
 
             $job = BienBanTongHopSession::load($jobId);
-            $doneIds = array_map('intval', $job['done_ids'] ?? []);
             $items = $job['items'] ?? [];
-            $index = null;
-            $meta = null;
-            foreach ($items as $i => $item) {
-                if ((int) ($item['id'] ?? 0) === $id) {
-                    $index = $i;
-                    $meta = $item;
-                    break;
+            $ids = [];
+            foreach ($items as $item) {
+                $id = (int) ($item['id'] ?? 0);
+                if ($id > 0) {
+                    $ids[] = $id;
                 }
             }
-            if ($index === null || ! is_array($meta)) {
-                return response()->json(['message' => 'Thí sinh không thuộc phiên xuất này.'], 422);
+            if ($ids === []) {
+                return response()->json(['message' => 'Kỳ này không có thí sinh.'], 422);
             }
 
-            $total = count($items);
-            $label = trim(($meta['sbd'] ?? '').' — '.($meta['ten'] ?? ''));
-
-            if (! in_array($id, $doneIds, true)) {
-                $row = SatHachBienBan::query()->find($id);
-                if ($row === null) {
-                    return response()->json(['message' => 'Không tìm thấy thí sinh #'.$id], 404);
+            $rowsById = [];
+            foreach (array_chunk($ids, 500) as $chunk) {
+                foreach (SatHachBienBan::query()->whereIn('Id', $chunk)->get() as $row) {
+                    $rowsById[(int) $row->Id] = $row;
                 }
-
-                $dir = BienBanTongHopSession::dir($jobId);
-                $seq = str_pad((string) ($index + 1), 3, '0', STR_PAD_LEFT);
-                $safeSbd = preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) ($row->SoBaoDanh ?: $row->MaDK)) ?: 'hv';
-                $docx = $dir.DIRECTORY_SEPARATOR.$seq.'-'.$id.'-'.$safeSbd.'.docx';
-
-                (new BienBanDocxGenerator())->generateOne($row->toDocxRow(), $docx);
-
-                $files = $job['files'] ?? [];
-                $files[] = $docx;
-                $job['files'] = $files;
-                $job['done_ids'] = array_merge($doneIds, [$id]);
-                $job['done'] = count($job['done_ids']);
-
-                (new BienBanDocxMerger())->merge($files, (string) $job['combined_docx']);
-                BienBanTongHopSession::save($job);
             }
 
-            $done = (int) ($job['done'] ?? count($doneIds));
+            $payload = [];
+            foreach ($ids as $id) {
+                if (isset($rowsById[$id])) {
+                    $payload[] = $rowsById[$id]->toDocxRow();
+                }
+            }
+            if ($payload === []) {
+                return response()->json(['message' => 'Không đọc được dữ liệu thí sinh.'], 422);
+            }
+
+            $out = (string) $job['combined_docx'];
+            (new BienBanDocxGenerator())->generate($payload, $out);
+
+            $job['done'] = count($payload);
+            BienBanTongHopSession::save($job);
 
             return response()->json([
-                'done' => $done,
-                'total' => $total,
-                'name' => $label,
-                'download_url' => $done >= $total
-                    ? route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.download', $jobId)
-                    : null,
+                'done' => count($payload),
+                'total' => count($ids),
+                'download_url' => route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.download', $jobId),
             ]);
         } catch (Throwable $e) {
             return response()->json(['message' => $e->getMessage()], 500);
