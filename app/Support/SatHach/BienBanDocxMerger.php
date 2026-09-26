@@ -6,8 +6,7 @@ use RuntimeException;
 use ZipArchive;
 
 /**
- * Gộp nhiều file DOCX (mỗi biên bản 1 file) thành 1 Word nhiều trang (altChunk).
- * Mở bằng Microsoft Word sẽ bung đủ trang, ảnh, định dạng.
+ * Gộp nhiều DOCX (cùng mẫu) thành 1 file Word thật: nối body + media, không dùng altChunk.
  */
 class BienBanDocxMerger
 {
@@ -39,40 +38,40 @@ class BienBanDocxMerger
 
         $tmp = $outputPath.'.building.docx';
         @unlink($tmp);
-
-        $zip = new ZipArchive();
-        if ($zip->open($tmp, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+        if (! @copy($files[0], $tmp)) {
             throw new RuntimeException('Không tạo được file Word tổng.');
         }
 
-        $rels = [];
-        $chunks = [];
-        $breaks = [];
-
-        foreach ($files as $i => $file) {
-            $n = $i + 1;
-            $rid = 'rId'.$n;
-            $name = sprintf('chunks/c%03d.docx', $n);
-            $zip->addFile($file, 'word/'.$name);
-            $rels[] = '<Relationship Id="'.$rid.'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/aFChunk" Target="'.$name.'"/>';
-            if ($i > 0) {
-                $breaks[] = '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
-            }
-            $chunks[] = '<w:altChunk r:id="'.$rid.'"/>';
+        $zip = new ZipArchive();
+        if ($zip->open($tmp) !== true) {
+            @unlink($tmp);
+            throw new RuntimeException('Không mở được file Word tổng.');
         }
 
-        $body = '';
-        foreach ($chunks as $i => $chunk) {
-            if ($i > 0) {
-                $body .= $breaks[$i - 1];
+        $docXml = (string) $zip->getFromName('word/document.xml');
+        $relsXml = (string) $zip->getFromName('word/_rels/document.xml.rels');
+        $contentTypes = (string) $zip->getFromName('[Content_Types].xml');
+        [$baseBody, $sectPr] = $this->splitBody($docXml);
+        $nextRid = $this->maxRid($relsXml) + 1;
+        $nextDocPr = $this->maxDocPr($docXml) + 1;
+        $extraRels = '';
+        $extraBody = '';
+
+        for ($i = 1, $n = count($files); $i < $n; $i++) {
+            $part = $this->extractPart($files[$i], $i + 1, $nextRid, $nextDocPr);
+            $nextRid = $part['nextRid'];
+            $nextDocPr = $part['nextDocPr'];
+            foreach ($part['media'] as $zipPath => $bytes) {
+                $zip->addFromString($zipPath, $bytes);
             }
-            $body .= $chunk;
+            $extraRels .= $part['rels'];
+            $extraBody .= $this->pageBreak().$part['body'];
+            $contentTypes = $this->ensureMediaTypes($contentTypes);
         }
 
-        $zip->addFromString('[Content_Types].xml', $this->contentTypes());
-        $zip->addFromString('_rels/.rels', $this->packageRels());
-        $zip->addFromString('word/_rels/document.xml.rels', $this->documentRels(implode('', $rels)));
-        $zip->addFromString('word/document.xml', $this->documentXml($body));
+        $zip->addFromString('word/document.xml', $this->rebuildDocument($docXml, $baseBody.$extraBody.$sectPr));
+        $zip->addFromString('word/_rels/document.xml.rels', $this->appendRels($relsXml, $extraRels));
+        $zip->addFromString('[Content_Types].xml', $contentTypes);
         $zip->close();
 
         @unlink($outputPath);
@@ -83,44 +82,174 @@ class BienBanDocxMerger
         @unlink($tmp);
     }
 
-    private function contentTypes(): string
+    /**
+     * @return array{body: string, rels: string, media: array<string, string>, nextRid: int, nextDocPr: int}
+     */
+    private function extractPart(string $path, int $pageNo, int $nextRid, int $nextDocPr): array
     {
-        return <<<'XML'
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
-  <Default Extension="docx" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document"/>
-  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
-</Types>
-XML;
+        $src = new ZipArchive();
+        if ($src->open($path) !== true) {
+            throw new RuntimeException('Không đọc được file trang '.$pageNo);
+        }
+
+        $docXml = (string) $src->getFromName('word/document.xml');
+        $relsXml = (string) $src->getFromName('word/_rels/document.xml.rels');
+        [$body] = $this->splitBody($docXml);
+
+        $ridMap = [];
+        $newRels = '';
+        $media = [];
+
+        if (preg_match_all('/<Relationship\b[^>]*>/i', $relsXml, $relMatches)) {
+            foreach ($relMatches[0] as $rel) {
+                if (! preg_match('/\bType="([^"]+)"/i', $rel, $typeMatch)) {
+                    continue;
+                }
+                if (! preg_match('/\bId="(rId[^"]+)"/i', $rel, $idMatch)) {
+                    continue;
+                }
+                if (! preg_match('/\bTarget="([^"]+)"/i', $rel, $targetMatch)) {
+                    continue;
+                }
+
+                $oldRid = $idMatch[1];
+                $target = str_replace('\\', '/', $targetMatch[1]);
+                if (! preg_match('#(?:^|/)(media|embeddings)/#i', $target)) {
+                    continue;
+                }
+                if (str_starts_with($target, '/')) {
+                    $zipMedia = ltrim($target, '/');
+                } else {
+                    $zipMedia = 'word/'.ltrim($target, './');
+                    $zipMedia = preg_replace('#^word/word/#', 'word/', $zipMedia) ?: $zipMedia;
+                }
+
+                $bytes = $src->getFromName($zipMedia);
+                if ($bytes === false) {
+                    continue;
+                }
+
+                $ext = pathinfo($zipMedia, PATHINFO_EXTENSION) ?: 'bin';
+                $newName = sprintf('p%d_%s.%s', $pageNo, substr(md5($oldRid.$zipMedia), 0, 10), $ext);
+                $media['word/media/'.$newName] = $bytes;
+                $newRid = 'rId'.$nextRid;
+                $nextRid++;
+                $ridMap[$oldRid] = $newRid;
+                $newRels .= '<Relationship Id="'.$newRid.'" Type="'.$typeMatch[1].'" Target="media/'.$newName.'"/>';
+            }
+        }
+
+        $src->close();
+
+        foreach ($ridMap as $old => $new) {
+            $body = str_replace('"'.$old.'"', '"'.$new.'"', $body);
+        }
+
+        $body = preg_replace_callback(
+            '/<(?:wp:docPr|wpg:docPr|pic:cNvPr|wps:cNvPr)([^>]*?)\sid="(\d+)"/',
+            static function (array $m) use (&$nextDocPr): string {
+                return str_replace('id="'.$m[2].'"', 'id="'.$nextDocPr++.'"', $m[0]);
+            },
+            $body
+        ) ?? $body;
+
+        return [
+            'body' => $body,
+            'rels' => $newRels,
+            'media' => $media,
+            'nextRid' => $nextRid,
+            'nextDocPr' => $nextDocPr,
+        ];
     }
 
-    private function packageRels(): string
+    /**
+     * @return array{0: string, 1: string}
+     */
+    private function splitBody(string $documentXml): array
     {
-        return <<<'XML'
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
-</Relationships>
-XML;
+        if (! preg_match('#<w:body\b[^>]*>(.*)</w:body>#s', $documentXml, $m)) {
+            throw new RuntimeException('File Word thiếu nội dung.');
+        }
+
+        $inner = $m[1];
+        if (preg_match('#(<w:sectPr\b.*</w:sectPr>)#s', $inner, $s)) {
+            $sectPr = $s[1];
+            $content = str_replace($sectPr, '', $inner);
+
+            return [$content, $sectPr];
+        }
+
+        return [$inner, ''];
     }
 
-    private function documentRels(string $inner): string
+    private function rebuildDocument(string $originalXml, string $newInnerBody): string
     {
-        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            .'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-            .$inner
-            .'</Relationships>';
+        return preg_replace(
+            '#<w:body\b[^>]*>.*</w:body>#s',
+            '<w:body>'.$newInnerBody.'</w:body>',
+            $originalXml,
+            1
+        ) ?? $originalXml;
     }
 
-    private function documentXml(string $body): string
+    private function appendRels(string $relsXml, string $extra): string
     {
-        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            .'<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
-            .' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
-            .'<w:body>'.$body
-            .'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="720" w:right="720" w:bottom="720" w:left="720"/></w:sectPr>'
-            .'</w:body></w:document>';
+        if ($extra === '') {
+            return $relsXml;
+        }
+
+        return preg_replace('#</Relationships>#', $extra.'</Relationships>', $relsXml, 1) ?? $relsXml;
+    }
+
+    private function maxRid(string $relsXml): int
+    {
+        $max = 0;
+        if (preg_match_all('/\bId="rId(\d+)"/', $relsXml, $m)) {
+            foreach ($m[1] as $n) {
+                $max = max($max, (int) $n);
+            }
+        }
+
+        return $max;
+    }
+
+    private function maxDocPr(string $documentXml): int
+    {
+        $max = 1;
+        if (preg_match_all('/\b(?:wp:docPr|wpg:docPr)\s+id="(\d+)"/', $documentXml, $m)) {
+            foreach ($m[1] as $n) {
+                $max = max($max, (int) $n);
+            }
+        }
+
+        return $max;
+    }
+
+    private function pageBreak(): string
+    {
+        return '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+    }
+
+    private function ensureMediaTypes(string $contentTypes): string
+    {
+        $needed = [
+            'png' => 'image/png',
+            'jpeg' => 'image/jpeg',
+            'jpg' => 'image/jpeg',
+            'gif' => 'image/gif',
+            'emf' => 'image/x-emf',
+            'wmf' => 'image/x-wmf',
+        ];
+        foreach ($needed as $ext => $mime) {
+            if (! str_contains($contentTypes, 'Extension="'.$ext.'"')) {
+                $contentTypes = str_replace(
+                    '</Types>',
+                    '<Default Extension="'.$ext.'" ContentType="'.$mime.'"/></Types>',
+                    $contentTypes
+                );
+            }
+        }
+
+        return $contentTypes;
     }
 }

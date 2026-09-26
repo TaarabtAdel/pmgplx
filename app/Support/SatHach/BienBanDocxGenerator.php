@@ -166,8 +166,12 @@ class BienBanDocxGenerator
             'ratio' => false,
         ];
 
-        foreach (["%ANH_CHAN_DUNG#{$i}", '%ANH_CHAN_DUNG', "ANH_CHAN_DUNG#{$i}"] as $macro) {
-            $processor->setImageValue($macro, $image);
+        foreach (["%ANH_CHAN_DUNG#{$i}", "ANH_CHAN_DUNG#{$i}", '%ANH_CHAN_DUNG'] as $macro) {
+            try {
+                $processor->setImageValue($macro, $image);
+            } catch (Throwable $e) {
+                // Placeholder may already be replaced or absent after cloneBlock.
+            }
         }
     }
 

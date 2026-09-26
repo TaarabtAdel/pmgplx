@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DaoTao\SatHachBienBan;
 use App\Support\DaoTao\Jp2PhotoConverter;
 use App\Support\SatHach\BienBanDocxGenerator;
+use App\Support\SatHach\BienBanDocxMerger;
 use App\Support\SatHach\BienBanTongHopSession;
 use App\Support\SatHach\SatHachBienBanImporter;
 use App\Support\SatHach\XmlSatHachParser;
@@ -180,49 +181,61 @@ class NhapXmlBienBanTongHopController extends Controller
         }
 
         try {
-            @ini_set('memory_limit', '1024M');
+            @ini_set('memory_limit', '512M');
             @set_time_limit(0);
 
             $job = BienBanTongHopSession::load($jobId);
             $items = $job['items'] ?? [];
-            $ids = [];
-            foreach ($items as $item) {
-                $id = (int) ($item['id'] ?? 0);
-                if ($id > 0) {
-                    $ids[] = $id;
-                }
-            }
-            if ($ids === []) {
+            $total = count($items);
+            $done = (int) ($job['done'] ?? 0);
+            if ($total === 0) {
                 return response()->json(['message' => 'Kỳ này không có thí sinh.'], 422);
             }
-
-            $rowsById = [];
-            foreach (array_chunk($ids, 500) as $chunk) {
-                foreach (SatHachBienBan::query()->whereIn('Id', $chunk)->get() as $row) {
-                    $rowsById[(int) $row->Id] = $row;
-                }
+            if ($done >= $total) {
+                return response()->json([
+                    'done' => $done,
+                    'total' => $total,
+                    'download_url' => route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.download', $jobId),
+                ]);
             }
 
-            $payload = [];
-            foreach ($ids as $id) {
-                if (isset($rowsById[$id])) {
-                    $payload[] = $rowsById[$id]->toDocxRow();
-                }
+            $itemId = (int) $request->input('id', 0);
+            if ($itemId <= 0) {
+                $itemId = (int) ($items[$done]['id'] ?? 0);
             }
-            if ($payload === []) {
-                return response()->json(['message' => 'Không đọc được dữ liệu thí sinh.'], 422);
+            $expectedId = (int) ($items[$done]['id'] ?? 0);
+            if ($itemId <= 0 || ($expectedId > 0 && $itemId !== $expectedId)) {
+                return response()->json(['message' => 'Thứ tự xuất không khớp phiên.'], 422);
             }
 
-            $out = (string) $job['combined_docx'];
-            (new BienBanDocxGenerator())->generate($payload, $out);
+            $row = SatHachBienBan::query()->find($itemId);
+            if ($row === null) {
+                return response()->json(['message' => 'Không tìm thấy thí sinh #'.$itemId.'.'], 422);
+            }
 
-            $job['done'] = count($payload);
+            $dir = BienBanTongHopSession::dir($jobId);
+            $page = str_pad((string) ($done + 1), 4, '0', STR_PAD_LEFT);
+            $docx = $dir.DIRECTORY_SEPARATOR.'p'.$page.'-'.$itemId.'.docx';
+            (new BienBanDocxGenerator())->generateOne($row->toDocxRow(), $docx);
+
+            $files = $job['files'] ?? [];
+            $files[] = $docx;
+            $job['files'] = $files;
+            $job['done'] = $done + 1;
+
+            $downloadUrl = null;
+            if ($job['done'] >= $total) {
+                (new BienBanDocxMerger())->merge($files, (string) $job['combined_docx']);
+                $downloadUrl = route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.download', $jobId);
+            }
+
             BienBanTongHopSession::save($job);
 
             return response()->json([
-                'done' => count($payload),
-                'total' => count($ids),
-                'download_url' => route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.download', $jobId),
+                'done' => $job['done'],
+                'total' => $total,
+                'name' => (string) ($row->HoVaTen ?: $row->SoBaoDanh ?: ''),
+                'download_url' => $downloadUrl,
             ]);
         } catch (Throwable $e) {
             return response()->json(['message' => $e->getMessage()], 500);
