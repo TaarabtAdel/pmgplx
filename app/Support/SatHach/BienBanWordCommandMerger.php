@@ -58,25 +58,54 @@ class BienBanWordCommandMerger
             throw new RuntimeException('Thiếu script gộp Word: '.$ps1);
         }
 
+        $resolved = [];
+        foreach ($files as $path) {
+            if (! is_string($path) || $path === '') {
+                continue;
+            }
+            $absolute = realpath($path) ?: $path;
+            if (! is_file($absolute)) {
+                throw new RuntimeException('Không tìm thấy file Word: '.$path);
+            }
+            $resolved[] = str_replace('/', '\\', $absolute);
+        }
+
+        if (count($resolved) < 2) {
+            throw new RuntimeException(
+                'Chỉ có '.count($resolved).' file Word để gộp (cần ít nhất 2).'
+            );
+        }
+
         $list = dirname($outputPath).DIRECTORY_SEPARATOR.'word-merge-files.txt';
-        file_put_contents($list, "\xEF\xBB\xBF".implode("\r\n", $files)."\r\n");
+        $listBody = implode("\r\n", $resolved)."\r\n";
+        if (file_put_contents($list, $listBody) === false) {
+            throw new RuntimeException('Không ghi được danh sách file Word.');
+        }
+
+        $outDir = realpath(dirname($outputPath));
+        if ($outDir === false) {
+            throw new RuntimeException('Không tạo được thư mục file Word tổng.');
+        }
+        $outForWord = str_replace('/', '\\', $outDir.DIRECTORY_SEPARATOR.basename($outputPath));
 
         $cmd = escapeshellarg((string) $this->powershellPath())
             .' -NoProfile -ExecutionPolicy Bypass -File '.escapeshellarg($ps1)
             .' '.escapeshellarg($list)
-            .' '.escapeshellarg($outputPath);
+            .' '.escapeshellarg($outForWord);
 
         $output = [];
         $code = 0;
         exec($cmd.' 2>&1', $output, $code);
-        @unlink($list);
 
         if ($code !== 0 || ! is_file($outputPath)) {
             $detail = Utf8::sanitize(implode(' ', $output));
+            @unlink($list);
             throw new RuntimeException(
                 'Gộp bằng Microsoft Word thất bại'.($detail !== '' ? ': '.$detail : '.')
             );
         }
+
+        @unlink($list);
     }
 
     private function powershellPath(): ?string

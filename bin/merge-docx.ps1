@@ -1,5 +1,5 @@
 # Gộp nhiều DOCX bằng Microsoft Word (InsertFile). Chạy trên Windows có cài Word.
-# Args: <files.txt UTF-8, mỗi dòng một đường dẫn> <output.docx>
+# Args: <files.txt UTF-8, mỗi dòng một đường dẫn tuyệt đối> <output.docx>
 $ErrorActionPreference = 'Stop'
 if ($args.Count -lt 2) {
     throw 'Usage: merge-docx.ps1 <files.txt> <output.docx>'
@@ -7,9 +7,33 @@ if ($args.Count -lt 2) {
 
 $listPath = [string]$args[0]
 $outPath = [string]$args[1]
-$files = @(Get-Content -LiteralPath $listPath -Encoding UTF8 | Where-Object { $_.Trim() -ne '' })
+
+if (-not (Test-Path -LiteralPath $listPath)) {
+    throw "Không tìm thấy file danh sách: $listPath"
+}
+
+$raw = [System.IO.File]::ReadAllText($listPath)
+if ($raw.Length -ge 1 -and [int][char]$raw[0] -eq 0xFEFF) {
+    $raw = $raw.Substring(1)
+}
+
+$candidates = @(
+    $raw -split "`r?`n" |
+    ForEach-Object { $_.Trim() } |
+    Where-Object { $_ -ne '' }
+)
+
+$files = @()
+foreach ($candidate in $candidates) {
+    if (-not (Test-Path -LiteralPath $candidate)) {
+        throw "File Word không tồn tại: $candidate"
+    }
+    $files += (Resolve-Path -LiteralPath $candidate).Path
+}
+
 if ($files.Count -lt 1) {
-    throw 'Không có file Word để gộp.'
+    $bytes = ([System.IO.FileInfo]$listPath).Length
+    throw "Không có file Word để gộp (danh sách rỗng, $bytes byte tại $listPath)."
 }
 
 $word = $null
@@ -27,6 +51,11 @@ try {
         $rng = $doc.Content
         $rng.Collapse(0) | Out-Null
         $rng.InsertFile([string]$files[$i])
+    }
+
+    $outDir = Split-Path -LiteralPath $outPath -Parent
+    if ($outDir -and -not (Test-Path -LiteralPath $outDir)) {
+        New-Item -ItemType Directory -Path $outDir -Force | Out-Null
     }
 
     if (Test-Path -LiteralPath $outPath) {
