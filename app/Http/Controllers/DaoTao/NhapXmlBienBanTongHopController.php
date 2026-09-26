@@ -7,7 +7,9 @@ use App\Models\DaoTao\SatHachBienBan;
 use App\Support\DaoTao\Jp2PhotoConverter;
 use App\Support\SatHach\BienBanDocxGenerator;
 use App\Support\SatHach\BienBanDocxMerger;
+use App\Support\SatHach\BienBanTongHopPagePath;
 use App\Support\SatHach\BienBanTongHopSession;
+use App\Support\SatHach\BienBanTongHopZip;
 use App\Support\SatHach\SatHachBienBanImporter;
 use App\Support\SatHach\Utf8;
 use App\Support\SatHach\XmlSatHachParser;
@@ -193,11 +195,7 @@ class NhapXmlBienBanTongHopController extends Controller
                 return $this->jsonTong(['message' => 'Kỳ này không có thí sinh.'], 422);
             }
             if ($done >= $total) {
-                return $this->jsonTong([
-                    'done' => $done,
-                    'total' => $total,
-                    'download_url' => route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.download', $jobId),
-                ]);
+                return $this->jsonTong($this->finishedTongPayload($job, $jobId));
             }
 
             $itemId = (int) $request->input('id', 0);
@@ -215,19 +213,25 @@ class NhapXmlBienBanTongHopController extends Controller
             }
 
             $dir = BienBanTongHopSession::dir($jobId);
-            $page = str_pad((string) ($done + 1), 4, '0', STR_PAD_LEFT);
-            $docx = $dir.DIRECTORY_SEPARATOR.'p'.$page.'-'.$itemId.'.docx';
+            $docx = BienBanTongHopPagePath::docxPath($dir, $done + 1, $row);
             (new BienBanDocxGenerator())->generateOne($row->toDocxRow(), $docx);
 
             $files = $job['files'] ?? [];
             $files[] = $docx;
             $job['files'] = $files;
+            $job['pages_dir'] = BienBanTongHopPagePath::pagesDir($dir);
             $job['done'] = $done + 1;
 
-            $downloadUrl = null;
+            $finish = null;
             if ($job['done'] >= $total) {
-                (new BienBanDocxMerger())->merge($files, (string) $job['combined_docx']);
-                $downloadUrl = route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.download', $jobId);
+                $finish = $this->finalizeTongExport($job, $dir);
+                BienBanTongHopSession::save($job);
+
+                return $this->jsonTong(array_merge([
+                    'done' => $job['done'],
+                    'total' => $total,
+                    'name' => Utf8::sanitize((string) ($row->HoVaTen ?: $row->SoBaoDanh ?: '')),
+                ], $finish));
             }
 
             BienBanTongHopSession::save($job);
@@ -236,7 +240,6 @@ class NhapXmlBienBanTongHopController extends Controller
                 'done' => $job['done'],
                 'total' => $total,
                 'name' => Utf8::sanitize((string) ($row->HoVaTen ?: $row->SoBaoDanh ?: '')),
-                'download_url' => $downloadUrl,
             ]);
         } catch (Throwable $e) {
             return $this->jsonTong(['message' => Utf8::sanitize($e->getMessage()) ?: 'Xuất tổng thất bại.'], 500);
@@ -253,23 +256,92 @@ class NhapXmlBienBanTongHopController extends Controller
                 ->with('error', $e->getMessage());
         }
 
-        $docx = (string) ($session['combined_docx'] ?? '');
-        if (! is_file($docx)) {
-            BienBanTongHopSession::destroy($job);
+        $kind = (string) ($session['download_kind'] ?? 'pages');
+        $safeKy = preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) ($session['ma_ky_sh'] ?? 'ky')) ?: 'ky';
 
-            return redirect()
-                ->route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban')
-                ->with('error', 'Chưa có file Word tổng.');
+        if ($kind === 'merge') {
+            $docx = (string) ($session['combined_docx'] ?? '');
+            if (! is_file($docx)) {
+                BienBanTongHopSession::destroy($job);
+
+                return redirect()
+                    ->route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban')
+                    ->with('error', 'Chưa có file Word tổng.');
+            }
+
+            register_shutdown_function(static function () use ($job): void {
+                BienBanTongHopSession::destroy($job);
+            });
+
+            return response()->download($docx, 'bien-ban-tong-'.$safeKy.'.docx');
         }
 
-        $safeKy = preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) ($session['ma_ky_sh'] ?? 'ky')) ?: 'ky';
-        $downloadName = 'bien-ban-tong-'.$safeKy.'.docx';
+        $zip = (string) ($session['zip_path'] ?? '');
+        if (! is_file($zip)) {
+            return redirect()
+                ->route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban')
+                ->with('error', 'Chưa có file ZIP từng biên bản.');
+        }
 
-        register_shutdown_function(static function () use ($job): void {
-            BienBanTongHopSession::destroy($job);
-        });
+        return response()->download($zip, 'bien-ban-tung-file-'.$safeKy.'.zip');
+    }
 
-        return response()->download($docx, $downloadName);
+    /**
+     * @param  array<string, mixed>  $job
+     * @return array<string, mixed>
+     */
+    private function finishedTongPayload(array $job, string $jobId): array
+    {
+        $total = count($job['items'] ?? []);
+
+        return array_merge([
+            'done' => (int) ($job['done'] ?? $total),
+            'total' => $total,
+        ], $this->downloadMeta($job, $jobId));
+    }
+
+    /**
+     * @param  array<string, mixed>  $job
+     * @return array<string, string|null>
+     */
+    private function downloadMeta(array $job, string $jobId): array
+    {
+        $kind = (string) ($job['download_kind'] ?? 'pages');
+
+        return [
+            'download_url' => route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.download', $jobId),
+            'download_kind' => $kind,
+            'pages_dir' => isset($job['pages_dir']) ? (string) $job['pages_dir'] : null,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $job
+     * @return array<string, string|null>
+     */
+    private function finalizeTongExport(array &$job, string $dir): array
+    {
+        /** @var list<string> $files */
+        $files = $job['files'] ?? [];
+        $pagesDir = BienBanTongHopPagePath::pagesDir($dir);
+        $job['pages_dir'] = $pagesDir;
+
+        $zipPath = $dir.DIRECTORY_SEPARATOR.'bien-ban-tung-file.zip';
+        (new BienBanTongHopZip())->createFromDirectory($pagesDir, $zipPath);
+        $job['zip_path'] = $zipPath;
+        $job['download_kind'] = 'pages';
+
+        if ($this->shouldMergeTongFiles() && count($files) >= 2) {
+            (new BienBanDocxMerger())->merge($files, (string) $job['combined_docx']);
+            $job['download_kind'] = 'merge';
+        }
+
+        return $this->downloadMeta($job, (string) $job['id']);
+    }
+
+    private function shouldMergeTongFiles(): bool
+    {
+        return filter_var(config('services.bien_ban_tong.merge_files', false), FILTER_VALIDATE_BOOL);
     }
 
     /**

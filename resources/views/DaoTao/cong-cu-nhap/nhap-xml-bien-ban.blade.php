@@ -121,6 +121,7 @@
                     <div class="progress" style="height: 18px;">
                         <div class="progress-bar bg-success" id="xuat-tong-bar" role="progressbar" style="width: 0%">0%</div>
                     </div>
+                    <p class="small text-muted mt-2 mb-0" id="xuat-tong-folder" style="display:none;"></p>
                     <p class="small text-danger mt-2 mb-0" id="xuat-tong-error" style="display:none;"></p>
                 </div>
                 <div class="modal-footer py-2">
@@ -177,6 +178,7 @@
             running = true;
             syncBtn();
             $('#xuat-tong-error').hide().text('');
+            $('#xuat-tong-folder').hide().text('');
             $('#xuat-tong-close').prop('disabled', true);
             $('#xuat-tong-ky').text('Kỳ sát hạch: ' + maKy);
             setProgress(0, 1, 'Đang lấy danh sách thí sinh…');
@@ -221,12 +223,22 @@
             }).done(function (res) {
                 var done = res.done || (index + 1);
                 if (res.download_url) {
-                    setProgress(total, total, 'Đang tải file Word tổng…');
+                    var isZip = (res.download_kind || 'pages') !== 'merge';
+                    if (res.pages_dir) {
+                        $('#xuat-tong-folder').text(
+                            'Thư mục trên server (mở từng file Word): ' + res.pages_dir
+                        ).show();
+                    }
+                    setProgress(total, total, isZip
+                        ? 'Đã xuất xong. Đang tải ZIP từng biên bản…'
+                        : 'Đang tải file Word tổng…');
                     window.location = res.download_url;
                     running = false;
                     syncBtn();
                     $('#xuat-tong-close').prop('disabled', false);
-                    setTimeout(function () { $('#modalXuatTong').modal('hide'); }, 800);
+                    if (!isZip) {
+                        setTimeout(function () { $('#modalXuatTong').modal('hide'); }, 800);
+                    }
                     return;
                 }
                 setProgress(done, total, 'Đã xuất ' + done + '/' + total);

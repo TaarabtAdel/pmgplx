@@ -50,6 +50,14 @@ return [
         'disable' => env('WORD_MERGE_DISABLE', false),
     ],
 
+    /*
+    | Xuất tổng biên bản: mặc định chỉ xuất từng file vào thư mục tung-file/ (+ ZIP tải về).
+    | BIEN_BAN_TONG_GOP_FILE=true → sau đó gộp thêm 1 file Word tổng.
+    */
+    'bien_ban_tong' => [
+        'merge_files' => env('BIEN_BAN_TONG_GOP_FILE', false),
+    ],
+
     'xeonline' => [
         'base_url' => env('XEONLINE_API_BASE_URL', 'http://117.2.146.185:7782'),
         'timeout' => (int) env('XEONLINE_API_TIMEOUT', 30),
