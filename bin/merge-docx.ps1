@@ -1,4 +1,4 @@
-# Merge DOCX files via Microsoft Word InsertFile (Windows + Word required).
+# khgplx merge-docx v2 ASCII
 # Usage: merge-docx.ps1 <files.txt> <output.docx>
 # files.txt: UTF-8, one absolute path per line (ASCII paths recommended).
 $ErrorActionPreference = 'Stop'
