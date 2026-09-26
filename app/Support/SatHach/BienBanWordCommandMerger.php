@@ -5,10 +5,8 @@ namespace App\Support\SatHach;
 use RuntimeException;
 
 /**
- * Gộp DOCX bằng Microsoft Word trên máy chạy PHP (không phải Docker Linux).
- *
- * Windows triển khai: PowerShell + Word.Application InsertFile.
- * macOS native: AppleScript + Microsoft Word.app.
+ * Gộp DOCX bằng Microsoft Word trên Windows (PowerShell COM InsertFile).
+ * Mac/Docker không gọi Word — dùng gộp XML.
  */
 class BienBanWordCommandMerger
 {
@@ -30,13 +28,11 @@ class BienBanWordCommandMerger
         @mkdir(dirname($outputPath), 0755, true);
         @unlink($outputPath);
 
-        if ($driver === 'windows') {
-            $this->mergeWindows($pageDocxPaths, $outputPath);
-
-            return;
+        if ($driver !== 'windows') {
+            throw new RuntimeException('Máy này không có Microsoft Word để gộp file.');
         }
 
-        $this->mergeMac($pageDocxPaths, $outputPath);
+        $this->mergeWindows($pageDocxPaths, $outputPath);
     }
 
     private function driver(): ?string
@@ -63,7 +59,7 @@ class BienBanWordCommandMerger
         }
 
         $list = dirname($outputPath).DIRECTORY_SEPARATOR.'word-merge-files.txt';
-        file_put_contents($list, implode("\r\n", $files)."\r\n");
+        file_put_contents($list, "\xEF\xBB\xBF".implode("\r\n", $files)."\r\n");
 
         $cmd = escapeshellarg((string) $this->powershellPath())
             .' -NoProfile -ExecutionPolicy Bypass -File '.escapeshellarg($ps1)
@@ -76,61 +72,11 @@ class BienBanWordCommandMerger
         @unlink($list);
 
         if ($code !== 0 || ! is_file($outputPath)) {
+            $detail = Utf8::sanitize(implode(' ', $output));
             throw new RuntimeException(
-                'Gộp bằng Microsoft Word thất bại'
-                .($output !== [] ? ': '.implode(' ', $output) : '.')
+                'Gộp bằng Microsoft Word thất bại'.($detail !== '' ? ': '.$detail : '.')
             );
         }
-    }
-
-    /**
-     * @param  list<string>  $files
-     */
-    private function mergeMac(array $files, string $outputPath): void
-    {
-        $quoted = array_map(fn (string $p): string => $this->appleQuoted($p), $files);
-        $fileList = '{'.implode(', ', $quoted).'}';
-        $outQuoted = $this->appleQuoted($outputPath);
-
-        $script = <<<APPLESCRIPT
-set fileList to {$fileList}
-set outPath to {$outQuoted}
-tell application "Microsoft Word"
-  open POSIX file (item 1 of fileList)
-  set theDoc to active document
-  set fileCount to count of fileList
-  repeat with i from 2 to fileCount
-    tell theDoc
-      set theRange to text object of theDoc
-      collapse range theRange direction collapse end
-      insert break at theRange break type page break
-    end tell
-    insert file name ((POSIX file (item i of fileList)) as string)
-  end repeat
-  save as theDoc file name ((POSIX file outPath) as string) file format format XML document
-  close theDoc saving no
-end tell
-APPLESCRIPT;
-
-        $tmp = dirname($outputPath).DIRECTORY_SEPARATOR.'word-merge.applescript';
-        file_put_contents($tmp, $script);
-
-        $output = [];
-        $code = 0;
-        exec('osascript '.escapeshellarg($tmp).' 2>&1', $output, $code);
-        @unlink($tmp);
-
-        if ($code !== 0 || ! is_file($outputPath)) {
-            throw new RuntimeException(
-                'Gộp bằng Microsoft Word (Mac) thất bại'
-                .($output !== [] ? ': '.implode(' ', $output) : '.')
-            );
-        }
-    }
-
-    private function appleQuoted(string $path): string
-    {
-        return '"'.str_replace(['\\', '"'], ['\\\\', '\\"'], $path).'"';
     }
 
     private function powershellPath(): ?string

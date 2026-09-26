@@ -50,14 +50,14 @@ class BienBanDocxMerger
         }
 
         $zip = new ZipArchive();
-        if ($zip->open($tmp) !== true) {
+        if (@$zip->open($tmp) !== true) {
             @unlink($tmp);
             throw new RuntimeException('Không mở được file Word tổng.');
         }
 
-        $docXml = (string) $zip->getFromName('word/document.xml');
-        $relsXml = (string) $zip->getFromName('word/_rels/document.xml.rels');
-        $contentTypes = (string) $zip->getFromName('[Content_Types].xml');
+        $docXml = $this->zipGet($zip, 'word/document.xml');
+        $relsXml = $this->zipGet($zip, 'word/_rels/document.xml.rels');
+        $contentTypes = $this->zipGet($zip, '[Content_Types].xml');
         [$baseBody, $sectPr] = $this->splitBody($docXml);
         $nextRid = $this->maxRid($relsXml) + 1;
         $nextDocPr = $this->maxDocPr($docXml) + 1;
@@ -95,12 +95,12 @@ class BienBanDocxMerger
     private function extractPart(string $path, int $pageNo, int $nextRid, int $nextDocPr): array
     {
         $src = new ZipArchive();
-        if ($src->open($path) !== true) {
+        if (@$src->open($path) !== true) {
             throw new RuntimeException('Không đọc được file trang '.$pageNo);
         }
 
-        $docXml = (string) $src->getFromName('word/document.xml');
-        $relsXml = (string) $src->getFromName('word/_rels/document.xml.rels');
+        $docXml = $this->zipGet($src, 'word/document.xml');
+        $relsXml = $this->zipGet($src, 'word/_rels/document.xml.rels');
         [$body] = $this->splitBody($docXml);
 
         $ridMap = [];
@@ -170,18 +170,19 @@ class BienBanDocxMerger
     }
 
     /**
-     * Chỉ tách sectPr CUỐI của body. Mẫu biên bản có nhiều sectPr trong trang;
-     * regex greedy từ sectPr đầu → cuối làm vỡ XML, Word không mở được.
+     * Chỉ tách sectPr CUỐI của body. Mẫu biên bản có nhiều sectPr trong trang.
      *
      * @return array{0: string, 1: string}
      */
     private function splitBody(string $documentXml): array
     {
-        if (! preg_match('#(<w:body\b[^>]*>)(.*)(</w:body>)#s', $documentXml, $m)) {
+        $openEnd = $this->bodyInnerStart($documentXml);
+        $close = strrpos($documentXml, '</w:body>');
+        if ($close === false || $close < $openEnd) {
             throw new RuntimeException('File Word thiếu nội dung.');
         }
 
-        $inner = $m[2];
+        $inner = substr($documentXml, $openEnd, $close - $openEnd);
         $last = strrpos($inner, '<w:sectPr');
         if ($last === false) {
             return [$inner, ''];
@@ -192,11 +193,43 @@ class BienBanDocxMerger
 
     private function rebuildDocument(string $originalXml, string $newInnerBody): string
     {
-        if (! preg_match('#^(.*)(<w:body\b[^>]*>)(.*)(</w:body>)(.*)$#s', $originalXml, $m)) {
+        $openEnd = $this->bodyInnerStart($originalXml);
+        $close = strrpos($originalXml, '</w:body>');
+        if ($close === false || $close < $openEnd) {
             throw new RuntimeException('File Word thiếu nội dung.');
         }
 
-        return $m[1].$m[2].$newInnerBody.$m[4].$m[5];
+        return substr($originalXml, 0, $openEnd).$newInnerBody.substr($originalXml, $close);
+    }
+
+    private function bodyInnerStart(string $documentXml): int
+    {
+        $tag = strpos($documentXml, '<w:body');
+        if ($tag === false) {
+            throw new RuntimeException('File Word thiếu nội dung.');
+        }
+        $gt = strpos($documentXml, '>', $tag);
+        if ($gt === false) {
+            throw new RuntimeException('File Word thiếu nội dung.');
+        }
+
+        return $gt + 1;
+    }
+
+    private function zipGet(ZipArchive $zip, string $name): string
+    {
+        $flags = defined(ZipArchive::class.'::FL_ENC_RAW') ? ZipArchive::FL_ENC_RAW : 0;
+        $data = $zip->getFromName($name, 0, $flags);
+        if (! is_string($data) || $data === '') {
+            $data = $zip->getFromName($name);
+        }
+        if (! is_string($data)) {
+            throw new RuntimeException('Không đọc được '.$name.' trong file Word.');
+        }
+
+        return $name === '[Content_Types].xml' || str_ends_with($name, '.xml') || str_ends_with($name, '.rels')
+            ? Utf8::sanitize($data)
+            : $data;
     }
 
     private function appendRels(string $relsXml, string $extra): string

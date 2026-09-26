@@ -9,6 +9,7 @@ use App\Support\SatHach\BienBanDocxGenerator;
 use App\Support\SatHach\BienBanDocxMerger;
 use App\Support\SatHach\BienBanTongHopSession;
 use App\Support\SatHach\SatHachBienBanImporter;
+use App\Support\SatHach\Utf8;
 use App\Support\SatHach\XmlSatHachParser;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -145,7 +146,7 @@ class NhapXmlBienBanTongHopController extends Controller
     {
         $maKySh = trim((string) $request->input('ma_ky_sh', ''));
         if ($maKySh === '') {
-            return response()->json(['message' => 'Chọn kỳ sát hạch trước khi xuất tổng.'], 422);
+            return $this->jsonTong(['message' => 'Chọn kỳ sát hạch trước khi xuất tổng.'], 422);
         }
 
         $rows = SatHachBienBan::query()
@@ -156,17 +157,17 @@ class NhapXmlBienBanTongHopController extends Controller
             ->get();
 
         if ($rows->isEmpty()) {
-            return response()->json(['message' => 'Kỳ này không có thí sinh.'], 422);
+            return $this->jsonTong(['message' => 'Kỳ này không có thí sinh.'], 422);
         }
 
         try {
             @ini_set('memory_limit', '512M');
             $job = BienBanTongHopSession::start($maKySh, $rows);
         } catch (Throwable $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
+            return $this->jsonTong(['message' => Utf8::sanitize($e->getMessage())], 500);
         }
 
-        return response()->json([
+        return $this->jsonTong([
             'job_id' => $job['id'],
             'total' => count($job['items']),
             'items' => $job['items'],
@@ -177,7 +178,7 @@ class NhapXmlBienBanTongHopController extends Controller
     {
         $jobId = trim((string) $request->input('job_id', ''));
         if ($jobId === '') {
-            return response()->json(['message' => 'Thiếu phiên xuất.'], 422);
+            return $this->jsonTong(['message' => 'Thiếu phiên xuất.'], 422);
         }
 
         try {
@@ -189,10 +190,10 @@ class NhapXmlBienBanTongHopController extends Controller
             $total = count($items);
             $done = (int) ($job['done'] ?? 0);
             if ($total === 0) {
-                return response()->json(['message' => 'Kỳ này không có thí sinh.'], 422);
+                return $this->jsonTong(['message' => 'Kỳ này không có thí sinh.'], 422);
             }
             if ($done >= $total) {
-                return response()->json([
+                return $this->jsonTong([
                     'done' => $done,
                     'total' => $total,
                     'download_url' => route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.download', $jobId),
@@ -205,12 +206,12 @@ class NhapXmlBienBanTongHopController extends Controller
             }
             $expectedId = (int) ($items[$done]['id'] ?? 0);
             if ($itemId <= 0 || ($expectedId > 0 && $itemId !== $expectedId)) {
-                return response()->json(['message' => 'Thứ tự xuất không khớp phiên.'], 422);
+                return $this->jsonTong(['message' => 'Thứ tự xuất không khớp phiên.'], 422);
             }
 
             $row = SatHachBienBan::query()->find($itemId);
             if ($row === null) {
-                return response()->json(['message' => 'Không tìm thấy thí sinh #'.$itemId.'.'], 422);
+                return $this->jsonTong(['message' => 'Không tìm thấy thí sinh #'.$itemId.'.'], 422);
             }
 
             $dir = BienBanTongHopSession::dir($jobId);
@@ -231,14 +232,14 @@ class NhapXmlBienBanTongHopController extends Controller
 
             BienBanTongHopSession::save($job);
 
-            return response()->json([
+            return $this->jsonTong([
                 'done' => $job['done'],
                 'total' => $total,
-                'name' => (string) ($row->HoVaTen ?: $row->SoBaoDanh ?: ''),
+                'name' => Utf8::sanitize((string) ($row->HoVaTen ?: $row->SoBaoDanh ?: '')),
                 'download_url' => $downloadUrl,
             ]);
         } catch (Throwable $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
+            return $this->jsonTong(['message' => Utf8::sanitize($e->getMessage()) ?: 'Xuất tổng thất bại.'], 500);
         }
     }
 
@@ -269,6 +270,19 @@ class NhapXmlBienBanTongHopController extends Controller
         });
 
         return response()->download($docx, $downloadName);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function jsonTong(array $data, int $status = 200): JsonResponse
+    {
+        return response()->json(
+            $data,
+            $status,
+            [],
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
+        );
     }
 
     private function uploadErrorMessage(string $field): ?string
