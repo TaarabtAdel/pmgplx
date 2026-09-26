@@ -54,8 +54,15 @@ return [
     | Xuất tổng biên bản: mặc định chỉ xuất từng file vào thư mục tung-file/ (+ ZIP tải về).
     | BIEN_BAN_TONG_GOP_FILE=true → sau đó gộp thêm 1 file Word tổng.
     */
+    'clippit' => [
+        'bin' => env('CLIPPIT_BIN'),
+    ],
+
     'bien_ban_tong' => [
         'merge_files' => env('BIEN_BAN_TONG_GOP_FILE', false),
+        // clippit (khuyến nghị) | word | xml | auto | none
+        'merge_driver' => env('BIEN_BAN_TONG_MERGE_DRIVER', 'clippit'),
+        'allow_xml_merge' => env('BIEN_BAN_TONG_ALLOW_XML_MERGE', false),
     ],
 
     'xeonline' => [

@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DaoTao\SatHachBienBan;
 use App\Support\DaoTao\Jp2PhotoConverter;
 use App\Support\SatHach\BienBanDocxGenerator;
-use App\Support\SatHach\BienBanDocxMerger;
+use App\Support\SatHach\BienBanTongDocxCombiner;
 use App\Support\SatHach\BienBanTongHopPagePath;
 use App\Support\SatHach\BienBanTongHopSession;
 use App\Support\SatHach\BienBanTongHopZip;
@@ -332,7 +332,7 @@ class NhapXmlBienBanTongHopController extends Controller
         $job['download_kind'] = 'pages';
 
         if ($this->shouldMergeTongFiles() && count($files) >= 2) {
-            (new BienBanDocxMerger())->merge($files, (string) $job['combined_docx']);
+            (new BienBanTongDocxCombiner())->merge($files, (string) $job['combined_docx']);
             $job['download_kind'] = 'merge';
         }
 

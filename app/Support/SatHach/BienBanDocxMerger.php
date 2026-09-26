@@ -6,7 +6,8 @@ use RuntimeException;
 use ZipArchive;
 
 /**
- * Gộp nhiều DOCX: mặc định nối XML (PHP). Tùy chọn Word COM khi WORD_MERGE_USE_WORD=true.
+ * Gộp DOCX bằng nối XML (legacy — dễ lỗi định dạng với mẫu biên bản).
+ * Dùng BienBanTongDocxCombiner (Clippit) thay thế.
  */
 class BienBanDocxMerger
 {
@@ -14,6 +15,14 @@ class BienBanDocxMerger
      * @param  list<string>  $pageDocxPaths
      */
     public function merge(array $pageDocxPaths, string $outputPath): void
+    {
+        (new BienBanTongDocxCombiner())->merge($pageDocxPaths, $outputPath);
+    }
+
+    /**
+     * @param  list<string>  $pageDocxPaths
+     */
+    public function mergeXmlOnly(array $pageDocxPaths, string $outputPath): void
     {
         $files = [];
         foreach ($pageDocxPaths as $path) {
@@ -32,13 +41,6 @@ class BienBanDocxMerger
             if (! @copy($files[0], $outputPath)) {
                 throw new RuntimeException('Không ghi được file Word tổng.');
             }
-
-            return;
-        }
-
-        $word = new BienBanWordCommandMerger();
-        if ($word->isAvailable()) {
-            $word->merge($files, $outputPath);
 
             return;
         }

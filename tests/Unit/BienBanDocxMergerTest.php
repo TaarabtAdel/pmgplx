@@ -22,8 +22,7 @@ class BienBanDocxMergerTest extends TestCase
         $this->writeSimpleDocx($a, 'PAGE_A', null);
         $this->writeSimpleDocx($b, 'PAGE_B', $png);
 
-        config(['services.word_merge.disable' => true]);
-        (new BienBanDocxMerger())->merge([$a, $b], $out);
+        (new BienBanDocxMerger())->mergeXmlOnly([$a, $b], $out);
 
         $this->assertFileExists($out);
         $zip = new ZipArchive();
@@ -92,8 +91,7 @@ class BienBanDocxMergerTest extends TestCase
         $row['so_bao_danh'] = 'A02';
         $g->generateOne($row, $b);
 
-        config(['services.word_merge.disable' => true]);
-        (new BienBanDocxMerger())->merge([$a, $b], $out);
+        (new BienBanDocxMerger())->mergeXmlOnly([$a, $b], $out);
 
         $zip = new ZipArchive();
         $this->assertTrue($zip->open($out));
