@@ -1,0 +1,2 @@
+12.4.1 msvc64
+https://github.com/qpdf/qpdf/releases/tag/v12.4.1

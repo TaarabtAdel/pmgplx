@@ -93,15 +93,17 @@ Luồng: từng `.docx` (PhpWord) → **LibreOffice** → PDF → **qpdf** (ho�
 ## Windows server
 
 1. Cài [LibreOffice](https://www.libreoffice.org/download/download/) (có `soffice.exe`).
-2. Tuỳ chọn: cài [qpdf for Windows](https://github.com/qpdf/qpdf/releases) → `bin\qpdf.exe`, hoặc Ghostscript.
+2. **qpdf:** copy cả thư mục `laravel/bin/` (có `qpdf.exe` + các `.dll` cùng thư mục), hoặc chạy `download-qpdf.ps1` / `download-qpdf.sh` (xem `qpdf-VERSION.txt`).
 3. `.env`:
 
 ```
 BIEN_BAN_TONG_GOP_FILE=true
 BIEN_BAN_TONG_MERGE_DRIVER=pdf
 LIBREOFFICE_BIN=C:\Program Files\LibreOffice\program\soffice.exe
-QPDF_BIN=F:\pmgplx\bin\qpdf.exe
+QPDF_BIN=F:\pmgplx\laravel\bin\qpdf.exe
 ```
+
+(Bỏ `QPDF_BIN` nếu muốn dùng mặc định `laravel/bin/qpdf.exe` trên Windows.)
 
 4. `php artisan config:clear` → **Xuất tổng** → tải `bien-ban-tong-….pdf`.
 
