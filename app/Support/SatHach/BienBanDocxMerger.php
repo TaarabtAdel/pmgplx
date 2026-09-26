@@ -6,7 +6,7 @@ use RuntimeException;
 use ZipArchive;
 
 /**
- * Gộp nhiều DOCX: ưu tiên Microsoft Word (Windows/Mac), fallback nối XML (Docker).
+ * Gộp nhiều DOCX: mặc định nối XML (PHP). Tùy chọn Word COM khi WORD_MERGE_USE_WORD=true.
  */
 class BienBanDocxMerger
 {

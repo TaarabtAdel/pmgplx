@@ -41,6 +41,10 @@ class BienBanWordCommandMerger
             return null;
         }
 
+        if (! filter_var(config('services.word_merge.use_word', false), FILTER_VALIDATE_BOOL)) {
+            return null;
+        }
+
         if (PHP_OS_FAMILY === 'Windows') {
             return $this->powershellPath() !== null ? 'windows' : null;
         }
@@ -133,7 +137,7 @@ class BienBanWordCommandMerger
         }
 
         return <<<'PS1'
-# khgplx merge-docx v2 ASCII
+# khgplx merge-docx v3 ASCII
 $ErrorActionPreference = 'Stop'
 if ($args.Count -lt 2) { throw 'Usage: merge-docx.ps1 <files.txt> <output.docx>' }
 $listPath = [string]$args[0]
@@ -166,8 +170,8 @@ try {
         $rng.Collapse(0) | Out-Null
         $rng.InsertFile([string]$files[$i])
     }
-    $outDir = Split-Path -LiteralPath $outPath -Parent
-    if ($outDir -and -not (Test-Path -LiteralPath $outDir)) {
+    $outDir = [System.IO.Path]::GetDirectoryName($outPath)
+    if ($outDir -and ($outDir -ne '') -and -not (Test-Path -LiteralPath $outDir)) {
         New-Item -ItemType Directory -Path $outDir -Force | Out-Null
     }
     if (Test-Path -LiteralPath $outPath) { Remove-Item -LiteralPath $outPath -Force }
@@ -189,7 +193,7 @@ PS1;
 
     private static function isSafeMergeScript(string $body): bool
     {
-        return mb_check_encoding($body, 'ASCII') && str_contains($body, 'merge-docx v2');
+        return mb_check_encoding($body, 'ASCII') && str_contains($body, 'merge-docx v3');
     }
 
     /**

@@ -1,4 +1,4 @@
-# khgplx merge-docx v2 ASCII
+# khgplx merge-docx v3 ASCII
 # Usage: merge-docx.ps1 <files.txt> <output.docx>
 # files.txt: UTF-8, one absolute path per line (ASCII paths recommended).
 $ErrorActionPreference = 'Stop'
@@ -54,8 +54,8 @@ try {
         $rng.InsertFile([string]$files[$i])
     }
 
-    $outDir = Split-Path -LiteralPath $outPath -Parent
-    if ($outDir -and -not (Test-Path -LiteralPath $outDir)) {
+    $outDir = [System.IO.Path]::GetDirectoryName($outPath)
+    if ($outDir -and ($outDir -ne '') -and -not (Test-Path -LiteralPath $outDir)) {
         New-Item -ItemType Directory -Path $outDir -Force | Out-Null
     }
 

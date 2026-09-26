@@ -40,11 +40,12 @@ return [
     ],
 
     /*
-    | Gộp Word tổng (xuất biên bản). Trên Windows có Microsoft Word sẽ dùng
-    | laravel/bin/merge-docx.ps1 (InsertFile). Docker/Linux fallback gộp XML.
-    | WORD_MERGE_DISABLE=true để ép dùng gộp XML.
+    | Gộp Word tổng (xuất biên bản). Mặc định gộp XML trong PHP (ổn định, không cần Word).
+    | WORD_MERGE_USE_WORD=true + Microsoft Word trên server → gộp bằng COM InsertFile.
+    | WORD_MERGE_DISABLE=true → luôn tắt Word (giữ tương thích cũ).
     */
     'word_merge' => [
+        'use_word' => env('WORD_MERGE_USE_WORD', false),
         'powershell' => env('WORD_MERGE_POWERSHELL'),
         'disable' => env('WORD_MERGE_DISABLE', false),
     ],
