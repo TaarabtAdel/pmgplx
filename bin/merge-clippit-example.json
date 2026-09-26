@@ -1,0 +1,8 @@
+{
+  "$schema": "https://sergey-tihon.github.io/Clippit/schemas/word-build-manifest.v1.json",
+  "output": "bien-ban-tong-merged.docx",
+  "entries": [
+    { "file": "tung-file/0001-SBD001-Nguyen-Van-A.docx" },
+    { "file": "tung-file/0002-SBD002-Tran-Thi-B.docx" }
+  ]
+}
