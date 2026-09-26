@@ -4,6 +4,7 @@ namespace App\Http\Controllers\DaoTao;
 
 use App\Http\Controllers\Controller;
 use App\Models\DaoTao\SatHachBienBan;
+use Illuminate\Database\Eloquent\Builder;
 use App\Support\DaoTao\Jp2PhotoConverter;
 use App\Support\SatHach\BienBanDocxGenerator;
 use App\Support\SatHach\BienBanTongDocxCombiner;
@@ -28,10 +29,6 @@ class NhapXmlBienBanTongHopController extends Controller
     {
         $maKySh = trim((string) $request->input('ma_ky_sh', ''));
         $tuKhoa = trim((string) $request->input('tu_khoa', ''));
-        $perPage = (int) $request->input('per_page', 50);
-        if (! in_array($perPage, [50, 100, 200], true)) {
-            $perPage = 50;
-        }
 
         $kyOptions = SatHachBienBan::query()
             ->whereNotNull('MaKySH')
@@ -40,30 +37,16 @@ class NhapXmlBienBanTongHopController extends Controller
             ->orderBy('MaKySH')
             ->pluck('MaKySH');
 
-        $query = SatHachBienBan::query()
+        $items = $this->filteredBienBanQuery($maKySh, $tuKhoa)
             ->select([
                 'Id', 'MaKySH', 'NgaySH', 'SoTT', 'MaDK', 'HoVaTen', 'NgaySinh',
                 'SoCMT', 'SoBaoDanh', 'HangGPLX', 'KetQuaSH', 'FileNguon', 'NgayNhap',
             ])
             ->selectRaw("CASE WHEN AnhChanDung IS NULL OR AnhChanDung = '' THEN 0 ELSE 1 END as CoAnh")
-            ->orderBy('SoBaoDanh');
-            // ->orderBy('SoTT')
-            // ->orderBy('Id');
-
-        if ($maKySh !== '') {
-            $query->where('MaKySH', $maKySh);
-        }
-        if ($tuKhoa !== '') {
-            $like = '%'.$tuKhoa.'%';
-            $query->where(function ($sub) use ($like): void {
-                $sub->where('HoVaTen', 'like', $like)
-                    ->orWhere('MaDK', 'like', $like)
-                    ->orWhere('SoBaoDanh', 'like', $like)
-                    ->orWhere('SoCMT', 'like', $like);
-            });
-        }
-
-        $items = $query->paginate($perPage)->withQueryString();
+            ->orderBy('SoBaoDanh')
+            ->orderBy('SoTT')
+            ->orderBy('Id')
+            ->get();
 
         return view('DaoTao.cong-cu-nhap.nhap-xml-bien-ban', [
             'items' => $items,
@@ -71,7 +54,6 @@ class NhapXmlBienBanTongHopController extends Controller
             'filters' => [
                 'ma_ky_sh' => $maKySh,
                 'tu_khoa' => $tuKhoa,
-                'per_page' => $perPage,
             ],
             'jp2Ready' => Jp2PhotoConverter::isAvailable(),
         ]);
@@ -153,37 +135,33 @@ class NhapXmlBienBanTongHopController extends Controller
     public function exportTongStart(Request $request): JsonResponse
     {
         $maKySh = trim((string) $request->input('ma_ky_sh', ''));
-        if ($maKySh === '') {
-            return $this->jsonTong(['message' => 'Chọn kỳ sát hạch trước khi xuất tổng.'], 422);
+        $tuKhoa = trim((string) $request->input('tu_khoa', ''));
+        $ids = $this->parseExportIds($request);
+
+        $query = $this->filteredBienBanQuery($maKySh, $tuKhoa);
+        if ($ids !== []) {
+            $query->whereIn('Id', $ids);
         }
 
-        /** @var list<int> $ids */
-        $ids = array_values(array_unique(array_filter(array_map(
-            static fn ($id) => (int) $id,
-            (array) $request->input('ids', [])
-        ))));
-        if ($ids === []) {
-            return $this->jsonTong(['message' => 'Chọn ít nhất một thí sinh trên bảng.'], 422);
-        }
-
-        $rows = SatHachBienBan::query()
-            ->where('MaKySH', $maKySh)
-            ->whereIn('Id', $ids)
-            ->get();
+        $rows = $query->orderBy('SoBaoDanh')->orderBy('SoTT')->orderBy('Id')->get();
 
         if ($rows->isEmpty()) {
-            return $this->jsonTong(['message' => 'Không tìm thấy thí sinh đã chọn trong kỳ này.'], 422);
-        }
-        if ($rows->count() !== count($ids)) {
-            return $this->jsonTong(['message' => 'Có thí sinh không thuộc kỳ đang lọc. Bỏ chọn và chọn lại.'], 422);
+            return $this->jsonTong(['message' => 'Không có thí sinh để xuất (theo bộ lọc / checkbox).'], 422);
         }
 
-        $order = array_flip($ids);
-        $rows = $rows->sortBy(static fn ($row) => $order[(int) $row->Id] ?? PHP_INT_MAX)->values();
+        if ($ids !== []) {
+            if ($rows->count() !== count($ids)) {
+                return $this->jsonTong(['message' => 'Có thí sinh đã chọn không nằm trong kết quả lọc hiện tại.'], 422);
+            }
+            $order = array_flip($ids);
+            $rows = $rows->sortBy(static fn ($row) => $order[(int) $row->Id] ?? PHP_INT_MAX)->values();
+        }
+
+        $jobMaKy = $maKySh !== '' ? $maKySh : (string) ($rows->first()->MaKySH ?: 'loc');
 
         try {
             @ini_set('memory_limit', '512M');
-            $job = BienBanTongHopSession::start($maKySh, $rows);
+            $job = BienBanTongHopSession::start($jobMaKy, $rows);
         } catch (Throwable $e) {
             return $this->jsonTong(['message' => Utf8::sanitize($e->getMessage())], 500);
         }
@@ -523,6 +501,52 @@ class NhapXmlBienBanTongHopController extends Controller
             [],
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
         );
+    }
+
+    private function filteredBienBanQuery(string $maKySh, string $tuKhoa): Builder
+    {
+        $query = SatHachBienBan::query();
+
+        if ($maKySh !== '') {
+            $query->where('MaKySH', $maKySh);
+        }
+        if ($tuKhoa !== '') {
+            $like = '%'.$tuKhoa.'%';
+            $query->where(function ($sub) use ($like): void {
+                $sub->where('HoVaTen', 'like', $like)
+                    ->orWhere('MaDK', 'like', $like)
+                    ->orWhere('SoBaoDanh', 'like', $like)
+                    ->orWhere('SoCMT', 'like', $like);
+            });
+        }
+
+        return $query;
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function parseExportIds(Request $request): array
+    {
+        $raw = $request->input('ids', []);
+        if (is_string($raw)) {
+            $raw = trim($raw) === '' ? [] : preg_split('/[\s,]+/', $raw, -1, PREG_SPLIT_NO_EMPTY);
+        }
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($raw as $value) {
+            if (is_numeric($value)) {
+                $id = (int) $value;
+                if ($id > 0) {
+                    $ids[$id] = $id;
+                }
+            }
+        }
+
+        return array_values($ids);
     }
 
     private function uploadErrorMessage(string $field): ?string
