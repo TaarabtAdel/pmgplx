@@ -16,7 +16,8 @@ class BienBanTongPdfExporter
     {
         if (! BienBanLibreOfficePdfConverter::isAvailable()) {
             throw new RuntimeException(
-                'Chưa cài LibreOffice để in PDF. Cài LibreOffice hoặc đặt LIBREOFFICE_BIN trong .env.'
+                'Chưa cài LibreOffice để in PDF. Cài LibreOffice hoặc đặt LIBREOFFICE_BIN trong .env '
+                .'(ví dụ LIBREOFFICE_BIN="C:/Program Files/LibreOffice/program/soffice.exe").'
             );
         }
 

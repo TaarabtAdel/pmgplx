@@ -2,6 +2,8 @@
 
 namespace App\Support\SatHach;
 
+use App\Support\EnvPath;
+use App\Support\ShellProcess;
 use RuntimeException;
 
 class BienBanLibreOfficePdfConverter
@@ -28,27 +30,31 @@ class BienBanLibreOfficePdfConverter
             throw new RuntimeException('Không tạo được thư mục PDF tạm.');
         }
 
-        $profile = $outputDir.DIRECTORY_SEPARATOR.'lo-profile-'.substr(md5($docxPath.microtime(true)), 0, 12);
+        $profileRoot = storage_path('app/temp/lo-profile');
+        @mkdir($profileRoot, 0755, true);
+        $profile = $profileRoot.DIRECTORY_SEPARATOR.'run-'.substr(md5($docxPath.microtime(true)), 0, 12);
         @mkdir($profile, 0755, true);
 
-        $null = PHP_OS_FAMILY === 'Windows' ? '2>nul' : '2>/dev/null';
         $profileUri = 'file:///'.$this->pathToUri($profile);
-        $cmd = escapeshellarg($bin)
-            .' --headless -env:UserInstallation='.$profileUri
-            .' --convert-to pdf --outdir '.escapeshellarg($outputDir)
-            .' '.escapeshellarg($docxPath)
-            .' '.$null;
-
-        $output = [];
-        $code = 0;
-        exec($cmd, $output, $code);
+        $command = [
+            $bin,
+            '--headless',
+            '-env:UserInstallation='.$profileUri,
+            '--convert-to',
+            'pdf',
+            '--outdir',
+            $outputDir,
+            $docxPath,
+        ];
+        $result = ShellProcess::run($command, dirname($bin), 900);
         $this->deleteDirectory($profile);
 
         $expected = $outputDir.DIRECTORY_SEPARATOR.pathinfo($docxPath, PATHINFO_FILENAME).'.pdf';
-        if ($code !== 0 || ! is_file($expected)) {
-            $detail = Utf8::sanitize(implode(' ', $output));
+        if ($result['code'] !== 0 || ! is_file($expected)) {
+            $detail = $result['output'];
             throw new RuntimeException(
                 'Chuyển Word sang PDF thất bại'.($detail !== '' ? ': '.$detail : '.')
+                .' (kiểm tra LIBREOFFICE_BIN trong .env — đường dẫn có dấu cách phải đặt trong dấu ngoặc kép, dùng / thay \\).'
             );
         }
 
@@ -84,8 +90,8 @@ class BienBanLibreOfficePdfConverter
         }
 
         $candidates = [];
-        $configured = trim((string) config('services.libreoffice.bin', ''));
-        if ($configured !== '') {
+        $configured = EnvPath::fromEnv(config('services.libreoffice.bin'));
+        if ($configured !== null) {
             $candidates[] = $configured;
         }
 

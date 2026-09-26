@@ -2,6 +2,8 @@
 
 namespace App\Support\SatHach;
 
+use App\Support\EnvPath;
+use App\Support\ShellProcess;
 use RuntimeException;
 
 class BienBanPdfMerger
@@ -41,7 +43,9 @@ class BienBanPdfMerger
             return;
         }
 
-        throw new RuntimeException('Không gộp được PDF (cần qpdf hoặc ghostscript).');
+        throw new RuntimeException(
+            'Không gộp được PDF (cần qpdf.exe trong laravel/bin hoặc QPDF_BIN trong .env).'
+        );
     }
 
     /**
@@ -88,17 +92,14 @@ class BienBanPdfMerger
     private function qpdfConcat(string $qpdf, array $files, string $outputPath): bool
     {
         @unlink($outputPath);
-        $args = escapeshellarg($qpdf).' --empty --pages';
-        foreach ($files as $file) {
-            $args .= ' -- '.escapeshellarg($file).' 1-z';
-        }
-        $args .= ' -- '.escapeshellarg($outputPath);
+        $command = array_merge(
+            [$qpdf, '--empty', '--pages'],
+            $this->qpdfPageArgs($files),
+            ['--', $outputPath]
+        );
+        $result = ShellProcess::run($command, dirname($qpdf));
 
-        $out = [];
-        $code = 0;
-        exec($args.' 2>&1', $out, $code);
-
-        return $code === 0 && is_file($outputPath);
+        return $result['code'] === 0 && is_file($outputPath);
     }
 
     /**
@@ -127,8 +128,8 @@ class BienBanPdfMerger
 
     private function resolveQpdf(): ?string
     {
-        $configured = trim((string) config('services.pdf_tools.qpdf', ''));
-        if ($configured !== '' && is_file($configured)) {
+        $configured = EnvPath::fromEnv(config('services.pdf_tools.qpdf'));
+        if ($configured !== null && is_file($configured)) {
             return $configured;
         }
 
@@ -146,10 +147,25 @@ class BienBanPdfMerger
         return is_file($local) ? $local : null;
     }
 
+    /**
+     * @param  list<string>  $files
+     * @return list<string>
+     */
+    private function qpdfPageArgs(array $files): array
+    {
+        $args = [];
+        foreach ($files as $file) {
+            $args[] = $file;
+            $args[] = '1-z';
+        }
+
+        return $args;
+    }
+
     private function resolveGhostscript(): ?string
     {
-        $configured = trim((string) config('services.pdf_tools.ghostscript', ''));
-        if ($configured !== '' && is_file($configured)) {
+        $configured = EnvPath::fromEnv(config('services.pdf_tools.ghostscript'));
+        if ($configured !== null && is_file($configured)) {
             return $configured;
         }
 

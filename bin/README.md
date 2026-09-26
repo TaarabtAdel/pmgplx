@@ -99,8 +99,8 @@ Luồng: từng `.docx` (PhpWord) → **LibreOffice** → PDF → **qpdf** (ho�
 ```
 BIEN_BAN_TONG_GOP_FILE=true
 BIEN_BAN_TONG_MERGE_DRIVER=pdf
-LIBREOFFICE_BIN=C:\Program Files\LibreOffice\program\soffice.exe
-QPDF_BIN=F:\pmgplx\bin\qpdf.exe
+LIBREOFFICE_BIN="C:/Program Files/LibreOffice/program/soffice.exe"
+QPDF_BIN="F:/pmgplx/laravel/bin/qpdf.exe"
 ```
 
 4. `php artisan config:clear` → **Xuất tổng** → tải `bien-ban-tong-….pdf`.
