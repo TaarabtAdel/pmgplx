@@ -28,6 +28,10 @@ class NhapXmlBienBanTongHopController extends Controller
     {
         $maKySh = trim((string) $request->input('ma_ky_sh', ''));
         $tuKhoa = trim((string) $request->input('tu_khoa', ''));
+        $perPage = (int) $request->input('per_page', 50);
+        if (! in_array($perPage, [50, 100, 200], true)) {
+            $perPage = 50;
+        }
 
         $kyOptions = SatHachBienBan::query()
             ->whereNotNull('MaKySH')
@@ -59,7 +63,7 @@ class NhapXmlBienBanTongHopController extends Controller
             });
         }
 
-        $items = $query->paginate(50)->withQueryString();
+        $items = $query->paginate($perPage)->withQueryString();
 
         return view('DaoTao.cong-cu-nhap.nhap-xml-bien-ban', [
             'items' => $items,
@@ -67,6 +71,7 @@ class NhapXmlBienBanTongHopController extends Controller
             'filters' => [
                 'ma_ky_sh' => $maKySh,
                 'tu_khoa' => $tuKhoa,
+                'per_page' => $perPage,
             ],
             'jp2Ready' => Jp2PhotoConverter::isAvailable(),
         ]);
@@ -152,16 +157,29 @@ class NhapXmlBienBanTongHopController extends Controller
             return $this->jsonTong(['message' => 'Chọn kỳ sát hạch trước khi xuất tổng.'], 422);
         }
 
+        /** @var list<int> $ids */
+        $ids = array_values(array_unique(array_filter(array_map(
+            static fn ($id) => (int) $id,
+            (array) $request->input('ids', [])
+        ))));
+        if ($ids === []) {
+            return $this->jsonTong(['message' => 'Chọn ít nhất một thí sinh trên bảng.'], 422);
+        }
+
         $rows = SatHachBienBan::query()
             ->where('MaKySH', $maKySh)
-            ->orderBy('SoBaoDanh')
-            ->orderBy('SoTT')
-            ->orderBy('Id')
+            ->whereIn('Id', $ids)
             ->get();
 
         if ($rows->isEmpty()) {
-            return $this->jsonTong(['message' => 'Kỳ này không có thí sinh.'], 422);
+            return $this->jsonTong(['message' => 'Không tìm thấy thí sinh đã chọn trong kỳ này.'], 422);
         }
+        if ($rows->count() !== count($ids)) {
+            return $this->jsonTong(['message' => 'Có thí sinh không thuộc kỳ đang lọc. Bỏ chọn và chọn lại.'], 422);
+        }
+
+        $order = array_flip($ids);
+        $rows = $rows->sortBy(static fn ($row) => $order[(int) $row->Id] ?? PHP_INT_MAX)->values();
 
         try {
             @ini_set('memory_limit', '512M');
@@ -284,21 +302,25 @@ class NhapXmlBienBanTongHopController extends Controller
             $exporter = new BienBanTongPdfExporter();
 
             if ($pdfDone < $pdfTotal) {
-                $docx = $docxFiles[$pdfDone];
-                $pdfPath = $exporter->convertOneDocx($docx, $dir);
+                $batchSize = BienBanTongPdfExporter::pdfBatchSize();
+                $chunk = array_slice($docxFiles, $pdfDone, $batchSize);
+                $newPdfs = $exporter->convertDocxBatch($chunk, $dir);
                 /** @var list<string> $pdfFiles */
                 $pdfFiles = $job['pdf_files'] ?? [];
-                $pdfFiles[] = $pdfPath;
+                foreach ($newPdfs as $pdfPath) {
+                    $pdfFiles[] = $pdfPath;
+                }
                 $job['pdf_files'] = $pdfFiles;
-                $job['pdf_done'] = $pdfDone + 1;
+                $job['pdf_done'] = $pdfDone + count($chunk);
                 BienBanTongHopSession::save($job);
 
                 $items = $job['items'] ?? [];
-                $label = Utf8::sanitize((string) ($items[$pdfDone]['ten'] ?? $items[$pdfDone]['sbd'] ?? ''));
+                $lastIdx = min($job['pdf_done'] - 1, $pdfTotal - 1);
+                $label = Utf8::sanitize((string) ($items[$lastIdx]['ten'] ?? $items[$lastIdx]['sbd'] ?? ''));
 
                 return $this->jsonTong(array_merge(
                     $this->pdfPhaseProgressPayload($job),
-                    ['name' => $label]
+                    ['name' => $label, 'pdf_batch' => count($chunk)]
                 ));
             }
 
@@ -452,15 +474,20 @@ class NhapXmlBienBanTongHopController extends Controller
         $pdfDone = (int) ($job['pdf_done'] ?? 0);
         $total = count($job['items'] ?? []);
 
+        $batch = BienBanTongPdfExporter::pdfBatchSize();
+        $nextFrom = $pdfDone + 1;
+        $nextTo = min($pdfDone + $batch, $pdfTotal);
+
         return [
             'done' => (int) ($job['done'] ?? $total),
             'total' => $total,
             'phase' => 'pdf',
             'pdf_done' => $pdfDone,
             'pdf_total' => $pdfTotal,
+            'pdf_batch_size' => $batch,
             'status' => $pdfDone >= $pdfTotal
                 ? 'Đang gộp file PDF tổng (qpdf)…'
-                : 'Đang chuyển PDF '.($pdfDone + 1).'/'.$pdfTotal.' (LibreOffice)…',
+                : 'Đang chuyển PDF '.$nextFrom.'–'.$nextTo.'/'.$pdfTotal.' (LibreOffice, lô '.$batch.')…',
         ];
     }
 

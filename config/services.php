@@ -72,6 +72,8 @@ return [
         // pdf (in nhiều trang) | clippit | word | xml | auto | none
         'merge_driver' => env('BIEN_BAN_TONG_MERGE_DRIVER', 'pdf'),
         'allow_xml_merge' => env('BIEN_BAN_TONG_ALLOW_XML_MERGE', false),
+        // Số DOCX convert PDF mỗi lần gọi soffice (1 lần khởi động LO / lô)
+        'pdf_batch_size' => max(1, (int) env('BIEN_BAN_TONG_PDF_BATCH_SIZE', 25)),
     ],
 
     'xeonline' => [

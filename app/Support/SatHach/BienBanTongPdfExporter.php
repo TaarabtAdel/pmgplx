@@ -29,12 +29,31 @@ class BienBanTongPdfExporter
 
     public function convertOneDocx(string $docxPath, string $workDir): string
     {
-        self::assertLibreOfficeAvailable();
-        if (! is_file($docxPath)) {
+        $pdfs = $this->convertDocxBatch([$docxPath], $workDir);
+        if ($pdfs === []) {
             throw new RuntimeException('Không tìm thấy file Word: '.$docxPath);
         }
 
-        return (new BienBanLibreOfficePdfConverter())->convert($docxPath, $this->ensurePdfPagesDir($workDir));
+        return $pdfs[0];
+    }
+
+    /**
+     * @param  list<string>  $docxPaths
+     * @return list<string>
+     */
+    public function convertDocxBatch(array $docxPaths, string $workDir): array
+    {
+        self::assertLibreOfficeAvailable();
+
+        return (new BienBanLibreOfficePdfConverter())->convertMany(
+            $docxPaths,
+            $this->ensurePdfPagesDir($workDir)
+        );
+    }
+
+    public static function pdfBatchSize(): int
+    {
+        return max(1, (int) config('services.bien_ban_tong.pdf_batch_size', 25));
     }
 
     /**
@@ -60,12 +79,15 @@ class BienBanTongPdfExporter
         }
         @mkdir($pdfDir, 0755, true);
 
+        $converter = new BienBanLibreOfficePdfConverter();
+        $batchSize = self::pdfBatchSize();
         $pdfs = [];
-        foreach ($docxPaths as $docx) {
-            if (! is_string($docx) || ! is_file($docx)) {
-                continue;
+        $valid = array_values(array_filter($docxPaths, static fn ($p) => is_string($p) && is_file($p)));
+        for ($i = 0; $i < count($valid); $i += $batchSize) {
+            $chunk = array_slice($valid, $i, $batchSize);
+            foreach ($converter->convertMany($chunk, $pdfDir) as $pdf) {
+                $pdfs[] = $pdf;
             }
-            $pdfs[] = (new BienBanLibreOfficePdfConverter())->convert($docx, $pdfDir);
         }
 
         if (count($pdfs) < 1) {

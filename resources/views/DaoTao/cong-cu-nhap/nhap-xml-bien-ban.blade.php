@@ -8,7 +8,7 @@
         <div class="card-body">
             <div class="alert alert-info">
                 Upload file XML <code>&lt;SAT_HACH&gt;</code>. Hệ thống lưu từng thí sinh vào bảng <code>SatHachBienBan</code> (DB MANHLINH).
-                Sau đó xuất <strong>từng biên bản DOCX</strong> — mỗi lần một thí sinh, nhẹ hơn file gộp hàng trăm trang.
+                Chọn thí sinh bằng checkbox (có thể chọn nhiều trang — giữ theo kỳ), bấm <strong>Xuất đã chọn</strong> để tải ZIP/PDF tổng.
             </div>
 
             <form method="POST" action="{{ route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban.store') }}" enctype="multipart/form-data">
@@ -40,18 +40,26 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="form-group col-md-4 mb-2">
+                    <div class="form-group col-md-3 mb-2">
                         <label class="small text-muted mb-1" for="tu_khoa">Tìm (tên / SBD / mã ĐK / CCCD)</label>
                         <input type="text" name="tu_khoa" id="tu_khoa" class="form-control form-control-sm"
                                value="{{ $filters['tu_khoa'] ?? '' }}">
                     </div>
-                    <div class="form-group col-md-4 mb-2">
+                    <div class="form-group col-md-2 mb-2">
+                        <label class="small text-muted mb-1" for="per_page">Hiển thị</label>
+                        <select name="per_page" id="per_page" class="form-control form-control-sm">
+                            @foreach ([50, 100, 200] as $n)
+                                <option value="{{ $n }}" @selected((int) ($filters['per_page'] ?? 50) === $n)>{{ $n }} / trang</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group col-md-3 mb-2">
                         <button type="submit" class="btn btn-sm btn-navy mr-1">Lọc</button>
                         <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
-                        <button type="button" id="btn-xuat-tong" class="btn btn-sm btn-outline-success ml-1"
-                                @disabled(($filters['ma_ky_sh'] ?? '') === '')>
-                            Xuất tổng Word
+                        <button type="button" id="btn-xuat-tong" class="btn btn-sm btn-outline-success ml-1" disabled>
+                            Xuất đã chọn
                         </button>
+                        <span class="small text-muted d-block mt-1" id="xuat-chon-count">Đã chọn: 0</span>
                     </div>
                 </div>
             </form>
@@ -60,6 +68,9 @@
                 <table class="table table-sm table-bordered table-hover mb-0">
                     <thead class="thead-light">
                         <tr>
+                            <th class="text-center" style="width: 2.5rem;">
+                                <input type="checkbox" id="chk-all-page" title="Chọn tất cả trên trang này" aria-label="Chọn tất cả trên trang">
+                            </th>
                             <th>STT</th>
                             <th>Kỳ SH</th>
                             <th>SBD</th>
@@ -74,6 +85,11 @@
                     <tbody>
                         @forelse ($items as $row)
                             <tr>
+                                <td class="text-center align-middle">
+                                    <input type="checkbox" class="chk-hv" value="{{ $row->Id }}"
+                                           data-ten="{{ $row->HoVaTen ?: $row->SoBaoDanh }}"
+                                           aria-label="Chọn thí sinh">
+                                </td>
                                 <td>{{ $row->SoTT ?: '—' }}</td>
                                 <td><code>{{ $row->MaKySH ?: '—' }}</code></td>
                                 <td>{{ $row->SoBaoDanh ?: '—' }}</td>
@@ -97,7 +113,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="text-center text-muted py-4">Chưa có dữ liệu. Hãy nhập file XML.</td>
+                                <td colspan="10" class="text-center text-muted py-4">Chưa có dữ liệu. Hãy nhập file XML.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -113,7 +129,7 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header py-2">
-                    <h5 class="modal-title">Xuất tổng Word theo kỳ</h5>
+                    <h5 class="modal-title">Xuất biên bản đã chọn</h5>
                 </div>
                 <div class="modal-body">
                     <p class="mb-1 small text-muted" id="xuat-tong-ky"></p>
@@ -137,7 +153,65 @@
     $(function () {
         var $ky = $('#ma_ky_sh');
         var $btn = $('#btn-xuat-tong');
+        var $count = $('#xuat-chon-count');
         var running = false;
+        var selectedIds = new Set();
+
+        function storageKey() {
+            return 'bienBanExportIds:' + ($.trim($ky.val() || '') || '_');
+        }
+
+        function loadSelectionFromStorage() {
+            selectedIds = new Set();
+            try {
+                var raw = sessionStorage.getItem(storageKey());
+                if (raw) {
+                    JSON.parse(raw).forEach(function (id) {
+                        var n = parseInt(id, 10);
+                        if (n > 0) {
+                            selectedIds.add(n);
+                        }
+                    });
+                }
+            } catch (e) { /* ignore */ }
+        }
+
+        function saveSelectionToStorage() {
+            try {
+                sessionStorage.setItem(storageKey(), JSON.stringify(Array.from(selectedIds)));
+            } catch (e) { /* ignore */ }
+        }
+
+        function syncRowChecks() {
+            $('.chk-hv').each(function () {
+                var id = parseInt($(this).val(), 10);
+                $(this).prop('checked', selectedIds.has(id));
+            });
+            syncCheckAllPageState();
+        }
+
+        function syncCheckAllPageState() {
+            var $boxes = $('.chk-hv');
+            if (!$boxes.length) {
+                $('#chk-all-page').prop({ checked: false, indeterminate: false });
+                return;
+            }
+            var checkedOnPage = 0;
+            $boxes.each(function () {
+                if ($(this).prop('checked')) {
+                    checkedOnPage++;
+                }
+            });
+            var all = checkedOnPage === $boxes.length;
+            var some = checkedOnPage > 0 && !all;
+            $('#chk-all-page').prop('checked', all).prop('indeterminate', some);
+        }
+
+        function updateSelectionUi() {
+            var n = selectedIds.size;
+            $count.text('Đã chọn: ' + n);
+            syncBtn();
+        }
 
         $ky.select2({
             theme: 'bootstrap4',
@@ -147,18 +221,59 @@
         });
 
         function syncBtn() {
-            $btn.prop('disabled', running || !$.trim($ky.val() || ''));
+            $btn.prop('disabled', running || !$.trim($ky.val() || '') || selectedIds.size < 1);
         }
 
-        $ky.on('change', syncBtn);
-        syncBtn();
+        $ky.on('change', function () {
+            loadSelectionFromStorage();
+            syncRowChecks();
+            updateSelectionUi();
+        });
+
+        $(document).on('change', '.chk-hv', function () {
+            var id = parseInt($(this).val(), 10);
+            if (!id) {
+                return;
+            }
+            if ($(this).prop('checked')) {
+                selectedIds.add(id);
+            } else {
+                selectedIds.delete(id);
+            }
+            saveSelectionToStorage();
+            syncCheckAllPageState();
+            updateSelectionUi();
+        });
+
+        $('#chk-all-page').on('change', function () {
+            var checked = $(this).prop('checked');
+            $('.chk-hv').each(function () {
+                var id = parseInt($(this).val(), 10);
+                $(this).prop('checked', checked);
+                if (!id) {
+                    return;
+                }
+                if (checked) {
+                    selectedIds.add(id);
+                } else {
+                    selectedIds.delete(id);
+                }
+            });
+            saveSelectionToStorage();
+            $('#chk-all-page').prop('indeterminate', false);
+            updateSelectionUi();
+        });
+
+        loadSelectionFromStorage();
+        syncRowChecks();
+        updateSelectionUi();
 
         $btn.on('click', function () {
             var maKy = $.trim($ky.val() || '');
-            if (!maKy || running) {
+            if (!maKy || running || selectedIds.size < 1) {
                 return;
             }
-            xuatTong(maKy);
+            xuatTong(maKy, Array.from(selectedIds));
         });
 
         function setProgress(done, total, text) {
@@ -174,20 +289,25 @@
             $('#xuat-tong-close').prop('disabled', false);
         }
 
-        function xuatTong(maKy) {
+        function xuatTong(maKy, ids) {
             running = true;
             syncBtn();
             $('#xuat-tong-error').hide().text('');
             $('#xuat-tong-folder').hide().text('');
             $('#xuat-tong-close').prop('disabled', true);
-            $('#xuat-tong-ky').text('Kỳ sát hạch: ' + maKy);
-            setProgress(0, 1, 'Đang lấy danh sách thí sinh…');
+            $('#xuat-tong-ky').text('Kỳ sát hạch: ' + maKy + ' — ' + ids.length + ' thí sinh');
+            setProgress(0, 1, 'Đang chuẩn bị xuất…');
             $('#modalXuatTong').modal({ backdrop: 'static', keyboard: false });
 
             $.ajax({
                 url: @json(route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban.export-tong.start')),
                 method: 'POST',
-                data: { ma_ky_sh: maKy, _token: $('meta[name="csrf-token"]').attr('content') }
+                traditional: true,
+                data: {
+                    ma_ky_sh: maKy,
+                    ids: ids,
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                }
             }).done(function (start) {
                 var items = start.items || [];
                 var total = start.total || items.length;

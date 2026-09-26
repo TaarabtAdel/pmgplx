@@ -17,13 +17,35 @@ class BienBanLibreOfficePdfConverter
 
     public function convert(string $docxPath, string $outputDir): string
     {
+        $pdfs = $this->convertMany([$docxPath], $outputDir);
+        if ($pdfs === []) {
+            throw new RuntimeException('Không chuyển được file Word sang PDF.');
+        }
+
+        return $pdfs[0];
+    }
+
+    /**
+     * Một lần gọi soffice — nhiều DOCX → nhiều PDF (cùng thư mục out).
+     *
+     * @param  list<string>  $docxPaths
+     * @return list<string>  đường dẫn PDF theo thứ tự input
+     */
+    public function convertMany(array $docxPaths, string $outputDir): array
+    {
         $bin = self::resolveBinary();
         if ($bin === null) {
             throw new RuntimeException('Không tìm thấy LibreOffice (soffice). Cài LibreOffice hoặc đặt LIBREOFFICE_BIN.');
         }
 
-        if (! is_file($docxPath)) {
-            throw new RuntimeException('Không tìm thấy file Word: '.$docxPath);
+        $files = [];
+        foreach ($docxPaths as $path) {
+            if (is_string($path) && is_file($path)) {
+                $files[] = $path;
+            }
+        }
+        if ($files === []) {
+            return [];
         }
 
         if (! is_dir($outputDir) && ! @mkdir($outputDir, 0755, true) && ! is_dir($outputDir)) {
@@ -32,33 +54,54 @@ class BienBanLibreOfficePdfConverter
 
         $profileRoot = storage_path('app/temp/lo-profile');
         @mkdir($profileRoot, 0755, true);
-        $profile = $profileRoot.DIRECTORY_SEPARATOR.'run-'.substr(md5($docxPath.microtime(true)), 0, 12);
+        $profile = $profileRoot.DIRECTORY_SEPARATOR.'batch-'.substr(md5(implode("\0", $files).microtime(true)), 0, 14);
         @mkdir($profile, 0755, true);
 
         $profileUri = 'file:///'.$this->pathToUri($profile);
         $command = [
             $bin,
             '--headless',
+            '--norestore',
+            '--nologo',
+            '--nodefault',
             '-env:UserInstallation='.$profileUri,
             '--convert-to',
             'pdf',
             '--outdir',
             $outputDir,
-            $docxPath,
+            ...$files,
         ];
-        $result = ShellProcess::run($command, dirname($bin), 900);
+
+        $timeout = min(3600, 90 + count($files) * 40);
+        $result = ShellProcess::run($command, dirname($bin), $timeout);
         $this->deleteDirectory($profile);
 
-        $expected = $outputDir.DIRECTORY_SEPARATOR.pathinfo($docxPath, PATHINFO_FILENAME).'.pdf';
-        if ($result['code'] !== 0 || ! is_file($expected)) {
+        $pdfs = [];
+        $missing = [];
+        foreach ($files as $docx) {
+            $expected = $outputDir.DIRECTORY_SEPARATOR.pathinfo($docx, PATHINFO_FILENAME).'.pdf';
+            if (is_file($expected)) {
+                $pdfs[] = $expected;
+            } else {
+                $missing[] = basename($docx);
+            }
+        }
+
+        if ($missing !== []) {
             $detail = $result['output'];
             throw new RuntimeException(
-                'Chuyển Word sang PDF thất bại'.($detail !== '' ? ': '.$detail : '.')
-                .' (kiểm tra LIBREOFFICE_BIN trong .env — đường dẫn có dấu cách phải đặt trong dấu ngoặc kép, dùng / thay \\).'
+                'LibreOffice không tạo PDF cho: '.implode(', ', $missing)
+                .($detail !== '' ? '. '.$detail : '')
             );
         }
 
-        return $expected;
+        if ($result['code'] !== 0 && $pdfs === []) {
+            throw new RuntimeException(
+                'Chuyển Word sang PDF thất bại'.($result['output'] !== '' ? ': '.$result['output'] : '.')
+            );
+        }
+
+        return $pdfs;
     }
 
     private function pathToUri(string $path): string
