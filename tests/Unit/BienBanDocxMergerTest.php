@@ -22,6 +22,7 @@ class BienBanDocxMergerTest extends TestCase
         $this->writeSimpleDocx($a, 'PAGE_A', null);
         $this->writeSimpleDocx($b, 'PAGE_B', $png);
 
+        config(['services.word_merge.disable' => true]);
         (new BienBanDocxMerger())->merge([$a, $b], $out);
 
         $this->assertFileExists($out);
@@ -45,6 +46,67 @@ class BienBanDocxMergerTest extends TestCase
         }
         $this->assertGreaterThanOrEqual(1, $mediaCount);
         $zip->close();
+
+        libxml_use_internal_errors(true);
+        $dom = new \DOMDocument();
+        $this->assertTrue($dom->loadXML($xml));
+
+        @unlink($a);
+        @unlink($b);
+        @unlink($out);
+        @rmdir($dir);
+    }
+
+    public function test_merges_generated_bien_ban_into_well_formed_xml(): void
+    {
+        $dir = sys_get_temp_dir().'/bb-gen-merge-'.uniqid('', true);
+        @mkdir($dir, 0755, true);
+        $row = [
+            'so_bao_danh' => 'A01',
+            'ho_va_ten' => 'Nguyen Van A',
+            'ngay_sinh' => '01/01/2000',
+            'so_cmt' => '123',
+            'so_ho_chieu' => '',
+            'ngay_cap_hc' => '',
+            'noi_cap_hc' => '',
+            'hang_gplx' => 'B1',
+            'diem_lt_toida' => '30',
+            'diem_lt_dat' => '30',
+            'nhan_xet_lt' => 'Dat',
+            'diem_hinh_dat' => '-',
+            'nhan_xet_hinh' => '',
+            'diem_duong_dat' => '-',
+            'nhan_xet_duong' => '',
+            'ket_qua_text' => 'Dat',
+            'ngay_ky' => '1',
+            'thang_ky' => '1',
+            'nam_ky' => '2026',
+            'anh_chan_dung_b64' => null,
+        ];
+        $a = $dir.'/a.docx';
+        $b = $dir.'/b.docx';
+        $out = $dir.'/out.docx';
+        $g = new \App\Support\SatHach\BienBanDocxGenerator();
+        $g->generateOne($row, $a);
+        $row['ho_va_ten'] = 'Tran Thi B';
+        $row['so_bao_danh'] = 'A02';
+        $g->generateOne($row, $b);
+
+        config(['services.word_merge.disable' => true]);
+        (new BienBanDocxMerger())->merge([$a, $b], $out);
+
+        $zip = new ZipArchive();
+        $this->assertTrue($zip->open($out));
+        $xml = (string) $zip->getFromName('word/document.xml');
+        $zip->close();
+        $this->assertStringContainsString('Nguyen Van A', $xml);
+        $this->assertStringContainsString('Tran Thi B', $xml);
+        libxml_use_internal_errors(true);
+        $dom = new \DOMDocument();
+        $this->assertTrue($dom->loadXML($xml), implode('; ', array_map(
+            static fn (\LibXMLError $e): string => trim($e->message),
+            libxml_get_errors()
+        )));
 
         @unlink($a);
         @unlink($b);

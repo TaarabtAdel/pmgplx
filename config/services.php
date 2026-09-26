@@ -39,6 +39,16 @@ return [
         'decompress_bin' => env('JP2_DECOMPRESS_BIN'),
     ],
 
+    /*
+    | Gộp Word tổng (xuất biên bản). Trên Windows có Microsoft Word sẽ dùng
+    | laravel/bin/merge-docx.ps1 (InsertFile). Docker/Linux fallback gộp XML.
+    | WORD_MERGE_DISABLE=true để ép dùng gộp XML.
+    */
+    'word_merge' => [
+        'powershell' => env('WORD_MERGE_POWERSHELL'),
+        'disable' => env('WORD_MERGE_DISABLE', false),
+    ],
+
     'xeonline' => [
         'base_url' => env('XEONLINE_API_BASE_URL', 'http://117.2.146.185:7782'),
         'timeout' => (int) env('XEONLINE_API_TIMEOUT', 30),

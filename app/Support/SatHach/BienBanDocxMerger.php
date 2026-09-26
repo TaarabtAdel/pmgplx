@@ -6,7 +6,7 @@ use RuntimeException;
 use ZipArchive;
 
 /**
- * Gộp nhiều DOCX (cùng mẫu) thành 1 file Word thật: nối body + media, không dùng altChunk.
+ * Gộp nhiều DOCX: ưu tiên Microsoft Word (Windows/Mac), fallback nối XML (Docker).
  */
 class BienBanDocxMerger
 {
@@ -32,6 +32,13 @@ class BienBanDocxMerger
             if (! @copy($files[0], $outputPath)) {
                 throw new RuntimeException('Không ghi được file Word tổng.');
             }
+
+            return;
+        }
+
+        $word = new BienBanWordCommandMerger();
+        if ($word->isAvailable()) {
+            $word->merge($files, $outputPath);
 
             return;
         }
@@ -163,33 +170,33 @@ class BienBanDocxMerger
     }
 
     /**
+     * Chỉ tách sectPr CUỐI của body. Mẫu biên bản có nhiều sectPr trong trang;
+     * regex greedy từ sectPr đầu → cuối làm vỡ XML, Word không mở được.
+     *
      * @return array{0: string, 1: string}
      */
     private function splitBody(string $documentXml): array
     {
-        if (! preg_match('#<w:body\b[^>]*>(.*)</w:body>#s', $documentXml, $m)) {
+        if (! preg_match('#(<w:body\b[^>]*>)(.*)(</w:body>)#s', $documentXml, $m)) {
             throw new RuntimeException('File Word thiếu nội dung.');
         }
 
-        $inner = $m[1];
-        if (preg_match('#(<w:sectPr\b.*</w:sectPr>)#s', $inner, $s)) {
-            $sectPr = $s[1];
-            $content = str_replace($sectPr, '', $inner);
-
-            return [$content, $sectPr];
+        $inner = $m[2];
+        $last = strrpos($inner, '<w:sectPr');
+        if ($last === false) {
+            return [$inner, ''];
         }
 
-        return [$inner, ''];
+        return [substr($inner, 0, $last), substr($inner, $last)];
     }
 
     private function rebuildDocument(string $originalXml, string $newInnerBody): string
     {
-        return preg_replace(
-            '#<w:body\b[^>]*>.*</w:body>#s',
-            '<w:body>'.$newInnerBody.'</w:body>',
-            $originalXml,
-            1
-        ) ?? $originalXml;
+        if (! preg_match('#^(.*)(<w:body\b[^>]*>)(.*)(</w:body>)(.*)$#s', $originalXml, $m)) {
+            throw new RuntimeException('File Word thiếu nội dung.');
+        }
+
+        return $m[1].$m[2].$newInnerBody.$m[4].$m[5];
     }
 
     private function appendRels(string $relsXml, string $extra): string
