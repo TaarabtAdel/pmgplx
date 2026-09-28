@@ -51,10 +51,81 @@
                 <span class="badge badge-success mr-1">{{ number_format((int) ($meta['dat_count'] ?? 0)) }} Đạt</span>
                 <span class="badge badge-danger mr-1">{{ number_format((int) ($meta['khong_dat_count'] ?? 0)) }} Không đạt</span>
             </div>
-            <p class="small text-muted mt-2 mb-0">
-                TG/KM đường lấy từ Tổng giờ / Tổng KM máy chủ (Theo dõi DAT, chỉ phiên đạt).
-                Kết luận CSDT: G/H từ file, P/Q từ DAT; B sàn G≥34 H≥120 P≥20 Q≥810; B tự động P≥12 Q≥710; C1 G≥35 H≥113 P≥24 Q≥830.
-            </p>
+            <div class="mt-3">
+                <p class="small font-weight-bold mb-1">Ghi chú — cột file → trường phần mềm (<code>NguoiLX_HoSo</code>)</p>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered small mb-2 bg-white">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Tên trường (ký hiệu)</th>
+                                <th>Cột Excel</th>
+                                <th>Nguồn</th>
+                                <th>Cột DB</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-muted">
+                            <tr>
+                                <td>Thời gian thực hành hình (G)</td>
+                                <td>G</td>
+                                <td>File Excel</td>
+                                <td><code>TGThucHanhHinh</code></td>
+                            </tr>
+                            <tr>
+                                <td>Quãng đường thực hành hình (H)</td>
+                                <td>H</td>
+                                <td>File Excel</td>
+                                <td><code>QDThucHanhHinh</code></td>
+                            </tr>
+                            <tr>
+                                <td>Thời gian thực hành đường (P)</td>
+                                <td>— <span class="text-warning">không đọc P trên file</span></td>
+                                <td>Tổng giờ máy chủ DAT (phiên đạt)</td>
+                                <td><code>TGThucHanhDuong</code></td>
+                            </tr>
+                            <tr>
+                                <td>Quãng đường thực hành đường (Q)</td>
+                                <td>— <span class="text-warning">không đọc Q trên file</span></td>
+                                <td>Tổng km máy chủ DAT (phiên đạt)</td>
+                                <td><code>TongQDThucHanh</code></td>
+                            </tr>
+                            <tr>
+                                <td colspan="4" class="py-1 bg-light">
+                                    Các cột file khác: LT (I) → <code>DiemKQLyThuyet</code>;
+                                    Mô phỏng (J) → <code>DiemKQMoPhong</code>;
+                                    KT hình (K) → <code>DiemKQHinh</code>;
+                                    KT đường (M) → <code>DiemKQThucHanh</code>;
+                                    Ngày HTKH (O) → <code>NgayRaQDTN</code>.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Kết luận tại CSDT</td>
+                                <td>—</td>
+                                <td>Tính tự động (xem bảng dưới)</td>
+                                <td><code>KetLuanCSDT</code> (1 Đạt / 0 Không đạt)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="small font-weight-bold mb-1">Kết luận CSDT — phải đủ cả 4 ngưỡng (theo hạng GPLX trên hồ sơ)</p>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered small mb-0 bg-white">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Nhóm</th>
+                                <th>Thời gian TH hình (G) ≥</th>
+                                <th>Quãng đường TH hình (H) ≥</th>
+                                <th>Thời gian TH đường (P) ≥</th>
+                                <th>Quãng đường TH đường (Q) ≥</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-muted">
+                            <tr><td>B sàn</td><td>34</td><td>120</td><td>20</td><td>810</td></tr>
+                            <tr><td>B tự động (B11)</td><td>34</td><td>120</td><td>12</td><td>710</td></tr>
+                            <tr><td>C1</td><td>35</td><td>113</td><td>24</td><td>830</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -69,16 +140,16 @@
                     <thead class="thead-light">
                         <tr>
                             <th>Dòng</th>
-                            <th>STT</th>
-                            <th>Mã HV</th>
-                            <th>Họ tên</th>
-                            <th>TG hình</th>
-                            <th>KM hình</th>
-                            <th>LT</th>
-                            <th>Mô phỏng</th>
-                            <th>KT hình</th>
-                            <th>KT đường</th>
-                            <th>Ngày HTKH</th>
+                            <th class="text-nowrap">STT (A)</th>
+                            <th class="text-nowrap">Mã HV (B)</th>
+                            <th class="text-nowrap">Họ tên (C)</th>
+                            <th class="text-nowrap">TG hình (G)</th>
+                            <th class="text-nowrap">KM hình (H)</th>
+                            <th class="text-nowrap">LT (I)</th>
+                            <th class="text-nowrap">Mô phỏng (J)</th>
+                            <th class="text-nowrap">KT hình (K)</th>
+                            <th class="text-nowrap">KT đường (M)</th>
+                            <th class="text-nowrap">Ngày HTKH (O)</th>
                         </tr>
                     </thead>
                     <tbody>
