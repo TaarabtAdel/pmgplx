@@ -19,6 +19,9 @@
         if ($field === 'KetLuanCSDT') {
             return ((int) $value) === 1 ? 'Đạt' : 'Không đạt';
         }
+        if ($field === '_num' && is_numeric($value)) {
+            return rtrim(rtrim(number_format((float) $value, 2, ',', ''), '0'), ',');
+        }
         if (is_numeric($value) && ! in_array($field, ['NgayRaQDTN'], true)) {
             return rtrim(rtrim(number_format((float) $value, 2, ',', ''), '0'), ',');
         }
@@ -51,6 +54,98 @@
                 <span class="badge badge-success mr-1">{{ number_format((int) ($meta['dat_count'] ?? 0)) }} Đạt</span>
                 <span class="badge badge-danger mr-1">{{ number_format((int) ($meta['khong_dat_count'] ?? 0)) }} Không đạt</span>
             </div>
+
+            <div class="border rounded p-3 mt-3 bg-light">
+                <p class="small font-weight-bold mb-2 mb-md-1">Thử trước 1 học viên (không ghi DB)</p>
+                <form method="GET" action="{{ route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-dao-tao.preview') }}" class="form-inline flex-wrap">
+                    <label class="sr-only" for="test_ma">Mã HV</label>
+                    <input type="text" name="test_ma" id="test_ma" class="form-control form-control-sm mr-2 mb-2"
+                           placeholder="Mã HV (cột B)" value="{{ $testMa ?? '' }}" required autocomplete="off">
+                    <button type="submit" class="btn btn-sm btn-outline-primary mb-2">Tính thử kết quả</button>
+                </form>
+                @if (! empty($testMa) && is_array($testOne))
+                    @if (! ($testOne['success'] ?? false))
+                        <div class="alert alert-warning small mb-0 mt-2 py-2">
+                            {{ $testOne['message'] ?? 'Không tính được.' }}
+                        </div>
+                    @else
+                        @php
+                            $tu = $testOne['update'] ?? [];
+                            $fr = $testOne['file_row'] ?? [];
+                            $ex = $testOne['explain'] ?? [];
+                        @endphp
+                        <div class="mt-2 small">
+                            <div class="mb-1">
+                                <strong>Dòng Excel {{ $fr['excel_row'] ?? '—' }}</strong>
+                                — <code>{{ $tu['ma_hoc_vien'] ?? '' }}</code>
+                                {{ $tu['ho_ten'] ?? '' }}
+                                · Hạng <strong>{{ $tu['hang_gplx'] ?? '—' }}</strong>
+                                · Nhóm <strong>{{ $tu['nhom_label'] ?? '' }}</strong>
+                                · Kết luận:
+                                @if ((int) ($tu['payload']['KetLuanCSDT'] ?? 0) === 1)
+                                    <span class="badge badge-success">Đạt</span>
+                                @else
+                                    <span class="badge badge-danger">Không đạt</span>
+                                @endif
+                                @if (! empty($tu['thieu_dat']))
+                                    <span class="text-warning">(Chưa có giờ/km DAT)</span>
+                                @endif
+                            </div>
+                            @if (! empty($ex['chi_tiet']))
+                                <table class="table table-sm table-bordered bg-white mb-2">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>Điều kiện</th>
+                                            <th>Giá trị</th>
+                                            <th>Ngưỡng ≥</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($ex['chi_tiet'] as $d)
+                                            <tr @class(['table-success' => $d['ok'], 'table-danger' => ! $d['ok']])>
+                                                <td>{{ $d['label'] }}</td>
+                                                <td>{{ $formatVal('_num', $d['value']) }}</td>
+                                                <td>{{ $formatVal('_num', $d['min']) }}</td>
+                                                <td>{{ $d['ok'] ? 'Đạt' : 'Thiếu' }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            @elseif (($tu['nhom'] ?? '') === \App\Support\DaoTao\KetQuaDaoTaoUpdater::NHOM_KHAC)
+                                <p class="text-muted mb-2">Hạng GPLX không thuộc B sàn / B tự động / C1 → Kết luận CSDT = Không đạt.</p>
+                            @endif
+                            <p class="font-weight-bold mb-1">Giá trị sẽ ghi vào DB (so với hiện tại)</p>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered bg-white mb-0">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>Trường</th>
+                                            <th>Mới</th>
+                                            <th>Hiện tại</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (\App\Support\DaoTao\KetQuaDaoTaoUpdater::UPDATE_FIELDS as $field)
+                                            @php
+                                                $moi = $tu['payload'][$field] ?? null;
+                                                $cu = $tu['hien_tai'][$field] ?? null;
+                                                $doi = (string) $moi !== (string) $cu;
+                                            @endphp
+                                            <tr @class(['font-weight-bold' => $doi])>
+                                                <td>{{ $fieldLabels[$field] ?? $field }}</td>
+                                                <td>{{ $formatVal($field, $moi) }}</td>
+                                                <td>{{ $formatVal($field, $cu) }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    @endif
+                @endif
+            </div>
+
             <div class="mt-3">
                 <p class="small font-weight-bold mb-1">Ghi chú — cột file → trường phần mềm (<code>NguoiLX_HoSo</code>)</p>
                 <div class="table-responsive">

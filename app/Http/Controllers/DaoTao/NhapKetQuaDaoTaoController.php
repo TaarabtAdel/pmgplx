@@ -90,8 +90,23 @@ class NhapKetQuaDaoTaoController extends Controller
                 ->with('error', 'Chưa có dữ liệu xem trước. Vui lòng chọn file Excel.');
         }
 
+        $testMa = trim((string) $request->query('test_ma', ''));
+        $testOne = null;
+        if ($testMa !== '' && is_string($preview['stored_path'] ?? null) && $preview['stored_path'] !== '') {
+            try {
+                $testOne = (new KetQuaDaoTaoUpdater())->testOneFromFile(
+                    Storage::disk('local')->path($preview['stored_path']),
+                    $testMa
+                );
+            } catch (Throwable $e) {
+                $testOne = ['success' => false, 'message' => $e->getMessage()];
+            }
+        }
+
         return view('DaoTao.cong-cu-nhap.xem-truoc-ket-qua-dao-tao', [
             'preview' => $preview,
+            'testMa' => $testMa,
+            'testOne' => $testOne,
         ]);
     }
 

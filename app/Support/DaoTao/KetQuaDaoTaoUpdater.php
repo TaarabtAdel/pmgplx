@@ -232,18 +232,130 @@ class KetQuaDaoTaoUpdater
         };
     }
 
-    private function ketLuanCsdt(string $nhom, float $g, float $h, float $p, float $q): int
+    /**
+     * Giải thích Kết luận CSDT (4 ngưỡng G/H/P/Q).
+     *
+     * @return array{
+     *     ket_luan: int,
+     *     dat_du: bool,
+     *     nguong: array<string, float>|null,
+     *     chi_tiet: list<array{key: string, label: string, value: float, min: float, ok: bool}>
+     * }
+     */
+    public static function explainKetLuan(string $nhom, float $g, float $h, float $p, float $q): array
     {
         $nguong = self::NGUONG[$nhom] ?? null;
         if ($nguong === null) {
-            return 0;
+            return [
+                'ket_luan' => 0,
+                'dat_du' => false,
+                'nguong' => null,
+                'chi_tiet' => [],
+            ];
         }
 
-        if ($g < $nguong['g'] || $h < $nguong['h'] || $p < $nguong['p'] || $q < $nguong['q']) {
-            return 0;
+        $chiTiet = [
+            [
+                'key' => 'g',
+                'label' => 'Thời gian thực hành hình (G)',
+                'value' => $g,
+                'min' => (float) $nguong['g'],
+                'ok' => $g >= (float) $nguong['g'],
+            ],
+            [
+                'key' => 'h',
+                'label' => 'Quãng đường thực hành hình (H)',
+                'value' => $h,
+                'min' => (float) $nguong['h'],
+                'ok' => $h >= (float) $nguong['h'],
+            ],
+            [
+                'key' => 'p',
+                'label' => 'Thời gian thực hành đường (P)',
+                'value' => $p,
+                'min' => (float) $nguong['p'],
+                'ok' => $p >= (float) $nguong['p'],
+            ],
+            [
+                'key' => 'q',
+                'label' => 'Quãng đường thực hành đường (Q)',
+                'value' => $q,
+                'min' => (float) $nguong['q'],
+                'ok' => $q >= (float) $nguong['q'],
+            ],
+        ];
+
+        $datDu = ! in_array(false, array_column($chiTiet, 'ok'), true);
+
+        return [
+            'ket_luan' => $datDu ? 1 : 0,
+            'dat_du' => $datDu,
+            'nguong' => $nguong,
+            'chi_tiet' => $chiTiet,
+        ];
+    }
+
+    /**
+     * Thử tính kết quả một học viên từ file đang chờ import.
+     *
+     * @return array<string, mixed>
+     */
+    public function testOneFromFile(string $path, string $maHocVien): array
+    {
+        $maHocVien = trim($maHocVien);
+        if ($maHocVien === '') {
+            return ['success' => false, 'message' => 'Nhập mã học viên (cột B file Excel).'];
         }
 
-        return 1;
+        $records = (new KetQuaDaoTaoExcelParser())->readAllRecordsFromFile($path);
+        $record = null;
+        foreach ($records as $row) {
+            if (trim((string) ($row['ma_hoc_vien'] ?? '')) === $maHocVien) {
+                $record = $row;
+                break;
+            }
+        }
+
+        if ($record === null) {
+            return [
+                'success' => false,
+                'message' => 'Không có dòng nào trong file với mã HV «'.$maHocVien.'».',
+            ];
+        }
+
+        $analysis = $this->analyzeRecords([$record]);
+        if ($analysis['updates'] !== []) {
+            $update = $analysis['updates'][0];
+            $payload = $update['payload'] ?? [];
+            $explain = self::explainKetLuan(
+                (string) ($update['nhom'] ?? self::NHOM_KHAC),
+                (float) ($record['tg_thuc_hanh_hinh'] ?? 0),
+                (float) ($record['qd_thuc_hanh_hinh'] ?? 0),
+                (float) ($payload['TGThucHanhDuong'] ?? 0),
+                (float) ($payload['TongQDThucHanh'] ?? 0),
+            );
+
+            return [
+                'success' => true,
+                'file_row' => $record,
+                'update' => $update,
+                'explain' => $explain,
+            ];
+        }
+
+        $skip = $analysis['skipped'][0] ?? null;
+
+        return [
+            'success' => false,
+            'message' => is_array($skip) ? (string) ($skip['reason'] ?? 'Không cập nhật được.') : 'Không cập nhật được.',
+            'skip' => $skip,
+            'file_row' => $record,
+        ];
+    }
+
+    private function ketLuanCsdt(string $nhom, float $g, float $h, float $p, float $q): int
+    {
+        return self::explainKetLuan($nhom, $g, $h, $p, $q)['ket_luan'];
     }
 
     /**
