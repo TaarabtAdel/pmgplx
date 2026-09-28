@@ -55,96 +55,12 @@
                 <span class="badge badge-danger mr-1">{{ number_format((int) ($meta['khong_dat_count'] ?? 0)) }} Không đạt</span>
             </div>
 
-            <div class="border rounded p-3 mt-3 bg-light">
-                <p class="small font-weight-bold mb-2 mb-md-1">Thử trước 1 học viên (không ghi DB)</p>
-                <form method="GET" action="{{ route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-dao-tao.preview') }}" class="form-inline flex-wrap">
-                    <label class="sr-only" for="test_ma">Mã HV</label>
-                    <input type="text" name="test_ma" id="test_ma" class="form-control form-control-sm mr-2 mb-2"
-                           placeholder="Mã HV (cột B)" value="{{ $testMa ?? '' }}" required autocomplete="off">
-                    <button type="submit" class="btn btn-sm btn-outline-primary mb-2">Tính thử kết quả</button>
-                </form>
-                @if (! empty($testMa) && is_array($testOne))
-                    @if (! ($testOne['success'] ?? false))
-                        <div class="alert alert-warning small mb-0 mt-2 py-2">
-                            {{ $testOne['message'] ?? 'Không tính được.' }}
-                        </div>
-                    @else
-                        @php
-                            $tu = $testOne['update'] ?? [];
-                            $fr = $testOne['file_row'] ?? [];
-                            $ex = $testOne['explain'] ?? [];
-                        @endphp
-                        <div class="mt-2 small">
-                            <div class="mb-1">
-                                <strong>Dòng Excel {{ $fr['excel_row'] ?? '—' }}</strong>
-                                — <code>{{ $tu['ma_hoc_vien'] ?? '' }}</code>
-                                {{ $tu['ho_ten'] ?? '' }}
-                                · Hạng <strong>{{ $tu['hang_gplx'] ?? '—' }}</strong>
-                                · Nhóm <strong>{{ $tu['nhom_label'] ?? '' }}</strong>
-                                · Kết luận:
-                                @if ((int) ($tu['payload']['KetLuanCSDT'] ?? 0) === 1)
-                                    <span class="badge badge-success">Đạt</span>
-                                @else
-                                    <span class="badge badge-danger">Không đạt</span>
-                                @endif
-                                @if (! empty($tu['thieu_dat']))
-                                    <span class="text-warning">(Chưa có giờ/km DAT)</span>
-                                @endif
-                            </div>
-                            @if (! empty($ex['chi_tiet']))
-                                <table class="table table-sm table-bordered bg-white mb-2">
-                                    <thead class="thead-light">
-                                        <tr>
-                                            <th>Điều kiện</th>
-                                            <th>Giá trị</th>
-                                            <th>Ngưỡng ≥</th>
-                                            <th></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach ($ex['chi_tiet'] as $d)
-                                            <tr @class(['table-success' => $d['ok'], 'table-danger' => ! $d['ok']])>
-                                                <td>{{ $d['label'] }}</td>
-                                                <td>{{ $formatVal('_num', $d['value']) }}</td>
-                                                <td>{{ $formatVal('_num', $d['min']) }}</td>
-                                                <td>{{ $d['ok'] ? 'Đạt' : 'Thiếu' }}</td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            @elseif (($tu['nhom'] ?? '') === \App\Support\DaoTao\KetQuaDaoTaoUpdater::NHOM_KHAC)
-                                <p class="text-muted mb-2">Hạng GPLX không thuộc B sàn / B tự động / C1 → Kết luận CSDT = Không đạt.</p>
-                            @endif
-                            <p class="font-weight-bold mb-1">Giá trị sẽ ghi vào DB (so với hiện tại)</p>
-                            <div class="table-responsive">
-                                <table class="table table-sm table-bordered bg-white mb-0">
-                                    <thead class="thead-light">
-                                        <tr>
-                                            <th>Trường</th>
-                                            <th>Mới</th>
-                                            <th>Hiện tại</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (\App\Support\DaoTao\KetQuaDaoTaoUpdater::UPDATE_FIELDS as $field)
-                                            @php
-                                                $moi = $tu['payload'][$field] ?? null;
-                                                $cu = $tu['hien_tai'][$field] ?? null;
-                                                $doi = (string) $moi !== (string) $cu;
-                                            @endphp
-                                            <tr @class(['font-weight-bold' => $doi])>
-                                                <td>{{ $fieldLabels[$field] ?? $field }}</td>
-                                                <td>{{ $formatVal($field, $moi) }}</td>
-                                                <td>{{ $formatVal($field, $cu) }}</td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    @endif
-                @endif
-            </div>
+            @if (session('success'))
+                <div class="alert alert-success small py-2 mt-2 mb-0">{{ session('success') }}</div>
+            @endif
+            @if (session('error'))
+                <div class="alert alert-danger small py-2 mt-2 mb-0">{{ session('error') }}</div>
+            @endif
 
             <div class="mt-3">
                 <p class="small font-weight-bold mb-1">Ghi chú — cột file → trường phần mềm (<code>NguoiLX_HoSo</code>)</p>
@@ -357,12 +273,35 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-dao-tao.confirm') }}"
-          onsubmit="return confirm('Cập nhật {{ number_format($updateTotal) }} hồ sơ NguoiLX_HoSo?');">
-        @csrf
-        <button type="submit" class="btn btn-success btn-lg" @disabled($updateTotal === 0)>
-            Xác nhận lưu DB ({{ number_format($updateTotal) }} HV)
-        </button>
-        <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-dao-tao.cancel') }}" class="btn btn-outline-secondary btn-lg ml-2">Hủy</a>
-    </form>
+    @if (! empty($testMa) && is_array($testOne ?? null) && ($testOne['success'] ?? false))
+        @include('DaoTao.cong-cu-nhap.partials.ket-qua-thu-mot-ket-qua', [
+            'testOne' => $testOne,
+            'formatVal' => $formatVal,
+            'fieldLabels' => $fieldLabels,
+        ])
+    @elseif (! empty($testMa) && is_array($testOne ?? null) && ! ($testOne['success'] ?? false))
+        <div class="alert alert-warning">{{ $testOne['message'] ?? 'Không tính được.' }}</div>
+    @endif
+
+    <div class="d-flex flex-wrap align-items-center">
+        <form method="POST" action="{{ route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-dao-tao.confirm') }}" class="mr-2 mb-2"
+              onsubmit="return confirm('Cập nhật {{ number_format($updateTotal) }} hồ sơ NguoiLX_HoSo?');">
+            @csrf
+            <button type="submit" class="btn btn-success btn-lg" @disabled($updateTotal === 0)>
+                Xác nhận lưu DB ({{ number_format($updateTotal) }} HV)
+            </button>
+        </form>
+
+        <form method="POST" action="{{ route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-dao-tao.confirm-one') }}"
+              class="form-inline align-items-center border rounded px-3 py-2 bg-light mb-2 mr-2"
+              onsubmit="return confirm('Lưu thử 1 học viên này vào NguoiLX_HoSo?');">
+            @csrf
+            <label class="small font-weight-bold mr-2 mb-0 text-nowrap" for="ma_hoc_vien">Thử trước 1 học viên</label>
+            <input type="text" name="ma_hoc_vien" id="ma_hoc_vien" class="form-control form-control-sm mr-2"
+                   style="min-width: 10rem;" placeholder="Mã HV (cột B)" value="{{ $testMa ?? '' }}" required autocomplete="off">
+            <button type="submit" class="btn btn-outline-success btn-sm text-nowrap">Lưu thử vào DB</button>
+        </form>
+
+        <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-dao-tao.cancel') }}" class="btn btn-outline-secondary btn-lg mb-2">Hủy</a>
+    </div>
 @endsection

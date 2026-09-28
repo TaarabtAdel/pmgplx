@@ -156,6 +156,67 @@ class NhapKetQuaDaoTaoController extends Controller
             ->with('success', $msg);
     }
 
+    public function confirmOne(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'ma_hoc_vien' => ['required', 'string', 'max:64'],
+        ], [
+            'ma_hoc_vien.required' => 'Nhập mã học viên (cột B file Excel).',
+        ]);
+
+        $preview = $request->session()->get(self::SESSION_KEY);
+        $storedPath = is_array($preview) ? ($preview['stored_path'] ?? null) : null;
+
+        if (! is_string($storedPath) || $storedPath === '' || ! Storage::disk('local')->exists($storedPath)) {
+            return redirect()
+                ->route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-dao-tao')
+                ->with('error', 'Phiên xem trước đã hết hạn. Vui lòng chọn file Excel.');
+        }
+
+        $ma = trim((string) $request->input('ma_hoc_vien', ''));
+
+        try {
+            (new KetQuaDaoTaoUpdater())->applyOneFromFile(
+                Storage::disk('local')->path($storedPath),
+                $ma
+            );
+            $this->refreshPreviewAnalysis($request);
+        } catch (Throwable $e) {
+            return redirect()
+                ->route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-dao-tao.preview', ['test_ma' => $ma])
+                ->with('error', 'Lưu thử thất bại: '.$e->getMessage());
+        }
+
+        return redirect()
+            ->route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-dao-tao.preview', ['test_ma' => $ma])
+            ->with('success', 'Đã lưu thử 1 học viên «'.$ma.'» vào NguoiLX_HoSo. File import vẫn giữ để lưu các HV còn lại.');
+    }
+
+    private function refreshPreviewAnalysis(Request $request): void
+    {
+        $preview = $request->session()->get(self::SESSION_KEY);
+        if (! is_array($preview) || empty($preview['stored_path'])) {
+            return;
+        }
+
+        $storedPath = (string) $preview['stored_path'];
+        if (! Storage::disk('local')->exists($storedPath)) {
+            return;
+        }
+
+        $analysis = (new KetQuaDaoTaoUpdater())->analyzeFromFile(
+            Storage::disk('local')->path($storedPath)
+        );
+
+        $preview['meta'] = array_merge($preview['meta'] ?? [], $analysis['meta']);
+        $preview['updates'] = array_slice($analysis['updates'], 0, KetQuaDaoTaoUpdater::PREVIEW_UPDATE_LIMIT);
+        $preview['update_total'] = count($analysis['updates']);
+        $preview['skipped'] = array_slice($analysis['skipped'], 0, 30);
+        $preview['skip_total'] = count($analysis['skipped']);
+
+        $request->session()->put(self::SESSION_KEY, $preview);
+    }
+
     private function clearPendingImport(Request $request): void
     {
         $preview = $request->session()->get(self::SESSION_KEY);

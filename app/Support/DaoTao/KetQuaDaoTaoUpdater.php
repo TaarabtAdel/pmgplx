@@ -353,6 +353,30 @@ class KetQuaDaoTaoUpdater
         ];
     }
 
+    /**
+     * Cập nhật một học viên vào NguoiLX_HoSo (cùng payload như import hàng loạt).
+     *
+     * @return array{updated: int, ma_hoc_vien: string}
+     */
+    public function applyOneFromFile(string $path, string $maHocVien): array
+    {
+        $test = $this->testOneFromFile($path, $maHocVien);
+        if (! ($test['success'] ?? false)) {
+            throw new \RuntimeException((string) ($test['message'] ?? 'Không lưu được học viên này.'));
+        }
+
+        $update = $test['update'];
+        $ma = trim((string) ($update['ma_hoc_vien'] ?? ''));
+        NguoiLXHoSo::query()
+            ->where('MaDK', $ma)
+            ->update($update['payload']);
+
+        return [
+            'updated' => 1,
+            'ma_hoc_vien' => $ma,
+        ];
+    }
+
     private function ketLuanCsdt(string $nhom, float $g, float $h, float $p, float $q): int
     {
         return self::explainKetLuan($nhom, $g, $h, $p, $q)['ket_luan'];

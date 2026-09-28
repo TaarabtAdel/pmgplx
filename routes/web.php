@@ -169,6 +169,8 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
         ->name('pdt.cong-cu-nhap.nhap-ket-qua-dao-tao.preview');
     Route::post('/phong-dao-tao/cong-cu-nhap/nhap-ket-qua-dao-tao/xac-nhan', [NhapKetQuaDaoTaoController::class, 'confirm'])
         ->name('pdt.cong-cu-nhap.nhap-ket-qua-dao-tao.confirm');
+    Route::post('/phong-dao-tao/cong-cu-nhap/nhap-ket-qua-dao-tao/luu-thu-mot', [NhapKetQuaDaoTaoController::class, 'confirmOne'])
+        ->name('pdt.cong-cu-nhap.nhap-ket-qua-dao-tao.confirm-one');
     Route::get('/phong-dao-tao/cong-cu-nhap/nhap-ket-qua-dao-tao/huy', [NhapKetQuaDaoTaoController::class, 'cancel'])
         ->name('pdt.cong-cu-nhap.nhap-ket-qua-dao-tao.cancel');
 
