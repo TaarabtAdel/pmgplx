@@ -114,7 +114,7 @@ class PhanCongTuLichPmgplxQuery
         }
 
         if ($loai === 'tat_ca' || $loai === 'thuc_hanh') {
-            $rows = array_merge($rows, $this->rowsFromLichXeTap($filters, $tenKhByMa));
+            $rows = array_merge($rows, $this->rowsFromLichXeTap($filters, $tenKhByMa, applyXeTuDongFilter: false));
         }
 
         usort($rows, function (array $a, array $b): int {
@@ -150,7 +150,8 @@ class PhanCongTuLichPmgplxQuery
      */
     public function aggregateByKhoaXe(array $filters): array
     {
-        $rows = $this->rows(array_merge($filters, ['loai' => 'thuc_hanh']));
+        $tenKhByMa = KhoaHoc::query()->pluck('TenKH', 'MaKH');
+        $rows = $this->rowsFromLichXeTap($filters, $tenKhByMa, applyXeTuDongFilter: true);
 
         return $this->buildKhoaXeAggregatesFromDetailRows($rows);
     }
@@ -364,7 +365,7 @@ class PhanCongTuLichPmgplxQuery
      * @param  Collection<string, string>  $tenKhByMa
      * @return list<array<string, mixed>>
      */
-    private function rowsFromLichXeTap(array $filters, Collection $tenKhByMa): array
+    private function rowsFromLichXeTap(array $filters, Collection $tenKhByMa, bool $applyXeTuDongFilter = false): array
     {
         $query = KhoaHocXeTap::query()
             ->where('IsKhoaHocXeTap', 0)
@@ -392,7 +393,7 @@ class PhanCongTuLichPmgplxQuery
             $tenKhRaw = trim((string) ($tenKhByMa->get($maKh) ?? ''));
             $bienSo = trim((string) ($row->BienSoXe ?? ''));
 
-            if (! self::shouldIncludeLichXeTapRow($tenKhRaw, $bienSo)) {
+            if ($applyXeTuDongFilter && ! self::shouldIncludeLichXeTapRow($tenKhRaw, $bienSo)) {
                 continue;
             }
 

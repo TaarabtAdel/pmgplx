@@ -25,7 +25,9 @@
                 'showLoai' => true,
             ])
             <p class="small text-muted mb-0 mt-1">
-                Lịch xe TH: tạm theo <strong>tên khoá</strong> có <strong>B01</strong> → giữ xe tự động; khoá khác ẩn xe B11 (danh mục PMGPLX).
+                Lịch xe TH hiển thị <strong>giống</strong> màn
+                <a href="{{ route('pmgplx.lich.xe.index') }}">/pmgplx/lich/xe-tap</a> (không lọc xe B11 tại đây).
+                Quy tắc ẩn xe tự động chỉ áp dụng ở màn <strong>Tổng hợp khoá · xe</strong>.
             </p>
 
             <div class="table-responsive mt-3">
