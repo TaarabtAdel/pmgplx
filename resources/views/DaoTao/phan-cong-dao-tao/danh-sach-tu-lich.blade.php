@@ -25,7 +25,7 @@
                 'showLoai' => true,
             ])
             <p class="small text-muted mb-0 mt-1">
-                Lịch xe TH: khoá <strong>B01</strong> giữ xe tự động (B11); khoá khác ẩn xe tự động trên lịch (danh mục PMGPLX).
+                Lịch xe TH: tạm theo <strong>tên khoá</strong> có <strong>B01</strong> → giữ xe tự động; khoá khác ẩn xe B11 (danh mục PMGPLX).
             </p>
 
             <div class="table-responsive mt-3">

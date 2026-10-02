@@ -17,14 +17,16 @@ use Illuminate\Support\Collection;
 class PhanCongTuLichPmgplxQuery
 {
     /**
-     * Khoá có mã/tên chứa B01 (vd. K26B01…) = khoá tập lái số tự động — giữ xe B11 trên lịch.
+     * Tạm thời: khoá tự động khi tên khoá (TenKH PMGPLX) có chuỗi B01.
      */
-    public static function isKhoaHocTuDong(string $maKh, string $tenKh = ''): bool
+    public static function isKhoaHocTuDong(string $tenKh): bool
     {
-        $haystack = mb_strtoupper($maKh.' '.$tenKh);
-        $haystack = str_replace(['.', '-', '_', ' '], '', $haystack);
+        $tenKh = trim($tenKh);
+        if ($tenKh === '') {
+            return false;
+        }
 
-        return str_contains($haystack, 'B01');
+        return str_contains(mb_strtoupper($tenKh), 'B01');
     }
 
     /** Xe số tự động theo danh mục PMGPLX (HangGPLXXe có B11). */
@@ -41,9 +43,9 @@ class PhanCongTuLichPmgplxQuery
     /**
      * Khoá không phải B01: bỏ dòng lịch gắn xe tự động (vẫn hiện xe sàn).
      */
-    public static function shouldIncludeLichXeTapRow(string $maKh, string $tenKh, ?string $bienSo): bool
+    public static function shouldIncludeLichXeTapRow(string $tenKh, ?string $bienSo): bool
     {
-        if (self::isKhoaHocTuDong($maKh, $tenKh)) {
+        if (self::isKhoaHocTuDong($tenKh)) {
             return true;
         }
 
@@ -390,7 +392,7 @@ class PhanCongTuLichPmgplxQuery
             $tenKhRaw = trim((string) ($tenKhByMa->get($maKh) ?? ''));
             $bienSo = trim((string) ($row->BienSoXe ?? ''));
 
-            if (! self::shouldIncludeLichXeTapRow($maKh, $tenKhRaw, $bienSo)) {
+            if (! self::shouldIncludeLichXeTapRow($tenKhRaw, $bienSo)) {
                 continue;
             }
 

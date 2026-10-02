@@ -16,7 +16,7 @@
                 Dữ liệu từ lịch xe tập (<code>KhoaHoc_XeTap</code>, cùng
                 <a href="{{ route('pmgplx.lich.xe.index') }}">/pmgplx/lich/xe-tap</a>).
                 Một dòng = khoá + biển số xe; tối đa 4 cột Giáo viên A–D.
-                Khoá có <strong>B01</strong> (tự động): giữ xe B11; khoá khác: ẩn xe tự động trên lịch (theo danh mục xe).
+                Tạm thời: <strong>tên khoá</strong> có <strong>B01</strong> → khoá tự động (giữ xe B11); khoá khác ẩn xe tự động (danh mục xe).
             </p>
 
             @include('DaoTao.phan-cong-dao-tao.partials.loc-tu-lich-pmgplx', [
