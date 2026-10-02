@@ -166,6 +166,15 @@ class PhanCongTuLichPmgplxQuery
     {
         $rows = $this->rows(array_merge($filters, ['loai' => 'thuc_hanh']));
 
+        return $this->buildKhoaXeAggregatesFromDetailRows($rows);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $rows
+     * @return list<array<string, mixed>>
+     */
+    private function buildKhoaXeAggregatesFromDetailRows(array $rows): array
+    {
         /** @var array<string, array<string, mixed>> $groups */
         $groups = [];
 

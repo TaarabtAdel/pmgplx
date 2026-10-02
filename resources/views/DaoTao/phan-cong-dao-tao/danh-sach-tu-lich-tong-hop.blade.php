@@ -5,19 +5,17 @@
 @section('content')
     <div class="card card-panel">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <span>Tổng hợp phân công theo khoá · xe (lịch xe TH)</span>
+            <span>Tổng hợp theo khoá · xe (lịch xe PMGPLX)</span>
             <div class="d-flex flex-wrap gap-2">
                 <a href="{{ $detailUrl }}" class="btn btn-sm btn-outline-primary">← Chi tiết từng dòng</a>
-                <a href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach', $listQueryParams) }}" class="btn btn-sm btn-outline-secondary">Phân công nhập tay</a>
+                <a href="{{ $lichXeUrl ?? route('pmgplx.lich.xe.index') }}" class="btn btn-sm btn-outline-secondary">Màn lịch xe tập</a>
             </div>
         </div>
         <div class="card-body">
             <p class="small text-muted mb-3">
-                Một dòng = một <strong>khoá</strong> + một <strong>biển số xe</strong> (lịch xe tập).
-                Nhiều giáo viên cùng xe trong khoá → tối đa <strong>4 cột</strong> Giáo viên A–D (theo tên);
-                nếu hơn 4 GV, cột D ghi thêm <span class="text-warning">+N GV</span>.
-                Thời gian = min/max các dòng TH của cặp khoá · xe đó.
-                Không gồm xe hạng <strong>B11</strong> (danh mục PMGPLX).
+                Dữ liệu từ lịch xe tập (<code>KhoaHoc_XeTap</code>, cùng
+                <a href="{{ route('pmgplx.lich.xe.index') }}">/pmgplx/lich/xe-tap</a>).
+                Một dòng = khoá + biển số xe; tối đa 4 cột Giáo viên A–D; loại trừ xe hạng <strong>B11</strong>.
             </p>
 
             @include('DaoTao.phan-cong-dao-tao.partials.loc-tu-lich-pmgplx', [

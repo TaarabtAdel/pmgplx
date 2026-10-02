@@ -47,6 +47,11 @@ class DanhSachPhanCongTuLichTongHopController extends Controller
             'xeTaps' => PhanCongTuLichPmgplxQuery::filterBienSoXeOptions(),
             'listQueryParams' => $listQueryParams,
             'detailUrl' => route('daotao.pdt.phan-cong-dao-tao.danh-sach-tu-lich', $listQueryParams),
+            'lichXeUrl' => route('pmgplx.lich.xe.index', array_filter([
+                'ma_kh' => $filters['ma_kh'] ?? '',
+                'ma_gv' => $filters['ma_gv'] ?? '',
+                'bien_so_xe' => $filters['bien_so_xe'] ?? '',
+            ])),
         ]);
     }
 }
