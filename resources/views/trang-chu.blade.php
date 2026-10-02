@@ -55,6 +55,12 @@
                         Nhập XML xuất biên bản
                     </a>
                     <div class="list-group-item list-group-item-light small font-weight-bold py-2">Phân Công Đào Tạo</div>
+                    <a href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach-tu-lich') }}" class="list-group-item list-group-item-action pl-4">
+                        Phân công từ lịch PMGPLX (đối chiếu)
+                    </a>
+                    <a href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach-tu-lich-tong-hop') }}" class="list-group-item list-group-item-action pl-4">
+                        Tổng hợp phân công (khoá · xe)
+                    </a>
                     <a href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach') }}" class="list-group-item list-group-item-action pl-4">
                         Danh sách phân công
                     </a>

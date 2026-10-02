@@ -6,9 +6,13 @@
     <div class="card card-panel">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <span>Danh sách phân công đào tạo</span>
-            @if (! empty($backToLuuLuongUrl))
-                <a href="{{ $backToLuuLuongUrl }}" class="btn btn-sm btn-outline-secondary">← Báo cáo lưu lượng</a>
-            @endif
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach-tu-lich', array_filter($filters ?? [])) }}"
+                   class="btn btn-sm btn-outline-primary">Đối chiếu lịch PMGPLX →</a>
+                @if (! empty($backToLuuLuongUrl))
+                    <a href="{{ $backToLuuLuongUrl }}" class="btn btn-sm btn-outline-secondary">← Báo cáo lưu lượng</a>
+                @endif
+            </div>
         </div>
         <div class="card-body">
             <form method="GET" action="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach') }}">

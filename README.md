@@ -15,14 +15,17 @@ App: http://localhost:8080
 
 ## Cấu hình DB
 
-File `.env` (connection `sqlsrv_manhlinh` → DB **MANHLINH**):
+File `.env` — hai database thường dùng trên Docker:
 
 ```env
 DB_HOST=db
 DB_PORT=1433
 DB_USERNAME=sa
 DB_PASSWORD=YourPassword123!
-DB_DATABASE_3=MANHLINH
+
+DB_DATABASE=GPLX_BAN_MOI          # PMGPLX (mặc định sqlsrv): lịch, danh mục, KhoaHoc, …
+DB_DATABASE_2=GPLX_BAN_CU         # (tùy chọn) DB cũ để so sánh
+DB_DATABASE_3=MANHLINH            # sqlsrv_manhlinh: DAT, phân công, tiến độ, …
 ```
 
 Tạo database (lần đầu):
@@ -71,11 +74,82 @@ docker compose exec app php artisan migrate \
 
 Sau migrate sạch, DB có các bảng nghiệp vụ DAT + `migrations`, gồm: `GiaoVien`, `XeTapLai`, `KhoaDaoTao`, `PhanCongDaoTao`, `TienDoDaoTao`, `DatDSPhien`, `DatPhanLoaiPhien`, `DatDSPhienPhanLoai`, `DatDieuKienCanhBao`, `DatDieuKienDat`, `DatPhanCongHocVien`, …
 
-## Backup / restore MANHLINH
+## Backup / restore `.bak` (Docker)
 
-File backup (`.bak`) lưu trên máy host: `laravel/database/dumps/` (mount vào container SQL Server tại `/var/opt/mssql/dumps`).
+Chạy mọi lệnh từ thư mục **`khgplx`** (có `docker-compose.yml`).
 
-**Backup:**
+**Mount file backup vào container:**
+
+| Thư mục host | Trong container |
+|---|---|
+| `laravel/database/dumps/` | `/var/opt/mssql/dumps` |
+| `sqlserver-backup/` | `/var/opt/mssql/backup` |
+
+Backup từ Windows (SQL Server 2012) thường đặt tại `sqlserver-backup/`. Có thể copy sang `laravel/database/dumps/` nếu muốn.
+
+**Lưu ý:** Restore backup Windows lên SQL Server trong Docker **bắt buộc** dùng `MOVE` (đường dẫn `.mdf`/`.ldf` trong `.bak` trỏ `C:\Program Files\...`). Nếu đổi file `.bak` mới, xem tên logical file:
+
+```bash
+docker compose exec db /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U sa -P "YourPassword123!" -C \
+  -Q "RESTORE FILELISTONLY FROM DISK = N'/var/opt/mssql/dumps/TEN_FILE.bak'"
+```
+
+**Sau restore từ `.bak` đầy đủ:** không chạy `migrate` MANHLINH (DB đã có bảng + dữ liệu). Chỉ dùng migrate khi [reset sạch bảng](#reset-sạch-bảng-manhlinh) ở trên.
+
+### Restore MANHLINH → `DB_DATABASE_3`
+
+File mẫu: `sqlserver-backup/MANHLINH.bak` (logical: `MANHLINH`, `MANHLINH_log`).
+
+```bash
+# Copy vào dumps (nếu file đang ở sqlserver-backup)
+cp sqlserver-backup/MANHLINH.bak laravel/database/dumps/
+
+docker compose exec db /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U sa -P "YourPassword123!" -C -Q "
+IF DB_ID(N'MANHLINH') IS NOT NULL BEGIN
+  ALTER DATABASE MANHLINH SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+  DROP DATABASE MANHLINH;
+END
+RESTORE DATABASE MANHLINH FROM DISK = N'/var/opt/mssql/dumps/MANHLINH.bak' WITH REPLACE,
+  MOVE N'MANHLINH'     TO N'/var/opt/mssql/data/MANHLINH.mdf',
+  MOVE N'MANHLINH_log' TO N'/var/opt/mssql/data/MANHLINH_log.ldf';"
+```
+
+### Restore GPLX_BAN_MOI → `DB_DATABASE`
+
+File mẫu: `sqlserver-backup/GPLX_CSDL_CSDT_202608140324PM.bak` (logical: `GPLX_CDB_CSDT_25122025`, `GPLX_CDB_CSDT_25122025_log`).
+
+```bash
+docker compose exec db /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U sa -P "YourPassword123!" -C -Q "
+IF DB_ID(N'GPLX_BAN_MOI') IS NOT NULL BEGIN
+  ALTER DATABASE GPLX_BAN_MOI SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+  DROP DATABASE GPLX_BAN_MOI;
+END
+RESTORE DATABASE GPLX_BAN_MOI FROM DISK = N'/var/opt/mssql/backup/GPLX_CSDL_CSDT_202608140324PM.bak' WITH REPLACE,
+  MOVE N'GPLX_CDB_CSDT_25122025'     TO N'/var/opt/mssql/data/GPLX_BAN_MOI.mdf',
+  MOVE N'GPLX_CDB_CSDT_25122025_log' TO N'/var/opt/mssql/data/GPLX_BAN_MOI_log.ldf';"
+```
+
+### Restore cả hai DB (một lần)
+
+```bash
+cp sqlserver-backup/MANHLINH.bak laravel/database/dumps/
+
+docker compose exec db /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U sa -P "YourPassword123!" -C -Q "
+IF DB_ID(N'MANHLINH') IS NOT NULL BEGIN ALTER DATABASE MANHLINH SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE MANHLINH; END
+RESTORE DATABASE MANHLINH FROM DISK = N'/var/opt/mssql/dumps/MANHLINH.bak' WITH REPLACE,
+  MOVE N'MANHLINH' TO N'/var/opt/mssql/data/MANHLINH.mdf',
+  MOVE N'MANHLINH_log' TO N'/var/opt/mssql/data/MANHLINH_log.ldf';
+IF DB_ID(N'GPLX_BAN_MOI') IS NOT NULL BEGIN ALTER DATABASE GPLX_BAN_MOI SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE GPLX_BAN_MOI; END
+RESTORE DATABASE GPLX_BAN_MOI FROM DISK = N'/var/opt/mssql/backup/GPLX_CSDL_CSDT_202608140324PM.bak' WITH REPLACE,
+  MOVE N'GPLX_CDB_CSDT_25122025' TO N'/var/opt/mssql/data/GPLX_BAN_MOI.mdf',
+  MOVE N'GPLX_CDB_CSDT_25122025_log' TO N'/var/opt/mssql/data/GPLX_BAN_MOI_log.ldf';"
+```
+
+**Backup MANHLINH (tạo file mới):**
 
 ```bash
 BACKUP_FILE="MANHLINH_$(date +%Y%m%d_%H%M%S).bak"
@@ -86,20 +160,6 @@ docker compose exec db /opt/mssql-tools18/bin/sqlcmd \
 
 echo "File: laravel/database/dumps/${BACKUP_FILE}"
 ```
-
-Ví dụ file ra: `laravel/database/dumps/MANHLINH_20260909_141530.bak`
-
-**Restore:**
-
-```bash
-BACKUP_FILE="MANHLINH_20260909_141530.bak"   # đổi tên file .bak cần restore
-
-docker compose exec db /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P "YourPassword123!" -C \
-  -Q "RESTORE DATABASE MANHLINH FROM DISK = N'/var/opt/mssql/dumps/${BACKUP_FILE}' WITH REPLACE"
-```
-
-Sau restore, chạy lại migration nếu code mới hơn DB.
 
 ## Xuất file SQL (CREATE + INSERT) — tương thích SQL Server 2012
 

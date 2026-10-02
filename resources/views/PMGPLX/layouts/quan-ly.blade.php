@@ -459,6 +459,14 @@
                                href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach') }}">
                                 Danh sách phân công
                             </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.phan-cong-dao-tao.danh-sach-tu-lich') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach-tu-lich') }}">
+                                Phân công từ lịch PMGPLX
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.phan-cong-dao-tao.danh-sach-tu-lich-tong-hop') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach-tu-lich-tong-hop') }}">
+                                Tổng hợp phân công (khoá · xe)
+                            </a>
                         </div>
                     </div>
                 </div>
