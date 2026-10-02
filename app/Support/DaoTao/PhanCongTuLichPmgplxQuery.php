@@ -16,48 +16,38 @@ use Illuminate\Support\Collection;
 
 class PhanCongTuLichPmgplxQuery
 {
-    /** @var list<string>|null */
-    private static ?array $bienSoXeHangB11Cache = null;
-
-    public static function normalizeHangGplxXe(?string $hang): string
+    /**
+     * Khoá có mã/tên chứa B01 (vd. K26B01…) = khoá tập lái số tự động — giữ xe B11 trên lịch.
+     */
+    public static function isKhoaHocTuDong(string $maKh, string $tenKh = ''): bool
     {
-        return strtoupper(str_replace([' ', '.', '-'], '', trim((string) $hang)));
+        $haystack = mb_strtoupper($maKh.' '.$tenKh);
+        $haystack = str_replace(['.', '-', '_', ' '], '', $haystack);
+
+        return str_contains($haystack, 'B01');
     }
 
-    public static function isHangGplxB11(?string $hang): bool
+    /** Xe số tự động theo danh mục PMGPLX (HangGPLXXe có B11). */
+    public static function isXeTapTuDong(?string $bienSo): bool
     {
-        return self::normalizeHangGplxXe($hang) === 'B11';
+        $normalized = DatXeSoTuDong::normalizeBienSo($bienSo);
+        if ($normalized === '') {
+            return false;
+        }
+
+        return in_array($normalized, DatXeSoTuDong::bienSoTuDong(), true);
     }
 
     /**
-     * Biển số xe hạng B11 (danh mục PMGPLX) — loại khỏi tổng hợp lịch xe TH.
-     *
-     * @return list<string>
+     * Khoá không phải B01: bỏ dòng lịch gắn xe tự động (vẫn hiện xe sàn).
      */
-    public static function bienSoXeHangB11(): array
+    public static function shouldIncludeLichXeTapRow(string $maKh, string $tenKh, ?string $bienSo): bool
     {
-        if (self::$bienSoXeHangB11Cache !== null) {
-            return self::$bienSoXeHangB11Cache;
+        if (self::isKhoaHocTuDong($maKh, $tenKh)) {
+            return true;
         }
 
-        self::$bienSoXeHangB11Cache = XeTap::query()
-            ->get(['BienSoXe', 'HangGPLXXe'])
-            ->filter(fn (XeTap $xe): bool => self::isHangGplxB11($xe->HangGPLXXe ?? null))
-            ->pluck('BienSoXe')
-            ->map(fn ($v): string => trim((string) $v))
-            ->filter(fn (string $v): bool => $v !== '')
-            ->values()
-            ->all();
-
-        return self::$bienSoXeHangB11Cache;
-    }
-
-    public static function applyExcludeXeHangB11($query, string $bienSoColumn = 'BienSoXe'): void
-    {
-        $exclude = self::bienSoXeHangB11();
-        if ($exclude !== []) {
-            $query->whereNotIn($bienSoColumn, $exclude);
-        }
+        return ! self::isXeTapTuDong($bienSo);
     }
 
     /**
@@ -79,15 +69,9 @@ class PhanCongTuLichPmgplxQuery
     /**
      * @return \Illuminate\Support\Collection<int, string>
      */
-    public static function filterBienSoXeOptions(bool $excludeHangB11 = true)
+    public static function filterBienSoXeOptions()
     {
-        $query = XeTap::query()->orderBy('BienSoXe');
-
-        if ($excludeHangB11) {
-            self::applyExcludeXeHangB11($query);
-        }
-
-        return $query->pluck('BienSoXe');
+        return XeTap::query()->orderBy('BienSoXe')->pluck('BienSoXe');
     }
 
     /**
@@ -394,8 +378,6 @@ class PhanCongTuLichPmgplxQuery
             $query->where('BienSoXe', $filters['bien_so_xe']);
         }
 
-        self::applyExcludeXeHangB11($query);
-
         $rows = [];
         foreach ($query->orderBy('NgayBD')->orderBy('MaLichSD')->cursor() as $row) {
             $ghiChu = trim((string) ($row->GhiChu ?? ''));
@@ -405,6 +387,13 @@ class PhanCongTuLichPmgplxQuery
             }
 
             $maKh = trim((string) ($row->MaKH ?? ''));
+            $tenKhRaw = trim((string) ($tenKhByMa->get($maKh) ?? ''));
+            $bienSo = trim((string) ($row->BienSoXe ?? ''));
+
+            if (! self::shouldIncludeLichXeTapRow($maKh, $tenKhRaw, $bienSo)) {
+                continue;
+            }
+
             $rows[] = [
                 'ma_kh' => $maKh,
                 'ten_khoa' => self::tenKhoaLabel($maKh, $tenKhByMa),
@@ -412,7 +401,7 @@ class PhanCongTuLichPmgplxQuery
                 'ma_gv' => trim((string) ($row->MaGV ?? '')),
                 'tu_ngay' => $row->NgayBD ? Carbon::parse($row->NgayBD) : null,
                 'den_ngay' => $row->NgayKT ? Carbon::parse($row->NgayKT) : null,
-                'bien_so' => trim((string) ($row->BienSoXe ?? '')),
+                'bien_so' => $bienSo,
                 'loai_giang_day' => 'thuc_hanh',
                 'noi_dung' => $noiDung,
                 'nguon' => 'lich_xe',

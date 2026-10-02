@@ -24,7 +24,9 @@
                 'locAction' => route('daotao.pdt.phan-cong-dao-tao.danh-sach-tu-lich'),
                 'showLoai' => true,
             ])
-            <p class="small text-muted mb-0 mt-1">Lịch xe TH: không gồm xe hạng <strong>B11</strong> (theo danh mục PMGPLX).</p>
+            <p class="small text-muted mb-0 mt-1">
+                Lịch xe TH: khoá <strong>B01</strong> giữ xe tự động (B11); khoá khác ẩn xe tự động trên lịch (danh mục PMGPLX).
+            </p>
 
             <div class="table-responsive mt-3">
                 <table class="table table-sm table-bordered table-striped table-hover table-data mb-0">
