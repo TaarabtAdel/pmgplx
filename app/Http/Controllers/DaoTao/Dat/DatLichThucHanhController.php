@@ -11,6 +11,7 @@ use App\Support\DaoTao\PhanCongTuLichPmgplxQuery;
 use App\Support\DaoTao\LichThucHanh\CauHinhDefaults;
 use App\Support\DaoTao\LichThucHanh\LichExcelExporter;
 use App\Support\DaoTao\LichThucHanh\LichGenerator;
+use App\Support\DaoTao\LichThucHanh\LichThucHanhPmgplxPublisher;
 use App\Support\DaoTao\LichThucHanh\LichValidator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -167,9 +168,21 @@ class DatLichThucHanhController extends Controller
             $duAn->update(['NgayKetThucDuKien' => $result['lich']['meta']['ngay_ket_thuc_tinh']]);
         }
 
+        $msg = 'Đã sinh lịch.';
+        try {
+            $pub = (new LichThucHanhPmgplxPublisher)->publish($result['lich'], $cauHinh);
+            $msg .= sprintf(
+                ' Đã ghi PMGPLX: %d buổi GV, %d buổi xe (KhoaHoc_GiaoVien / KhoaHoc_XeTap).',
+                $pub['gv'],
+                $pub['xe']
+            );
+        } catch (\Throwable $e) {
+            $msg .= ' Chưa ghi được PMGPLX: '.$e->getMessage();
+        }
+
         return redirect()
             ->route('daotao.pdt.dat.lich-thuc-hanh.preview', $duAn->Id)
-            ->with('success', 'Đã sinh lịch.');
+            ->with('success', $msg);
     }
 
     public function preview(int $id): View|RedirectResponse
