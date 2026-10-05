@@ -7,6 +7,7 @@
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <span>Tổng hợp theo khoá · xe (lịch xe PMGPLX)</span>
             <div class="d-flex flex-wrap gap-2">
+                <a href="{{ $exportUrl }}" class="btn btn-sm btn-success">Xuất Excel</a>
                 <a href="{{ $detailUrl }}" class="btn btn-sm btn-outline-primary">← Chi tiết từng dòng</a>
                 <a href="{{ $lichXeUrl ?? route('pmgplx.lich.xe.index') }}" class="btn btn-sm btn-outline-secondary">Màn lịch xe tập</a>
             </div>
@@ -15,7 +16,7 @@
             <p class="small text-muted mb-3">
                 Dữ liệu từ lịch xe tập (<code>KhoaHoc_XeTap</code>, cùng
                 <a href="{{ route('pmgplx.lich.xe.index') }}">/pmgplx/lich/xe-tap</a>).
-                Một dòng = khoá + biển số xe; tối đa 4 cột Giáo viên A–D.
+                Một dòng = khoá + biển số xe; cột Giáo viên A–B (nếu >2 GV, ghi thêm ở cột B).
                 Tạm thời: <strong>tên khoá</strong> có <strong>B01</strong> → khoá tự động (giữ xe B11); khoá khác ẩn xe tự động (danh mục xe).
             </p>
 
@@ -33,7 +34,7 @@
                             <th>Biển số xe</th>
                             <th>TG bắt đầu</th>
                             <th>TG kết thúc</th>
-                            @foreach (['A', 'B', 'C', 'D'] as $letter)
+                            @foreach (['A', 'B'] as $letter)
                                 <th>Giáo viên {{ $letter }}</th>
                             @endforeach
                         </tr>
@@ -62,17 +63,17 @@
                                     ])
                                 </td>
                                 @php
-                                    $gvs = array_slice($row['giao_viens'] ?? [], 0, 4);
-                                    $gvExtra = max(0, count($row['giao_viens'] ?? []) - 4);
+                                    $gvs = array_slice($row['giao_viens'] ?? [], 0, 2);
+                                    $gvExtra = max(0, count($row['giao_viens'] ?? []) - 2);
                                 @endphp
-                                @for ($i = 0; $i < 4; $i++)
+                                @for ($i = 0; $i < 2; $i++)
                                     <td>
                                         @if (isset($gvs[$i]))
                                             {{ $gvs[$i]['ho_ten'] }}
                                             @if ($gvs[$i]['ma_gv'] ?? '')
                                                 <div class="small text-muted">{{ $gvs[$i]['ma_gv'] }}</div>
                                             @endif
-                                            @if ($i === 3 && $gvExtra > 0)
+                                            @if ($i === 1 && $gvExtra > 0)
                                                 <div class="small text-warning">+{{ $gvExtra }} GV</div>
                                             @endif
                                         @else
@@ -83,7 +84,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="text-center py-4">Không có dữ liệu</td>
+                                <td colspan="7" class="text-center py-4">Không có dữ liệu</td>
                             </tr>
                         @endforelse
                     </tbody>

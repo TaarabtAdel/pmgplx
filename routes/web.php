@@ -200,6 +200,8 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
         ->name('pdt.phan-cong-dao-tao.danh-sach-tu-lich');
     Route::get('/phong-dao-tao/phan-cong-dao-tao/danh-sach-tu-lich-tong-hop', [DanhSachPhanCongTuLichTongHopController::class, 'index'])
         ->name('pdt.phan-cong-dao-tao.danh-sach-tu-lich-tong-hop');
+    Route::get('/phong-dao-tao/phan-cong-dao-tao/danh-sach-tu-lich-tong-hop/xuat-excel', [DanhSachPhanCongTuLichTongHopController::class, 'export'])
+        ->name('pdt.phan-cong-dao-tao.danh-sach-tu-lich-tong-hop.export');
 
     Route::get('/phong-dao-tao/dat/do-phien-anh', [DoPhienAnhController::class, 'index'])
         ->name('pdt.dat.do-phien-anh');
