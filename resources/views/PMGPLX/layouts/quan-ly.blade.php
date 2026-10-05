@@ -397,10 +397,14 @@
             </li>
             <li class="nav-item dropdown">
                 @php
-                    $pdtActive = request()->routeIs('daotao.pdt.*') && ! request()->routeIs('daotao.pdt.dat.*');
+                    $pdtActive = (request()->routeIs('daotao.pdt.*') && ! request()->routeIs('daotao.pdt.dat.*'))
+                        || request()->routeIs('daotao.pdt.dat.lich-thuc-hanh*');
                     $baoCaoActive = request()->routeIs('daotao.pdt.bc.*');
                     $congCuNhapActive = request()->routeIs('daotao.pdt.cong-cu-nhap.*');
-                    $phanCongActive = request()->routeIs('daotao.pdt.phan-cong-dao-tao.*');
+                    $phanCongActive = request()->routeIs(
+                        'daotao.pdt.phan-cong-dao-tao.*',
+                        'daotao.pdt.dat.lich-thuc-hanh*'
+                    );
                 @endphp
                 <a class="nav-link dropdown-toggle {{ $pdtActive ? 'active' : '' }}"
                    href="#"
@@ -467,13 +471,18 @@
                                href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach-tu-lich-tong-hop') }}">
                                 Tổng hợp phân công (khoá · xe)
                             </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.lich-thuc-hanh*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.lich-thuc-hanh.index') }}">
+                                Tạo lịch TH giảng dạy
+                            </a>
                         </div>
                     </div>
                 </div>
             </li>
             <li class="nav-item dropdown">
                 @php
-                    $datActive = request()->routeIs('daotao.pdt.dat.*');
+                    $datActive = request()->routeIs('daotao.pdt.dat.*')
+                        && ! request()->routeIs('daotao.pdt.dat.lich-thuc-hanh*');
                     $datTongHopActive = request()->routeIs(
                         'daotao.pdt.dat.tong-hop-hoc-vien*',
                         'daotao.pdt.dat.theo-doi*'

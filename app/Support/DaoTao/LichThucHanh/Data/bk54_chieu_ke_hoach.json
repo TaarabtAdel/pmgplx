@@ -1,0 +1,2909 @@
+{
+    "anchor": "2026-08-22",
+    "cap_gv_chieu": {
+        "1": "44007019",
+        "2": "44007004",
+        "3": "44007029",
+        "4": "44007023",
+        "5": "44007013",
+        "6": "44007034",
+        "7": "44007021",
+        "8": "44007003",
+        "9": "44007005",
+        "10": "44007014"
+    },
+    "ke_hoach": {
+        "1": {
+            "2026-08-22": {
+                "mau": "CABIN",
+                "bai": "CABIN 2",
+                "so_gio": 10,
+                "bat_dau": "7H",
+                "ket_thuc": "17H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-23": {
+                "mau": "TU_DONG",
+                "bai": "TỰ ĐỘNG 74A-452.04",
+                "so_gio": 5,
+                "bat_dau": "13H",
+                "ket_thuc": "18H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-24": {
+                "mau": "TU_DONG",
+                "bai": "TỰ ĐỘNG 74A-452.04",
+                "so_gio": 5,
+                "bat_dau": "13H",
+                "ket_thuc": "18H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-25": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-26": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-28": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-29": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-30": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-31": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-01": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-04": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-05": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-06": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-07": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-08": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 6,
+                "bat_dau": "12H00' - 18H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": "BAN ĐÊM"
+            },
+            "2026-09-09": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-11": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-12": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-14": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-16": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-18": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-19": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-20": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-21": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-22": {
+                "mau": "CO_TAI",
+                "bai": "CÓ TẢI",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-23": {
+                "mau": "BO_SUNG",
+                "bai": "Bổ sung XE SÀN",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-24": {
+                "mau": "BO_SUNG",
+                "bai": "Bổ sung 452.04",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-26": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-27": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-28": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-29": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-30": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-01": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-02": {
+                "mau": "ON_STL",
+                "bai": "ÔN LUYỆN STL",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-03": {
+                "mau": "ON_TD",
+                "bai": "ÔN LUYỆN TĐ",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-04": {
+                "mau": "KIEM_TRA",
+                "bai": "KIỂM TRA",
+                "so_gio": 0,
+                "bat_dau": "",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            }
+        },
+        "2": {
+            "2026-08-22": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-23": {
+                "mau": "CABIN",
+                "bai": "CABIN 2",
+                "so_gio": 10,
+                "bat_dau": "7H",
+                "ket_thuc": "17H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-24": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-25": {
+                "mau": "TU_DONG",
+                "bai": "TỰ ĐỘNG 74A-452.04",
+                "so_gio": 5,
+                "bat_dau": "13H",
+                "ket_thuc": "18H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-26": {
+                "mau": "TU_DONG",
+                "bai": "TỰ ĐỘNG 74A-452.04",
+                "so_gio": 5,
+                "bat_dau": "7H",
+                "ket_thuc": "12H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-28": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-29": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-30": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-31": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-01": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-04": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-05": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-06": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-07": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-08": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 6,
+                "bat_dau": "12H00' - 18H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": "BAN ĐÊM"
+            },
+            "2026-09-09": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-10": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-11": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-12": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-14": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-17": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-19": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-20": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-21": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-22": {
+                "mau": "CO_TAI",
+                "bai": "CÓ TẢI",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-23": {
+                "mau": "BO_SUNG",
+                "bai": "Bổ sung XE SÀN",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-24": {
+                "mau": "BO_SUNG",
+                "bai": "Bổ sung 452.04",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-26": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-27": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-28": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-29": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-30": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-01": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-02": {
+                "mau": "ON_STL",
+                "bai": "ÔN LUYỆN STL",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-03": {
+                "mau": "ON_TD",
+                "bai": "ÔN LUYỆN TĐ",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-04": {
+                "mau": "KIEM_TRA",
+                "bai": "KIỂM TRA",
+                "so_gio": 0,
+                "bat_dau": "",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            }
+        },
+        "3": {
+            "2026-08-22": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-23": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-24": {
+                "mau": "CABIN",
+                "bai": "CABIN 2",
+                "so_gio": 10,
+                "bat_dau": "7H",
+                "ket_thuc": "17H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-25": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-26": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-28": {
+                "mau": "TU_DONG",
+                "bai": "TỰ ĐỘNG 74A-452.04",
+                "so_gio": 5,
+                "bat_dau": "13H",
+                "ket_thuc": "18H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-29": {
+                "mau": "TU_DONG",
+                "bai": "TỰ ĐỘNG 74A-452.04",
+                "so_gio": 5,
+                "bat_dau": "13H",
+                "ket_thuc": "18H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-30": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-31": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-01": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-04": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-05": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-06": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-07": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-08": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 6,
+                "bat_dau": "12H00' - 18H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": "BAN ĐÊM"
+            },
+            "2026-09-09": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-11": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-12": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-14": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-16": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-18": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-19": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-20": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-21": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-22": {
+                "mau": "CO_TAI",
+                "bai": "CÓ TẢI",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-23": {
+                "mau": "BO_SUNG",
+                "bai": "Bổ sung XE SÀN",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-24": {
+                "mau": "BO_SUNG",
+                "bai": "Bổ sung 452.04",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-26": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-27": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-28": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-29": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-30": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-01": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-02": {
+                "mau": "ON_STL",
+                "bai": "ÔN LUYỆN STL",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-03": {
+                "mau": "ON_TD",
+                "bai": "ÔN LUYỆN TĐ",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-04": {
+                "mau": "KIEM_TRA",
+                "bai": "KIỂM TRA",
+                "so_gio": 0,
+                "bat_dau": "",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            }
+        },
+        "4": {
+            "2026-08-22": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-23": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-24": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-25": {
+                "mau": "CABIN",
+                "bai": "CABIN 2",
+                "so_gio": 10,
+                "bat_dau": "7H",
+                "ket_thuc": "17H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-28": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-29": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-30": {
+                "mau": "TU_DONG",
+                "bai": "TỰ ĐỘNG 74A-452.04",
+                "so_gio": 5,
+                "bat_dau": "13H",
+                "ket_thuc": "18H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-31": {
+                "mau": "TU_DONG",
+                "bai": "TỰ ĐỘNG 74A-452.04",
+                "so_gio": 5,
+                "bat_dau": "13H",
+                "ket_thuc": "18H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-01": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-04": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-07": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-08": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 6,
+                "bat_dau": "12H00' - 18H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": "BAN ĐÊM"
+            },
+            "2026-09-09": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-10": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-09-11": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-12": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-14": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-16": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-17": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-18": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-19": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-20": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-21": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-22": {
+                "mau": "CO_TAI",
+                "bai": "CÓ TẢI",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-23": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-24": {
+                "mau": "BO_SUNG",
+                "bai": "Bổ sung 452.04",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-26": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-27": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-28": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-29": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-30": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-01": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-02": {
+                "mau": "ON_STL",
+                "bai": "ÔN LUYỆN STL",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-03": {
+                "mau": "ON_TD",
+                "bai": "ÔN LUYỆN TĐ",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-04": {
+                "mau": "KIEM_TRA",
+                "bai": "KIỂM TRA",
+                "so_gio": 0,
+                "bat_dau": "",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            }
+        },
+        "5": {
+            "2026-08-22": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-23": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-24": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-25": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-26": {
+                "mau": "CABIN",
+                "bai": "CABIN 1&2",
+                "so_gio": 10,
+                "bat_dau": "7H",
+                "ket_thuc": "12H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-28": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-29": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-30": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-31": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-01": {
+                "mau": "TU_DONG",
+                "bai": "TỰ ĐỘNG 74A-452.04",
+                "so_gio": 5,
+                "bat_dau": "13H",
+                "ket_thuc": "18H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-04": {
+                "mau": "TU_DONG",
+                "bai": "TỰ ĐỘNG 74A-452.04",
+                "so_gio": 5,
+                "bat_dau": "13H",
+                "ket_thuc": "18H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-05": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-06": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-07": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-08": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 6,
+                "bat_dau": "12H00' - 18H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": "BAN ĐÊM"
+            },
+            "2026-09-09": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-10": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-11": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-12": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-14": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-17": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-19": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-20": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-21": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-22": {
+                "mau": "CO_TAI",
+                "bai": "CÓ TẢI",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-23": {
+                "mau": "BO_SUNG",
+                "bai": "Bổ sung XE SÀN",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-24": {
+                "mau": "BO_SUNG",
+                "bai": "Bổ sung 452.04",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-26": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-27": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-28": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-29": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-30": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-01": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-02": {
+                "mau": "ON_STL",
+                "bai": "ÔN LUYỆN STL",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-03": {
+                "mau": "ON_TD",
+                "bai": "ÔN LUYỆN TĐ",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-04": {
+                "mau": "KIEM_TRA",
+                "bai": "KIỂM TRA",
+                "so_gio": 0,
+                "bat_dau": "",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            }
+        },
+        "6": {
+            "2026-08-22": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-23": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-24": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-25": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-26": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-28": {
+                "mau": "CABIN",
+                "bai": "CABIN 2",
+                "so_gio": 10,
+                "bat_dau": "7H",
+                "ket_thuc": "17H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-29": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-30": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-31": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-01": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-04": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-05": {
+                "mau": "TU_DONG",
+                "bai": "TỰ ĐỘNG 74A-452.04",
+                "so_gio": 5,
+                "bat_dau": "13H",
+                "ket_thuc": "18H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-06": {
+                "mau": "TU_DONG",
+                "bai": "TỰ ĐỘNG 74A-452.04",
+                "so_gio": 5,
+                "bat_dau": "13H",
+                "ket_thuc": "18H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-07": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-08": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 6,
+                "bat_dau": "12H00' - 18H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": "BAN ĐÊM"
+            },
+            "2026-09-09": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-11": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-12": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-13": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-14": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-15": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-18": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-19": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-21": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-22": {
+                "mau": "CO_TAI",
+                "bai": "CÓ TẢI",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-23": {
+                "mau": "BO_SUNG",
+                "bai": "Bổ sung XE SÀN",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-24": {
+                "mau": "BO_SUNG",
+                "bai": "Bổ sung 452.04",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-26": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-27": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-28": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-29": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-30": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-01": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-02": {
+                "mau": "ON_STL",
+                "bai": "ÔN LUYỆN STL",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-03": {
+                "mau": "ON_TD",
+                "bai": "ÔN LUYỆN TĐ",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-04": {
+                "mau": "KIEM_TRA",
+                "bai": "KIỂM TRA",
+                "so_gio": 0,
+                "bat_dau": "",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            }
+        },
+        "7": {
+            "2026-08-22": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-23": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-24": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-25": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-26": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-28": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-29": {
+                "mau": "CABIN",
+                "bai": "CABIN 2",
+                "so_gio": 10,
+                "bat_dau": "7H",
+                "ket_thuc": "17H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-30": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-31": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-01": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 4,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-04": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-05": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-06": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 6,
+                "bat_dau": "12H00' - 18H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": "BAN ĐÊM"
+            },
+            "2026-09-07": {
+                "mau": "TU_DONG",
+                "bai": "TỰ ĐỘNG 74A-452.04",
+                "so_gio": 5,
+                "bat_dau": "13H",
+                "ket_thuc": "18H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-08": {
+                "mau": "TU_DONG",
+                "bai": "TỰ ĐỘNG 74A-452.04",
+                "so_gio": 5,
+                "bat_dau": "13H",
+                "ket_thuc": "18H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-09": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-11": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-12": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-13": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-14": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-15": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-18": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-19": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-21": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-22": {
+                "mau": "CO_TAI",
+                "bai": "CÓ TẢI",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-23": {
+                "mau": "BO_SUNG",
+                "bai": "Bổ sung XE SÀN",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-24": {
+                "mau": "BO_SUNG",
+                "bai": "Bổ sung 452.04",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-26": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-27": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-28": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-29": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-30": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-01": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-02": {
+                "mau": "ON_STL",
+                "bai": "ÔN LUYỆN STL",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-03": {
+                "mau": "ON_TD",
+                "bai": "ÔN LUYỆN TĐ",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-04": {
+                "mau": "KIEM_TRA",
+                "bai": "KIỂM TRA",
+                "so_gio": 0,
+                "bat_dau": "",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            }
+        },
+        "8": {
+            "2026-08-22": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-23": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-24": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-25": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-26": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-28": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-29": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-30": {
+                "mau": "CABIN",
+                "bai": "CABIN 2",
+                "so_gio": 10,
+                "bat_dau": "7H",
+                "ket_thuc": "17H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-31": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-01": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-04": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-05": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-06": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 6,
+                "bat_dau": "12H00' - 18H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": "BAN ĐÊM"
+            },
+            "2026-09-07": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-08": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-09": {
+                "mau": "TU_DONG",
+                "bai": "TỰ ĐỘNG 74A-452.04",
+                "so_gio": 5,
+                "bat_dau": "13H",
+                "ket_thuc": "18H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-11": {
+                "mau": "TU_DONG",
+                "bai": "TỰ ĐỘNG 74A-452.04",
+                "so_gio": 5,
+                "bat_dau": "13H",
+                "ket_thuc": "18H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-12": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-13": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-14": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-15": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-18": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-19": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-21": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-22": {
+                "mau": "CO_TAI",
+                "bai": "CÓ TẢI",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-23": {
+                "mau": "BO_SUNG",
+                "bai": "Bổ sung XE SÀN",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-24": {
+                "mau": "BO_SUNG",
+                "bai": "Bổ sung 452.04",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-26": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-27": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-28": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-29": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-30": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-01": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-02": {
+                "mau": "ON_STL",
+                "bai": "ÔN LUYỆN STL",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-03": {
+                "mau": "ON_TD",
+                "bai": "ÔN LUYỆN TĐ",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-04": {
+                "mau": "KIEM_TRA",
+                "bai": "KIỂM TRA",
+                "so_gio": 0,
+                "bat_dau": "",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            }
+        },
+        "9": {
+            "2026-08-22": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-23": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-24": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-25": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-26": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-28": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-29": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-30": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-31": {
+                "mau": "CABIN",
+                "bai": "CABIN 2",
+                "so_gio": 10,
+                "bat_dau": "7H",
+                "ket_thuc": "17H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-01": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-04": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-05": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-06": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 6,
+                "bat_dau": "12H00' - 18H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": "BAN ĐÊM"
+            },
+            "2026-09-07": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-08": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-09": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-11": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-12": {
+                "mau": "TU_DONG",
+                "bai": "TỰ ĐỘNG 74A-452.04",
+                "so_gio": 5,
+                "bat_dau": "13H",
+                "ket_thuc": "18H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-13": {
+                "mau": "TU_DONG",
+                "bai": "TỰ ĐỘNG 74A-452.04",
+                "so_gio": 5,
+                "bat_dau": "13H",
+                "ket_thuc": "18H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-14": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-15": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-18": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-19": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-21": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-22": {
+                "mau": "CO_TAI",
+                "bai": "CÓ TẢI",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-23": {
+                "mau": "BO_SUNG",
+                "bai": "Bổ sung XE SÀN",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-24": {
+                "mau": "BO_SUNG",
+                "bai": "Bổ sung 452.04",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-26": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-27": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-28": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-29": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-30": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-01": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-02": {
+                "mau": "ON_STL",
+                "bai": "ÔN LUYỆN STL",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-03": {
+                "mau": "ON_TD",
+                "bai": "ÔN LUYỆN TĐ",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-04": {
+                "mau": "KIEM_TRA",
+                "bai": "KIỂM TRA",
+                "so_gio": 0,
+                "bat_dau": "",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            }
+        },
+        "10": {
+            "2026-08-22": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-23": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-24": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-25": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-26": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-28": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "5H58'",
+                "ket_thuc": "13H58'",
+                "noi_dung_phu": ""
+            },
+            "2026-08-29": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-30": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-08-31": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-01": {
+                "mau": "CABIN",
+                "bai": "CABIN 2",
+                "so_gio": 10,
+                "bat_dau": "7H",
+                "ket_thuc": "17H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-04": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8.02,
+                "bat_dau": "13H59' -17H59'",
+                "ket_thuc": "18H-22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-05": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-06": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 6,
+                "bat_dau": "12H00' - 18H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": "BAN ĐÊM"
+            },
+            "2026-09-07": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-08": {
+                "mau": "PHUC_TAP",
+                "bai": "PHỨC TẠP",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-09": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-11": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-12": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-13": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-14": {
+                "mau": "TU_DONG",
+                "bai": "TỰ ĐỘNG 74A-452.04",
+                "so_gio": 5,
+                "bat_dau": "13H",
+                "ket_thuc": "18H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-15": {
+                "mau": "TU_DONG",
+                "bai": "TỰ ĐỘNG 74A-452.04",
+                "so_gio": 5,
+                "bat_dau": "13H",
+                "ket_thuc": "18H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-18": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-19": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-21": {
+                "mau": "DOC_QC",
+                "bai": "DỐC, QC",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-22": {
+                "mau": "CO_TAI",
+                "bai": "CÓ TẢI",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-23": {
+                "mau": "BO_SUNG",
+                "bai": "Bổ sung XE SÀN",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-24": {
+                "mau": "BO_SUNG",
+                "bai": "Bổ sung 452.04",
+                "so_gio": 8,
+                "bat_dau": "12H00' - 20H00'",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            },
+            "2026-09-26": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-27": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-28": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-29": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-09-30": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-01": {
+                "mau": "HINH",
+                "bai": "HÌNH",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-02": {
+                "mau": "ON_STL",
+                "bai": "ÔN LUYỆN STL",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-03": {
+                "mau": "ON_TD",
+                "bai": "ÔN LUYỆN TĐ",
+                "so_gio": 8,
+                "bat_dau": "14H",
+                "ket_thuc": "22H",
+                "noi_dung_phu": ""
+            },
+            "2026-10-04": {
+                "mau": "KIEM_TRA",
+                "bai": "KIỂM TRA",
+                "so_gio": 0,
+                "bat_dau": "",
+                "ket_thuc": "",
+                "noi_dung_phu": ""
+            }
+        }
+    }
+}

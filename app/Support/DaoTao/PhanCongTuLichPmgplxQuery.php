@@ -16,6 +16,24 @@ use Illuminate\Support\Collection;
 
 class PhanCongTuLichPmgplxQuery
 {
+    /** Khóa tra TenKH — MaKH lịch xe đôi khi khác hoa/thường so với bảng KhoaHoc. */
+    public static function maKhLookupKey(string $maKh): string
+    {
+        return strtoupper(trim($maKh));
+    }
+
+    /**
+     * @return Collection<string, string> map MaKH (uppercase) → TenKH
+     */
+    public static function tenKhByMaKhCollection(): Collection
+    {
+        return KhoaHoc::query()
+            ->get(['MaKH', 'TenKH'])
+            ->mapWithKeys(fn (KhoaHoc $kh): array => [
+                self::maKhLookupKey((string) $kh->MaKH) => trim((string) $kh->TenKH),
+            ]);
+    }
+
     /**
      * Tạm thời: khoá tự động khi tên khoá (TenKH PMGPLX) có chuỗi B01.
      */
@@ -104,7 +122,7 @@ class PhanCongTuLichPmgplxQuery
             $loai = 'tat_ca';
         }
 
-        $tenKhByMa = KhoaHoc::query()->pluck('TenKH', 'MaKH');
+        $tenKhByMa = self::tenKhByMaKhCollection();
         $monMap = DmMonHoc::query()->pluck('TenMH', 'MaMH');
 
         $rows = [];
@@ -150,7 +168,7 @@ class PhanCongTuLichPmgplxQuery
      */
     public function aggregateByKhoaXe(array $filters): array
     {
-        $tenKhByMa = KhoaHoc::query()->pluck('TenKH', 'MaKH');
+        $tenKhByMa = self::tenKhByMaKhCollection();
         $rows = $this->rowsFromLichXeTap($filters, $tenKhByMa, applyXeTuDongFilter: true);
 
         return $this->buildKhoaXeAggregatesFromDetailRows($rows);
@@ -341,10 +359,11 @@ class PhanCongTuLichPmgplxQuery
                 $noiDung = $noiDung !== '' ? $noiDung.' · '.$mon : $mon;
             }
 
-            $maKh = trim((string) ($row->MaKH ?? ''));
+            $maKhRaw = trim((string) ($row->MaKH ?? ''));
+            $maKhKey = self::maKhLookupKey($maKhRaw);
             $rows[] = [
-                'ma_kh' => $maKh,
-                'ten_khoa' => self::tenKhoaLabel($maKh, $tenKhByMa),
+                'ma_kh' => $maKhKey !== '' ? $maKhKey : $maKhRaw,
+                'ten_khoa' => self::tenKhoaLabel($maKhKey !== '' ? $maKhKey : $maKhRaw, $tenKhByMa),
                 'ho_ten_gv' => trim((string) ($row->TenGV ?? '')),
                 'ma_gv' => trim((string) ($row->MaGV ?? '')),
                 'tu_ngay' => $row->NgayBD ? Carbon::parse($row->NgayBD) : null,
@@ -389,8 +408,9 @@ class PhanCongTuLichPmgplxQuery
                 $noiDung .= ' · '.$ghiChu;
             }
 
-            $maKh = trim((string) ($row->MaKH ?? ''));
-            $tenKhRaw = trim((string) ($tenKhByMa->get($maKh) ?? ''));
+            $maKhRaw = trim((string) ($row->MaKH ?? ''));
+            $maKhKey = self::maKhLookupKey($maKhRaw);
+            $tenKhRaw = trim((string) ($tenKhByMa->get($maKhKey) ?? ''));
             $bienSo = trim((string) ($row->BienSoXe ?? ''));
 
             if ($applyXeTuDongFilter && ! self::shouldIncludeLichXeTapRow($tenKhRaw, $bienSo)) {
@@ -398,8 +418,8 @@ class PhanCongTuLichPmgplxQuery
             }
 
             $rows[] = [
-                'ma_kh' => $maKh,
-                'ten_khoa' => self::tenKhoaLabel($maKh, $tenKhByMa),
+                'ma_kh' => $maKhKey !== '' ? $maKhKey : $maKhRaw,
+                'ten_khoa' => self::tenKhoaLabel($maKhKey !== '' ? $maKhKey : $maKhRaw, $tenKhByMa),
                 'ho_ten_gv' => trim((string) ($row->TenGV ?? '')),
                 'ma_gv' => trim((string) ($row->MaGV ?? '')),
                 'tu_ngay' => $row->NgayBD ? Carbon::parse($row->NgayBD) : null,
@@ -434,9 +454,9 @@ class PhanCongTuLichPmgplxQuery
             return '—';
         }
 
-        $ten = trim((string) ($tenKhByMa->get($maKh) ?? ''));
+        $ten = trim((string) ($tenKhByMa->get(self::maKhLookupKey($maKh)) ?? ''));
 
-        return $ten !== '' ? KhoaDaoTao::normalizeTenKhoa($ten) : $maKh;
+        return $ten !== '' ? KhoaDaoTao::normalizeTenKhoa($ten) : self::maKhLookupKey($maKh);
     }
 
     public static function loaiGiangDayFromLoaiGv(string $loaiGv): ?string

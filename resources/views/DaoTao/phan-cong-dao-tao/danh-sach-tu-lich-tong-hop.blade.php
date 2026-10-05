@@ -49,8 +49,18 @@
                                     @endif
                                 </td>
                                 <td><strong>{{ ($row['bien_so'] ?? '') !== '' ? $row['bien_so'] : '—' }}</strong></td>
-                                <td>{{ ($row['tu_ngay'] ?? null) ? $row['tu_ngay']->format('d/m/Y') : '—' }}</td>
-                                <td>{{ ($row['den_ngay'] ?? null) ? $row['den_ngay']->format('d/m/Y') : '—' }}</td>
+                                <td class="text-nowrap">
+                                    @include('DaoTao.phan-cong-dao-tao.partials.thoi-gian-lich-pmgplx', [
+                                        'tu' => $row['tu_ngay'] ?? null,
+                                        'mode' => 'start',
+                                    ])
+                                </td>
+                                <td class="text-nowrap">
+                                    @include('DaoTao.phan-cong-dao-tao.partials.thoi-gian-lich-pmgplx', [
+                                        'den' => $row['den_ngay'] ?? null,
+                                        'mode' => 'end',
+                                    ])
+                                </td>
                                 @php
                                     $gvs = array_slice($row['giao_viens'] ?? [], 0, 4);
                                     $gvExtra = max(0, count($row['giao_viens'] ?? []) - 4);

@@ -14,21 +14,52 @@
             </div>
         </div>
         <div class="card-body">
-            <p class="small text-muted mb-3">
-                Dữ liệu gộp từ <strong>Lịch giáo viên</strong> (dòng loại <code>LT</code>, tương ứng GVLT)
-                và <strong>Lịch xe tập</strong> (thực hành / GVTH), cùng bộ lọc với danh sách phân công nhập tay
-                để đối chiếu khoá · giáo viên · thời gian · xe.
-            </p>
+            <div class="small border rounded p-3 mb-3 bg-light">
+                <p class="font-weight-bold mb-2">Ghi chú — logic màn đối chiếu</p>
+                <p class="mb-2 text-muted">
+                    Mục đích: xem <strong>từng dòng lịch</strong> trên PMGPLX (DB <code>GPLX_BAN_MOI</code>) để đối chiếu với
+                    <a href="{{ $compareManualUrl }}">phân công nhập tay</a> — không ghi DB phân công MANHLINH.
+                </p>
+                <p class="mb-1"><strong>1. Hai nguồn dòng (gộp một bảng)</strong></p>
+                <ul class="mb-2 pl-3">
+                    <li>
+                        <strong>Lịch GV</strong> (<code>KhoaHoc_GiaoVien</code>, nguồn cột «Lịch GV»):
+                        chỉ <code>LoaiGV = LT</code>, có <code>NgayBD</code>.
+                        Nội dung = loại GV + môn (nếu có). Loại giảng dạy = <em>Lý thuyết</em> (GVLT).
+                    </li>
+                    <li>
+                        <strong>Lịch xe tập</strong> (<code>KhoaHoc_XeTap</code>, nguồn «Lịch xe»):
+                        <code>IsKhoaHocXeTap = 0</code>, có <code>NgayBD</code> — cùng điều kiện cốt lõi với
+                        <a href="{{ route('pmgplx.lich.xe.index') }}">/pmgplx/lich/xe-tap</a>.
+                        Nội dung = «Thực hành» + ghi chú lịch. Loại = <em>Thực hành</em> (GVTH).
+                        <strong>Không</strong> ẩn xe B11 / xe tự động tại màn này (hiển thị đủ như lịch xe).
+                    </li>
+                </ul>
+                <p class="mb-1"><strong>2. Bộ lọc</strong></p>
+                <ul class="mb-2 pl-3">
+                    <li><code>ma_kh</code>, <code>ma_gv</code>, <code>bien_so_xe</code> — lấy danh mục từ PMGPLX (<code>KhoaHoc</code>, <code>GiaoVien</code>, <code>XeTap</code>).</li>
+                    <li><code>loai</code>: «Tất cả» (LT + TH), «Chỉ lịch GV», «Chỉ lịch xe».</li>
+                    <li>Tên khoá hiển thị từ <code>KhoaHoc.TenKH</code>; mã khoá trên lịch xe có thể khác hoa/thường — hệ thống chuẩn hóa khi ghép tên.</li>
+                </ul>
+                <p class="mb-1"><strong>3. Cột «Thời gian»</strong></p>
+                <ul class="mb-2 pl-3">
+                    <li>Mỗi dòng = một ca: <code>NgayBD</code> → bắt đầu, <code>NgayKT</code> → kết thúc.</li>
+                    <li>Cùng ngày: hiển thị <code>dd/mm/yyyy HH:mm–HH:mm</code>; khác ngày: đủ ngày giờ hai đầu.</li>
+                </ul>
+                <p class="mb-1"><strong>4. Sắp xếp &amp; phân trang</strong></p>
+                <ul class="mb-2 pl-3">
+                    <li>Sắp theo ngày bắt đầu tăng dần, rồi tên khoá; 50 dòng/trang (slice sau khi gộp).</li>
+                </ul>
+                <p class="mb-0 text-muted">
+                    <strong>Khác màn «Tổng hợp khoá · xe»:</strong> tổng hợp gom theo khoá + biển số, tối đa 4 GV;
+                    và <em>có</em> lọc xe tự động (tên khoá có <strong>B01</strong> → giữ xe B11; khoá khác → ẩn xe B11 theo danh mục xe).
+                </p>
+            </div>
 
             @include('DaoTao.phan-cong-dao-tao.partials.loc-tu-lich-pmgplx', [
                 'locAction' => route('daotao.pdt.phan-cong-dao-tao.danh-sach-tu-lich'),
                 'showLoai' => true,
             ])
-            <p class="small text-muted mb-0 mt-1">
-                Lịch xe TH hiển thị <strong>giống</strong> màn
-                <a href="{{ route('pmgplx.lich.xe.index') }}">/pmgplx/lich/xe-tap</a> (không lọc xe B11 tại đây).
-                Quy tắc ẩn xe tự động chỉ áp dụng ở màn <strong>Tổng hợp khoá · xe</strong>.
-            </p>
 
             <div class="table-responsive mt-3">
                 <table class="table table-sm table-bordered table-striped table-hover table-data mb-0">
@@ -59,14 +90,11 @@
                                         <div class="small text-muted">{{ $row['ma_gv'] }}</div>
                                     @endif
                                 </td>
-                                <td>
-                                    @if ($row['tu_ngay'] && $row['den_ngay'])
-                                        {{ $row['tu_ngay']->format('d/m/Y') }} – {{ $row['den_ngay']->format('d/m/Y') }}
-                                    @elseif ($row['tu_ngay'])
-                                        {{ $row['tu_ngay']->format('d/m/Y') }}
-                                    @else
-                                        —
-                                    @endif
+                                <td class="text-nowrap">
+                                    @include('DaoTao.phan-cong-dao-tao.partials.thoi-gian-lich-pmgplx', [
+                                        'tu' => $row['tu_ngay'] ?? null,
+                                        'den' => $row['den_ngay'] ?? null,
+                                    ])
                                 </td>
                                 <td>{{ $row['bien_so'] !== '' ? $row['bien_so'] : '—' }}</td>
                                 <td>
