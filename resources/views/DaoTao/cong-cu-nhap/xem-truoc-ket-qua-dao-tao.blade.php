@@ -18,7 +18,7 @@
                 return '—';
             }
 
-            return ((int) $value) === 1 ? 'Đạt' : 'Không đạt';
+            return (int) $value === 1 ? 'Đạt' : 'Không đạt';
         }
         if ($field === '_num' || \App\Support\DaoTao\KetQuaDaoTaoUpdater::isNumericUpdateField($field)) {
             $num = \App\Support\DaoTao\KetQuaDaoTaoUpdater::asNumber($value);
@@ -250,10 +250,30 @@
                                         $cu = $row['hien_tai'][$field] ?? null;
                                         $doi = (string) $moi !== (string) $cu;
                                     @endphp
-                                    <td @class(['font-weight-bold' => $doi])>
-                                        {{ $formatVal($field, $moi) }}
+                                    @php
+                                        $klMoi = ($field === 'KetLuanCSDT' && $moi !== null && $moi !== '')
+                                            ? (int) $moi
+                                            : null;
+                                    @endphp
+                                    <td @class([
+                                        'font-weight-bold' => $doi,
+                                        'table-success' => $field === 'KetLuanCSDT' && $klMoi === 1,
+                                        'table-danger' => $field === 'KetLuanCSDT' && $klMoi !== null && $klMoi !== 1,
+                                    ])>
+                                        @if ($field === 'KetLuanCSDT')
+                                            @include('DaoTao.cong-cu-nhap.partials.ket-luan-csdt-hien-thi', ['value' => $moi])
+                                        @else
+                                            {{ $formatVal($field, $moi) }}
+                                        @endif
                                         @if ($doi)
-                                            <div class="small text-muted">cũ: {{ $formatVal($field, $cu) }}</div>
+                                            <div class="small text-muted">
+                                                cũ:
+                                                @if ($field === 'KetLuanCSDT')
+                                                    @include('DaoTao.cong-cu-nhap.partials.ket-luan-csdt-hien-thi', ['value' => $cu])
+                                                @else
+                                                    {{ $formatVal($field, $cu) }}
+                                                @endif
+                                            </div>
                                         @endif
                                     </td>
                                 @endforeach

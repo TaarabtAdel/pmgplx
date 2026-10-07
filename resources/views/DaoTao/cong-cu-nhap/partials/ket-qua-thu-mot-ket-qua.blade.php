@@ -68,10 +68,32 @@
                         $cu = $tu['hien_tai'][$field] ?? null;
                         $doi = (string) $moi !== (string) $cu;
                     @endphp
+                    @php
+                        $klMoi = ($field === 'KetLuanCSDT' && $moi !== null && $moi !== '') ? (int) $moi : null;
+                        $klCu = ($field === 'KetLuanCSDT' && $cu !== null && $cu !== '') ? (int) $cu : null;
+                    @endphp
                     <tr @class(['font-weight-bold' => $doi])>
                         <td>{{ $fieldLabels[$field] ?? $field }}</td>
-                        <td>{{ $formatVal($field, $moi) }}</td>
-                        <td>{{ $formatVal($field, $cu) }}</td>
+                        <td @class([
+                            'table-success' => $field === 'KetLuanCSDT' && $klMoi === 1,
+                            'table-danger' => $field === 'KetLuanCSDT' && $klMoi !== null && $klMoi !== 1,
+                        ])>
+                            @if ($field === 'KetLuanCSDT')
+                                @include('DaoTao.cong-cu-nhap.partials.ket-luan-csdt-hien-thi', ['value' => $moi])
+                            @else
+                                {{ $formatVal($field, $moi) }}
+                            @endif
+                        </td>
+                        <td @class([
+                            'table-success' => $field === 'KetLuanCSDT' && $klCu === 1,
+                            'table-danger' => $field === 'KetLuanCSDT' && $klCu !== null && $klCu !== 1,
+                        ])>
+                            @if ($field === 'KetLuanCSDT')
+                                @include('DaoTao.cong-cu-nhap.partials.ket-luan-csdt-hien-thi', ['value' => $cu])
+                            @else
+                                {{ $formatVal($field, $cu) }}
+                            @endif
+                        </td>
                     </tr>
                 @endforeach
             </tbody>
