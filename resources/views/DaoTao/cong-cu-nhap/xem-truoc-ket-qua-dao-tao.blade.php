@@ -107,6 +107,7 @@
                                     Các cột file khác: LT (I) → <code>DiemKQLyThuyet</code>;
                                     Mô phỏng (J) → <code>DiemKQMoPhong</code>;
                                     KT hình (K) → <code>DiemKQHinh</code>;
+                                    Tiến lùi (L) → <code>DiemKQTienLui</code>;
                                     KT đường (M) → <code>DiemKQThucHanh</code>;
                                     Ngày HTKH (O) → <code>NgayRaQDTN</code>.
                                 </td>
@@ -185,6 +186,7 @@
                             <th class="text-nowrap">LT (I)</th>
                             <th class="text-nowrap">Mô phỏng (J)</th>
                             <th class="text-nowrap">KT hình (K)</th>
+                            <th class="text-nowrap">Tiến lùi (L)</th>
                             <th class="text-nowrap">KT đường (M)</th>
                             <th class="text-nowrap">Ngày HTKH (O)</th>
                         </tr>
@@ -201,12 +203,13 @@
                                 <td>{{ $formatVal('DiemKQLyThuyet', $row['diem_kq_ly_thuyet'] ?? null) }}</td>
                                 <td>{{ $formatVal('DiemKQMoPhong', $row['diem_kq_mo_phong'] ?? null) }}</td>
                                 <td>{{ $formatVal('DiemKQHinh', $row['diem_kq_hinh'] ?? null) }}</td>
+                                <td>{{ $formatVal('DiemKQTienLui', $row['diem_kq_tien_lui'] ?? null) }}</td>
                                 <td>{{ $formatVal('DiemKQThucHanh', $row['diem_kq_thuc_hanh'] ?? null) }}</td>
                                 <td>{{ $formatVal('NgayRaQDTN', $row['ngay_ra_kqtn'] ?? null) }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="11" class="text-center text-muted py-3">Không có dòng file.</td>
+                                <td colspan="12" class="text-center text-muted py-3">Không có dòng file.</td>
                             </tr>
                         @endforelse
                     </tbody>

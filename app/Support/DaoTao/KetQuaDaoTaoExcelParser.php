@@ -28,6 +28,8 @@ class KetQuaDaoTaoExcelParser
 
     public const COL_DIEM_HINH = 'K';
 
+    public const COL_DIEM_TIEN_LUI = 'L';
+
     public const COL_DIEM_DUONG = 'M';
 
     public const COL_NGAY_HTKH = 'O';
@@ -135,6 +137,7 @@ class KetQuaDaoTaoExcelParser
                 'diem_kq_ly_thuyet' => $this->cellFloat($worksheet, self::COL_DIEM_LT.$row),
                 'diem_kq_mo_phong' => $this->cellFloat($worksheet, self::COL_DIEM_MO_PHONG.$row),
                 'diem_kq_hinh' => $this->cellFloat($worksheet, self::COL_DIEM_HINH.$row),
+                'diem_kq_tien_lui' => $this->cellFloat($worksheet, self::COL_DIEM_TIEN_LUI.$row),
                 'diem_kq_thuc_hanh' => $this->cellFloat($worksheet, self::COL_DIEM_DUONG.$row),
                 'ngay_ra_kqtn' => $this->cellDate($worksheet, self::COL_NGAY_HTKH.$row),
             ];

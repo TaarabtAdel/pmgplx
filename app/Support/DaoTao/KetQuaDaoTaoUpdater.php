@@ -41,6 +41,7 @@ class KetQuaDaoTaoUpdater
         'QDThucHanhHinh',
         'DiemKQMoPhong',
         'DiemKQHinh',
+        'DiemKQTienLui',
         'NgayRaQDTN',
         'KetLuanCSDT',
     ];
@@ -55,7 +56,8 @@ class KetQuaDaoTaoUpdater
         'QDThucHanhHinh' => 'Quãng đường TH hình (km)',
         'DiemKQMoPhong' => 'KQ KT mô phỏng',
         'DiemKQHinh' => 'KQ KT TH hình',
-        'NgayRaQDTN' => 'Ngày cấp giấy HTKH',
+        'DiemKQTienLui' => 'KQ tiến lùi',
+        'NgayRaQDTN' => 'Ngày HTKH',
         'KetLuanCSDT' => 'Kết luận CSDT',
     ];
 
@@ -143,6 +145,7 @@ class KetQuaDaoTaoUpdater
             $diemThDuong = self::asNumber($record['diem_kq_thuc_hanh'] ?? null);
             $diemMoPhong = self::asNumber($record['diem_kq_mo_phong'] ?? null);
             $diemThHinh = self::asNumber($record['diem_kq_hinh'] ?? null);
+            $diemTienLui = self::asNumber($record['diem_kq_tien_lui'] ?? null);
 
             $ketLuan = $this->ketLuanCsdt(
                 $nhom,
@@ -165,6 +168,7 @@ class KetQuaDaoTaoUpdater
                 'QDThucHanhHinh' => $h,
                 'DiemKQMoPhong' => $diemMoPhong,
                 'DiemKQHinh' => $diemThHinh,
+                'DiemKQTienLui' => $diemTienLui,
                 'NgayRaQDTN' => $record['ngay_ra_kqtn'] ?? null,
                 'KetLuanCSDT' => $ketLuan,
             ];
