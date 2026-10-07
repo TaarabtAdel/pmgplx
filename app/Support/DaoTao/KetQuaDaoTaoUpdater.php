@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class KetQuaDaoTaoUpdater
 {
-    public const PREVIEW_UPDATE_LIMIT = 50;
+    public const PREVIEW_UPDATE_LIMIT = 200;
 
     public const NHOM_B_SAN = 'B_SAN';
 
