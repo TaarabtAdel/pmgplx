@@ -29,6 +29,9 @@ class KetQuaDaoTaoUpdater
     private const NGUONG_KQ_KT_MIN = 0.0;
 
     /** @var list<string> */
+    private const NON_NUMERIC_UPDATE_FIELDS = ['KetLuanCSDT', 'NgayRaQDTN'];
+
+    /** @var list<string> */
     public const UPDATE_FIELDS = [
         'TongQDThucHanh',
         'DiemKQLyThuyet',
@@ -133,28 +136,36 @@ class KetQuaDaoTaoUpdater
 
             $hang = strtoupper(trim((string) ($hoSo->HangGPLX ?? '')));
             $nhom = self::nhomHang($hang);
+
+            $g = self::asNumber($record['tg_thuc_hanh_hinh'] ?? null);
+            $h = self::asNumber($record['qd_thuc_hanh_hinh'] ?? null);
+            $diemLt = self::asNumber($record['diem_kq_ly_thuyet'] ?? null);
+            $diemThDuong = self::asNumber($record['diem_kq_thuc_hanh'] ?? null);
+            $diemMoPhong = self::asNumber($record['diem_kq_mo_phong'] ?? null);
+            $diemThHinh = self::asNumber($record['diem_kq_hinh'] ?? null);
+
             $ketLuan = $this->ketLuanCsdt(
                 $nhom,
-                (float) ($record['tg_thuc_hanh_hinh'] ?? 0),
-                (float) ($record['qd_thuc_hanh_hinh'] ?? 0),
+                $g,
+                $h,
                 $gioMayChu,
                 $kmMayChu,
-                (float) ($record['diem_kq_ly_thuyet'] ?? 0),
-                (float) ($record['diem_kq_thuc_hanh'] ?? 0),
-                (float) ($record['diem_kq_mo_phong'] ?? 0),
-                (float) ($record['diem_kq_hinh'] ?? 0),
+                $diemLt,
+                $diemThDuong,
+                $diemMoPhong,
+                $diemThHinh,
             );
 
             $payload = [
                 'TongQDThucHanh' => $kmMayChu,
-                'DiemKQLyThuyet' => $record['diem_kq_ly_thuyet'],
-                'DiemKQThucHanh' => $record['diem_kq_thuc_hanh'],
-                'TGThucHanhHinh' => $record['tg_thuc_hanh_hinh'],
+                'DiemKQLyThuyet' => $diemLt,
+                'DiemKQThucHanh' => $diemThDuong,
+                'TGThucHanhHinh' => $g,
                 'TGThucHanhDuong' => $gioMayChu,
-                'QDThucHanhHinh' => $record['qd_thuc_hanh_hinh'],
-                'DiemKQMoPhong' => $record['diem_kq_mo_phong'],
-                'DiemKQHinh' => $record['diem_kq_hinh'],
-                'NgayRaQDTN' => $record['ngay_ra_kqtn'],
+                'QDThucHanhHinh' => $h,
+                'DiemKQMoPhong' => $diemMoPhong,
+                'DiemKQHinh' => $diemThHinh,
+                'NgayRaQDTN' => $record['ngay_ra_kqtn'] ?? null,
                 'KetLuanCSDT' => $ketLuan,
             ];
 
@@ -207,6 +218,32 @@ class KetQuaDaoTaoUpdater
             'updated' => $updated,
             'skipped' => count($analysis['skipped']),
         ];
+    }
+
+    public static function isNumericUpdateField(string $field): bool
+    {
+        return in_array($field, self::UPDATE_FIELDS, true)
+            && ! in_array($field, self::NON_NUMERIC_UPDATE_FIELDS, true);
+    }
+
+    /** Ô Excel / DB rỗng (null, '') → 0 khi tính kết luận và ghi số. */
+    public static function asNumber(mixed $value): float
+    {
+        if ($value === null || $value === '') {
+            return 0.0;
+        }
+
+        if (is_bool($value)) {
+            return $value ? 1.0 : 0.0;
+        }
+
+        if (is_numeric($value)) {
+            return (float) $value;
+        }
+
+        $text = str_replace([' ', ','], ['', '.'], trim((string) $value));
+
+        return is_numeric($text) ? (float) $text : 0.0;
     }
 
     public static function nhomHang(string $hang): string
@@ -379,14 +416,14 @@ class KetQuaDaoTaoUpdater
             $payload = $update['payload'] ?? [];
             $explain = self::explainKetLuan(
                 (string) ($update['nhom'] ?? self::NHOM_KHAC),
-                (float) ($record['tg_thuc_hanh_hinh'] ?? 0),
-                (float) ($record['qd_thuc_hanh_hinh'] ?? 0),
-                (float) ($payload['TGThucHanhDuong'] ?? 0),
-                (float) ($payload['TongQDThucHanh'] ?? 0),
-                (float) ($record['diem_kq_ly_thuyet'] ?? 0),
-                (float) ($record['diem_kq_thuc_hanh'] ?? 0),
-                (float) ($record['diem_kq_mo_phong'] ?? 0),
-                (float) ($record['diem_kq_hinh'] ?? 0),
+                self::asNumber($record['tg_thuc_hanh_hinh'] ?? null),
+                self::asNumber($record['qd_thuc_hanh_hinh'] ?? null),
+                self::asNumber($payload['TGThucHanhDuong'] ?? null),
+                self::asNumber($payload['TongQDThucHanh'] ?? null),
+                self::asNumber($record['diem_kq_ly_thuyet'] ?? null),
+                self::asNumber($record['diem_kq_thuc_hanh'] ?? null),
+                self::asNumber($record['diem_kq_mo_phong'] ?? null),
+                self::asNumber($record['diem_kq_hinh'] ?? null),
             );
 
             return [
@@ -462,7 +499,8 @@ class KetQuaDaoTaoUpdater
     {
         $values = [];
         foreach (self::UPDATE_FIELDS as $field) {
-            $values[$field] = $hoSo->getAttribute($field);
+            $raw = $hoSo->getAttribute($field);
+            $values[$field] = self::isNumericUpdateField($field) ? self::asNumber($raw) : $raw;
         }
 
         if (isset($values['KetLuanCSDT'])) {

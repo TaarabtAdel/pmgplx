@@ -13,17 +13,20 @@
     $skipTotal = (int) ($preview['skip_total'] ?? 0);
 
     $formatVal = static function (string $field, mixed $value): string {
-        if ($value === null || $value === '') {
-            return '—';
-        }
         if ($field === 'KetLuanCSDT') {
+            if ($value === null || $value === '') {
+                return '—';
+            }
+
             return ((int) $value) === 1 ? 'Đạt' : 'Không đạt';
         }
-        if ($field === '_num' && is_numeric($value)) {
-            return rtrim(rtrim(number_format((float) $value, 2, ',', ''), '0'), ',');
+        if ($field === '_num' || \App\Support\DaoTao\KetQuaDaoTaoUpdater::isNumericUpdateField($field)) {
+            $num = \App\Support\DaoTao\KetQuaDaoTaoUpdater::asNumber($value);
+
+            return rtrim(rtrim(number_format($num, 2, ',', ''), '0'), ',') ?: '0';
         }
-        if (is_numeric($value) && ! in_array($field, ['NgayRaQDTN'], true)) {
-            return rtrim(rtrim(number_format((float) $value, 2, ',', ''), '0'), ',');
+        if ($value === null || $value === '') {
+            return '—';
         }
         if ($field === 'NgayRaQDTN') {
             try {
