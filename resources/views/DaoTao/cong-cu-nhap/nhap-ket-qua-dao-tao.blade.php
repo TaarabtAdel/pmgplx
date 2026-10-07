@@ -12,7 +12,8 @@
                 Cột P/Q trên file <strong>không dùng</strong>: giờ đường / km đường lấy từ
                 <a href="{{ route('daotao.pdt.dat.theo-doi') }}">Theo dõi DAT</a>
                 (Tổng giờ máy chủ / Tổng KM máy chủ, chỉ phiên đạt).
-                <strong>Kết luận CSDT</strong> = Đạt khi đủ ngưỡng hình + giờ/km DAT theo hạng B sàn / B tự động / C1.
+                <strong>Kết luận CSDT</strong> = Đạt khi đủ ngưỡng hình + giờ/km DAT theo hạng B sàn / B tự động / C1,
+                và 4 KQ KT (LT, TH đường, mô phỏng, TH hình) trên file đều &gt; 0 (tạm thời).
             </div>
 
             <form method="POST" action="{{ route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-dao-tao.store') }}" enctype="multipart/form-data">

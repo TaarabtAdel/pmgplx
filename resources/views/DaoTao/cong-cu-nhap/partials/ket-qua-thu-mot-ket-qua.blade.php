@@ -36,7 +36,13 @@
                     <tr @class(['table-success' => $d['ok'], 'table-danger' => ! $d['ok']])>
                         <td>{{ $d['label'] }}</td>
                         <td>{{ $formatVal('_num', $d['value']) }}</td>
-                        <td>{{ $formatVal('_num', $d['min']) }}</td>
+                        <td>
+                            @if (! empty($d['min_exclusive']))
+                                &gt; {{ $formatVal('_num', $d['min']) }}
+                            @else
+                                ≥ {{ $formatVal('_num', $d['min']) }}
+                            @endif
+                        </td>
                         <td>{{ $d['ok'] ? 'Đạt' : 'Thiếu' }}</td>
                     </tr>
                 @endforeach

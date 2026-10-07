@@ -25,6 +25,9 @@ class KetQuaDaoTaoUpdater
         self::NHOM_C1 => ['g' => 35, 'h' => 113, 'p' => 24, 'q' => 830],
     ];
 
+    /** Tạm thời: các cột KQ KT trên file phải > giá trị này. */
+    private const NGUONG_KQ_KT_MIN = 0.0;
+
     /** @var list<string> */
     public const UPDATE_FIELDS = [
         'TongQDThucHanh',
@@ -135,7 +138,11 @@ class KetQuaDaoTaoUpdater
                 (float) ($record['tg_thuc_hanh_hinh'] ?? 0),
                 (float) ($record['qd_thuc_hanh_hinh'] ?? 0),
                 $gioMayChu,
-                $kmMayChu
+                $kmMayChu,
+                (float) ($record['diem_kq_ly_thuyet'] ?? 0),
+                (float) ($record['diem_kq_thuc_hanh'] ?? 0),
+                (float) ($record['diem_kq_mo_phong'] ?? 0),
+                (float) ($record['diem_kq_hinh'] ?? 0),
             );
 
             $payload = [
@@ -233,17 +240,26 @@ class KetQuaDaoTaoUpdater
     }
 
     /**
-     * Giải thích Kết luận CSDT (4 ngưỡng G/H/P/Q).
+     * Giải thích Kết luận CSDT (4 ngưỡng G/H/P/Q + 4 KQ KT trên file).
      *
      * @return array{
      *     ket_luan: int,
      *     dat_du: bool,
      *     nguong: array<string, float>|null,
-     *     chi_tiet: list<array{key: string, label: string, value: float, min: float, ok: bool}>
+     *     chi_tiet: list<array{key: string, label: string, value: float, min: float, ok: bool, min_exclusive?: bool}>
      * }
      */
-    public static function explainKetLuan(string $nhom, float $g, float $h, float $p, float $q): array
-    {
+    public static function explainKetLuan(
+        string $nhom,
+        float $g,
+        float $h,
+        float $p,
+        float $q,
+        float $diemLyThuyet = 0,
+        float $diemThDuong = 0,
+        float $diemMoPhong = 0,
+        float $diemThHinh = 0,
+    ): array {
         $nguong = self::NGUONG[$nhom] ?? null;
         if ($nguong === null) {
             return [
@@ -253,6 +269,8 @@ class KetQuaDaoTaoUpdater
                 'chi_tiet' => [],
             ];
         }
+
+        $ktMin = self::NGUONG_KQ_KT_MIN;
 
         $chiTiet = [
             [
@@ -282,6 +300,38 @@ class KetQuaDaoTaoUpdater
                 'value' => $q,
                 'min' => (float) $nguong['q'],
                 'ok' => $q >= (float) $nguong['q'],
+            ],
+            [
+                'key' => 'DiemKQLyThuyet',
+                'label' => 'KQ KT lý thuyết (I)',
+                'value' => $diemLyThuyet,
+                'min' => $ktMin,
+                'min_exclusive' => true,
+                'ok' => $diemLyThuyet > $ktMin,
+            ],
+            [
+                'key' => 'DiemKQThucHanh',
+                'label' => 'KQ KT TH đường (M)',
+                'value' => $diemThDuong,
+                'min' => $ktMin,
+                'min_exclusive' => true,
+                'ok' => $diemThDuong > $ktMin,
+            ],
+            [
+                'key' => 'DiemKQMoPhong',
+                'label' => 'KQ KT mô phỏng (J)',
+                'value' => $diemMoPhong,
+                'min' => $ktMin,
+                'min_exclusive' => true,
+                'ok' => $diemMoPhong > $ktMin,
+            ],
+            [
+                'key' => 'DiemKQHinh',
+                'label' => 'KQ KT TH hình (K)',
+                'value' => $diemThHinh,
+                'min' => $ktMin,
+                'min_exclusive' => true,
+                'ok' => $diemThHinh > $ktMin,
             ],
         ];
 
@@ -333,6 +383,10 @@ class KetQuaDaoTaoUpdater
                 (float) ($record['qd_thuc_hanh_hinh'] ?? 0),
                 (float) ($payload['TGThucHanhDuong'] ?? 0),
                 (float) ($payload['TongQDThucHanh'] ?? 0),
+                (float) ($record['diem_kq_ly_thuyet'] ?? 0),
+                (float) ($record['diem_kq_thuc_hanh'] ?? 0),
+                (float) ($record['diem_kq_mo_phong'] ?? 0),
+                (float) ($record['diem_kq_hinh'] ?? 0),
             );
 
             return [
@@ -377,9 +431,28 @@ class KetQuaDaoTaoUpdater
         ];
     }
 
-    private function ketLuanCsdt(string $nhom, float $g, float $h, float $p, float $q): int
-    {
-        return self::explainKetLuan($nhom, $g, $h, $p, $q)['ket_luan'];
+    private function ketLuanCsdt(
+        string $nhom,
+        float $g,
+        float $h,
+        float $p,
+        float $q,
+        float $diemLyThuyet,
+        float $diemThDuong,
+        float $diemMoPhong,
+        float $diemThHinh,
+    ): int {
+        return self::explainKetLuan(
+            $nhom,
+            $g,
+            $h,
+            $p,
+            $q,
+            $diemLyThuyet,
+            $diemThDuong,
+            $diemMoPhong,
+            $diemThHinh,
+        )['ket_luan'];
     }
 
     /**

@@ -117,25 +117,48 @@
                         </tbody>
                     </table>
                 </div>
-                <p class="small font-weight-bold mb-1">Kết luận CSDT — phải đủ cả 4 ngưỡng (theo hạng GPLX trên hồ sơ)</p>
+                <p class="small font-weight-bold mb-1">Kết luận CSDT — phải đủ cả 4 ngưỡng (theo hạng GPLX trên hồ sơ) và 4 KQ KT trên file (tạm thời &gt; 0)</p>
                 <div class="table-responsive">
                     <table class="table table-sm table-bordered small mb-0 bg-white">
                         <thead class="thead-light">
                             <tr>
-                                <th>Nhóm</th>
-                                <th>Thời gian TH hình (G) ≥</th>
-                                <th>Quãng đường TH hình (H) ≥</th>
-                                <th>Thời gian TH đường (P) ≥</th>
-                                <th>Quãng đường TH đường (Q) ≥</th>
+                                <th rowspan="2">Nhóm</th>
+                                <th colspan="4">Thực hành / DAT (G, H, P, Q)</th>
+                                <th colspan="4">KQ KT trên file (tạm thời &gt; 0)</th>
+                            </tr>
+                            <tr>
+                                <th>TH hình (G) ≥</th>
+                                <th>QD hình (H) ≥</th>
+                                <th>TG đường (P) ≥</th>
+                                <th>QD đường (Q) ≥</th>
+                                <th>Lý thuyết (I)</th>
+                                <th>TH đường (M)</th>
+                                <th>Mô phỏng (J)</th>
+                                <th>TH hình (K)</th>
                             </tr>
                         </thead>
                         <tbody class="text-muted">
-                            <tr><td>B sàn</td><td>34</td><td>120</td><td>20</td><td>810</td></tr>
-                            <tr><td>B tự động (B11)</td><td>34</td><td>120</td><td>12</td><td>710</td></tr>
-                            <tr><td>C1</td><td>35</td><td>113</td><td>24</td><td>830</td></tr>
+                            <tr>
+                                <td>B sàn</td>
+                                <td>34</td><td>120</td><td>20</td><td>810</td>
+                                <td>&gt; 0</td><td>&gt; 0</td><td>&gt; 0</td><td>&gt; 0</td>
+                            </tr>
+                            <tr>
+                                <td>B tự động (B11)</td>
+                                <td>34</td><td>120</td><td>12</td><td>710</td>
+                                <td>&gt; 0</td><td>&gt; 0</td><td>&gt; 0</td><td>&gt; 0</td>
+                            </tr>
+                            <tr>
+                                <td>C1</td>
+                                <td>35</td><td>113</td><td>24</td><td>830</td>
+                                <td>&gt; 0</td><td>&gt; 0</td><td>&gt; 0</td><td>&gt; 0</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
+                <p class="small text-muted mb-0 mt-1">
+                    Cột DB: <code>DiemKQLyThuyet</code>, <code>DiemKQThucHanh</code>, <code>DiemKQMoPhong</code>, <code>DiemKQHinh</code>.
+                </p>
             </div>
         </div>
     </div>
