@@ -235,6 +235,8 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
         ->name('pdt.dat.quan-ly-phien');
     Route::get('/phong-dao-tao/dat/tong-hop-hoc-vien', [TongHopDatHocVienController::class, 'index'])
         ->name('pdt.dat.tong-hop-hoc-vien');
+    Route::get('/phong-dao-tao/dat/tong-hop-hoc-vien/xuat-excel', [TongHopDatHocVienController::class, 'export'])
+        ->name('pdt.dat.tong-hop-hoc-vien.export');
     Route::get('/phong-dao-tao/dat/theo-doi', [TheoDoiDatController::class, 'index'])
         ->name('pdt.dat.theo-doi');
     Route::get('/phong-dao-tao/dat/theo-doi/xuat-excel', [TheoDoiDatController::class, 'export'])

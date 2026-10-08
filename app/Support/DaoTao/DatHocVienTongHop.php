@@ -9,6 +9,58 @@ use Illuminate\Support\Collection;
 
 class DatHocVienTongHop
 {
+    /**
+     * Dòng tổng hợp theo HV + khóa (đã lọc phiên đạt, dat_ct nếu có).
+     *
+     * @param  array<string, mixed>  $filters
+     * @param  Collection<string, DatDieuKienDat>  $dieuKienByHang
+     * @return Collection<int, object>
+     */
+    public static function aggregatedHocVien(array $filters, Collection $dieuKienByHang): Collection
+    {
+        if (($filters['ma_khoa_hoc'] ?? '') === '') {
+            return collect();
+        }
+
+        $validSessions = self::validSessionsFromFilters($filters);
+        $validSessionIds = $validSessions
+            ->map(fn (DatDSPhien $session): int => (int) $session->Id)
+            ->all();
+        $gioBanDemByKey = self::gioBanDemByHocVien($validSessions);
+        $tongXeSoTuDongSql = DatXeSoTuDong::sqlSumGioTuDong();
+
+        $query = DatDSPhienBoLoc::filteredQuery($filters, orderBy: null);
+        self::restrictToSessionIds($query, $validSessionIds);
+        $aggregated = $query
+            ->selectRaw("
+                    MaHocVien,
+                    MAX(HoTenHocVien) as HoTenHocVien,
+                    MaKhoaHoc,
+                    MAX(TenKhoaHoc) as TenKhoaHoc,
+                    LoaiKhoaHoc,
+                    COUNT(*) as SoPhien,
+                    SUM(COALESCE(ThoiGianThucHanhGio, 0)) as TongGioHoc,
+                    SUM(COALESCE(QuangDuongThucHanhKm, 0)) as TongQuangDuongKm,
+                    {$tongXeSoTuDongSql} as TongXeSoTuDongGio
+                ")
+            ->whereNotNull('MaHocVien')
+            ->where('MaHocVien', '!=', '')
+            ->groupBy('MaHocVien', 'MaKhoaHoc', 'LoaiKhoaHoc')
+            ->orderBy('MaHocVien')
+            ->orderBy('MaKhoaHoc')
+            ->get();
+
+        foreach ($aggregated as $row) {
+            $row->TongBanDemGio = $gioBanDemByKey[self::hocVienRowKey($row)] ?? 0.0;
+        }
+
+        return self::filterDatChuongTrinh(
+            $aggregated,
+            (string) ($filters['dat_ct'] ?? ''),
+            $dieuKienByHang
+        );
+    }
+
     public static function validSessionsFromFilters(array $filters): Collection
     {
         $sessions = DatDSPhienBoLoc::filteredQuery($filters, orderBy: null)->get();

@@ -7,10 +7,12 @@ use App\Models\DaoTao\DatDieuKienDat;
 use App\Models\DaoTao\DatDSPhien;
 use App\Support\DaoTao\DatDSPhienBoLoc;
 use App\Support\DaoTao\DatHocVienTongHop;
-use App\Support\DaoTao\DatXeSoTuDong;
+use App\Support\DaoTao\DatTongHopHocVienExcelExporter;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TongHopDatHocVienController extends Controller
 {
@@ -27,43 +29,7 @@ class TongHopDatHocVienController extends Controller
             ->keyBy('Hang');
 
         if ($canTongHop) {
-            $validSessions = DatHocVienTongHop::validSessionsFromFilters($filters);
-            $validSessionIds = $validSessions
-                ->map(fn (DatDSPhien $session): int => (int) $session->Id)
-                ->all();
-            $gioBanDemByKey = DatHocVienTongHop::gioBanDemByHocVien($validSessions);
-            $tongXeSoTuDongSql = DatXeSoTuDong::sqlSumGioTuDong();
-
-            $query = DatDSPhienBoLoc::filteredQuery($filters, orderBy: null);
-            DatHocVienTongHop::restrictToSessionIds($query, $validSessionIds);
-            $aggregated = $query
-                ->selectRaw("
-                    MaHocVien,
-                    MAX(HoTenHocVien) as HoTenHocVien,
-                    MaKhoaHoc,
-                    MAX(TenKhoaHoc) as TenKhoaHoc,
-                    LoaiKhoaHoc,
-                    COUNT(*) as SoPhien,
-                    SUM(COALESCE(ThoiGianThucHanhGio, 0)) as TongGioHoc,
-                    SUM(COALESCE(QuangDuongThucHanhKm, 0)) as TongQuangDuongKm,
-                    {$tongXeSoTuDongSql} as TongXeSoTuDongGio
-                ")
-                ->whereNotNull('MaHocVien')
-                ->where('MaHocVien', '!=', '')
-                ->groupBy('MaHocVien', 'MaKhoaHoc', 'LoaiKhoaHoc')
-                ->orderBy('MaHocVien')
-                ->orderBy('MaKhoaHoc')
-                ->get();
-
-            foreach ($aggregated as $row) {
-                $row->TongBanDemGio = $gioBanDemByKey[DatHocVienTongHop::hocVienRowKey($row)] ?? 0.0;
-            }
-
-            $aggregated = DatHocVienTongHop::filterDatChuongTrinh(
-                $aggregated,
-                (string) ($filters['dat_ct'] ?? ''),
-                $dieuKienByHang
-            );
+            $aggregated = DatHocVienTongHop::aggregatedHocVien($filters, $dieuKienByHang);
 
             $page = LengthAwarePaginator::resolveCurrentPage();
             $perPage = 50;
@@ -120,12 +86,41 @@ class TongHopDatHocVienController extends Controller
             'items' => $items,
             'canTongHop' => $canTongHop,
             'filters' => $filters,
+            'exportQuery' => array_filter([
+                'ma_hoc_vien' => $filters['ma_hoc_vien'] ?? '',
+                'ma_khoa_hoc' => $filters['ma_khoa_hoc'] ?? '',
+                'loai_khoa_hoc' => $filters['loai_khoa_hoc'] ?? '',
+                'tu_ngay' => $filters['tu_ngay'] ?? '',
+                'den_ngay' => $filters['den_ngay'] ?? '',
+                'dat_ct' => $filters['dat_ct'] ?? '',
+            ], fn ($v) => $v !== null && $v !== ''),
             'khoaHocOptions' => $khoaHocOptions,
             'loaiKhoaHocOptions' => $loaiKhoaHocOptions,
             'selectedHocVienOption' => $selectedHocVienOption,
             'dieuKienByHang' => $dieuKienByHang,
             'apDungTuNgay' => DatDieuKienDat::AP_DUNG_TU_NGAY,
         ]);
+    }
+
+    public function export(Request $request): StreamedResponse|RedirectResponse
+    {
+        $filters = DatDSPhienBoLoc::parseFilters($request);
+
+        if (($filters['ma_khoa_hoc'] ?? '') === '') {
+            return redirect()
+                ->route('daotao.pdt.dat.tong-hop-hoc-vien')
+                ->with('error', 'Chọn mã khóa học trước khi xuất Excel.');
+        }
+
+        $dieuKienByHang = DatDieuKienDat::query()
+            ->orderBy('ThuTu')
+            ->orderBy('Hang')
+            ->get()
+            ->keyBy('Hang');
+
+        $rows = DatHocVienTongHop::aggregatedHocVien($filters, $dieuKienByHang);
+
+        return DatTongHopHocVienExcelExporter::download($rows, $filters, $dieuKienByHang);
     }
 
     private static function formatHocVienOptionText(object $row): string

@@ -77,6 +77,10 @@
                         <strong class="small mb-2 mb-md-0">Lọc theo thông tin phiên</strong>
                         <div class="d-flex flex-wrap">
                             <button type="submit" class="btn btn-sm btn-navy mr-2 mb-2 mb-md-0">Lọc</button>
+                            @if ($canTongHop)
+                                <a href="{{ route('daotao.pdt.dat.tong-hop-hoc-vien.export', $exportQuery ?? []) }}"
+                                   class="btn btn-sm btn-success mr-2 mb-2 mb-md-0">Xuất Excel</a>
+                            @endif
                             <a href="{{ route('daotao.pdt.dat.tong-hop-hoc-vien') }}"
                                class="btn btn-sm btn-outline-secondary mr-2 mb-2 mb-md-0">
                                 Reset
