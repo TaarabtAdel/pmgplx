@@ -144,6 +144,12 @@
                                 <td><code>MaDK</code> + «-» + hạng (<code>HangDaoTao</code>, bỏ phần sau «.» — vd. <code>B.01</code> → <code>B</code>)</td>
                                 <td><code>SoGiayCNTN</code></td>
                             </tr>
+                            <tr>
+                                <td>Trạng thái xử lý PM</td>
+                                <td>—</td>
+                                <td>Đạt → <code>09</code>; Không đạt → <code>10</code> (theo Kết luận CSDT)</td>
+                                <td><code>TT_XuLy</code></td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>

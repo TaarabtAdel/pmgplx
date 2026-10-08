@@ -29,7 +29,11 @@ class KetQuaDaoTaoUpdater
     private const NGUONG_KQ_KT_MIN = 0.0;
 
     /** @var list<string> */
-    private const NON_NUMERIC_UPDATE_FIELDS = ['KetLuanCSDT', 'NgayRaQDTN', 'SoGiayCNTN', 'TGBatDau', 'TGKetThuc'];
+    private const NON_NUMERIC_UPDATE_FIELDS = ['KetLuanCSDT', 'NgayRaQDTN', 'SoGiayCNTN', 'TGBatDau', 'TGKetThuc', 'TT_XuLy'];
+
+    public const TT_XULY_DAT_TOT_NGHIEP = '09';
+
+    public const TT_XULY_KHONG_DAT_TOT_NGHIEP = '10';
 
     /** @var list<string> */
     public const UPDATE_FIELDS = [
@@ -47,6 +51,7 @@ class KetQuaDaoTaoUpdater
         'NgayRaQDTN',
         'KetLuanCSDT',
         'SoGiayCNTN',
+        'TT_XuLy',
     ];
 
     /** @var array<string, string> */
@@ -65,6 +70,7 @@ class KetQuaDaoTaoUpdater
         'NgayRaQDTN' => 'Ngày HTKH',
         'KetLuanCSDT' => 'Kết luận CSDT',
         'SoGiayCNTN' => 'Số giấy CNTN',
+        'TT_XuLy' => 'TT xử lý (PM)',
     ];
 
     /**
@@ -180,6 +186,7 @@ class KetQuaDaoTaoUpdater
                 'NgayRaQDTN' => $record['ngay_ra_kqtn'] ?? null,
                 'KetLuanCSDT' => $ketLuan,
                 'SoGiayCNTN' => self::soGiayCntnFromHoSo($hoSo),
+                'TT_XuLy' => self::ttXuLyFromKetLuanCsdt($ketLuan),
             ];
 
             $updates[] = [
@@ -259,6 +266,13 @@ class KetQuaDaoTaoUpdater
     }
 
     /** Hậu tố SoGiayCNTN: lấy HangDaoTao trước dấu «.» (vd. B.01 → B). */
+    public static function ttXuLyFromKetLuanCsdt(int $ketLuanCsdt): string
+    {
+        return $ketLuanCsdt === 1
+            ? self::TT_XULY_DAT_TOT_NGHIEP
+            : self::TT_XULY_KHONG_DAT_TOT_NGHIEP;
+    }
+
     public static function hangDaoTaoSuffixForSoGiayCntn(?string $hangDaoTao): string
     {
         $hangDaoTao = trim((string) $hangDaoTao);
