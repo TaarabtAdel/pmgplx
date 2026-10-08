@@ -35,6 +35,14 @@
                 return (string) $value;
             }
         }
+        if (in_array($field, ['TGBatDau', 'TGKetThuc'], true)) {
+            $ymd = \App\Support\DaoTao\KetQuaDaoTaoUpdater::normalizeYmd($value);
+            if ($ymd === null || strlen($ymd) !== 8) {
+                return $ymd ?? '—';
+            }
+
+            return substr($ymd, 6, 2).'/'.substr($ymd, 4, 2).'/'.substr($ymd, 0, 4).' ('.$ymd.')';
+        }
 
         return (string) $value;
     };
@@ -78,6 +86,18 @@
                             </tr>
                         </thead>
                         <tbody class="text-muted">
+                            <tr>
+                                <td>TG bắt đầu (E)</td>
+                                <td>E</td>
+                                <td>File Excel → <code>YYYYMMDD</code></td>
+                                <td><code>TGBatDau</code></td>
+                            </tr>
+                            <tr>
+                                <td>TG kết thúc (F)</td>
+                                <td>F</td>
+                                <td>File Excel → <code>YYYYMMDD</code></td>
+                                <td><code>TGKetThuc</code></td>
+                            </tr>
                             <tr>
                                 <td>Thời gian thực hành hình (G)</td>
                                 <td>G</td>
@@ -187,6 +207,8 @@
                             <th class="text-nowrap">STT (A)</th>
                             <th class="text-nowrap">Mã HV (B)</th>
                             <th class="text-nowrap">Họ tên (C)</th>
+                            <th class="text-nowrap">TG bắt đầu (E)</th>
+                            <th class="text-nowrap">TG kết thúc (F)</th>
                             <th class="text-nowrap">TG hình (G)</th>
                             <th class="text-nowrap">KM hình (H)</th>
                             <th class="text-nowrap">LT (I)</th>
@@ -204,6 +226,8 @@
                                 <td>{{ $row['stt'] ?? '' }}</td>
                                 <td><code>{{ $row['ma_hoc_vien'] ?? '' }}</code></td>
                                 <td>{{ $row['ho_ten'] ?? '' }}</td>
+                                <td>{{ $formatVal('TGBatDau', $row['tg_bat_dau'] ?? null) }}</td>
+                                <td>{{ $formatVal('TGKetThuc', $row['tg_ket_thuc'] ?? null) }}</td>
                                 <td>{{ $formatVal('TGThucHanhHinh', $row['tg_thuc_hanh_hinh'] ?? null) }}</td>
                                 <td>{{ $formatVal('QDThucHanhHinh', $row['qd_thuc_hanh_hinh'] ?? null) }}</td>
                                 <td>{{ $formatVal('DiemKQLyThuyet', $row['diem_kq_ly_thuyet'] ?? null) }}</td>
@@ -215,7 +239,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="12" class="text-center text-muted py-3">Không có dòng file.</td>
+                                <td colspan="14" class="text-center text-muted py-3">Không có dòng file.</td>
                             </tr>
                         @endforelse
                     </tbody>

@@ -29,7 +29,7 @@ class KetQuaDaoTaoUpdater
     private const NGUONG_KQ_KT_MIN = 0.0;
 
     /** @var list<string> */
-    private const NON_NUMERIC_UPDATE_FIELDS = ['KetLuanCSDT', 'NgayRaQDTN', 'SoGiayCNTN'];
+    private const NON_NUMERIC_UPDATE_FIELDS = ['KetLuanCSDT', 'NgayRaQDTN', 'SoGiayCNTN', 'TGBatDau', 'TGKetThuc'];
 
     /** @var list<string> */
     public const UPDATE_FIELDS = [
@@ -42,6 +42,8 @@ class KetQuaDaoTaoUpdater
         'DiemKQMoPhong',
         'DiemKQHinh',
         'DiemKQTienLui',
+        'TGBatDau',
+        'TGKetThuc',
         'NgayRaQDTN',
         'KetLuanCSDT',
         'SoGiayCNTN',
@@ -58,6 +60,8 @@ class KetQuaDaoTaoUpdater
         'DiemKQMoPhong' => 'KQ KT mô phỏng',
         'DiemKQHinh' => 'KQ KT TH hình',
         'DiemKQTienLui' => 'KQ tiến lùi',
+        'TGBatDau' => 'TG bắt đầu',
+        'TGKetThuc' => 'TG kết thúc',
         'NgayRaQDTN' => 'Ngày HTKH',
         'KetLuanCSDT' => 'Kết luận CSDT',
         'SoGiayCNTN' => 'Số giấy CNTN',
@@ -171,6 +175,8 @@ class KetQuaDaoTaoUpdater
                 'DiemKQMoPhong' => $diemMoPhong,
                 'DiemKQHinh' => $diemThHinh,
                 'DiemKQTienLui' => $diemTienLui,
+                'TGBatDau' => self::normalizeYmd($record['tg_bat_dau'] ?? null),
+                'TGKetThuc' => self::normalizeYmd($record['tg_ket_thuc'] ?? null),
                 'NgayRaQDTN' => $record['ngay_ra_kqtn'] ?? null,
                 'KetLuanCSDT' => $ketLuan,
                 'SoGiayCNTN' => self::soGiayCntnFromHoSo($hoSo),
@@ -234,6 +240,24 @@ class KetQuaDaoTaoUpdater
     }
 
     /** Ô Excel / DB rỗng (null, '') → 0 khi tính kết luận và ghi số. */
+    public static function normalizeYmd(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $digits = preg_replace('/\D/', '', (string) $value) ?? '';
+        if (strlen($digits) === 8) {
+            return $digits;
+        }
+
+        try {
+            return \Carbon\Carbon::parse((string) $value)->format('Ymd');
+        } catch (\Throwable) {
+            return trim((string) $value) !== '' ? trim((string) $value) : null;
+        }
+    }
+
     public static function soGiayCntnFromHoSo(NguoiLXHoSo $hoSo): ?string
     {
         $maDk = trim((string) ($hoSo->MaDK ?? ''));
@@ -530,6 +554,12 @@ class KetQuaDaoTaoUpdater
             try {
                 $values['NgayRaQDTN'] = \Carbon\Carbon::parse($values['NgayRaQDTN'])->format('Y-m-d');
             } catch (\Throwable) {
+            }
+        }
+
+        foreach (['TGBatDau', 'TGKetThuc'] as $ymdField) {
+            if (! empty($values[$ymdField])) {
+                $values[$ymdField] = self::normalizeYmd($values[$ymdField]);
             }
         }
 

@@ -18,6 +18,10 @@ class KetQuaDaoTaoExcelParser
 
     public const COL_HO_TEN = 'C';
 
+    public const COL_TG_BAT_DAU = 'E';
+
+    public const COL_TG_KET_THUC = 'F';
+
     public const COL_TG_HINH = 'G';
 
     public const COL_KM_HINH = 'H';
@@ -132,6 +136,8 @@ class KetQuaDaoTaoExcelParser
                 'stt' => $this->cellText($worksheet, self::COL_STT.$row),
                 'ma_hoc_vien' => $maHocVien,
                 'ho_ten' => $this->cellText($worksheet, self::COL_HO_TEN.$row),
+                'tg_bat_dau' => $this->cellDateYmd($worksheet, self::COL_TG_BAT_DAU.$row),
+                'tg_ket_thuc' => $this->cellDateYmd($worksheet, self::COL_TG_KET_THUC.$row),
                 'tg_thuc_hanh_hinh' => $this->cellFloat($worksheet, self::COL_TG_HINH.$row),
                 'qd_thuc_hanh_hinh' => $this->cellFloat($worksheet, self::COL_KM_HINH.$row),
                 'diem_kq_ly_thuyet' => $this->cellFloat($worksheet, self::COL_DIEM_LT.$row),
@@ -172,6 +178,34 @@ class KetQuaDaoTaoExcelParser
         return is_numeric($text) ? (float) $text : null;
     }
 
+    private function cellDateYmd(Worksheet $worksheet, string $coord): ?string
+    {
+        $value = $worksheet->getCell($coord)->getCalculatedValue();
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_numeric($value)) {
+            $floatVal = (float) $value;
+            $intVal = (int) round($floatVal);
+            if ($intVal >= 19000101 && $intVal <= 21001231 && abs($floatVal - $intVal) < 0.0001) {
+                return sprintf('%08d', $intVal);
+            }
+        }
+
+        $iso = $this->cellDate($worksheet, $coord);
+        if ($iso !== null) {
+            return str_replace('-', '', $iso);
+        }
+
+        $digits = preg_replace('/\D/', '', $this->cellText($worksheet, $coord)) ?? '';
+        if (strlen($digits) === 8) {
+            return $digits;
+        }
+
+        return null;
+    }
+
     private function cellDate(Worksheet $worksheet, string $coord): ?string
     {
         $value = $worksheet->getCell($coord)->getCalculatedValue();
@@ -180,8 +214,19 @@ class KetQuaDaoTaoExcelParser
         }
 
         if (is_numeric($value)) {
+            $floatVal = (float) $value;
+            $intVal = (int) round($floatVal);
+            if ($intVal >= 19000101 && $intVal <= 21001231 && abs($floatVal - $intVal) < 0.0001) {
+                return sprintf(
+                    '%04d-%02d-%02d',
+                    (int) substr((string) $intVal, 0, 4),
+                    (int) substr((string) $intVal, 4, 2),
+                    (int) substr((string) $intVal, 6, 2),
+                );
+            }
+
             try {
-                return ExcelDate::excelToDateTimeObject((float) $value)->format('Y-m-d');
+                return ExcelDate::excelToDateTimeObject($floatVal)->format('Y-m-d');
             } catch (\Throwable) {
                 return null;
             }
