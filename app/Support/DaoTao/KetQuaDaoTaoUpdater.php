@@ -29,7 +29,7 @@ class KetQuaDaoTaoUpdater
     private const NGUONG_KQ_KT_MIN = 0.0;
 
     /** @var list<string> */
-    private const NON_NUMERIC_UPDATE_FIELDS = ['KetLuanCSDT', 'NgayRaQDTN'];
+    private const NON_NUMERIC_UPDATE_FIELDS = ['KetLuanCSDT', 'NgayRaQDTN', 'SoGiayCNTN'];
 
     /** @var list<string> */
     public const UPDATE_FIELDS = [
@@ -44,6 +44,7 @@ class KetQuaDaoTaoUpdater
         'DiemKQTienLui',
         'NgayRaQDTN',
         'KetLuanCSDT',
+        'SoGiayCNTN',
     ];
 
     /** @var array<string, string> */
@@ -59,6 +60,7 @@ class KetQuaDaoTaoUpdater
         'DiemKQTienLui' => 'KQ tiến lùi',
         'NgayRaQDTN' => 'Ngày HTKH',
         'KetLuanCSDT' => 'Kết luận CSDT',
+        'SoGiayCNTN' => 'Số giấy CNTN',
     ];
 
     /**
@@ -171,6 +173,7 @@ class KetQuaDaoTaoUpdater
                 'DiemKQTienLui' => $diemTienLui,
                 'NgayRaQDTN' => $record['ngay_ra_kqtn'] ?? null,
                 'KetLuanCSDT' => $ketLuan,
+                'SoGiayCNTN' => self::soGiayCntnFromHoSo($hoSo),
             ];
 
             $updates[] = [
@@ -231,6 +234,18 @@ class KetQuaDaoTaoUpdater
     }
 
     /** Ô Excel / DB rỗng (null, '') → 0 khi tính kết luận và ghi số. */
+    public static function soGiayCntnFromHoSo(NguoiLXHoSo $hoSo): ?string
+    {
+        $maDk = trim((string) ($hoSo->MaDK ?? ''));
+        $hangDaoTao = trim((string) ($hoSo->HangDaoTao ?? ''));
+
+        if ($maDk === '' || $hangDaoTao === '') {
+            return null;
+        }
+
+        return $maDk.'-'.$hangDaoTao;
+    }
+
     public static function asNumber(mixed $value): float
     {
         if ($value === null || $value === '') {

@@ -118,6 +118,12 @@
                                 <td>Tính tự động (xem bảng dưới)</td>
                                 <td><code>KetLuanCSDT</code> (1 Đạt / 0 Không đạt)</td>
                             </tr>
+                            <tr>
+                                <td>Số giấy CNTN</td>
+                                <td>—</td>
+                                <td><code>MaDK</code> + «-» + <code>HangDaoTao</code> trên hồ sơ</td>
+                                <td><code>SoGiayCNTN</code></td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
