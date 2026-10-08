@@ -258,16 +258,32 @@ class KetQuaDaoTaoUpdater
         }
     }
 
+    /** Hậu tố SoGiayCNTN: lấy HangDaoTao trước dấu «.» (vd. B.01 → B). */
+    public static function hangDaoTaoSuffixForSoGiayCntn(?string $hangDaoTao): string
+    {
+        $hangDaoTao = trim((string) $hangDaoTao);
+        if ($hangDaoTao === '') {
+            return '';
+        }
+
+        $dot = strpos($hangDaoTao, '.');
+        if ($dot !== false) {
+            return trim(substr($hangDaoTao, 0, $dot));
+        }
+
+        return $hangDaoTao;
+    }
+
     public static function soGiayCntnFromHoSo(NguoiLXHoSo $hoSo): ?string
     {
         $maDk = trim((string) ($hoSo->MaDK ?? ''));
-        $hangDaoTao = trim((string) ($hoSo->HangDaoTao ?? ''));
+        $hangSuffix = self::hangDaoTaoSuffixForSoGiayCntn($hoSo->HangDaoTao ?? null);
 
-        if ($maDk === '' || $hangDaoTao === '') {
+        if ($maDk === '' || $hangSuffix === '') {
             return null;
         }
 
-        return $maDk.'-'.$hangDaoTao;
+        return $maDk.'-'.$hangSuffix;
     }
 
     public static function asNumber(mixed $value): float

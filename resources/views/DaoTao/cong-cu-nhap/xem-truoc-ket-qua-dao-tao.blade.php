@@ -141,7 +141,7 @@
                             <tr>
                                 <td>Số giấy CNTN</td>
                                 <td>—</td>
-                                <td><code>MaDK</code> + «-» + <code>HangDaoTao</code> trên hồ sơ</td>
+                                <td><code>MaDK</code> + «-» + hạng (<code>HangDaoTao</code>, bỏ phần sau «.» — vd. <code>B.01</code> → <code>B</code>)</td>
                                 <td><code>SoGiayCNTN</code></td>
                             </tr>
                         </tbody>
