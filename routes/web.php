@@ -29,6 +29,8 @@ use App\Http\Controllers\DaoTao\NhapXmlBienBanTongHopController;
 use App\Http\Controllers\PMGPLX\DanhSachGiaoVienController;
 use App\Http\Controllers\PMGPLX\DanhSachHocVienController;
 use App\Http\Controllers\PMGPLX\DanhSachLichGiaoVienController;
+use App\Http\Controllers\PMGPLX\DoTrongLichGiaoVienController;
+use App\Http\Controllers\PMGPLX\DoTrungLichGiaoVienController;
 use App\Http\Controllers\PMGPLX\DanhSachLichXeTapController;
 use App\Http\Controllers\PMGPLX\DanhSachXeController;
 use App\Http\Controllers\PMGPLX\NhapHocVienTuFileController;
@@ -79,6 +81,10 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function () {
 
     Route::get('/lich/giao-vien', [DanhSachLichGiaoVienController::class, 'index'])
         ->name('lich.gv.index');
+    Route::get('/lich/giao-vien/do-trung', [DoTrungLichGiaoVienController::class, 'show'])
+        ->name('lich.gv.do-trung');
+    Route::get('/lich/giao-vien/do-trong', [DoTrongLichGiaoVienController::class, 'show'])
+        ->name('lich.gv.do-trong');
 
     Route::get('/lich/xe-tap', [DanhSachLichXeTapController::class, 'index'])
         ->name('lich.xe.index');

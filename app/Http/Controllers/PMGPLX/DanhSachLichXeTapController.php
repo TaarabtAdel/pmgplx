@@ -8,6 +8,7 @@ use App\Models\PMGPLX\KhoaHoc;
 use App\Models\PMGPLX\KhoaHocXeTap;
 use App\Models\PMGPLX\XeTap;
 use App\Support\DaoTao\DatPhienLichXeThongKe;
+use App\Support\PMGPLX\LichXeLoaiGhiChu;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
@@ -65,10 +66,7 @@ class DanhSachLichXeTapController extends Controller
             $query->where('x.TrangThai', (int) $request->input('trang_thai'));
         }
 
-        $loaiGhiChu = trim((string) $request->input('loai', ''));
-        if (! in_array($loaiGhiChu, ['', 'cao_toc', 'ban_dem'], true)) {
-            $loaiGhiChu = '';
-        }
+        $loaiGhiChu = LichXeLoaiGhiChu::normalizeFilter($request->input('loai'));
 
         $this->applyLoaiGhiChuFilter($query, $loaiGhiChu);
 
@@ -146,20 +144,6 @@ class DanhSachLichXeTapController extends Controller
 
     private function applyLoaiGhiChuFilter($query, string $loai): void
     {
-        $needles = match ($loai) {
-            'cao_toc' => ['cao tốc', 'cao toc'],
-            'ban_dem' => ['ban đêm', 'ban dem'],
-            default => [],
-        };
-
-        if ($needles === []) {
-            return;
-        }
-
-        $query->where(function ($sub) use ($needles): void {
-            foreach ($needles as $needle) {
-                $sub->orWhere('x.GhiChu', 'like', '%'.$needle.'%');
-            }
-        });
+        LichXeLoaiGhiChu::applyGhiChuLoaiFilter($query, 'x.GhiChu', $loai);
     }
 }

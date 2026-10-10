@@ -6,6 +6,7 @@ use App\Models\DaoTao\DatPhanCongGiaoVienThay;
 use App\Models\PMGPLX\GiaoVien;
 use App\Models\PMGPLX\KhoaHocGiaoVien;
 use App\Models\PMGPLX\KhoaHocXeTap;
+use App\Support\PMGPLX\GiaoVienLichCrossKhoaChecker;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -63,6 +64,7 @@ class DatPhanCongGiaoVienThayLichApplier
     public function apply(string $maKhoaHoc): array
     {
         $preview = $this->preview($maKhoaHoc);
+        $this->assertPlannedChangesHaveNoCrossKhoaConflict($maKhoaHoc, $preview['gv_lich'], $preview['xe_lich']);
         $now = Carbon::now();
         $gvUpdated = 0;
         $xeUpdated = 0;
@@ -114,6 +116,7 @@ class DatPhanCongGiaoVienThayLichApplier
 
         $tenByMa = $this->loadGiaoVienNames([$sub]);
         $planned = $this->planChanges($maKh, [$sub], $tenByMa);
+        $this->assertPlannedChangesHaveNoCrossKhoaConflict($maKh, $planned['gv'], $planned['xe']);
         $now = Carbon::now();
         $gvUpdated = 0;
         $xeUpdated = 0;
@@ -434,6 +437,36 @@ class DatPhanCongGiaoVienThayLichApplier
             'gv' => array_values($gvChanges),
             'xe' => array_values($xeChanges),
         ];
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $gvPlanned
+     * @param  list<array<string, mixed>>  $xePlanned
+     */
+    private function assertPlannedChangesHaveNoCrossKhoaConflict(string $maKh, array $gvPlanned, array $xePlanned): void
+    {
+        $maKh = trim($maKh);
+        if ($maKh === '') {
+            return;
+        }
+
+        foreach (array_merge($gvPlanned, $xePlanned) as $row) {
+            $maThay = DatPhanCongHocVienSaver::normalizeMaGiaoVien((string) ($row['ma_gv_moi'] ?? ''));
+            if ($maThay === '') {
+                continue;
+            }
+            $bd = (string) ($row['ngay_bd'] ?? '');
+            $kt = (string) ($row['ngay_kt'] ?? '');
+            if ($bd === '' || $kt === '') {
+                continue;
+            }
+            $hit = GiaoVienLichCrossKhoaChecker::findConflict($maThay, $bd, $kt, $maKh);
+            if ($hit !== null) {
+                throw ValidationException::withMessages([
+                    'lich' => GiaoVienLichCrossKhoaChecker::formatConflictMessage($maThay, $maKh, $bd, $kt, $hit),
+                ]);
+            }
+        }
     }
 
     private function maGvMatches(string $a, string $b): bool

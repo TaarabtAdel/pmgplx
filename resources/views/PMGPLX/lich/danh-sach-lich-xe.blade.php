@@ -75,8 +75,11 @@
                         <label for="filter_loai">Loại</label>
                         <select name="loai" id="filter_loai" class="form-control form-control-sm">
                             <option value="">—Tất cả—</option>
-                            <option value="cao_toc" @selected(($filters['loai'] ?? '') === 'cao_toc')>Cao Tốc</option>
-                            <option value="ban_dem" @selected(($filters['loai'] ?? '') === 'ban_dem')>Ban Đêm</option>
+                            @foreach (\App\Support\PMGPLX\LichXeLoaiGhiChu::allowedFilters() as $loaiKey)
+                                <option value="{{ $loaiKey }}" @selected(($filters['loai'] ?? '') === $loaiKey)>
+                                    {{ \App\Support\PMGPLX\LichXeLoaiGhiChu::filterLabel($loaiKey) }}
+                                </option>
+                            @endforeach
                         </select>
                     </div>
                     <div class="form-group col-md-1">

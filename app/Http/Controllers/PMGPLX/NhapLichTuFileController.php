@@ -14,6 +14,7 @@ use App\Support\PMGPLX\LichExcelBienSo;
 use App\Support\PMGPLX\LichExcelDiaDiem;
 use App\Support\PMGPLX\LichExcelNoiDungSkip;
 use App\Support\PMGPLX\LichExcelTimeParser;
+use App\Support\PMGPLX\GiaoVienLichCrossKhoaChecker;
 use App\Support\PMGPLX\LichGvMonHoc;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -175,15 +176,21 @@ class NhapLichTuFileController extends Controller
                 continue;
             }
 
-            $hasConflict = $this->gvConflict($row['MaGV'], $row['NgayBD'], $row['NgayKT']);
-            if ($hasConflict && $updateMode) {
+            $maKh = trim((string) ($row['MaKH'] ?? ''));
+            $crossKhoa = $this->gvCrossKhoaConflict($row['MaGV'], $maKh, $row['NgayBD'], $row['NgayKT']);
+            $sameKhoa = $this->gvSameKhoaConflict($row['MaGV'], $maKh, $row['NgayBD'], $row['NgayKT']);
+            if ($crossKhoa) {
+                $row['conflict'] = true;
+                $row['ghi_chu'] = 'Trùng lịch GV khóa khác';
+                $conflictCount++;
+            } elseif ($updateMode && $sameKhoa) {
                 $row['conflict'] = false;
                 $row['will_update'] = true;
                 $row['ghi_chu'] = 'Sẽ cập nhật';
                 $updateCount++;
-            } elseif ($hasConflict) {
+            } elseif ($sameKhoa) {
                 $row['conflict'] = true;
-                $row['ghi_chu'] = 'Đã thêm vào lịch';
+                $row['ghi_chu'] = 'Đã thêm vào lịch (cùng khóa)';
                 $conflictCount++;
             } else {
                 $row['conflict'] = false;
@@ -444,6 +451,29 @@ class NhapLichTuFileController extends Controller
                 ->with('error', 'Không có buổi nào đủ điều kiện lưu.');
         }
 
+        foreach ($payload['lich_giao_vien_bo_qua'] ?? [] as $skipRow) {
+            if (str_contains((string) ($skipRow['_skip_reason'] ?? ''), 'khóa khác')) {
+                return redirect()
+                    ->route('pmgplx.lich.nhap-file.preview-db')
+                    ->with(
+                        'error',
+                        'Không lưu được: file có buổi trùng lịch giáo viên giữa các khóa. Sửa Excel hoặc lịch PMGPLX trước khi xác nhận.'
+                    );
+            }
+        }
+
+        $crossKhoaErrors = GiaoVienLichCrossKhoaChecker::validateImportGvRowsForCrossKhoa($gvRows);
+        if ($crossKhoaErrors !== []) {
+            $detail = implode("\n", array_slice($crossKhoaErrors, 0, 8));
+            if (count($crossKhoaErrors) > 8) {
+                $detail .= "\n… và ".(count($crossKhoaErrors) - 8).' lỗi khác.';
+            }
+
+            return redirect()
+                ->route('pmgplx.lich.nhap-file.preview-db')
+                ->with('error', "Không lưu được: giáo viên trùng khung giờ giữa các khóa.\n".$detail);
+        }
+
         $savedGv = 0;
         $updatedGv = 0;
         $savedXe = 0;
@@ -485,7 +515,12 @@ class NhapLichTuFileController extends Controller
                 if (($row['_action'] ?? '') === 'update') {
                     $existing = ! empty($row['MaLichLV'])
                         ? KhoaHocGiaoVien::query()->find($row['MaLichLV'])
-                        : $this->findGvLichForUpdate($row['MaGV'], $row['NgayBD'], $row['NgayKT']);
+                        : $this->findGvLichForUpdate(
+                            $row['MaGV'],
+                            (string) ($row['MaKH'] ?? ''),
+                            $row['NgayBD'],
+                            $row['NgayKT']
+                        );
 
                     if ($existing) {
                         $existing->update([
@@ -511,7 +546,23 @@ class NhapLichTuFileController extends Controller
                     continue;
                 }
 
-                if ($this->gvConflict($row['MaGV'], $row['NgayBD'], $row['NgayKT'])) {
+                if ($this->gvCrossKhoaConflict(
+                    $row['MaGV'],
+                    (string) ($row['MaKH'] ?? ''),
+                    $row['NgayBD'],
+                    $row['NgayKT']
+                )) {
+                    throw ValidationException::withMessages([
+                        'lich_gv' => 'Trùng lịch giáo viên giữa các khóa (kiểm tra lại preview).',
+                    ]);
+                }
+
+                if ($this->gvSameKhoaConflict(
+                    $row['MaGV'],
+                    (string) ($row['MaKH'] ?? ''),
+                    $row['NgayBD'],
+                    $row['NgayKT']
+                )) {
                     $skippedGv++;
 
                     continue;
@@ -809,7 +860,9 @@ class NhapLichTuFileController extends Controller
         $lichXeUpdate = [];
 
         foreach ($gvRows as $row) {
-            $conflict = $this->gvConflict($row['MaGV'], $row['NgayBD'], $row['NgayKT']);
+            $maKh = trim((string) ($row['MaKH'] ?? ''));
+            $crossKhoa = $this->gvCrossKhoaConflict($row['MaGV'], $maKh, $row['NgayBD'], $row['NgayKT']);
+            $sameKhoa = $this->gvSameKhoaConflict($row['MaGV'], $maKh, $row['NgayBD'], $row['NgayKT']);
             $dbMon = LichGvMonHoc::dbFields($row['MaMonHoc'] ?? $row['TenMonHoc'] ?? null);
             $record = [
                 'MaKH' => $row['MaKH'],
@@ -827,8 +880,11 @@ class NhapLichTuFileController extends Controller
                 'TenMonHoc' => $dbMon['TenMonHoc'],
             ];
 
-            if ($conflict && $updateModeGv) {
-                $existing = $this->findGvLichForUpdate($row['MaGV'], $row['NgayBD'], $row['NgayKT']);
+            if ($crossKhoa) {
+                $record['_skip_reason'] = 'Trùng lịch GV khóa khác (không lưu được)';
+                $lichGvSkip[] = $record;
+            } elseif ($updateModeGv && $sameKhoa) {
+                $existing = $this->findGvLichForUpdate($row['MaGV'], $maKh, $row['NgayBD'], $row['NgayKT']);
                 if ($existing) {
                     $record['MaLichLV'] = $existing->MaLichLV;
                     $record['_action'] = 'update';
@@ -840,8 +896,8 @@ class NhapLichTuFileController extends Controller
 
                 $record['_skip_reason'] = 'Trùng lịch nhưng không tìm thấy bản ghi để cập nhật';
                 $lichGvSkip[] = $record;
-            } elseif ($conflict) {
-                $record['_skip_reason'] = 'Đã thêm vào lịch (trùng GV)';
+            } elseif ($sameKhoa) {
+                $record['_skip_reason'] = 'Đã thêm vào lịch (trùng GV cùng khóa)';
                 $lichGvSkip[] = $record;
             } elseif (LichExcelNoiDungSkip::isGvSkip(
                 (string) ($row['noi_dung'] ?? ''),
@@ -931,6 +987,10 @@ class NhapLichTuFileController extends Controller
                 'off_day_summary' => $offDeletes['summary'],
                 'update_mode' => $updateModeGv,
                 'update_mode_xe' => $updateModeXe,
+                'gv_cross_khoa_skip' => count(array_filter(
+                    $lichGvSkip,
+                    fn (array $r): bool => str_contains((string) ($r['_skip_reason'] ?? ''), 'khóa khác')
+                )),
             ],
         ];
     }
@@ -1544,17 +1604,29 @@ class NhapLichTuFileController extends Controller
         ]);
     }
 
-    private function gvConflict(string $maGv, string $ngayBD, string $ngayKT): bool
-    {
-        return $this->findGvLichForUpdate($maGv, $ngayBD, $ngayKT) !== null;
+    private function gvCrossKhoaConflict(
+        string $maGv,
+        string $maKh,
+        string $ngayBD,
+        string $ngayKT,
+        ?int $ignoreMaLichLv = null
+    ): bool {
+        return GiaoVienLichCrossKhoaChecker::findConflict($maGv, $ngayBD, $ngayKT, $maKh, $ignoreMaLichLv) !== null;
     }
 
-    private function findGvLichForUpdate(string $maGv, string $ngayBD, string $ngayKT): ?KhoaHocGiaoVien
+    private function gvSameKhoaConflict(string $maGv, string $maKh, string $ngayBD, string $ngayKT): bool
+    {
+        return $this->findGvLichForUpdate($maGv, $maKh, $ngayBD, $ngayKT) !== null;
+    }
+
+    private function findGvLichForUpdate(string $maGv, string $maKh, string $ngayBD, string $ngayKT): ?KhoaHocGiaoVien
     {
         $bd = Carbon::parse($ngayBD);
         $kt = Carbon::parse($ngayKT);
+        $maKh = trim($maKh);
 
         return KhoaHocGiaoVien::query()
+            ->where('MaKH', $maKh)
             ->where('MaGV', $maGv)
             ->where('IsKhoaHocGiaoVien', 0)
             ->where('NgayBD', '<', $kt)

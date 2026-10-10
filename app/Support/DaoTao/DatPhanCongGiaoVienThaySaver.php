@@ -4,6 +4,7 @@ namespace App\Support\DaoTao;
 
 use App\Models\DaoTao\DatPhanCongGiaoVienThay;
 use App\Models\DaoTao\DatPhanCongHocVien;
+use App\Support\PMGPLX\GiaoVienLichCrossKhoaChecker;
 use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -64,6 +65,14 @@ class DatPhanCongGiaoVienThaySaver
         );
 
         self::assertNoOverlap($maKhoaHoc, $maGiaoVienGoc, $tuNgayDate->toDateString(), $denNgayDate?->toDateString());
+
+        GiaoVienLichCrossKhoaChecker::assertSubstituteThayHasNoCrossKhoaConflict(
+            $maKhoaHoc,
+            $maGiaoVienGoc,
+            $maGiaoVienThay,
+            $tuNgayDate,
+            $denNgayDate
+        );
 
         $item = DatPhanCongGiaoVienThay::query()->create([
             'MaKhoaHoc' => $maKhoaHoc,

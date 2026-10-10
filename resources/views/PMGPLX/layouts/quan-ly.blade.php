@@ -370,9 +370,17 @@
                             Lịch
                         </a>
                         <div class="dropdown-menu">
-                            <a class="dropdown-item {{ request()->routeIs('pmgplx.lich.gv.*') ? 'active' : '' }}"
+                            <a class="dropdown-item {{ request()->routeIs('pmgplx.lich.gv.index') ? 'active' : '' }}"
                                href="{{ route('pmgplx.lich.gv.index') }}">
                                 Lịch làm việc giáo viên
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('pmgplx.lich.gv.do-trung') ? 'active' : '' }}"
+                               href="{{ route('pmgplx.lich.gv.do-trung') }}">
+                                Dò trùng lịch giáo viên
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('pmgplx.lich.gv.do-trong') ? 'active' : '' }}"
+                               href="{{ route('pmgplx.lich.gv.do-trong') }}">
+                                Dò lịch trống giáo viên
                             </a>
                             <a class="dropdown-item {{ request()->routeIs('pmgplx.lich.xe.*') ? 'active' : '' }}"
                                href="{{ route('pmgplx.lich.xe.index') }}">

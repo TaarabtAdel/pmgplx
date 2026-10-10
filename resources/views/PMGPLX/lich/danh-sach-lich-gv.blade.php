@@ -61,6 +61,21 @@
             <div class="d-flex flex-wrap align-items-center mb-3">
                 <div class="btn-group btn-group-sm mr-2 mb-2" role="group">
                     <a href="{{ route('pmgplx.lich.ly-thuyet.create') }}" class="btn btn-success">＋ Thêm mới</a>
+                    <a href="{{ route('pmgplx.lich.gv.do-trung', array_filter([
+                        'ma_kh' => $filters['ma_kh'] ?: null,
+                        'ma_gv' => $filters['ma_gv'] ?: null,
+                        'tu_ngay' => $filters['tu_ngay'] ?: null,
+                        'den_ngay' => $filters['den_ngay'] ?: null,
+                        'mode' => $filters['ma_gv'] ? 'by_gv' : 'by_range',
+                    ])) }}" class="btn btn-outline-primary">⌕ Dò trùng</a>
+                    <a href="{{ route('pmgplx.lich.gv.do-trong', array_filter([
+                        'run' => $filters['ma_kh'] && $filters['ma_gv'] ? '1' : null,
+                        'pair_ma_kh' => $filters['ma_kh'] ? [$filters['ma_kh']] : null,
+                        'pair_ma_gv_sang' => $filters['ma_gv'] ? [$filters['ma_gv']] : null,
+                        'pair_ma_gv_chieu' => $filters['ma_gv'] ? [$filters['ma_gv']] : null,
+                        'tu_ngay' => $filters['tu_ngay'] ?: null,
+                        'den_ngay' => $filters['den_ngay'] ?: null,
+                    ])) }}" class="btn btn-outline-success">◻ Dò lịch trống</a>
                     <button type="button" class="btn btn-warning" disabled>✎ Xem - Sửa</button>
                     <button type="button" class="btn btn-danger" disabled>✕ Xóa</button>
                 </div>
