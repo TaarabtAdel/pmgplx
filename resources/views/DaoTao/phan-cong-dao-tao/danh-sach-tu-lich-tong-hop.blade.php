@@ -16,7 +16,7 @@
             <p class="small text-muted mb-3">
                 Dữ liệu từ lịch xe tập (<code>KhoaHoc_XeTap</code>, cùng
                 <a href="{{ route('pmgplx.lich.xe.index') }}">/pmgplx/lich/xe-tap</a>).
-                Một dòng = khoá + biển số xe; cột Giáo viên A–B (nếu >2 GV, ghi thêm ở cột B).
+                Một dòng = khoá + biển số xe; Giáo viên A–B = hai GV cùng xe (lọc GV → A là GV lọc, B là GV còn lại trên xe đó).
                 Tạm thời: <strong>tên khoá</strong> có <strong>B01</strong> → khoá tự động (giữ xe B11); khoá khác ẩn xe tự động (danh mục xe).
             </p>
 

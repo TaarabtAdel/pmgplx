@@ -169,16 +169,46 @@ class PhanCongTuLichPmgplxQuery
     public function aggregateByKhoaXe(array $filters): array
     {
         $tenKhByMa = self::tenKhByMaKhCollection();
-        $rows = $this->rowsFromLichXeTap($filters, $tenKhByMa, applyXeTuDongFilter: true);
+        $filterMaGv = trim((string) ($filters['ma_gv'] ?? ''));
+        $anchorNorm = $filterMaGv !== ''
+            ? DatPhanCongHocVienSaver::normalizeMaGiaoVien($filterMaGv)
+            : '';
 
-        return $this->buildKhoaXeAggregatesFromDetailRows($rows);
+        if ($filterMaGv !== '') {
+            $rowsForAnchor = $this->rowsFromLichXeTap($filters, $tenKhByMa, applyXeTuDongFilter: true);
+            $khoaXeKeys = [];
+            foreach ($rowsForAnchor as $row) {
+                $maKh = trim((string) ($row['ma_kh'] ?? ''));
+                $bien = trim((string) ($row['bien_so'] ?? ''));
+                if ($maKh === '' || $bien === '') {
+                    continue;
+                }
+                $khoaXeKeys[$maKh."\0".$bien] = true;
+            }
+
+            $filtersAllGvOnXe = $filters;
+            unset($filtersAllGvOnXe['ma_gv']);
+            $allRows = $this->rowsFromLichXeTap($filtersAllGvOnXe, $tenKhByMa, applyXeTuDongFilter: true);
+            $rows = array_values(array_filter(
+                $allRows,
+                static function (array $row) use ($khoaXeKeys): bool {
+                    $key = trim((string) ($row['ma_kh'] ?? ''))."\0".trim((string) ($row['bien_so'] ?? ''));
+
+                    return $key !== "\0" && isset($khoaXeKeys[$key]);
+                }
+            ));
+        } else {
+            $rows = $this->rowsFromLichXeTap($filters, $tenKhByMa, applyXeTuDongFilter: true);
+        }
+
+        return $this->buildKhoaXeAggregatesFromDetailRows($rows, $anchorNorm !== '' ? $anchorNorm : null);
     }
 
     /**
      * @param  list<array<string, mixed>>  $rows
      * @return list<array<string, mixed>>
      */
-    private function buildKhoaXeAggregatesFromDetailRows(array $rows): array
+    private function buildKhoaXeAggregatesFromDetailRows(array $rows, ?string $anchorMaGvNorm = null): array
     {
         /** @var array<string, array<string, mixed>> $groups */
         $groups = [];
@@ -233,15 +263,7 @@ class PhanCongTuLichPmgplxQuery
 
         $result = [];
         foreach ($groups as $group) {
-            $gvs = array_values($group['giao_viens']);
-            usort($gvs, function (array $a, array $b): int {
-                $cmp = strcasecmp($a['ho_ten'], $b['ho_ten']);
-                if ($cmp !== 0) {
-                    return $cmp;
-                }
-
-                return strcmp($a['ma_gv'], $b['ma_gv']);
-            });
+            $gvs = self::orderGiaoViensAbForCapXe(array_values($group['giao_viens']), $anchorMaGvNorm);
 
             $result[] = [
                 'ma_kh' => (string) $group['ma_kh'],
@@ -270,6 +292,51 @@ class PhanCongTuLichPmgplxQuery
         });
 
         return $result;
+    }
+
+    /**
+     * Cột A = GV neo (khi lọc ma_gv); cột B = GV còn lại cùng xe; không lọc → sắp theo tên.
+     *
+     * @param  list<array{ma_gv: string, ho_ten: string}>  $gvs
+     * @return list<array{ma_gv: string, ho_ten: string}>
+     */
+    private static function orderGiaoViensAbForCapXe(array $gvs, ?string $anchorMaGvNorm): array
+    {
+        $sortByName = static function (array $a, array $b): int {
+            $cmp = strcasecmp($a['ho_ten'], $b['ho_ten']);
+            if ($cmp !== 0) {
+                return $cmp;
+            }
+
+            return strcmp($a['ma_gv'], $b['ma_gv']);
+        };
+
+        if ($anchorMaGvNorm === null || $anchorMaGvNorm === '') {
+            usort($gvs, $sortByName);
+
+            return $gvs;
+        }
+
+        $anchor = null;
+        $others = [];
+        foreach ($gvs as $gv) {
+            $norm = DatPhanCongHocVienSaver::normalizeMaGiaoVien((string) ($gv['ma_gv'] ?? ''));
+            if ($norm === $anchorMaGvNorm) {
+                $anchor = $gv;
+            } else {
+                $others[] = $gv;
+            }
+        }
+
+        usort($others, $sortByName);
+
+        if ($anchor !== null) {
+            return array_merge([$anchor], $others);
+        }
+
+        usort($gvs, $sortByName);
+
+        return $gvs;
     }
 
     public static function giaoVienColumnLetter(int $index): string
