@@ -50,6 +50,11 @@ class DatPhanCongHocVienSaver
         return $value;
     }
 
+    public static function rowKeyForPhanCong(string $maKhoaHoc, string $maHocVien): string
+    {
+        return strtoupper(trim($maKhoaHoc)).'|'.self::normalizeMaHocVien($maHocVien);
+    }
+
     public static function normalizeMaGiaoVien(?string $value): string
     {
         $value = trim((string) $value);

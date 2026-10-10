@@ -30,6 +30,13 @@
             </div>
         </div>
         <div class="card-body">
+            @if (session('success'))
+                <div class="alert alert-success py-2">{{ session('success') }}</div>
+            @endif
+            @if (session('error'))
+                <div class="alert alert-danger py-2">{!! nl2br(e(session('error'))) !!}</div>
+            @endif
+
             <form method="GET" action="{{ route('daotao.pdt.dat.phan-cong-hoc-vien') }}" class="mb-3">
                 <div class="border rounded p-3 bg-white dat-pc-filter">
                     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">

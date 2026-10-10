@@ -66,6 +66,8 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function () {
         ->name('dm.hoc-vien.dong-bo.khoi-phuc');
     Route::post('/danh-muc/hoc-vien/dong-bo-loc', [DanhSachHocVienController::class, 'dongBo'])
         ->name('dm.hoc-vien.dong-bo');
+    Route::post('/danh-muc/hoc-vien/them-phan-cong', [DanhSachHocVienController::class, 'themPhanCong'])
+        ->name('dm.hoc-vien.them-phan-cong');
 
     Route::get('/danh-muc/hoc-vien/nhap-tu-file', [NhapHocVienTuFileController::class, 'create'])
         ->name('dm.hoc-vien.nhap-file.create');
