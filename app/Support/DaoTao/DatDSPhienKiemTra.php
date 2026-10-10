@@ -161,7 +161,19 @@ class DatDSPhienKiemTra
             ], static fn (string $value): bool => $value !== ''));
 
             if ($xeParts !== []) {
-                return 'Xe đúng: '.implode(' / ', $xeParts);
+                $label = 'Xe đúng: '.implode(' / ', $xeParts);
+                if (! empty($expectedPhanCong['dang_doi_xe'])) {
+                    $tuNgay = trim((string) ($expectedPhanCong['tu_ngay_doi_xe'] ?? ''));
+                    if ($tuNgay !== '') {
+                        try {
+                            $tuNgay = Carbon::parse($tuNgay)->format('d/m/Y');
+                        } catch (\Throwable) {
+                        }
+                    }
+                    $label .= $tuNgay !== '' ? ' (đổi xe từ '.$tuNgay.')' : ' (đổi xe)';
+                }
+
+                return $label;
             }
         }
 
@@ -377,7 +389,8 @@ class DatDSPhienKiemTra
                 continue;
             }
 
-            $substitutesByKey = DatPhanCongGiaoVienThayResolver::groupedForCourses([$maKhoaHoc]);
+            $substitutesGvByKey = DatPhanCongGiaoVienThayResolver::groupedForCourses([$maKhoaHoc]);
+            $substitutesXeByKey = DatPhanCongXeThayResolver::groupedForCourses([$maKhoaHoc]);
 
             foreach ($group as $session) {
                 $maHocVien = trim((string) ($session->MaHocVien ?? ''));
@@ -393,32 +406,49 @@ class DatDSPhienKiemTra
                 $id = (int) $session->Id;
                 $violations[$id] ??= [];
 
-                $substitutes = DatPhanCongGiaoVienThayResolver::substitutesForAssignment($assignment, $substitutesByKey);
+                $sessionDate = self::sessionDateString($session);
+
+                $substitutesGv = DatPhanCongGiaoVienThayResolver::substitutesForAssignment($assignment, $substitutesGvByKey);
                 $expectedGv = DatPhanCongGiaoVienThayResolver::resolveForDate(
                     $assignment,
-                    self::sessionDateString($session),
-                    $substitutes
+                    $sessionDate,
+                    $substitutesGv
                 );
                 $expectedGvCode = $expectedGv['ma_giao_vien'];
                 $sessionGv = self::normalizeMaGv((string) ($session->MaGiaoVien ?? ''));
+
+                $substitutesXe = DatPhanCongXeThayResolver::substitutesForAssignment($assignment, $substitutesXeByKey);
+                $expectedXe = DatPhanCongXeThayResolver::resolveForDate(
+                    $assignment,
+                    $sessionDate,
+                    $substitutesXe
+                );
 
                 if ($expectedGvCode !== '' && $sessionGv !== $expectedGvCode) {
                     if (! in_array(self::LOI_SAI_GIAO_VIEN, $violations[$id], true)) {
                         $violations[$id][] = self::LOI_SAI_GIAO_VIEN;
                     }
                     if ($expectedById !== null) {
-                        $expectedById[$id] ??= self::expectedPhanCongFromAssignment($assignment, $expectedGv);
+                        $expectedById[$id] ??= self::expectedPhanCongFromAssignment($assignment, $expectedGv, $expectedXe);
                     }
                 }
 
                 $sessionXe = LichExcelBienSo::normalize((string) ($session->BienSoXe ?? ''));
-                $allowedXe = self::allowedAssignedXeNormalized($assignment);
+                $allowedXe = array_map(
+                    static fn (string $plate): string => LichExcelBienSo::normalize($plate),
+                    DatPhanCongXeThayResolver::allowedPlatesForAssignmentOnDate(
+                        $assignment,
+                        $sessionDate,
+                        $substitutesXeByKey
+                    )
+                );
+                $allowedXe = array_values(array_unique(array_filter($allowedXe, static fn (string $v): bool => $v !== '')));
                 if ($allowedXe !== [] && ! in_array($sessionXe, $allowedXe, true)) {
                     if (! in_array(self::LOI_SAI_XE, $violations[$id], true)) {
                         $violations[$id][] = self::LOI_SAI_XE;
                     }
                     if ($expectedById !== null) {
-                        $expectedById[$id] ??= self::expectedPhanCongFromAssignment($assignment);
+                        $expectedById[$id] ??= self::expectedPhanCongFromAssignment($assignment, $expectedGv, $expectedXe);
                     }
                 }
             }
@@ -431,29 +461,43 @@ class DatDSPhienKiemTra
      *     tu_ngay: string|null,
      *     dang_day_thay: bool
      * }|null  $expectedGv
+     * @param  array{
+     *     bien_so_xe: string,
+     *     tu_ngay: string|null,
+     *     dang_doi_xe: bool
+     * }|null  $expectedXe
      * @return array{
      *     ma_giao_vien: string,
      *     bien_so_xe: string,
      *     bien_so_xe_tu_dong: string,
      *     ma_giao_vien_goc?: string,
      *     dang_day_thay?: bool,
-     *     tu_ngay_day_thay?: string|null
+     *     tu_ngay_day_thay?: string|null,
+     *     bien_so_xe_goc?: string,
+     *     dang_doi_xe?: bool,
+     *     tu_ngay_doi_xe?: string|null
      * }
      */
     private static function expectedPhanCongFromAssignment(
         DatPhanCongHocVien $assignment,
-        ?array $expectedGv = null
+        ?array $expectedGv = null,
+        ?array $expectedXe = null
     ): array {
         $primaryGv = trim((string) $assignment->MaGiaoVien);
         $effectiveGv = $expectedGv['ma_giao_vien'] ?? DatPhanCongHocVienSaver::normalizeMaGiaoVien($primaryGv);
+        $primaryXe = trim((string) $assignment->BienSoXe);
+        $effectiveXe = $expectedXe['bien_so_xe'] ?? DatPhanCongHocVienSaver::normalizeBienSo($primaryXe);
 
         return [
             'ma_giao_vien' => $effectiveGv,
-            'bien_so_xe' => trim((string) $assignment->BienSoXe),
+            'bien_so_xe' => $effectiveXe,
             'bien_so_xe_tu_dong' => trim((string) ($assignment->BienSoXeTuDong ?? '')),
             'ma_giao_vien_goc' => $primaryGv,
             'dang_day_thay' => (bool) ($expectedGv['dang_day_thay'] ?? false),
             'tu_ngay_day_thay' => $expectedGv['tu_ngay'] ?? null,
+            'bien_so_xe_goc' => $primaryXe,
+            'dang_doi_xe' => (bool) ($expectedXe['dang_doi_xe'] ?? false),
+            'tu_ngay_doi_xe' => $expectedXe['tu_ngay'] ?? null,
         ];
     }
 

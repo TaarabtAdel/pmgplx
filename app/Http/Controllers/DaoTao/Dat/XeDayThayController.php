@@ -4,19 +4,20 @@ namespace App\Http\Controllers\DaoTao\Dat;
 
 use App\Http\Controllers\Controller;
 use App\Models\DaoTao\DatPhanCongHocVien;
+use App\Models\DaoTao\DatPhanCongXeThay;
 use App\Models\PMGPLX\GiaoVien;
+use App\Models\PMGPLX\XeTap;
 use App\Support\DaoTao\DatGiaoVienKhoaTeachingSpan;
-use App\Support\DaoTao\DatPhanCongGiaoVienThayResolver;
-use App\Support\DaoTao\DatPhanCongGiaoVienThaySaver;
-use App\Support\DaoTao\DatPhanCongGiaoVienThayLichApplier;
 use App\Support\DaoTao\DatPhanCongHocVienBoLoc;
-use App\Models\DaoTao\DatPhanCongGiaoVienThay;
+use App\Support\DaoTao\DatPhanCongXeThayLichApplier;
+use App\Support\DaoTao\DatPhanCongXeThayResolver;
+use App\Support\DaoTao\DatPhanCongXeThaySaver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Throwable;
 
-class GiaoVienDayThayController extends Controller
+class XeDayThayController extends Controller
 {
     public function index(Request $request): View
     {
@@ -24,38 +25,34 @@ class GiaoVienDayThayController extends Controller
         $khoaHocOptions = DatPhanCongHocVienBoLoc::khoaHocOptions();
 
         $substitutesByKey = $selectedKhoa !== ''
-            ? DatPhanCongGiaoVienThayResolver::groupedForCourses([$selectedKhoa])
+            ? DatPhanCongXeThayResolver::groupedForCourses([$selectedKhoa])
             : [];
 
-        $giaoVienGocRows = [];
+        $xeGocRows = [];
         $maGvCodes = [];
 
         if ($selectedKhoa !== '') {
-            $giaoVienGocRows = DatPhanCongHocVien::query()
+            $xeGocRows = DatPhanCongHocVien::query()
                 ->where('MaKhoaHoc', $selectedKhoa)
-                ->selectRaw('MaGiaoVien, COUNT(*) as so_hv')
-                ->groupBy('MaGiaoVien')
+                ->selectRaw('MaGiaoVien, BienSoXe, COUNT(*) as so_hv')
+                ->groupBy('MaGiaoVien', 'BienSoXe')
                 ->orderBy('MaGiaoVien')
+                ->orderBy('BienSoXe')
                 ->get()
                 ->map(function ($row) use ($selectedKhoa, $substitutesByKey, &$maGvCodes) {
                     $maGiaoVienGoc = trim((string) ($row->MaGiaoVien ?? ''));
+                    $bienSoXeGoc = trim((string) ($row->BienSoXe ?? ''));
                     if ($maGiaoVienGoc !== '') {
                         $maGvCodes[] = $maGiaoVienGoc;
                     }
 
-                    $key = DatPhanCongGiaoVienThayResolver::courseMainGvKey($selectedKhoa, $maGiaoVienGoc);
+                    $key = DatPhanCongXeThayResolver::courseMainGvXeKey($selectedKhoa, $maGiaoVienGoc, $bienSoXeGoc);
                     $substitutes = $substitutesByKey[$key] ?? [];
-
-                    foreach ($substitutes as $substitute) {
-                        $maGv = trim((string) ($substitute['ma_giao_vien'] ?? ''));
-                        if ($maGv !== '') {
-                            $maGvCodes[] = $maGv;
-                        }
-                    }
 
                     return [
                         'ma_khoa_hoc' => $selectedKhoa,
                         'ma_giao_vien_goc' => $maGiaoVienGoc,
+                        'bien_so_xe_goc' => $bienSoXeGoc,
                         'so_hv' => (int) ($row->so_hv ?? 0),
                         'so_khai_bao' => count($substitutes),
                         'substitutes' => $substitutes,
@@ -76,21 +73,17 @@ class GiaoVienDayThayController extends Controller
                 ->get(['MaGV', 'HoTenDem', 'TenGV'])
                 ->keyBy('MaGV');
 
-        $giaoVienSelectOptions = GiaoVien::query()
-            ->orderBy('HoTenDem')
-            ->orderBy('TenGV')
-            ->orderBy('MaGV')
-            ->get(['MaGV', 'HoTenDem', 'TenGV']);
+        $xeSelectOptions = self::collectXeSelectOptions($selectedKhoa);
 
         $coKhaiBaoThay = $selectedKhoa !== ''
-            && DatPhanCongGiaoVienThay::query()->where('MaKhoaHoc', $selectedKhoa)->exists();
+            && DatPhanCongXeThay::query()->where('MaKhoaHoc', $selectedKhoa)->exists();
 
-        return view('DaoTao.dat.giao-vien-day-thay', [
+        return view('DaoTao.dat.xe-day-thay', [
             'selectedKhoa' => $selectedKhoa,
             'khoaHocOptions' => $khoaHocOptions,
-            'giaoVienGocRows' => $giaoVienGocRows,
+            'xeGocRows' => $xeGocRows,
             'giaoVienNames' => $giaoVienNames,
-            'giaoVienSelectOptions' => $giaoVienSelectOptions,
+            'xeSelectOptions' => $xeSelectOptions,
             'coKhaiBaoThay' => $coKhaiBaoThay,
         ]);
     }
@@ -100,7 +93,7 @@ class GiaoVienDayThayController extends Controller
         $maKhoaHoc = trim((string) $request->query('ma_khoa_hoc', ''));
 
         try {
-            $preview = (new DatPhanCongGiaoVienThayLichApplier())->preview($maKhoaHoc);
+            $preview = (new DatPhanCongXeThayLichApplier())->preview($maKhoaHoc);
         } catch (Throwable $e) {
             if ($e instanceof \Illuminate\Validation\ValidationException) {
                 return $this->redirectToIndex($maKhoaHoc)->withErrors($e->errors());
@@ -109,7 +102,7 @@ class GiaoVienDayThayController extends Controller
             return $this->redirectToIndex($maKhoaHoc)->with('error', $e->getMessage());
         }
 
-        return view('DaoTao.dat.giao-vien-day-thay-ap-dung-lich', [
+        return view('DaoTao.dat.xe-day-thay-ap-dung-lich', [
             'preview' => $preview,
         ]);
     }
@@ -123,11 +116,11 @@ class GiaoVienDayThayController extends Controller
         $maKhoaHoc = trim((string) $validated['ma_khoa_hoc']);
 
         try {
-            $result = (new DatPhanCongGiaoVienThayLichApplier())->apply($maKhoaHoc);
+            $result = (new DatPhanCongXeThayLichApplier())->apply($maKhoaHoc);
         } catch (Throwable $e) {
             if ($e instanceof \Illuminate\Validation\ValidationException) {
                 return redirect()
-                    ->route('daotao.pdt.dat.giao-vien-day-thay.preview-apply-lich', ['ma_khoa_hoc' => $maKhoaHoc])
+                    ->route('daotao.pdt.dat.xe-day-thay.preview-apply-lich', ['ma_khoa_hoc' => $maKhoaHoc])
                     ->withErrors($e->errors());
             }
 
@@ -135,11 +128,11 @@ class GiaoVienDayThayController extends Controller
         }
 
         return redirect()
-            ->route('daotao.pdt.dat.giao-vien-day-thay.preview-apply-lich', ['ma_khoa_hoc' => $maKhoaHoc])
+            ->route('daotao.pdt.dat.xe-day-thay.preview-apply-lich', ['ma_khoa_hoc' => $maKhoaHoc])
             ->with(
                 'success',
                 'Đã cập nhật lịch PMGPLX: '
-                .number_format($result['gv_updated']).' dòng GV (KhoaHoc_GiaoVien), '
+                .number_format($result['gv_bien_updated']).' dòng GV (cột BienSoXe), '
                 .number_format($result['xe_updated']).' dòng xe (KhoaHoc_XeTap).'
             );
     }
@@ -148,24 +141,24 @@ class GiaoVienDayThayController extends Controller
     {
         $maKhoaHoc = trim((string) $request->query('ma_khoa_hoc', ''));
 
-        $item = DatPhanCongGiaoVienThay::query()->find($id);
+        $item = DatPhanCongXeThay::query()->find($id);
         if ($item === null) {
-            return $this->redirectToIndex($maKhoaHoc)->with('error', 'Khai báo dạy thay không còn tồn tại.');
+            return $this->redirectToIndex($maKhoaHoc)->with('error', 'Khai báo xe thay không còn tồn tại.');
         }
 
         try {
-            $result = (new DatPhanCongGiaoVienThayLichApplier())->applyKhaiBao($item);
+            $result = (new DatPhanCongXeThayLichApplier())->applyKhaiBao($item);
         } catch (Throwable $e) {
             return $this->redirectToIndex($maKhoaHoc)->with('error', 'Áp dụng lịch thất bại: '.$e->getMessage());
         }
 
-        $gvLich = (int) ($result['gv_updated'] ?? 0);
+        $gvBien = (int) ($result['gv_bien_updated'] ?? 0);
         $xeLich = (int) ($result['xe_updated'] ?? 0);
         $message = 'Đã áp dụng khai báo vào lịch PMGPLX: '
-            .number_format($gvLich).' dòng GV, '
+            .number_format($gvBien).' dòng GV (biển), '
             .number_format($xeLich).' dòng xe.';
-        if ($gvLich + $xeLich === 0) {
-            $message = 'Không có dòng lịch nào cập nhật (có thể đã áp dụng hoặc không trùng ngày / GV gốc trên lịch).';
+        if ($gvBien + $xeLich === 0) {
+            $message = 'Không có dòng lịch nào cập nhật (có thể đã áp dụng hoặc không trùng ngày / xe gốc trên lịch).';
         }
 
         return $this->redirectToIndex($maKhoaHoc)->with('success', $message);
@@ -176,23 +169,26 @@ class GiaoVienDayThayController extends Controller
         $validated = $request->validate([
             'ma_khoa_hoc' => ['required', 'string', 'max:50'],
             'ma_giao_vien_goc' => ['required', 'string', 'max:50'],
-            'ma_giao_vien' => ['required', 'string', 'max:50'],
+            'bien_so_xe_goc' => ['required', 'string', 'max:50'],
+            'bien_so_xe' => ['required', 'string', 'max:50'],
             'tu_ngay' => ['required', 'date'],
             'den_ngay' => ['nullable', 'date'],
         ], [
             'ma_khoa_hoc.required' => 'Chọn mã khóa học.',
-            'ma_giao_vien_goc.required' => 'Chọn giáo viên được dạy thay.',
-            'ma_giao_vien.required' => 'Nhập mã giáo viên dạy thay.',
+            'ma_giao_vien_goc.required' => 'Chọn giáo viên chính.',
+            'bien_so_xe_goc.required' => 'Chọn xe gốc.',
+            'bien_so_xe.required' => 'Nhập biển số xe thay.',
             'tu_ngay.required' => 'Nhập từ ngày.',
         ]);
 
         $maKhoaHoc = trim((string) $validated['ma_khoa_hoc']);
 
         try {
-            $created = DatPhanCongGiaoVienThaySaver::create(
+            $created = DatPhanCongXeThaySaver::create(
                 $maKhoaHoc,
                 trim((string) $validated['ma_giao_vien_goc']),
-                trim((string) $validated['ma_giao_vien']),
+                trim((string) $validated['bien_so_xe_goc']),
+                trim((string) $validated['bien_so_xe']),
                 (string) $validated['tu_ngay'],
                 isset($validated['den_ngay']) ? (string) $validated['den_ngay'] : null
             );
@@ -205,20 +201,20 @@ class GiaoVienDayThayController extends Controller
 
             return $this->redirectToIndex($maKhoaHoc)
                 ->withInput()
-                ->with('error', 'Lưu giáo viên dạy thay thất bại: '.$e->getMessage());
+                ->with('error', 'Lưu xe thay thất bại: '.$e->getMessage());
         }
 
-        $message = 'Đã thêm giáo viên dạy thay.';
+        $message = 'Đã thêm xe thay.';
         if ($request->boolean('ap_dung_lich')) {
-            $lich = (new DatPhanCongGiaoVienThayLichApplier())->applyKhaiBao($created['item']);
-            $gvLich = (int) ($lich['gv_updated'] ?? 0);
+            $lich = (new DatPhanCongXeThayLichApplier())->applyKhaiBao($created['item']);
+            $gvBien = (int) ($lich['gv_bien_updated'] ?? 0);
             $xeLich = (int) ($lich['xe_updated'] ?? 0);
-            if ($gvLich + $xeLich > 0) {
+            if ($gvBien + $xeLich > 0) {
                 $message .= ' Đã áp dụng lịch PMGPLX: '
-                    .number_format($gvLich).' dòng GV, '
+                    .number_format($gvBien).' dòng GV (biển), '
                     .number_format($xeLich).' dòng xe.';
             } else {
-                $message .= ' Chưa cập nhật dòng lịch nào (kiểm tra ngày / GV gốc trên lịch hoặc dùng Áp dụng vào lịch).';
+                $message .= ' Chưa cập nhật dòng lịch nào (kiểm tra ngày / xe gốc trên lịch hoặc dùng Áp dụng vào lịch).';
             }
         }
 
@@ -230,22 +226,22 @@ class GiaoVienDayThayController extends Controller
         $maKhoaHoc = trim((string) $request->query('ma_khoa_hoc', ''));
 
         try {
-            $result = DatPhanCongGiaoVienThaySaver::delete($id);
+            $result = DatPhanCongXeThaySaver::delete($id);
         } catch (Throwable $e) {
             if ($e instanceof \Illuminate\Validation\ValidationException) {
                 return $this->redirectToIndex($maKhoaHoc)->withErrors($e->errors());
             }
 
             return $this->redirectToIndex($maKhoaHoc)
-                ->with('error', 'Xóa giáo viên dạy thay thất bại: '.$e->getMessage());
+                ->with('error', 'Xóa xe thay thất bại: '.$e->getMessage());
         }
 
-        $message = 'Đã xóa giáo viên dạy thay.';
-        $gvLich = (int) ($result['gv_lich_reverted'] ?? 0);
+        $message = 'Đã xóa xe thay.';
+        $gvBien = (int) ($result['gv_bien_lich_reverted'] ?? 0);
         $xeLich = (int) ($result['xe_lich_reverted'] ?? 0);
-        if ($gvLich + $xeLich > 0) {
+        if ($gvBien + $xeLich > 0) {
             $message .= ' Hoàn lịch PMGPLX: '
-                .number_format($gvLich).' dòng GV, '
+                .number_format($gvBien).' dòng GV (biển), '
                 .number_format($xeLich).' dòng xe.';
         }
 
@@ -258,8 +254,44 @@ class GiaoVienDayThayController extends Controller
         $maKhoaHoc = trim($maKhoaHoc);
 
         return redirect()->route(
-            'daotao.pdt.dat.giao-vien-day-thay',
+            'daotao.pdt.dat.xe-day-thay',
             $maKhoaHoc !== '' ? ['ma_khoa_hoc' => $maKhoaHoc] : []
         );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function collectXeSelectOptions(string $maKhoaHoc): array
+    {
+        $plates = [];
+
+        foreach (XeTap::query()->orderBy('BienSoXe')->pluck('BienSoXe') as $bienSo) {
+            $bienSo = trim((string) $bienSo);
+            if ($bienSo !== '') {
+                $plates[$bienSo] = true;
+            }
+        }
+
+        $maKhoaHoc = trim($maKhoaHoc);
+        if ($maKhoaHoc !== '') {
+            $rows = DatPhanCongHocVien::query()
+                ->where('MaKhoaHoc', $maKhoaHoc)
+                ->get(['BienSoXe', 'BienSoXeTuDong']);
+
+            foreach ($rows as $row) {
+                foreach (['BienSoXe', 'BienSoXeTuDong'] as $field) {
+                    $bienSo = trim((string) ($row->{$field} ?? ''));
+                    if ($bienSo !== '') {
+                        $plates[$bienSo] = true;
+                    }
+                }
+            }
+        }
+
+        $list = array_keys($plates);
+        sort($list, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return $list;
     }
 }

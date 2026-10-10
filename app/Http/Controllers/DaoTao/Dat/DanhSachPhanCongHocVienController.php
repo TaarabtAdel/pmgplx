@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DaoTao\DatPhanCongHocVien;
 use App\Models\PMGPLX\GiaoVien;
 use App\Support\DaoTao\DatPhanCongGiaoVienThaySaver;
+use App\Support\DaoTao\DatPhanCongXeThaySaver;
 use App\Support\DaoTao\DatPhanCongHocVienBoLoc;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -67,6 +68,7 @@ class DanhSachPhanCongHocVienController extends Controller
         }
 
         DatPhanCongGiaoVienThaySaver::deleteByKhoaHoc($maKhoaHoc);
+        DatPhanCongXeThaySaver::deleteByKhoaHoc($maKhoaHoc);
 
         return redirect()
             ->route('daotao.pdt.dat.phan-cong-hoc-vien')

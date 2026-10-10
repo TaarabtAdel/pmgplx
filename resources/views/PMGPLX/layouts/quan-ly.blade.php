@@ -499,6 +499,7 @@
                     $datPhanCongActive = request()->routeIs(
                         'daotao.pdt.dat.phan-cong-hoc-vien*',
                         'daotao.pdt.dat.giao-vien-day-thay*',
+                        'daotao.pdt.dat.xe-day-thay*',
                         'daotao.pdt.dat.nhap-phan-cong-hoc-vien*'
                     );
                     $datNhapLieuActive = request()->routeIs(
@@ -582,6 +583,10 @@
                             <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.giao-vien-day-thay*') ? 'active' : '' }}"
                                href="{{ route('daotao.pdt.dat.giao-vien-day-thay') }}">
                                 Giáo viên dạy thay
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.xe-day-thay*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.xe-day-thay') }}">
+                                Xe dạy thay
                             </a>
                             <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.nhap-phan-cong-hoc-vien*') ? 'active' : '' }}"
                                href="{{ route('daotao.pdt.dat.nhap-phan-cong-hoc-vien') }}">

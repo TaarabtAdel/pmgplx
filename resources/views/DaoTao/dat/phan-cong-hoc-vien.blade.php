@@ -20,6 +20,7 @@
             <span>Phân công học viên</span>
             <div class="mt-1 mt-md-0">
                 <a href="{{ route('daotao.pdt.dat.giao-vien-day-thay', array_filter(['ma_khoa_hoc' => $filters['ma_khoa_hoc'] ?? ''])) }}" class="btn btn-sm btn-outline-warning mr-1">GV dạy thay</a>
+                <a href="{{ route('daotao.pdt.dat.xe-day-thay', array_filter(['ma_khoa_hoc' => $filters['ma_khoa_hoc'] ?? ''])) }}" class="btn btn-sm btn-outline-warning mr-1">Xe dạy thay</a>
                 <a href="{{ route('daotao.pdt.dat.nhap-phan-cong-hoc-vien') }}" class="btn btn-sm btn-navy mr-1">
                     Nhập từ Excel
                 </a>

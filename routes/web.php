@@ -6,6 +6,7 @@ use App\Http\Controllers\DaoTao\Dat\DoPhienVoiLichXeController;
 use App\Http\Controllers\DaoTao\Dat\DanhSachDatDSPhienController;
 use App\Http\Controllers\DaoTao\Dat\DanhSachPhanCongHocVienController;
 use App\Http\Controllers\DaoTao\Dat\GiaoVienDayThayController;
+use App\Http\Controllers\DaoTao\Dat\XeDayThayController;
 use App\Http\Controllers\DaoTao\Dat\DieuKienCanhBaoController;
 use App\Http\Controllers\DaoTao\Dat\DatLichThucHanhController;
 use App\Http\Controllers\DaoTao\Dat\DieuKienDatController;
@@ -335,6 +336,25 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
         ->name('pdt.dat.giao-vien-day-thay.store');
     Route::delete('/phong-dao-tao/dat/giao-vien-day-thay/{id}', [GiaoVienDayThayController::class, 'destroy'])
         ->name('pdt.dat.giao-vien-day-thay.destroy');
+    Route::get('/phong-dao-tao/dat/giao-vien-day-thay/ap-dung-lich-xem-truoc', [GiaoVienDayThayController::class, 'previewApplyLich'])
+        ->name('pdt.dat.giao-vien-day-thay.preview-apply-lich');
+    Route::post('/phong-dao-tao/dat/giao-vien-day-thay/ap-dung-lich', [GiaoVienDayThayController::class, 'applyLich'])
+        ->name('pdt.dat.giao-vien-day-thay.apply-lich');
+    Route::post('/phong-dao-tao/dat/giao-vien-day-thay/{id}/ap-dung-lich', [GiaoVienDayThayController::class, 'applyKhaiBaoLich'])
+        ->name('pdt.dat.giao-vien-day-thay.apply-khai-bao-lich');
+
+    Route::get('/phong-dao-tao/dat/xe-day-thay', [XeDayThayController::class, 'index'])
+        ->name('pdt.dat.xe-day-thay');
+    Route::post('/phong-dao-tao/dat/xe-day-thay', [XeDayThayController::class, 'store'])
+        ->name('pdt.dat.xe-day-thay.store');
+    Route::delete('/phong-dao-tao/dat/xe-day-thay/{id}', [XeDayThayController::class, 'destroy'])
+        ->name('pdt.dat.xe-day-thay.destroy');
+    Route::get('/phong-dao-tao/dat/xe-day-thay/ap-dung-lich-xem-truoc', [XeDayThayController::class, 'previewApplyLich'])
+        ->name('pdt.dat.xe-day-thay.preview-apply-lich');
+    Route::post('/phong-dao-tao/dat/xe-day-thay/ap-dung-lich', [XeDayThayController::class, 'applyLich'])
+        ->name('pdt.dat.xe-day-thay.apply-lich');
+    Route::post('/phong-dao-tao/dat/xe-day-thay/{id}/ap-dung-lich', [XeDayThayController::class, 'applyKhaiBaoLich'])
+        ->name('pdt.dat.xe-day-thay.apply-khai-bao-lich');
 
     Route::get('/phong-dao-tao/dat/nhap-phan-cong-hoc-vien', [NhapFilePhanCongHocVienController::class, 'create'])
         ->name('pdt.dat.nhap-phan-cong-hoc-vien');

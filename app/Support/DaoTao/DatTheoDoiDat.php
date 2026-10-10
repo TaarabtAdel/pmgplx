@@ -209,6 +209,7 @@ class DatTheoDoiDat
         );
 
         $substitutesByKey = DatPhanCongGiaoVienThayResolver::groupedForCourses([$maKhoaHoc]);
+        $substitutesXeByKey = DatPhanCongXeThayResolver::groupedForCourses([$maKhoaHoc]);
 
         $extraGv = [];
         foreach ($substitutesByKey as $substitutes) {
@@ -253,7 +254,8 @@ class DatTheoDoiDat
                 if (self::sessionBelongsToAssignmentGroup(
                     $session,
                     $assignment,
-                    DatPhanCongGiaoVienThayResolver::substitutesForAssignment($assignment, $substitutesByKey)
+                    DatPhanCongGiaoVienThayResolver::substitutesForAssignment($assignment, $substitutesByKey),
+                    $substitutesXeByKey
                 )) {
                     $sessionsByGroupKey[$groupKey][] = $session;
                 }
@@ -583,38 +585,47 @@ class DatTheoDoiDat
     }
 
     /**
-     * @param  list<array{id?: int, ma_giao_vien: string, tu_ngay: string, den_ngay: string|null}>  $substitutes
+     * @param  list<array{id?: int, ma_giao_vien: string, tu_ngay: string, den_ngay: string|null}>  $gvSubstitutes
+     * @param  array<string, list<array{id?: int, bien_so_xe: string, tu_ngay: string, den_ngay: string|null}>>  $xeSubstitutesByKey
      */
     private static function sessionBelongsToAssignmentGroup(
         DatDSPhien $session,
         DatPhanCongHocVien $assignment,
-        array $substitutes
+        array $gvSubstitutes,
+        array $xeSubstitutesByKey
     ): bool {
-        if (! self::sessionXeMatchesAssignment($session, $assignment)) {
+        if (! self::sessionXeMatchesAssignment($session, $assignment, $xeSubstitutesByKey)) {
             return false;
         }
 
         $expectedGv = DatPhanCongGiaoVienThayResolver::resolveForDate(
             $assignment,
             self::sessionDate($session),
-            $substitutes
+            $gvSubstitutes
         );
         $sessionGv = DatPhanCongHocVienSaver::normalizeMaGiaoVien((string) ($session->MaGiaoVien ?? ''));
 
         return $sessionGv === $expectedGv['ma_giao_vien'];
     }
 
-    private static function sessionXeMatchesAssignment(DatDSPhien $session, DatPhanCongHocVien $assignment): bool
-    {
+    /**
+     * @param  array<string, list<array{id?: int, bien_so_xe: string, tu_ngay: string, den_ngay: string|null}>>  $xeSubstitutesByKey
+     */
+    private static function sessionXeMatchesAssignment(
+        DatDSPhien $session,
+        DatPhanCongHocVien $assignment,
+        array $xeSubstitutesByKey
+    ): bool {
         $sessionXe = DatPhanCongHocVienSaver::normalizeBienSo((string) ($session->BienSoXe ?? ''));
         if ($sessionXe === '') {
             return true;
         }
 
-        $allowed = array_values(array_filter([
-            DatPhanCongHocVienSaver::normalizeBienSo((string) ($assignment->BienSoXe ?? '')),
-            DatPhanCongHocVienSaver::normalizeBienSo((string) ($assignment->BienSoXeTuDong ?? '')),
-        ], static fn (string $value): bool => $value !== ''));
+        $allowed = DatPhanCongXeThayResolver::allowedPlatesForAssignmentOnDate(
+            $assignment,
+            self::sessionDate($session),
+            $xeSubstitutesByKey
+        );
 
         if ($allowed === []) {
             return true;

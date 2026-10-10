@@ -2,16 +2,16 @@
 
 namespace App\Support\DaoTao;
 
-use App\Models\DaoTao\DatPhanCongGiaoVienThay;
 use App\Models\DaoTao\DatPhanCongHocVien;
+use App\Models\DaoTao\DatPhanCongXeThay;
 use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
-class DatPhanCongGiaoVienThaySaver
+class DatPhanCongXeThaySaver
 {
     /**
-     * @return array{item: DatPhanCongGiaoVienThay}
+     * @return array{item: DatPhanCongXeThay}
      *
      * @throws ValidationException
      * @throws Throwable
@@ -19,13 +19,15 @@ class DatPhanCongGiaoVienThaySaver
     public static function create(
         string $maKhoaHoc,
         string $maGiaoVienGoc,
-        string $maGiaoVienThay,
+        string $bienSoXeGoc,
+        string $bienSoXeThay,
         string $tuNgay,
         ?string $denNgay = null
     ): array {
         $maKhoaHoc = trim($maKhoaHoc);
         $maGiaoVienGoc = DatPhanCongHocVienSaver::normalizeMaGiaoVien($maGiaoVienGoc);
-        $maGiaoVienThay = DatPhanCongHocVienSaver::normalizeMaGiaoVien($maGiaoVienThay);
+        $bienSoXeGoc = DatPhanCongHocVienSaver::normalizeBienSo($bienSoXeGoc);
+        $bienSoXeThay = DatPhanCongHocVienSaver::normalizeBienSo($bienSoXeThay);
         $tuNgayDate = self::parseDate($tuNgay, 'tu_ngay');
         $denNgayDate = $denNgay !== null && trim($denNgay) !== ''
             ? self::parseDate($denNgay, 'den_ngay')
@@ -36,24 +38,33 @@ class DatPhanCongGiaoVienThaySaver
         }
 
         if ($maGiaoVienGoc === '') {
-            throw ValidationException::withMessages(['ma_giao_vien_goc' => 'Chọn giáo viên được dạy thay.']);
+            throw ValidationException::withMessages(['ma_giao_vien_goc' => 'Chọn giáo viên chính.']);
         }
 
-        if ($maGiaoVienThay === '') {
-            throw ValidationException::withMessages(['ma_giao_vien' => 'Nhập mã giáo viên dạy thay.']);
+        if ($bienSoXeGoc === '') {
+            throw ValidationException::withMessages(['bien_so_xe_goc' => 'Chọn xe gốc.']);
         }
 
-        if (! DatPhanCongHocVien::query()
+        if ($bienSoXeThay === '') {
+            throw ValidationException::withMessages(['bien_so_xe' => 'Nhập biển số xe thay.']);
+        }
+
+        $hasAssignment = DatPhanCongHocVien::query()
             ->where('MaKhoaHoc', $maKhoaHoc)
             ->where('MaGiaoVien', $maGiaoVienGoc)
-            ->exists()) {
+            ->get(['BienSoXe'])
+            ->contains(
+                static fn (DatPhanCongHocVien $row): bool => DatPhanCongHocVienSaver::normalizeBienSo((string) $row->BienSoXe) === $bienSoXeGoc
+            );
+
+        if (! $hasAssignment) {
             throw ValidationException::withMessages([
-                'ma_giao_vien_goc' => 'Không có phân công nào với GV này trong khóa đã chọn.',
+                'bien_so_xe_goc' => 'Không có phân công nào với khóa + GV + xe gốc đã chọn.',
             ]);
         }
 
         if ($denNgayDate !== null && $denNgayDate->lt($tuNgayDate)) {
-            throw ValidationException::withMessages(['den_ngay' => 'Đến ngày phải sau hoặc bằng từ ngày.']);
+            throw ValidationException::withMessages(['den_ngay' => 'Đến ngay phải sau hoặc bằng từ ngày.']);
         }
 
         DatGiaoVienKhoaTeachingSpan::assertSubstituteDatesWithinTeaching(
@@ -63,12 +74,13 @@ class DatPhanCongGiaoVienThaySaver
             $denNgayDate
         );
 
-        self::assertNoOverlap($maKhoaHoc, $maGiaoVienGoc, $tuNgayDate->toDateString(), $denNgayDate?->toDateString());
+        self::assertNoOverlap($maKhoaHoc, $maGiaoVienGoc, $bienSoXeGoc, $tuNgayDate->toDateString(), $denNgayDate?->toDateString());
 
-        $item = DatPhanCongGiaoVienThay::query()->create([
+        $item = DatPhanCongXeThay::query()->create([
             'MaKhoaHoc' => $maKhoaHoc,
             'MaGiaoVienGoc' => $maGiaoVienGoc,
-            'MaGiaoVien' => $maGiaoVienThay,
+            'BienSoXeGoc' => $bienSoXeGoc,
+            'BienSoXe' => $bienSoXeThay,
             'TuNgay' => $tuNgayDate->toDateString(),
             'DenNgay' => $denNgayDate?->toDateString(),
             'NgayNhap' => Carbon::now(),
@@ -78,20 +90,20 @@ class DatPhanCongGiaoVienThaySaver
     }
 
     /**
-     * @return array{gv_lich_reverted: int, xe_lich_reverted: int}
+     * @return array{gv_bien_lich_reverted: int, xe_lich_reverted: int}
      */
     public static function delete(int $id): array
     {
-        $item = DatPhanCongGiaoVienThay::query()->find($id);
+        $item = DatPhanCongXeThay::query()->find($id);
         if ($item === null) {
-            throw ValidationException::withMessages(['id' => 'Bản ghi dạy thay không còn tồn tại.']);
+            throw ValidationException::withMessages(['id' => 'Bản ghi đổi xe không còn tồn tại.']);
         }
 
-        $lich = (new DatPhanCongGiaoVienThayLichApplier())->revertKhaiBao($item);
+        $lich = (new DatPhanCongXeThayLichApplier())->revertKhaiBao($item);
         $item->delete();
 
         return [
-            'gv_lich_reverted' => (int) ($lich['gv_updated'] ?? 0),
+            'gv_bien_lich_reverted' => (int) ($lich['gv_bien_updated'] ?? 0),
             'xe_lich_reverted' => (int) ($lich['xe_updated'] ?? 0),
         ];
     }
@@ -103,11 +115,11 @@ class DatPhanCongGiaoVienThaySaver
             return;
         }
 
-        $applier = new DatPhanCongGiaoVienThayLichApplier();
-        DatPhanCongGiaoVienThay::query()
+        $applier = new DatPhanCongXeThayLichApplier();
+        DatPhanCongXeThay::query()
             ->where('MaKhoaHoc', $maKhoaHoc)
             ->orderBy('Id')
-            ->each(function (DatPhanCongGiaoVienThay $row) use ($applier): void {
+            ->each(function (DatPhanCongXeThay $row) use ($applier): void {
                 $applier->revertKhaiBao($row);
                 $row->delete();
             });
@@ -125,12 +137,14 @@ class DatPhanCongGiaoVienThaySaver
     private static function assertNoOverlap(
         string $maKhoaHoc,
         string $maGiaoVienGoc,
+        string $bienSoXeGoc,
         string $tuNgay,
         ?string $denNgay
     ): void {
-        $existing = DatPhanCongGiaoVienThay::query()
+        $existing = DatPhanCongXeThay::query()
             ->where('MaKhoaHoc', $maKhoaHoc)
             ->where('MaGiaoVienGoc', $maGiaoVienGoc)
+            ->where('BienSoXeGoc', $bienSoXeGoc)
             ->get(['TuNgay', 'DenNgay']);
 
         foreach ($existing as $row) {
@@ -139,7 +153,7 @@ class DatPhanCongGiaoVienThaySaver
 
             if (self::rangesOverlap($tuNgay, $denNgay, $existingTu, $existingDen)) {
                 throw ValidationException::withMessages([
-                    'tu_ngay' => 'Khoảng ngày trùng với giáo viên dạy thay đã có.',
+                    'tu_ngay' => 'Khoảng ngày trùng với xe thay đã có.',
                 ]);
             }
         }
