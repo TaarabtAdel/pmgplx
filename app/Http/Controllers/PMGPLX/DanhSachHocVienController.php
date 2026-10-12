@@ -67,6 +67,7 @@ class DanhSachHocVienController extends Controller
                 'ma_kh' => $request->input('ma_kh', ''),
                 'hang_gplx' => $request->input('hang_gplx', ''),
                 'trang_thai' => $request->input('trang_thai', ''),
+                'an_da_phan_cong' => $request->boolean('an_da_phan_cong'),
                 'per_page' => $perPage,
             ],
         ]);
@@ -142,20 +143,7 @@ class DanhSachHocVienController extends Controller
             $msg .= ' Một số dòng lỗi: '.implode(' · ', array_slice($errors, 0, 3));
         }
 
-        $maKhoaList = array_values(array_unique(array_map(
-            static fn (array $hv): string => trim((string) ($hv['ma_khoa_hoc'] ?? '')),
-            $validated['hoc_vien']
-        )));
-
-        $redirectParams = array_filter([
-            'ma_khoa_hoc' => count($maKhoaList) === 1 ? $maKhoaList[0] : null,
-            'ma_giao_vien' => DatPhanCongHocVienSaver::normalizeMaGiaoVien($maGiaoVien),
-            'bien_so_xe' => $bienSoXe !== '' ? DatPhanCongHocVienSaver::normalizeBienSo($bienSoXe) : null,
-        ], static fn ($v): bool => $v !== null && $v !== '');
-
-        return redirect()
-            ->route('daotao.pdt.dat.phan-cong-hoc-vien', $redirectParams)
-            ->with('success', $msg);
+        return back()->with('success', $msg);
     }
 
     public function dongBoForm(Request $request, DongBoHocVienBanCuService $service): View
@@ -541,6 +529,19 @@ class DanhSachHocVienController extends Controller
 
         if ($request->filled('trang_thai') && $request->input('trang_thai') !== '') {
             $query->where('n.TrangThai', (string) (int) $request->input('trang_thai'));
+        }
+
+        if ($request->boolean('an_da_phan_cong')) {
+            $pcDb = (string) config('database.connections.sqlsrv_manhlinh.database', 'MANHLINH');
+            $pcTable = '['.$pcDb.'].[dbo].[DatPhanCongHocVien]';
+
+            $query->whereNotExists(function ($sub) use ($pcTable) {
+                $sub->select(DB::raw('1'))
+                    ->from(DB::raw($pcTable.' AS pc'))
+                    ->whereRaw('pc.MaKhoaHoc = h.MaKhoaHoc')
+                    ->whereRaw('pc.MaHocVien = n.MaDK')
+                    ->whereRaw("LTRIM(RTRIM(ISNULL(pc.MaGiaoVien, ''))) <> ''");
+            });
         }
 
         return $query;

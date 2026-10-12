@@ -36,6 +36,16 @@
                         </select>
                     </div>
                     <div class="form-group col-md-2">
+                        <label class="d-block invisible">Lọc</label>
+                        <div class="custom-control custom-checkbox mt-1">
+                            <input type="checkbox" class="custom-control-input" name="an_da_phan_cong" value="1"
+                                   id="an_da_phan_cong" @checked($filters['an_da_phan_cong'] ?? false)>
+                            <label class="custom-control-label small" for="an_da_phan_cong">
+                                Ẩn các HV đã phân công (cột Giáo viên có giá trị)
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-2">
                         <button type="submit" class="btn btn-sm btn-primary btn-block">Tìm kiếm</button>
                         <a href="{{ route('pmgplx.dm.hoc-vien.index') }}" class="btn btn-sm btn-outline-secondary btn-block mt-1" title="Làm mới">↻</a>
                     </div>
@@ -47,13 +57,6 @@
     <div class="card card-panel">
         <div class="card-header">Danh sách học viên</div>
         <div class="card-body">
-            @if (session('success'))
-                <div class="alert alert-success py-2">{{ session('success') }}</div>
-            @endif
-            @if (session('error'))
-                <div class="alert alert-danger py-2">{!! nl2br(e(session('error'))) !!}</div>
-            @endif
-
             <div class="d-flex flex-wrap align-items-center mb-3">
                 <div class="btn-group btn-group-sm mr-2 mb-2" role="group">
                     <button type="button" class="btn btn-success" disabled title="Sắp hỗ trợ">＋ Thêm mới</button>
@@ -348,5 +351,11 @@
             noResults: function () { return 'Không tìm thấy khóa học'; }
         }
     });
+
+    @if (session('success'))
+        alert(@json(session('success')));
+    @elseif (session('error'))
+        alert(@json(session('error')));
+    @endif
 </script>
 @endpush
