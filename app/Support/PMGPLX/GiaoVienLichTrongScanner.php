@@ -4,6 +4,7 @@ namespace App\Support\PMGPLX;
 
 use App\Models\PMGPLX\GiaoVien;
 use App\Models\PMGPLX\KhoaHoc;
+use App\Models\PMGPLX\KhoaHocGiaoVien;
 use App\Models\PMGPLX\KhoaHocXeTap;
 use App\Support\DaoTao\DatPhanCongHocVienSaver;
 use Carbon\Carbon;
@@ -141,15 +142,22 @@ class GiaoVienLichTrongScanner
                 'min_free_phut' => $minFreePhut,
             ];
 
-            $loaded = self::loadSlots(
+            $loadedGv = self::loadGvSlots(
                 $from,
                 $rangeEnd,
                 [$pair['ma_kh']],
                 $maGvList,
                 $trangThai
             );
-            $slotsLoaded += $loaded['slots']->count();
-            $slotsTruncated = $slotsTruncated || $loaded['truncated'];
+            $loadedXe = self::loadXeSlots(
+                $from,
+                $rangeEnd,
+                [$pair['ma_kh']],
+                $maGvList,
+                $trangThai
+            );
+            $slotsLoaded += $loadedGv['slots']->count() + $loadedXe['slots']->count();
+            $slotsTruncated = $slotsTruncated || $loadedGv['truncated'] || $loadedXe['truncated'];
 
             $pairRows = self::buildDayRowsForTeamPair(
                 $from,
@@ -157,7 +165,8 @@ class GiaoVienLichTrongScanner
                 $gioBatDau,
                 $gioKetThuc,
                 $pairCtx,
-                $loaded['slots'],
+                $loadedGv['slots'],
+                $loadedXe['slots'],
                 $tenKhoaByMa,
                 $khoaBoundsByMa
             );
@@ -453,7 +462,8 @@ class GiaoVienLichTrongScanner
      * Một hàng/ngày theo cặp GV sáng + chiều: bận hiển thị tách từng GV, rảnh = khung ngày trừ hợp nhất bận cả hai.
      *
      * @param  array{ma_kh: string, ma_gv_sang: string, ma_gv_chieu: string, loai: list<string>, min_free_phut: int, an_ngay_nghi_trong_lich?: bool}  $pair
-     * @param  Collection<int, array<string, mixed>>  $slots
+     * @param  Collection<int, array<string, mixed>>  $gvSlots
+     * @param  Collection<int, array<string, mixed>>  $xeSlots
      * @param  array<string, string>  $tenKhoaByMa
      * @param  array<string, array{tu: ?Carbon, den: ?Carbon}>  $khoaBoundsByMa
      * @return list<array<string, mixed>>
@@ -464,14 +474,15 @@ class GiaoVienLichTrongScanner
         string $gioBatDau,
         string $gioKetThuc,
         array $pair,
-        Collection $slots,
+        Collection $gvSlots,
+        Collection $xeSlots,
         array $tenKhoaByMa,
         array $khoaBoundsByMa = []
     ): array {
         $minFreePhut = (int) ($pair['min_free_phut'] ?? 0);
         $sangNorm = DatPhanCongHocVienSaver::normalizeMaGiaoVien($pair['ma_gv_sang']);
         $chieuNorm = DatPhanCongHocVienSaver::normalizeMaGiaoVien($pair['ma_gv_chieu']);
-        $gvMeta = self::buildGvMeta($slots, [$pair['ma_gv_sang'], $pair['ma_gv_chieu']], true);
+        $gvMeta = self::buildGvMeta($gvSlots, [$pair['ma_gv_sang'], $pair['ma_gv_chieu']], true);
         self::enrichTenGv($gvMeta);
         $metaSang = $gvMeta[self::metaKeyForMaGvNorm($sangNorm)] ?? [
             'ma_gv_norm' => $sangNorm,
@@ -492,11 +503,16 @@ class GiaoVienLichTrongScanner
         while ($day->lte($to)) {
             $dayKey = $day->toDateString();
             $boQuaLoai = $pair['loai'];
-            $daySlotsSang = self::filterSlotsForGvOnDay($slots, $sangNorm, $dayKey);
-            $daySlotsChieu = self::filterSlotsForGvOnDay($slots, $chieuNorm, $dayKey);
+            $daySlotsSang = self::filterSlotsForGvOnDay($gvSlots, $sangNorm, $dayKey);
+            $daySlotsChieu = self::filterSlotsForGvOnDay($gvSlots, $chieuNorm, $dayKey);
+            $dayXeSang = self::filterSlotsForGvOnDay($xeSlots, $sangNorm, $dayKey);
+            $dayXeChieu = self::filterSlotsForGvOnDay($xeSlots, $chieuNorm, $dayKey);
             $daySlotsCombined = $daySlotsSang->merge($daySlotsChieu);
 
-            if ($boQuaLoai !== [] && self::dayHasAnyBoQuaLoai($daySlotsCombined, $boQuaLoai)) {
+            if ($boQuaLoai !== [] && self::dayHasAnyBoQuaLoai(
+                $daySlotsCombined->merge($dayXeSang)->merge($dayXeChieu),
+                $boQuaLoai
+            )) {
                 $day->addDay();
 
                 continue;
@@ -522,8 +538,8 @@ class GiaoVienLichTrongScanner
                 continue;
             }
 
-            $busyDisplaySang = self::busyDisplayForDay($day, $daySlotsSang);
-            $busyDisplayChieu = self::busyDisplayForDay($day, $daySlotsChieu);
+            $busyDisplaySang = self::busyDisplayForDayWithXeNoiDung($day, $daySlotsSang, $dayXeSang);
+            $busyDisplayChieu = self::busyDisplayForDayWithXeNoiDung($day, $daySlotsChieu, $dayXeChieu);
 
             $loaiKey = implode(',', $pair['loai']);
             $rows[] = [
@@ -676,7 +692,7 @@ class GiaoVienLichTrongScanner
     }
 
     /**
-     * Trong khung khóa (NgayKG–NgayBG): cặp không có buổi xe → ẩn (ngày nghỉ / xin nghỉ).
+     * Trong khung khóa (NgayKG–NgayBG): cặp không có buổi lịch GV → ẩn (ngày nghỉ / xin nghỉ).
      *
      * @param  Collection<int, array<string, mixed>>  $daySlotsCombined
      * @param  array{tu: ?Carbon, den: ?Carbon}|null  $khoaBounds
@@ -698,7 +714,7 @@ class GiaoVienLichTrongScanner
     }
 
     /**
-     * Ngày có ít nhất một buổi xe khớp loại «bỏ qua» → không hiển thị cả ngày.
+     * Ngày có ít nhất một buổi lịch khớp loại «bỏ qua» (GhiChu) → không hiển thị cả ngày.
      *
      * @param  Collection<int, array<string, mixed>>  $daySlots
      * @param  list<string>  $boQuaLoai
@@ -750,7 +766,63 @@ class GiaoVienLichTrongScanner
     /**
      * @return array{slots: Collection<int, array<string, mixed>>, truncated: bool}
      */
-    private static function loadSlots(
+    private static function loadGvSlots(
+        Carbon $from,
+        Carbon $rangeEnd,
+        array $maKhList,
+        array $maGvFilter,
+        mixed $trangThai
+    ): array {
+        $rangeStart = $from->format('Y-m-d H:i:s');
+        $rangeEndStr = $rangeEnd->format('Y-m-d H:i:s');
+
+        $gvQuery = KhoaHocGiaoVien::query()
+            ->where('IsKhoaHocGiaoVien', 0)
+            ->whereNotNull('NgayBD')
+            ->whereIn('MaKH', $maKhList)
+            ->where('NgayBD', '<=', $rangeEndStr)
+            ->where('NgayKT', '>=', $rangeStart);
+
+        if ($trangThai !== '' && $trangThai !== null) {
+            $gvQuery->where('TrangThai', (int) $trangThai);
+        }
+        if ($maGvFilter !== []) {
+            $gvQuery->where(function ($q) use ($maGvFilter): void {
+                foreach ($maGvFilter as $ma) {
+                    $norm = DatPhanCongHocVienSaver::normalizeMaGiaoVien($ma);
+                    $variants = array_values(array_unique(array_filter([$norm, ltrim($norm, '0')])));
+                    $q->orWhereIn('MaGV', $variants);
+                }
+            });
+        }
+        $slots = $gvQuery
+            ->orderBy('NgayBD')
+            ->limit(self::MAX_SLOTS + 1)
+            ->get(['MaLichLV', 'MaKH', 'MaGV', 'TenGV', 'GhiChu', 'LoaiGV', 'NgayBD', 'NgayKT'])
+            ->map(function (KhoaHocGiaoVien $row): ?array {
+                $norm = DatPhanCongHocVienSaver::normalizeMaGiaoVien((string) $row->MaGV);
+                if ($norm === '') {
+                    return null;
+                }
+
+                return self::mapGvSlot($row, $norm);
+            })
+            ->filter();
+
+        $truncated = $slots->count() > self::MAX_SLOTS;
+        if ($truncated) {
+            $slots = $slots->take(self::MAX_SLOTS);
+        }
+
+        return ['slots' => $slots->values(), 'truncated' => $truncated];
+    }
+
+    /**
+     * Lịch xe tập — dùng cho cột Nội dung A/B (GhiChu).
+     *
+     * @return array{slots: Collection<int, array<string, mixed>>, truncated: bool}
+     */
+    private static function loadXeSlots(
         Carbon $from,
         Carbon $rangeEnd,
         array $maKhList,
@@ -779,6 +851,7 @@ class GiaoVienLichTrongScanner
                 }
             });
         }
+
         $slots = $xeQuery
             ->orderBy('NgayBD')
             ->limit(self::MAX_SLOTS + 1)
@@ -799,6 +872,120 @@ class GiaoVienLichTrongScanner
         }
 
         return ['slots' => $slots->values(), 'truncated' => $truncated];
+    }
+
+    /**
+     * Khung giờ bận từ lịch GV; nội dung hiển thị từ lịch xe (GhiChu), ghép theo khung giờ.
+     *
+     * @param  Collection<int, array<string, mixed>>  $gvDaySlots
+     * @param  Collection<int, array<string, mixed>>  $xeDaySlots
+     * @return array{
+     *     busy_label: string,
+     *     noi_dung_label: string,
+     *     loai_label: string,
+     *     segments: list<array{time: string, noi_dung: string, loai: string}>
+     * }
+     */
+    private static function busyDisplayForDayWithXeNoiDung(
+        Carbon $day,
+        Collection $gvDaySlots,
+        Collection $xeDaySlots
+    ): array {
+        $gvDisplay = self::busyDisplayForDay($day, $gvDaySlots);
+        $xeDisplay = self::busyDisplayForDay($day, $xeDaySlots);
+
+        $xeNoiDungByTime = [];
+        foreach ($xeDisplay['segments'] as $seg) {
+            $xeNoiDungByTime[$seg['time']] = (string) ($seg['noi_dung'] ?? '—');
+        }
+
+        if ($gvDisplay['segments'] === []) {
+            return [
+                'busy_label' => '—',
+                'noi_dung_label' => $xeDisplay['noi_dung_label'],
+                'loai_label' => $xeDisplay['loai_label'],
+                'segments' => [],
+            ];
+        }
+
+        $segments = [];
+        foreach ($gvDisplay['segments'] as $seg) {
+            $time = (string) $seg['time'];
+            $noiDung = $xeNoiDungByTime[$time] ?? self::noiDungFromXeForTimeKey($day, $time, $xeDaySlots);
+            $segments[] = [
+                'time' => $time,
+                'nguon' => 'gv',
+                'noi_dung' => $noiDung,
+                'loai' => (string) ($seg['loai'] ?? '—'),
+            ];
+        }
+
+        return [
+            'busy_label' => $gvDisplay['busy_label'],
+            'noi_dung_label' => implode('; ', array_map(
+                static fn (array $s): string => $s['noi_dung'] !== '' ? $s['noi_dung'] : '—',
+                $segments
+            )),
+            'loai_label' => $gvDisplay['loai_label'],
+            'segments' => $segments,
+        ];
+    }
+
+    /**
+     * @param  Collection<int, array<string, mixed>>  $xeDaySlots
+     */
+    private static function noiDungFromXeForTimeKey(Carbon $day, string $timeKey, Collection $xeDaySlots): string
+    {
+        $parsed = self::parseSegmentTimeKey($timeKey);
+        if ($parsed === null) {
+            return '—';
+        }
+
+        $dayStart = $day->copy()->startOfDay();
+        $dayEnd = $day->copy()->endOfDay();
+
+        try {
+            $targetBd = Carbon::parse($day->toDateString().' '.$parsed['start']);
+            $targetKt = Carbon::parse($day->toDateString().' '.$parsed['end']);
+        } catch (\Throwable) {
+            return '—';
+        }
+
+        foreach ($xeDaySlots->sortBy('ngay_bd') as $slot) {
+            try {
+                $bd = Carbon::parse($slot['ngay_bd']);
+                $kt = Carbon::parse($slot['ngay_kt']);
+            } catch (\Throwable) {
+                continue;
+            }
+            if ($kt->lte($bd)) {
+                continue;
+            }
+            $clipBd = $bd->greaterThan($dayStart) ? $bd->copy() : $dayStart->copy();
+            $clipKt = $kt->lessThan($dayEnd) ? $kt->copy() : $dayEnd->copy();
+            if ($clipKt->lte($clipBd)) {
+                continue;
+            }
+            if ($clipBd->equalTo($targetBd) && $clipKt->equalTo($targetKt)) {
+                $noiDung = trim((string) ($slot['noi_dung'] ?? ''));
+
+                return $noiDung !== '' ? $noiDung : '—';
+            }
+        }
+
+        return '—';
+    }
+
+    /**
+     * @return array{start: string, end: string}|null
+     */
+    private static function parseSegmentTimeKey(string $timeKey): ?array
+    {
+        if (! preg_match('/^(\d{2}:\d{2})–(\d{2}:\d{2})$/u', $timeKey, $m)) {
+            return null;
+        }
+
+        return ['start' => $m[1], 'end' => $m[2]];
     }
 
     /**
@@ -931,7 +1118,7 @@ class GiaoVienLichTrongScanner
     }
 
     /**
-     * Gộp buổi trùng khung giờ (nhiều dòng lịch xe cùng slot).
+     * Gộp buổi trùng khung giờ (nhiều dòng lịch cùng slot).
      *
      * @param  list<array{time: string, nguon?: string, noi_dung: string, loai: string}>  $segments
      * @return list<array{time: string, nguon: string, noi_dung: string, loai: string}>
@@ -971,6 +1158,28 @@ class GiaoVienLichTrongScanner
         }
 
         return array_values($byTime);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function mapGvSlot(KhoaHocGiaoVien $row, string $norm): array
+    {
+        $ghiChu = trim((string) ($row->GhiChu ?? ''));
+
+        return [
+            'nguon' => 'gv',
+            'ma_gv_norm' => $norm,
+            'ma_gv' => trim((string) $row->MaGV),
+            'ten_gv' => trim((string) ($row->TenGV ?? '')),
+            'ma_kh' => trim((string) $row->MaKH),
+            'loai_gv' => trim((string) ($row->LoaiGV ?? '')),
+            'ngay_bd' => Carbon::parse($row->NgayBD)->format('Y-m-d H:i:s'),
+            'ngay_kt' => Carbon::parse($row->NgayKT ?? $row->NgayBD)->format('Y-m-d H:i:s'),
+            'ghi_chu' => $ghiChu,
+            'noi_dung' => '—',
+            'loai_label' => LichXeLoaiGhiChu::loaiLabelFromGhiChu($ghiChu),
+        ];
     }
 
     /**

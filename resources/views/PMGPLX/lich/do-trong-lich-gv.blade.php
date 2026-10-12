@@ -23,10 +23,11 @@
         <div class="card-header">Tiêu chí</div>
         <div class="card-body">
             <p class="text-muted small mb-3">
-                Lấy <strong>thời gian bận</strong> từ <strong>lịch xe tập</strong> (<a href="{{ route('pmgplx.lich.xe.index') }}">pmgplx/lich/xe-tap</a>) theo từng cặp: khóa + GV sáng + GV chiều.
+                Lấy <strong>thời gian bận</strong> và <strong>thời gian rảnh</strong> từ <strong>lịch giáo viên</strong> (<code>KhoaHoc_GiaoVien</code>, <a href="{{ route('pmgplx.lich.gv.index') }}">pmgplx/lich/giao-vien</a>);
+                cột <strong>Nội dung A/B</strong> lấy <code>GhiChu</code> từ <strong>lịch xe tập</strong> (<code>KhoaHoc_XeTap</code>, <a href="{{ route('pmgplx.lich.xe.index') }}">pmgplx/lich/xe-tap</a>) cùng khóa · GV · ngày.
                 <strong>Thời gian rảnh</strong> tính cho <strong>cả cặp</strong> (hợp nhất bận của hai GV trong ngày), ví dụ sáng 7:30–11:30 và chiều 13:30–17:30 → rảnh: đầu ngày đến 7:30, 11:31–13:29, 17:31 đến giờ giới hạn.
-                <strong>Bỏ qua loại</strong> và <strong>rảnh ≥ phút</strong> dùng chung: tick loại → ẩn ngày có buổi xe khớp (một trong hai GV);
-                <strong>Ngày nghỉ (lịch trống)</strong> → chỉ từ <strong>NgayKG</strong> đến <strong>NgayBG</strong> khóa: ẩn ngày cặp không có buổi xe; trước khai giảng / sau bế giảng (nếu vẫn nằm trong khoảng quét) không áp dụng tiêu chí này; rảnh ≥ X → ẩn ngày không có khe rảnh đủ dài (0 = không lọc).
+                <strong>Bỏ qua loại</strong> và <strong>rảnh ≥ phút</strong> dùng chung: tick loại → ẩn ngày có buổi lịch xe khớp <code>GhiChu</code> (một trong hai GV);
+                <strong>Ngày nghỉ (lịch trống)</strong> → chỉ từ <strong>NgayKG</strong> đến <strong>NgayBG</strong> khóa: ẩn ngày cặp không có buổi lịch; trước khai giảng / sau bế giảng (nếu vẫn nằm trong khoảng quét) không áp dụng tiêu chí này; rảnh ≥ X → ẩn ngày không có khe rảnh đủ dài (0 = không lọc).
                 Khung ngày {{ $input['gio_bat_dau'] ?? '06:00' }}–{{ $input['gio_ket_thuc'] ?? '22:00' }}; sau mỗi buổi bận cộng thêm 1 phút (vd. hết 10:00 → rảnh từ 10:01).
             </p>
 
@@ -54,9 +55,12 @@
                                 </select>
                             </div>
                             <div class="form-group col-md-3 mb-2">
-                                <label class="small mb-1">Giáo viên sáng <span class="text-danger">*</span></label>
-                                <select name="pair_ma_gv_sang[]" class="form-control form-control-sm pair-ma-gv-sang" required>
-                                    <option value="">— Chọn GV —</option>
+                                <label class="small mb-1 d-flex justify-content-between align-items-center">
+                                    <span>Giáo viên sáng <span class="text-danger">*</span></span>
+                                    <button type="button" class="btn btn-link btn-sm p-0 text-muted pair-gv-clear" data-role="sang" title="Bỏ chọn">Bỏ chọn</button>
+                                </label>
+                                <select name="pair_ma_gv_sang[]" class="form-control form-control-sm pair-ma-gv-sang">
+                                    <option value=""></option>
                                     @foreach ($giaoViens as $gv)
                                         <option value="{{ $gv->MaGV }}" @selected(($pair['ma_gv_sang'] ?? '') === $gv->MaGV)>
                                             {{ $gv->ho_ten }} ({{ $gv->MaGV }})
@@ -65,9 +69,12 @@
                                 </select>
                             </div>
                             <div class="form-group col-md-3 mb-2">
-                                <label class="small mb-1">Giáo viên chiều <span class="text-danger">*</span></label>
-                                <select name="pair_ma_gv_chieu[]" class="form-control form-control-sm pair-ma-gv-chieu" required>
-                                    <option value="">— Chọn GV —</option>
+                                <label class="small mb-1 d-flex justify-content-between align-items-center">
+                                    <span>Giáo viên chiều <span class="text-danger">*</span></span>
+                                    <button type="button" class="btn btn-link btn-sm p-0 text-muted pair-gv-clear" data-role="chieu" title="Bỏ chọn">Bỏ chọn</button>
+                                </label>
+                                <select name="pair_ma_gv_chieu[]" class="form-control form-control-sm pair-ma-gv-chieu">
+                                    <option value=""></option>
                                     @foreach ($giaoViens as $gv)
                                         <option value="{{ $gv->MaGV }}" @selected(($pair['ma_gv_chieu'] ?? '') === $gv->MaGV)>
                                             {{ $gv->ho_ten }} ({{ $gv->MaGV }})
@@ -303,18 +310,24 @@
                 </select>
             </div>
             <div class="form-group col-md-3 mb-2">
-                <label class="small mb-1">Giáo viên sáng <span class="text-danger">*</span></label>
-                <select name="pair_ma_gv_sang[]" class="form-control form-control-sm pair-ma-gv-sang" required>
-                    <option value="">— Chọn GV —</option>
+                <label class="small mb-1 d-flex justify-content-between align-items-center">
+                    <span>Giáo viên sáng <span class="text-danger">*</span></span>
+                    <button type="button" class="btn btn-link btn-sm p-0 text-muted pair-gv-clear" data-role="sang" title="Bỏ chọn">Bỏ chọn</button>
+                </label>
+                <select name="pair_ma_gv_sang[]" class="form-control form-control-sm pair-ma-gv-sang">
+                    <option value=""></option>
                     @foreach ($giaoViens as $gv)
                         <option value="{{ $gv->MaGV }}">{{ $gv->ho_ten }} ({{ $gv->MaGV }})</option>
                     @endforeach
                 </select>
             </div>
             <div class="form-group col-md-3 mb-2">
-                <label class="small mb-1">Giáo viên chiều <span class="text-danger">*</span></label>
-                <select name="pair_ma_gv_chieu[]" class="form-control form-control-sm pair-ma-gv-chieu" required>
-                    <option value="">— Chọn GV —</option>
+                <label class="small mb-1 d-flex justify-content-between align-items-center">
+                    <span>Giáo viên chiều <span class="text-danger">*</span></span>
+                    <button type="button" class="btn btn-link btn-sm p-0 text-muted pair-gv-clear" data-role="chieu" title="Bỏ chọn">Bỏ chọn</button>
+                </label>
+                <select name="pair_ma_gv_chieu[]" class="form-control form-control-sm pair-ma-gv-chieu">
+                    <option value=""></option>
                     @foreach ($giaoViens as $gv)
                         <option value="{{ $gv->MaGV }}">{{ $gv->ho_ten }} ({{ $gv->MaGV }})</option>
                     @endforeach
@@ -340,7 +353,7 @@
 <script>
     (function () {
         function initPairSelect2($scope) {
-            $scope.find('.pair-ma-kh, .pair-ma-gv-sang, .pair-ma-gv-chieu').each(function () {
+            $scope.find('.pair-ma-kh').each(function () {
                 var $el = $(this);
                 if ($el.hasClass('select2-hidden-accessible')) {
                     $el.select2('destroy');
@@ -349,9 +362,40 @@
                     theme: 'bootstrap4',
                     allowClear: true,
                     width: '100%',
-                    placeholder: 'Chọn…',
+                    placeholder: '— Chọn khóa —',
                 });
             });
+            $scope.find('.pair-ma-gv-sang').each(function () {
+                var $el = $(this);
+                if ($el.hasClass('select2-hidden-accessible')) {
+                    $el.select2('destroy');
+                }
+                $el.select2({
+                    theme: 'bootstrap4',
+                    allowClear: true,
+                    width: '100%',
+                    placeholder: '— Chọn GV sáng —',
+                });
+            });
+            $scope.find('.pair-ma-gv-chieu').each(function () {
+                var $el = $(this);
+                if ($el.hasClass('select2-hidden-accessible')) {
+                    $el.select2('destroy');
+                }
+                $el.select2({
+                    theme: 'bootstrap4',
+                    allowClear: true,
+                    width: '100%',
+                    placeholder: '— Chọn GV chiều —',
+                });
+            });
+        }
+
+        function clearGvSelect($row, role) {
+            var $sel = role === 'chieu'
+                ? $row.find('.pair-ma-gv-chieu')
+                : $row.find('.pair-ma-gv-sang');
+            $sel.val('').trigger('change');
         }
 
         function updateRemoveButtons() {
@@ -389,6 +433,12 @@
 
         $('#pair-rows').on('change select2:select', '.pair-ma-gv-sang, .pair-ma-kh', function () {
             syncChieuFromSang($(this).closest('.pair-row'));
+        });
+
+        $('#pair-rows').on('click', '.pair-gv-clear', function (e) {
+            e.preventDefault();
+            var role = $(this).data('role') === 'chieu' ? 'chieu' : 'sang';
+            clearGvSelect($(this).closest('.pair-row'), role);
         });
 
         document.getElementById('pair-add').addEventListener('click', function () {
