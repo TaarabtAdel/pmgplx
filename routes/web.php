@@ -87,6 +87,8 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function () {
         ->name('lich.gv.do-trung');
     Route::get('/lich/giao-vien/do-trong', [DoTrongLichGiaoVienController::class, 'show'])
         ->name('lich.gv.do-trong');
+    Route::get('/lich/giao-vien/do-trong/xuat-excel', [DoTrongLichGiaoVienController::class, 'export'])
+        ->name('lich.gv.do-trong.export');
 
     Route::get('/lich/xe-tap', [DanhSachLichXeTapController::class, 'index'])
         ->name('lich.xe.index');

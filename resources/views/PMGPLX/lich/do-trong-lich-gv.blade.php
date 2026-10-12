@@ -160,9 +160,25 @@
         </div>
     </div>
 
+    @if (session('error'))
+        <div class="alert alert-warning">{{ session('error') }}</div>
+    @endif
+
     @if ($submitted && $result !== null)
         <div class="card card-panel">
-            <div class="card-header">Kết quả</div>
+            <div class="card-header d-flex flex-wrap align-items-center justify-content-between">
+                <span>Kết quả</span>
+                @if ($result['ok'] && ($result['groups'] ?? []) !== [])
+                    @php
+                        $exportParams = request()->query();
+                        $exportParams['run'] = '1';
+                    @endphp
+                    <a href="{{ route('pmgplx.lich.gv.do-trong.export', $exportParams) }}"
+                       class="btn btn-sm btn-success mt-1 mt-md-0">
+                        Xuất Excel
+                    </a>
+                @endif
+            </div>
             <div class="card-body">
                 @if (! $result['ok'])
                     <div class="alert alert-warning mb-0">

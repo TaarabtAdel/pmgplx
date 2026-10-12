@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\PMGPLX\GiaoVien;
 use App\Models\PMGPLX\KhoaHoc;
 use App\Support\PMGPLX\GiaoVienDoTrongCapXeTrongKhoa;
+use App\Support\PMGPLX\GiaoVienLichTrongExcelExporter;
 use App\Support\PMGPLX\GiaoVienLichTrongScanner;
 use App\Support\PMGPLX\LichXeLoaiGhiChu;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DoTrongLichGiaoVienController extends Controller
 {
@@ -31,6 +34,26 @@ class DoTrongLichGiaoVienController extends Controller
             'result' => $result,
             'submitted' => $submitted,
         ]);
+    }
+
+    public function export(Request $request): StreamedResponse|RedirectResponse
+    {
+        $input = $this->inputFromRequest($request);
+        $result = GiaoVienLichTrongScanner::scan($input);
+
+        if (! $result['ok']) {
+            return redirect()
+                ->route('pmgplx.lich.gv.do-trong', $request->query())
+                ->with('error', implode(' ', $result['errors'] ?? ['Không thể xuất Excel.']));
+        }
+
+        if (($result['groups'] ?? []) === []) {
+            return redirect()
+                ->route('pmgplx.lich.gv.do-trong', $request->query())
+                ->with('error', 'Không có dữ liệu để xuất Excel.');
+        }
+
+        return GiaoVienLichTrongExcelExporter::download($result, $input);
     }
 
     /**
