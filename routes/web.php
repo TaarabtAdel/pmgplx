@@ -68,6 +68,8 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function () {
         ->name('dm.hoc-vien.dong-bo');
     Route::post('/danh-muc/hoc-vien/them-phan-cong', [DanhSachHocVienController::class, 'themPhanCong'])
         ->name('dm.hoc-vien.them-phan-cong');
+    Route::post('/danh-muc/hoc-vien/xoa-phan-cong', [DanhSachHocVienController::class, 'xoaPhanCong'])
+        ->name('dm.hoc-vien.xoa-phan-cong');
 
     Route::get('/danh-muc/hoc-vien/nhap-tu-file', [NhapHocVienTuFileController::class, 'create'])
         ->name('dm.hoc-vien.nhap-file.create');
@@ -339,6 +341,9 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
         ->name('pdt.dat.phan-cong-hoc-vien');
     Route::post('/phong-dao-tao/dat/phan-cong-hoc-vien/xoa-theo-khoa', [DanhSachPhanCongHocVienController::class, 'destroyByCourse'])
         ->name('pdt.dat.phan-cong-hoc-vien.destroy-by-course');
+    Route::post('/phong-dao-tao/dat/phan-cong-hoc-vien/{id}/xoa', [DanhSachPhanCongHocVienController::class, 'destroy'])
+        ->whereNumber('id')
+        ->name('pdt.dat.phan-cong-hoc-vien.destroy');
 
     Route::get('/phong-dao-tao/dat/giao-vien-day-thay', [GiaoVienDayThayController::class, 'index'])
         ->name('pdt.dat.giao-vien-day-thay');

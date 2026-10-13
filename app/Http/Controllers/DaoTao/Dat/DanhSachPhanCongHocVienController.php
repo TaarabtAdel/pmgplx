@@ -74,4 +74,17 @@ class DanhSachPhanCongHocVienController extends Controller
             ->route('daotao.pdt.dat.phan-cong-hoc-vien')
             ->with('success', 'Đã xóa '.number_format($deleted).' phân công của khóa '.$maKhoaHoc.'.');
     }
+
+    public function destroy(int $id): RedirectResponse
+    {
+        $row = DatPhanCongHocVien::query()->find($id);
+        if ($row === null) {
+            return back()->with('error', 'Không tìm thấy phân công cần xóa.');
+        }
+
+        $label = trim((string) ($row->HoTenHocVien ?: $row->MaHocVien));
+        $row->delete();
+
+        return back()->with('success', 'Đã xóa phân công học viên '.$label.'.');
+    }
 }

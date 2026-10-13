@@ -55,6 +55,15 @@ class DanhSachHocVienController extends Controller
 
         $phanCongByRowKey = $this->phanCongByRowKeyForItems($items);
 
+        $maKhFilter = trim((string) $request->input('ma_kh', ''));
+        $phanCongTheoGv = $maKhFilter !== ''
+            ? $this->phanCongGroupedByGiaoVienForKhoa($maKhFilter)
+            : [];
+        $tenKhoaFilter = '';
+        if ($maKhFilter !== '') {
+            $tenKhoaFilter = (string) (KhoaHoc::query()->where('MaKH', $maKhFilter)->value('TenKH') ?? '');
+        }
+
         return view('PMGPLX.danh-muc.hoc-vien', [
             'items' => $items,
             'khoaHocs' => $khoaHocs,
@@ -62,6 +71,8 @@ class DanhSachHocVienController extends Controller
             'gvBienSoByMa' => $gvBienSoByMa,
             'xeTaps' => $xeTaps,
             'phanCongByRowKey' => $phanCongByRowKey,
+            'phanCongTheoGv' => $phanCongTheoGv,
+            'tenKhoaFilter' => $tenKhoaFilter,
             'filters' => [
                 'tu_khoa' => $request->input('tu_khoa', ''),
                 'ma_kh' => $request->input('ma_kh', ''),
@@ -144,6 +155,26 @@ class DanhSachHocVienController extends Controller
         }
 
         return back()->with('success', $msg);
+    }
+
+    public function xoaPhanCong(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'id' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $row = DatPhanCongHocVien::query()->find((int) $validated['id']);
+        if ($row === null) {
+            return back()->with('error', 'Không tìm thấy phân công cần xóa.');
+        }
+
+        $row->delete();
+
+        return back()->with(
+            'success',
+            'Đã xóa học viên '.trim((string) ($row->HoTenHocVien ?: $row->MaHocVien))
+            .' khỏi phân công giáo viên '.trim((string) $row->MaGiaoVien).'.'
+        );
     }
 
     public function dongBoForm(Request $request, DongBoHocVienBanCuService $service): View
@@ -486,6 +517,64 @@ class DanhSachHocVienController extends Controller
         }
 
         return $out;
+    }
+
+    /**
+     * Phân công ĐAT theo khóa, nhóm theo giáo viên (màn danh sách HV khi lọc khóa).
+     *
+     * @return list<array{
+     *     ma_giao_vien: string,
+     *     ten_giao_vien: string,
+     *     hoc_vien: list<array{id: int, ma_hoc_vien: string, ho_ten: string}>
+     * }>
+     */
+    private function phanCongGroupedByGiaoVienForKhoa(string $maKh): array
+    {
+        $assignments = DatPhanCongHocVien::query()
+            ->where('MaKhoaHoc', $maKh)
+            ->orderBy('MaGiaoVien')
+            ->orderBy('HoTenHocVien')
+            ->orderBy('MaHocVien')
+            ->get(['Id', 'MaGiaoVien', 'MaHocVien', 'HoTenHocVien']);
+
+        if ($assignments->isEmpty()) {
+            return [];
+        }
+
+        $maGvCodes = $assignments->pluck('MaGiaoVien')->filter()->unique()->values()->all();
+        $gvNames = GiaoVien::query()
+            ->whereIn('MaGV', $maGvCodes)
+            ->get(['MaGV', 'HoTenDem', 'TenGV'])
+            ->keyBy('MaGV');
+
+        $grouped = [];
+        foreach ($assignments as $row) {
+            $maGv = trim((string) ($row->MaGiaoVien ?? ''));
+            if ($maGv === '') {
+                continue;
+            }
+            if (! isset($grouped[$maGv])) {
+                $gv = $gvNames->get($maGv);
+                $tenGv = $gv ? trim($gv->ho_ten) : '';
+                $grouped[$maGv] = [
+                    'ma_giao_vien' => $maGv,
+                    'ten_giao_vien' => $tenGv !== '' ? $tenGv : $maGv,
+                    'hoc_vien' => [],
+                ];
+            }
+
+            $hoTen = trim((string) ($row->HoTenHocVien ?? ''));
+            $maHv = trim((string) ($row->MaHocVien ?? ''));
+            $grouped[$maGv]['hoc_vien'][] = [
+                'id' => (int) $row->Id,
+                'ma_hoc_vien' => $maHv,
+                'ho_ten' => $hoTen !== '' ? $hoTen : $maHv,
+            ];
+        }
+
+        uasort($grouped, static fn (array $a, array $b): int => strcasecmp($a['ten_giao_vien'], $b['ten_giao_vien']));
+
+        return array_values($grouped);
     }
 
     private function filteredQuery(Request $request): Builder

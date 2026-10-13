@@ -181,7 +181,7 @@
                             <th>Xe tự động</th>
                             <th>Nhập lúc</th>
                             <th>File nguồn</th>
-                            <th width="80"></th>
+                            <th width="120"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -219,6 +219,13 @@
                                             data-bien-so-xe-tu-dong="{{ $item->BienSoXeTuDong }}">
                                         Sửa
                                     </button>
+                                    <form method="POST"
+                                          action="{{ route('daotao.pdt.dat.phan-cong-hoc-vien.destroy', $item->Id) }}"
+                                          class="d-inline"
+                                          onsubmit="return confirm('Xóa phân công học viên {{ $item->HoTenHocVien ?: $item->MaHocVien }}?');">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-outline-danger py-0">Xóa</button>
+                                    </form>
                                 </td>
                             </tr>
                         @empty

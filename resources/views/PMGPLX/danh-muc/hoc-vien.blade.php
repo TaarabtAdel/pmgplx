@@ -54,6 +54,78 @@
         </div>
     </div>
 
+    @if (($filters['ma_kh'] ?? '') !== '')
+        <div class="card card-panel mb-3">
+            <div class="card-header p-0" id="heading-phan-cong-theo-gv">
+                <button class="btn btn-link btn-block text-left px-3 py-2" type="button"
+                        data-toggle="collapse" data-target="#collapse-phan-cong-theo-gv"
+                        aria-expanded="true" aria-controls="collapse-phan-cong-theo-gv">
+                    Phân công theo giáo viên
+                    @if ($tenKhoaFilter !== '')
+                        — {{ $tenKhoaFilter }}
+                    @endif
+                    <code class="small ml-1">{{ $filters['ma_kh'] }}</code>
+                    <span class="badge badge-secondary ml-1">{{ count($phanCongTheoGv) }} GV</span>
+                </button>
+            </div>
+            <div id="collapse-phan-cong-theo-gv" class="collapse show" aria-labelledby="heading-phan-cong-theo-gv">
+                <div class="card-body pt-2">
+                    @if (session('success'))
+                        <div class="alert alert-success py-2 mb-2">{{ session('success') }}</div>
+                    @endif
+                    @if (session('error'))
+                        <div class="alert alert-warning py-2 mb-2">{{ session('error') }}</div>
+                    @endif
+
+                    @if ($phanCongTheoGv === [])
+                        <p class="text-muted small mb-0">Khóa này chưa có phân công học viên theo giáo viên.</p>
+                    @else
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered mb-0">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th style="width: 22%">Giáo viên</th>
+                                        <th>Học viên</th>
+                                        <th style="width: 5rem" class="text-center">Xóa</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($phanCongTheoGv as $gvGroup)
+                                        @php $hvList = $gvGroup['hoc_vien'] ?? []; @endphp
+                                        @foreach ($hvList as $hvIndex => $hv)
+                                            <tr>
+                                                @if ($hvIndex === 0)
+                                                    <td rowspan="{{ count($hvList) }}" class="align-top">
+                                                        <strong>{{ $gvGroup['ten_giao_vien'] ?? '' }}</strong>
+                                                        <div class="small text-muted">
+                                                            <code>{{ $gvGroup['ma_giao_vien'] ?? '' }}</code>
+                                                        </div>
+                                                    </td>
+                                                @endif
+                                                <td>
+                                                    {{ $hv['ho_ten'] ?? '' }}
+                                                    <span class="text-muted small">(<code>{{ $hv['ma_hoc_vien'] ?? '' }}</code>)</span>
+                                                </td>
+                                                <td class="text-center align-middle">
+                                                    <form method="POST" action="{{ route('pmgplx.dm.hoc-vien.xoa-phan-cong') }}"
+                                                          onsubmit="return confirm('Xóa học viên này khỏi phân công giáo viên {{ $gvGroup['ten_giao_vien'] ?? '' }}?');">
+                                                        @csrf
+                                                        <input type="hidden" name="id" value="{{ $hv['id'] ?? '' }}">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger py-0" title="Xóa khỏi phân công">×</button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="card card-panel">
         <div class="card-header">Danh sách học viên</div>
         <div class="card-body">
