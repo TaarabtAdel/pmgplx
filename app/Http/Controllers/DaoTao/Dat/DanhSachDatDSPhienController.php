@@ -63,6 +63,13 @@ class DanhSachDatDSPhienController extends Controller
             ->orderBy('MaGiaoVien')
             ->get();
 
+        $xeOptions = DatDSPhien::query()
+            ->whereNotNull('BienSoXe')
+            ->where('BienSoXe', '!=', '')
+            ->distinct()
+            ->orderBy('BienSoXe')
+            ->pluck('BienSoXe');
+
         $loaiKhoaHocOptions = DatDSPhien::query()
             ->whereNotNull('LoaiKhoaHoc')
             ->where('LoaiKhoaHoc', '!=', '')
@@ -100,6 +107,7 @@ class DanhSachDatDSPhienController extends Controller
             'phanLoais' => $phanLoais,
             'khoaHocOptions' => $khoaHocOptions,
             'giaoVienOptions' => $giaoVienOptions,
+            'xeOptions' => $xeOptions,
             'loaiKhoaHocOptions' => $loaiKhoaHocOptions,
             'selectedHocVienOption' => $selectedHocVienOption,
             'chiTieuById' => $chiTieuById,

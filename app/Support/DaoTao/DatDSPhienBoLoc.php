@@ -29,6 +29,7 @@ class DatDSPhienBoLoc
             'ma_khoa_hoc' => trim((string) $request->input('ma_khoa_hoc', '')),
             'loai_khoa_hoc' => trim((string) $request->input('loai_khoa_hoc', '')),
             'ma_giao_vien' => trim((string) $request->input('ma_giao_vien', '')),
+            'bien_so_xe' => trim((string) $request->input('bien_so_xe', '')),
             'ngay' => $ngay,
             'tu_ngay' => $tuNgay,
             'den_ngay' => $denNgay,
@@ -73,6 +74,10 @@ class DatDSPhienBoLoc
 
         if ($filters['ma_giao_vien'] !== '') {
             $query->where('MaGiaoVien', $filters['ma_giao_vien']);
+        }
+
+        if ($filters['bien_so_xe'] !== '') {
+            $query->where('BienSoXe', $filters['bien_so_xe']);
         }
 
         if ($filters['ngay'] !== '') {

@@ -55,4 +55,14 @@
             noResults: function () { return 'Không tìm thấy giáo viên'; }
         }
     });
+    $('#filter_bien_so_xe').select2({
+        theme: 'bootstrap4',
+        placeholder: 'Tìm biển số xe...',
+        allowClear: true,
+        width: '100%',
+        dropdownParent: $('#filter_bien_so_xe').closest('.form-group'),
+        language: {
+            noResults: function () { return 'Không tìm thấy xe'; }
+        }
+    });
 </script>

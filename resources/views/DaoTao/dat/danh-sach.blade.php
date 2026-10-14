@@ -157,17 +157,17 @@
                         </div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group col-md-3">
+                        <div class="form-group col-md-2">
                             <label class="small text-muted mb-1">Từ ngày</label>
                             <input type="date" name="tu_ngay" class="form-control form-control-sm"
                                    value="{{ $filters['tu_ngay'] }}">
                         </div>
-                        <div class="form-group col-md-3">
+                        <div class="form-group col-md-2">
                             <label class="small text-muted mb-1">Đến ngày</label>
                             <input type="date" name="den_ngay" class="form-control form-control-sm"
                                    value="{{ $filters['den_ngay'] }}">
                         </div>
-                        <div class="form-group col-md-3">
+                        <div class="form-group col-md-2">
                             <label class="small text-muted mb-1" for="filter_loai_khoa_hoc">Loại khóa học</label>
                             <select name="loai_khoa_hoc" id="filter_loai_khoa_hoc" class="form-control form-control-sm">
                                 <option value="">— Tất cả —</option>
@@ -175,6 +175,18 @@
                                     <option value="{{ $loai }}"
                                             @selected(($filters['loai_khoa_hoc'] ?? '') === $loai)>
                                         {{ $loai }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label class="small text-muted mb-1" for="filter_bien_so_xe">Biển số xe</label>
+                            <select name="bien_so_xe" id="filter_bien_so_xe" class="form-control form-control-sm">
+                                <option value="">— Tất cả —</option>
+                                @foreach ($xeOptions as $xe)
+                                    <option value="{{ $xe }}"
+                                            @selected(($filters['bien_so_xe'] ?? '') === $xe)>
+                                        {{ $xe }}
                                     </option>
                                 @endforeach
                             </select>
@@ -572,6 +584,16 @@
         dropdownParent: $('#filter_ma_giao_vien').closest('.form-group'),
         language: {
             noResults: function () { return 'Không tìm thấy giáo viên'; }
+        }
+    });
+    $('#filter_bien_so_xe').select2({
+        theme: 'bootstrap4',
+        placeholder: 'Tìm biển số xe...',
+        allowClear: true,
+        width: '100%',
+        dropdownParent: $('#filter_bien_so_xe').closest('.form-group'),
+        language: {
+            noResults: function () { return 'Không tìm thấy xe'; }
         }
     });
 </script>
