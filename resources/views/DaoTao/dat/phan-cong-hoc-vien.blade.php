@@ -49,12 +49,22 @@
                         <small class="text-muted">Chọn khóa để xem phân công và danh sách học viên. GV lấy từ <a href="{{ route('pmgplx.lich.xe.index') }}" target="_blank" rel="noopener">lịch xe tập</a> khóa.</small>
                     </div>
                     @if (($maKhoaHoc ?? '') !== '')
-                        <div class="form-group col-md-4 mb-2">
+                        <div class="form-group col-md-3 mb-2">
                             <label for="filter_tu_khoa" class="small mb-1">Lọc học viên (mã / họ tên)</label>
                             <input type="text" name="tu_khoa" id="filter_tu_khoa"
                                    class="form-control form-control-sm"
                                    value="{{ $hocVienFilters['tu_khoa'] ?? '' }}"
                                    placeholder="Tùy chọn...">
+                        </div>
+                        <div class="form-group col-md-4 mb-2 d-flex align-items-end">
+                            <div class="custom-control custom-checkbox mb-1">
+                                <input type="checkbox" class="custom-control-input" id="filter_an_da_phan_cong"
+                                       name="an_da_phan_cong" value="1"
+                                       @checked($hocVienFilters['an_da_phan_cong'] ?? false)>
+                                <label class="custom-control-label small" for="filter_an_da_phan_cong">
+                                    Ẩn học viên đã phân công (trong khóa này)
+                                </label>
+                            </div>
                         </div>
                         <div class="form-group col-md-3 mb-2">
                             <button type="submit" class="btn btn-sm btn-navy btn-block">Áp dụng</button>
@@ -193,6 +203,9 @@
                                 <form method="GET" action="{{ route('daotao.pdt.dat.phan-cong-hoc-vien') }}" class="form-inline">
                                     <input type="hidden" name="ma_khoa_hoc" value="{{ $maKhoaHoc }}">
                                     <input type="hidden" name="tu_khoa" value="{{ $hocVienFilters['tu_khoa'] ?? '' }}">
+                                    @if ($hocVienFilters['an_da_phan_cong'] ?? false)
+                                        <input type="hidden" name="an_da_phan_cong" value="1">
+                                    @endif
                                     <label class="mr-2 mb-0 small">Số dòng/trang</label>
                                     <select name="per_page" class="form-control form-control-sm" onchange="this.form.submit()">
                                         @foreach ([20, 50, 100, 200] as $n)
@@ -282,6 +295,9 @@
                 <input type="hidden" name="ma_khoa_hoc" value="{{ $maKhoaHoc ?? '' }}">
                 <input type="hidden" name="tu_khoa" value="{{ $hocVienFilters['tu_khoa'] ?? '' }}">
                 <input type="hidden" name="per_page" value="{{ $hocVienFilters['per_page'] ?? 50 }}">
+                @if ($hocVienFilters['an_da_phan_cong'] ?? false)
+                    <input type="hidden" name="an_da_phan_cong" value="1">
+                @endif
                 <div class="modal-content">
                     <div class="modal-header py-2">
                         <h5 class="modal-title" id="modal-phan-cong-hv-label">Thêm vào phân công</h5>

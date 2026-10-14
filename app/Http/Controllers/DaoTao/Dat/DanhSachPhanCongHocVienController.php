@@ -55,7 +55,11 @@ class DanhSachPhanCongHocVienController extends Controller
 
         if ($maKhoaHoc !== '') {
             $phanCongTheoGv = DatPhanCongTheoKhoaPresenter::groupsByGiaoVien($maKhoaHoc);
-            $hocVienItems = DatPhanCongTheoKhoaPresenter::hocVienQuery($maKhoaHoc, $hocVienFilters['tu_khoa'])
+            $hocVienItems = DatPhanCongTheoKhoaPresenter::hocVienQuery(
+                $maKhoaHoc,
+                $hocVienFilters['tu_khoa'],
+                $hocVienFilters['an_da_phan_cong']
+            )
                 ->paginate($hocVienFilters['per_page'])
                 ->withQueryString();
             $phanCongByRowKey = DatPhanCongTheoKhoaPresenter::phanCongByRowKeyForPaginator($hocVienItems);
@@ -146,6 +150,7 @@ class DanhSachPhanCongHocVienController extends Controller
             'ma_khoa_hoc' => $maKhoaHoc,
             'tu_khoa' => $request->input('tu_khoa'),
             'per_page' => $request->input('per_page'),
+            'an_da_phan_cong' => $request->boolean('an_da_phan_cong') ? '1' : null,
         ]));
 
         if ($created + $updated === 0) {

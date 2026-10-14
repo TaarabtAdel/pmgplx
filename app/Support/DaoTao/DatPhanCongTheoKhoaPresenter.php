@@ -145,12 +145,13 @@ final class DatPhanCongTheoKhoaPresenter
         return $out;
     }
 
-    public static function hocVienQuery(string $maKhoaHoc, string $tuKhoa = ''): Builder
+    public static function hocVienQuery(string $maKhoaHoc, string $tuKhoa = '', bool $anDaPhanCong = false): Builder
     {
+        $maKh = trim($maKhoaHoc);
         $query = NguoiLX::query()
             ->from('NguoiLX as n')
             ->leftJoin('NguoiLX_HoSo as h', 'h.MaDK', '=', 'n.MaDK')
-            ->where('h.MaKhoaHoc', trim($maKhoaHoc))
+            ->where('h.MaKhoaHoc', $maKh)
             ->select([
                 'n.MaDK',
                 'n.HoDemNLX',
@@ -177,6 +178,21 @@ final class DatPhanCongTheoKhoaPresenter
             });
         }
 
+        if ($anDaPhanCong && $maKh !== '') {
+            $assignedMa = DatPhanCongHocVien::query()
+                ->where('MaKhoaHoc', $maKh)
+                ->pluck('MaHocVien')
+                ->map(static fn ($ma): string => trim((string) $ma))
+                ->filter(static fn (string $ma): bool => $ma !== '')
+                ->unique()
+                ->values()
+                ->all();
+
+            if ($assignedMa !== []) {
+                $query->whereNotIn('n.MaDK', $assignedMa);
+            }
+        }
+
         return $query
             ->orderByRaw('n.TenNLX COLLATE Vietnamese_CI_AS ASC')
             ->orderByRaw('n.HoDemNLX COLLATE Vietnamese_CI_AS ASC')
@@ -184,7 +200,7 @@ final class DatPhanCongTheoKhoaPresenter
     }
 
     /**
-     * @return array{per_page: int, tu_khoa: string}
+     * @return array{per_page: int, tu_khoa: string, an_da_phan_cong: bool}
      */
     public static function parseHocVienFilters(Request $request): array
     {
@@ -196,6 +212,7 @@ final class DatPhanCongTheoKhoaPresenter
         return [
             'tu_khoa' => trim((string) $request->input('tu_khoa', '')),
             'per_page' => $perPage,
+            'an_da_phan_cong' => $request->boolean('an_da_phan_cong'),
         ];
     }
 }
