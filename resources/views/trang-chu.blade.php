@@ -6,7 +6,7 @@
     <div class="row">
         <div class="col-lg-3 mb-3">
             <div class="card card-panel h-100">
-                <div class="card-header">Phần Mềm Giấy Phép Lái Xe</div>
+                <div class="card-header">PMGPLX</div>
                 <div class="list-group list-group-flush">
                     <a href="{{ route('pmgplx.dm.giao-vien.index') }}" class="list-group-item list-group-item-action">
                         Quản lý giáo viên

@@ -117,7 +117,7 @@ final class LichThucHanhPmgplxPublisher
                             'MaGV' => $maGv,
                             'TenGV' => $tenGv,
                             'LoaiGV' => 'TH',
-                            'GhiChu' => '',
+                            'GhiChu' => $ghiChuXe,
                             'TrangThai' => 1,
                             'NguoiTao' => self::NGUON,
                             'NguoiSua' => self::NGUON,

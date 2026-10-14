@@ -20,6 +20,26 @@
             <a href="{{ route('pmgplx.lich.nhap-file.preview-xe') }}" class="btn btn-sm btn-outline-secondary">← Quay lại lịch xe</a>
         </div>
         <div class="card-body">
+            @php
+                $replaceMaKh = $meta['replace_ma_kh'] ?? [];
+                $replaceWipeGv = (int) ($meta['replace_wipe_gv'] ?? 0);
+                $replaceWipeXe = (int) ($meta['replace_wipe_xe'] ?? 0);
+            @endphp
+
+            @if ($replaceMaKh !== [])
+                <div class="alert alert-danger">
+                    <strong>Thay thế lịch theo khóa:</strong>
+                    trước khi ghi, hệ thống sẽ xóa <strong>toàn bộ</strong> lịch TH / xe tập lái cũ
+                    (<code>IsKhoaHoc*=0</code>) của khóa:
+                    @foreach ($replaceMaKh as $maKh)
+                        <code class="mr-1">{{ $maKh }}</code>
+                    @endforeach
+                    — hiện có khoảng <strong>{{ number_format($replaceWipeGv) }}</strong> buổi GV,
+                    <strong>{{ number_format($replaceWipeXe) }}</strong> buổi xe sẽ bị xóa,
+                    sau đó ghi <strong>{{ count($gvSave) }}</strong> buổi GV và <strong>{{ count($xeSave) }}</strong> buổi xe từ file.
+                </div>
+            @endif
+
             <div class="mb-3">
                 <div><strong>File:</strong> {{ $preview['file_name'] ?? '' }}</div>
                 <div>
@@ -33,10 +53,9 @@
                     bỏ qua <strong class="text-danger">{{ (int) ($meta['xe_skip'] ?? 0) }}</strong>
                 </div>
                 @if ((int) ($meta['gv_delete'] ?? 0) > 0 || (int) ($meta['xe_delete'] ?? 0) > 0)
-                    <div class="text-danger">
-                        <strong>Sẽ xóa (ngày nghỉ trong file):</strong>
-                        lịch GV <strong>{{ (int) ($meta['gv_delete'] ?? 0) }}</strong>,
-                        lịch xe <strong>{{ (int) ($meta['xe_delete'] ?? 0) }}</strong>
+                    <div class="text-muted small">
+                        Ngày nghỉ trong file (không ghi buổi mới): GV {{ (int) ($meta['gv_delete'] ?? 0) }}, xe {{ (int) ($meta['xe_delete'] ?? 0) }} buổi cũ trùng ngày nghỉ
+                        (đã nằm trong phần xóa toàn khóa ở trên).
                     </div>
                 @endif
             </div>

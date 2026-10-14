@@ -127,6 +127,7 @@
                             <th>TG bắt đầu</th>
                             <th>TG kết thúc</th>
                             <th>Môn học GD</th>
+                            <th>Ghi chú</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -143,10 +144,11 @@
                                 <td>{{ optional($row->NgayBD)->format('d/m/Y H:i') }}</td>
                                 <td>{{ optional($row->NgayKT)->format('d/m/Y H:i') }}</td>
                                 <td>{{ \App\Support\PMGPLX\LichGvMonHoc::displayLabel($row->TenMonHoc, $row->MaMonHoc, $monMap) }}</td>
+                                <td class="small">{{ $row->GhiChu }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center py-4">Không có dữ liệu</td>
+                                <td colspan="9" class="text-center py-4">Không có dữ liệu</td>
                             </tr>
                         @endforelse
                     </tbody>

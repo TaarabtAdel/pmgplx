@@ -33,8 +33,6 @@
         $tuDongCount = collect($rows)->filter(
             fn ($r) => \App\Support\PMGPLX\LichExcelCellStyle::containsTuDong($r['noi_dung'] ?? '')
         )->count();
-        $updateModeXe = ! empty($preview['meta']['update_mode_xe']);
-        $updateCount = (int) ($preview['meta']['xe_update_count'] ?? 0);
     @endphp
 
     <div class="card card-panel">
@@ -51,10 +49,7 @@
                 <div>
                     <strong>Tổng buổi:</strong> {{ count($rows) }} —
                     sẽ lưu <strong class="text-success">{{ $okCount }}</strong>,
-                    bỏ qua <strong class="text-danger">{{ $conflictCount }}</strong> trùng
-                    @if ($updateModeXe && $updateCount > 0)
-                        , <strong class="text-primary">{{ $updateCount }}</strong> cập nhật
-                    @endif
+                    bỏ qua <strong class="text-danger">{{ $conflictCount }}</strong> trùng khóa khác
                     @if ($skipCount > 0)
                         , <strong class="text-warning">{{ $skipCount }}</strong> bỏ qua
                     @endif
@@ -78,27 +73,18 @@
                 </div>
             @endif
 
-            @if ($conflictCount > 0 && ! $updateModeXe)
-                <div class="alert alert-warning">
-                    Dòng nền đỏ đã trùng lịch (GV hoặc xe). Khi lưu sẽ bỏ qua các dòng này (trừ khi bật <strong>Chế độ cập nhật</strong>).
-                </div>
-            @endif
+            <div class="alert alert-danger py-2">
+                Lưu DB sẽ <strong>xóa toàn bộ lịch xe tập cũ</strong> của từng khóa có trong file (cùng lúc với lịch GV) và thay bằng lịch mới.
+            </div>
 
-            @if ($updateModeXe)
-                <div class="alert alert-primary">
-                    Đang bật <strong>Chế độ cập nhật</strong> — dòng trùng lịch xe sẽ được <strong>cập nhật</strong> thay vì bỏ qua.
+            @if ($conflictCount > 0)
+                <div class="alert alert-warning">
+                    Dòng nền đỏ trùng lịch xe/GV <strong>khóa khác</strong> — không lưu được; cần sửa Excel hoặc lịch PMGPLX.
                 </div>
             @endif
 
             <form method="POST" action="{{ route('pmgplx.lich.nhap-file.to-db') }}" id="formConfirmNhapFileXe">
                 @csrf
-                <div class="custom-control custom-checkbox mb-3">
-                    <input type="checkbox" class="custom-control-input" id="cheDoCapNhatXe" name="che_do_cap_nhat" value="1"
-                           @checked(old('che_do_cap_nhat', $updateModeXe))>
-                    <label class="custom-control-label" for="cheDoCapNhatXe">
-                        <strong>Chế độ cập nhật</strong> — dòng trùng lịch xe sẽ được <strong>cập nhật</strong> thay vì bỏ qua / thêm mới
-                    </label>
-                </div>
                 <div class="table-responsive mb-3">
                     <table class="table table-sm table-bordered table-hover mb-0">
                         <thead class="thead-light">

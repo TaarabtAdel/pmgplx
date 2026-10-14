@@ -345,7 +345,7 @@
                    data-toggle="dropdown"
                    aria-haspopup="true"
                    aria-expanded="false">
-                    Phần Mềm Giấy Phép Lái Xe
+                    PMGPLX
                 </a>
                 <div class="dropdown-menu" aria-labelledby="navPmgplxDropdown">
                     <a class="dropdown-item {{ request()->routeIs('pmgplx.dm.giao-vien.*') ? 'active' : '' }}"
@@ -374,6 +374,10 @@
                                href="{{ route('pmgplx.lich.gv.index') }}">
                                 Lịch làm việc giáo viên
                             </a>
+                            <a class="dropdown-item {{ request()->routeIs('pmgplx.lich.xe.*') ? 'active' : '' }}"
+                               href="{{ route('pmgplx.lich.xe.index') }}">
+                                Lịch sử dụng xe tập lái
+                            </a>
                             <a class="dropdown-item {{ request()->routeIs('pmgplx.lich.gv.do-trung') ? 'active' : '' }}"
                                href="{{ route('pmgplx.lich.gv.do-trung') }}">
                                 Dò trùng lịch giáo viên
@@ -381,10 +385,6 @@
                             <a class="dropdown-item {{ request()->routeIs('pmgplx.lich.gv.do-trong') ? 'active' : '' }}"
                                href="{{ route('pmgplx.lich.gv.do-trong') }}">
                                 Dò lịch trống giáo viên
-                            </a>
-                            <a class="dropdown-item {{ request()->routeIs('pmgplx.lich.xe.*') ? 'active' : '' }}"
-                               href="{{ route('pmgplx.lich.xe.index') }}">
-                                Lịch sử dụng xe tập lái
                             </a>
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item {{ request()->routeIs('pmgplx.lich.ly-thuyet.*') ? 'active' : '' }}"

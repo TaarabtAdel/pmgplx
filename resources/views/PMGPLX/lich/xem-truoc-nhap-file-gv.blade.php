@@ -20,8 +20,6 @@
         $skipCount = (int) ($preview['meta']['gv_skip_count'] ?? 0);
         $khoaHocList = $preview['meta']['khoa_hoc_list'] ?? [];
         $ngayList = $preview['meta']['ngay_list'] ?? [];
-        $updateMode = ! empty($preview['meta']['update_mode']);
-        $updateCount = (int) ($preview['meta']['gv_update_count'] ?? 0);
     @endphp
 
     <div class="card card-panel">
@@ -38,10 +36,7 @@
                 <div>
                     <strong>Tổng buổi:</strong> {{ count($rows) }} —
                     sẽ lưu <strong class="text-success">{{ $okCount }}</strong>,
-                    bỏ qua <strong class="text-danger">{{ $conflictCount }}</strong> trùng
-                    @if ($updateMode && $updateCount > 0)
-                        , <strong class="text-primary">{{ $updateCount }}</strong> cập nhật
-                    @endif
+                    bỏ qua <strong class="text-danger">{{ $conflictCount }}</strong> trùng khóa khác
                     @if ($skipCount > 0)
                         , <strong class="text-warning">{{ $skipCount }}</strong> Bổ Sung
                     @endif
@@ -59,27 +54,18 @@
                 </div>
             @endif
 
-            @if ($conflictCount > 0 && ! $updateMode)
-                <div class="alert alert-warning">
-                    Dòng nền đỏ đã trùng lịch giáo viên. Khi lưu sẽ bỏ qua các dòng này (trừ khi bật <strong>Chế độ cập nhật</strong>).
-                </div>
-            @endif
+            <div class="alert alert-danger py-2">
+                Lưu DB sẽ <strong>xóa toàn bộ lịch GV và lịch xe tập cũ</strong> của từng khóa có trong file và thay bằng lịch mới.
+            </div>
 
-            @if ($updateMode)
-                <div class="alert alert-primary">
-                    Đang bật <strong>Chế độ cập nhật</strong> — dòng trùng lịch GV sẽ được <strong>cập nhật</strong> thay vì bỏ qua.
+            @if ($conflictCount > 0)
+                <div class="alert alert-warning">
+                    Dòng nền đỏ trùng lịch giáo viên <strong>khóa khác</strong> — không lưu được; cần sửa Excel hoặc lịch PMGPLX.
                 </div>
             @endif
 
             <form method="POST" action="{{ route('pmgplx.lich.nhap-file.to-xe') }}" id="formNhapFileGv">
                 @csrf
-                <div class="custom-control custom-checkbox mb-3">
-                    <input type="checkbox" class="custom-control-input" id="cheDoCapNhat" name="che_do_cap_nhat" value="1"
-                           @checked(old('che_do_cap_nhat', $updateMode))>
-                    <label class="custom-control-label" for="cheDoCapNhat">
-                        <strong>Chế độ cập nhật</strong> — dòng trùng lịch GV sẽ được <strong>cập nhật</strong> thay vì bỏ qua / thêm mới
-                    </label>
-                </div>
                 <div class="table-responsive mb-3">
                     <table class="table table-sm table-bordered table-hover mb-0">
                         <thead class="thead-light">
