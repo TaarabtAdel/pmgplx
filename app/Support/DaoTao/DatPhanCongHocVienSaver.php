@@ -95,7 +95,8 @@ class DatPhanCongHocVienSaver
         ?string $hoTenHocVien = null,
         ?string $fileNguon = null,
         ?int $recordId = null,
-        string $bienSoXeTuDong = ''
+        string $bienSoXeTuDong = '',
+        bool $blockReassignToOtherGiaoVien = false
     ): array {
         $maKhoaHoc = trim($maKhoaHoc);
         $maHocVien = self::normalizeMaHocVien($maHocVien);
@@ -127,17 +128,33 @@ class DatPhanCongHocVienSaver
             'NgayNhap' => $now,
         ];
 
-        return DB::connection('sqlsrv_manhlinh')->transaction(function () use ($payload, $maKhoaHoc, $maHocVien, $recordId): array {
+        return DB::connection('sqlsrv_manhlinh')->transaction(function () use (
+            $payload,
+            $maKhoaHoc,
+            $maHocVien,
+            $recordId,
+            $maGiaoVien,
+            $blockReassignToOtherGiaoVien
+        ): array {
             if ($recordId !== null) {
                 return self::saveExistingRecord($recordId, $maKhoaHoc, $maHocVien, $payload);
             }
 
-            $existing = DatPhanCongHocVien::query()
-                ->where('MaKhoaHoc', $maKhoaHoc)
-                ->where('MaHocVien', $maHocVien)
-                ->first();
+            $existingRows = self::assignmentsForHocVienInKhoa($maKhoaHoc, $maHocVien);
+
+            if ($blockReassignToOtherGiaoVien && count($existingRows) > 1) {
+                throw ValidationException::withMessages([
+                    'ma_hoc_vien' => 'Mã học viên '.$maHocVien.' có '.count($existingRows)
+                        .' dòng phân công trùng trong khóa — xóa bớt trước khi gán lại.',
+                ]);
+            }
+
+            $existing = $existingRows[0] ?? null;
 
             if ($existing !== null) {
+                if ($blockReassignToOtherGiaoVien) {
+                    self::assertSameGiaoVienOrFail($existing, $maGiaoVien, $maHocVien);
+                }
                 $existing->update($payload);
 
                 return ['created' => false, 'item' => $existing->fresh()];
@@ -182,5 +199,122 @@ class DatPhanCongHocVienSaver
         $current->update($payload);
 
         return ['created' => false, 'item' => $current->fresh()];
+    }
+
+    public static function findAssignmentInKhoa(string $maKhoaHoc, string $maHocVien): ?DatPhanCongHocVien
+    {
+        $maKhoaHoc = trim($maKhoaHoc);
+        $maHocVien = self::normalizeMaHocVien($maHocVien);
+        if ($maKhoaHoc === '' || $maHocVien === '') {
+            return null;
+        }
+
+        $variants = array_values(array_unique(array_filter([
+            $maHocVien,
+            ltrim($maHocVien, '0'),
+        ])));
+
+        return DatPhanCongHocVien::query()
+            ->where('MaKhoaHoc', $maKhoaHoc)
+            ->whereIn('MaHocVien', $variants)
+            ->orderBy('Id')
+            ->first();
+    }
+
+    /**
+     * Một mã HV trong khóa gắn nhiều dòng hoặc nhiều giáo viên (trùng phân công).
+     *
+     * @return list<array{ma_hoc_vien: string, count: int, ma_giao_vien_list: list<string>}>
+     */
+    public static function duplicateMaHocVienInKhoa(string $maKhoaHoc): array
+    {
+        $maKhoaHoc = trim($maKhoaHoc);
+        if ($maKhoaHoc === '') {
+            return [];
+        }
+
+        $rows = DatPhanCongHocVien::query()
+            ->where('MaKhoaHoc', $maKhoaHoc)
+            ->orderBy('Id')
+            ->get(['Id', 'MaHocVien', 'MaGiaoVien']);
+
+        /** @var array<string, array{count: int, ma_giao_vien_list: list<string>}> $byNorm */
+        $byNorm = [];
+        foreach ($rows as $row) {
+            $norm = self::normalizeMaHocVien((string) $row->MaHocVien);
+            if ($norm === '') {
+                continue;
+            }
+            if (! isset($byNorm[$norm])) {
+                $byNorm[$norm] = ['count' => 0, 'ma_giao_vien_list' => []];
+            }
+            $byNorm[$norm]['count']++;
+            $gv = self::normalizeMaGiaoVien((string) $row->MaGiaoVien);
+            if ($gv !== '' && ! in_array($gv, $byNorm[$norm]['ma_giao_vien_list'], true)) {
+                $byNorm[$norm]['ma_giao_vien_list'][] = $gv;
+            }
+        }
+
+        $out = [];
+        foreach ($byNorm as $norm => $data) {
+            if ($data['count'] <= 1 && count($data['ma_giao_vien_list']) <= 1) {
+                continue;
+            }
+            $out[] = [
+                'ma_hoc_vien' => $norm,
+                'count' => $data['count'],
+                'ma_giao_vien_list' => $data['ma_giao_vien_list'],
+            ];
+        }
+
+        usort($out, static fn (array $a, array $b): int => strcmp($a['ma_hoc_vien'], $b['ma_hoc_vien']));
+
+        return $out;
+    }
+
+    /**
+     * @return list<DatPhanCongHocVien>
+     */
+    public static function assignmentsForHocVienInKhoa(string $maKhoaHoc, string $maHocVien): array
+    {
+        $maKhoaHoc = trim($maKhoaHoc);
+        $maHocVien = self::normalizeMaHocVien($maHocVien);
+        if ($maKhoaHoc === '' || $maHocVien === '') {
+            return [];
+        }
+
+        $variants = array_values(array_unique(array_filter([
+            $maHocVien,
+            ltrim($maHocVien, '0'),
+        ])));
+
+        return DatPhanCongHocVien::query()
+            ->where('MaKhoaHoc', $maKhoaHoc)
+            ->whereIn('MaHocVien', $variants)
+            ->orderBy('Id')
+            ->get()
+            ->all();
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    public static function assertSameGiaoVienOrFail(
+        DatPhanCongHocVien $existing,
+        string $targetMaGiaoVien,
+        string $maHocVien
+    ): void {
+        $currentGv = self::normalizeMaGiaoVien((string) $existing->MaGiaoVien);
+        $targetGv = self::normalizeMaGiaoVien($targetMaGiaoVien);
+        if ($currentGv === '' || $targetGv === '' || $currentGv === $targetGv) {
+            return;
+        }
+
+        $label = trim((string) ($existing->HoTenHocVien ?: $maHocVien));
+
+        throw ValidationException::withMessages([
+            'ma_giao_vien' => 'Học viên '.$label.' ('.$maHocVien.') đã phân công giáo viên '
+                .$existing->MaGiaoVien.'. Một học viên chỉ thuộc một giáo viên trong khóa — xóa phân công cũ trước khi gán GV khác.',
+        ]);
     }
 }

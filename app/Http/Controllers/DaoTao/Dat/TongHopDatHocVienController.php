@@ -7,6 +7,7 @@ use App\Models\DaoTao\DatDieuKienDat;
 use App\Models\DaoTao\DatDSPhien;
 use App\Support\DaoTao\DatDSPhienBoLoc;
 use App\Support\DaoTao\DatHocVienTongHop;
+use App\Support\DaoTao\DatKhoaHocSelectOptions;
 use App\Support\DaoTao\DatTongHopHocVienExcelExporter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -42,13 +43,7 @@ class TongHopDatHocVienController extends Controller
             );
         }
 
-        $khoaHocOptions = DatDSPhien::query()
-            ->selectRaw('MaKhoaHoc, MAX(TenKhoaHoc) as TenKhoaHoc')
-            ->whereNotNull('MaKhoaHoc')
-            ->where('MaKhoaHoc', '!=', '')
-            ->groupBy('MaKhoaHoc')
-            ->orderBy('MaKhoaHoc')
-            ->get();
+        $khoaHocOptions = DatKhoaHocSelectOptions::fromDatDSPhien();
 
         $loaiKhoaHocOptions = DatDSPhien::query()
             ->when($canTongHop, fn ($q) => $q->where('MaKhoaHoc', $filters['ma_khoa_hoc']))

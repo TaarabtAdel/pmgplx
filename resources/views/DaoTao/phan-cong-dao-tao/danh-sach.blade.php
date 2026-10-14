@@ -1,11 +1,11 @@
 @extends('PMGPLX.layouts.quan-ly')
 
-@section('title', 'Danh sách phân công')
+@section('title', 'Phân công giáo viên')
 
 @section('content')
     <div class="card card-panel">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <span>Danh sách phân công đào tạo</span>
+            <span>Phân công giáo viên</span>
             <div class="d-flex flex-wrap gap-2">
                 <a href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach-tu-lich', array_filter($filters ?? [])) }}"
                    class="btn btn-sm btn-outline-primary">Đối chiếu lịch PMGPLX →</a>

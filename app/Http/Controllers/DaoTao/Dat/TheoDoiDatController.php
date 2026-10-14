@@ -5,7 +5,7 @@ namespace App\Http\Controllers\DaoTao\Dat;
 use App\Http\Controllers\Controller;
 use App\Models\DaoTao\DatDSPhien;
 use App\Models\DaoTao\DatDieuKienDat;
-use App\Models\DaoTao\DatPhanCongHocVien;
+use App\Support\DaoTao\DatPhanCongHocVienBoLoc;
 use App\Support\DaoTao\DatTheoDoiDat;
 use App\Support\DaoTao\DatTheoDoiDatExcelExporter;
 use Illuminate\Http\RedirectResponse;
@@ -21,31 +21,7 @@ class TheoDoiDatController extends Controller
         $canShowReport = $filters['ma_khoa_hoc'] !== '';
         $hasNgayFilter = $filters['ngay'] !== '';
 
-        $khoaHocCodes = DatPhanCongHocVien::query()
-            ->whereNotNull('MaKhoaHoc')
-            ->where('MaKhoaHoc', '!=', '')
-            ->distinct()
-            ->orderBy('MaKhoaHoc')
-            ->pluck('MaKhoaHoc');
-
-        $khoaHocNames = collect();
-        if ($khoaHocCodes->isNotEmpty()) {
-            $khoaHocNames = DatDSPhien::query()
-                ->selectRaw('MaKhoaHoc, MAX(TenKhoaHoc) as TenKhoaHoc')
-                ->whereIn('MaKhoaHoc', $khoaHocCodes->all())
-                ->groupBy('MaKhoaHoc')
-                ->get()
-                ->keyBy('MaKhoaHoc');
-        }
-
-        $khoaHocOptions = $khoaHocCodes->map(function ($maKhoaHoc) use ($khoaHocNames) {
-            $maKhoaHoc = (string) $maKhoaHoc;
-
-            return (object) [
-                'MaKhoaHoc' => $maKhoaHoc,
-                'TenKhoaHoc' => (string) ($khoaHocNames->get($maKhoaHoc)?->TenKhoaHoc ?? ''),
-            ];
-        });
+        $khoaHocOptions = DatPhanCongHocVienBoLoc::khoaHocOptions();
 
         $courseFilterOptions = DatTheoDoiDat::courseFilterOptions($filters['ma_khoa_hoc']);
 

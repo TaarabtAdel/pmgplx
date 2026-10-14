@@ -108,7 +108,7 @@ class DatPhanCongHocVienBoLoc
                 ->whereIn('MaKH', $missing)
                 ->pluck('TenKH', 'MaKH');
 
-        return collect($codes)->map(static function (string $ma) use ($namesFromPhien, $namesFromPmgplx) {
+        $options = collect($codes)->map(static function (string $ma) use ($namesFromPhien, $namesFromPmgplx) {
             $ten = trim((string) ($namesFromPhien[$ma] ?? ''));
             if ($ten === '') {
                 $ten = trim((string) ($namesFromPmgplx[$ma] ?? ''));
@@ -119,5 +119,7 @@ class DatPhanCongHocVienBoLoc
                 'TenKhoaHoc' => $ten,
             ];
         });
+
+        return DatKhoaHocSelectOptions::sortAlphabetical($options);
     }
 }

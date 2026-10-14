@@ -4,6 +4,7 @@ namespace App\Http\Controllers\DaoTao\Dat\Concerns;
 
 use App\Models\DaoTao\DatDSPhien;
 use App\Support\DaoTao\DatDSPhienBoLoc;
+use App\Support\DaoTao\DatKhoaHocSelectOptions;
 
 trait LoadsDatPhienFilterOptions
 {
@@ -18,13 +19,7 @@ trait LoadsDatPhienFilterOptions
      */
     protected function loadDatPhienFilterOptions(array $filters): array
     {
-        $khoaHocOptions = DatDSPhien::query()
-            ->selectRaw('MaKhoaHoc, MAX(TenKhoaHoc) as TenKhoaHoc')
-            ->whereNotNull('MaKhoaHoc')
-            ->where('MaKhoaHoc', '!=', '')
-            ->groupBy('MaKhoaHoc')
-            ->orderBy('MaKhoaHoc')
-            ->get();
+        $khoaHocOptions = DatKhoaHocSelectOptions::fromDatDSPhien();
 
         $giaoVienOptions = DatDSPhien::query()
             ->selectRaw('MaGiaoVien, MAX(HoTenGiaoVien) as HoTenGiaoVien')

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DaoTao\DatDSPhien;
 use App\Models\DaoTao\DatPhanLoaiPhien;
 use App\Support\DaoTao\DatDSPhienBoLoc;
+use App\Support\DaoTao\DatKhoaHocSelectOptions;
 use App\Support\DaoTao\DatDSPhienExcelExporter;
 use App\Support\DaoTao\DatDSPhienKiemTra;
 use App\Support\DaoTao\DatPhienChiTieu;
@@ -52,13 +53,7 @@ class DanhSachDatDSPhienController extends Controller
             ->orderBy('TenPhanLoai')
             ->get(['Id', 'TenPhanLoai']);
 
-        $khoaHocOptions = DatDSPhien::query()
-            ->selectRaw('MaKhoaHoc, MAX(TenKhoaHoc) as TenKhoaHoc')
-            ->whereNotNull('MaKhoaHoc')
-            ->where('MaKhoaHoc', '!=', '')
-            ->groupBy('MaKhoaHoc')
-            ->orderBy('MaKhoaHoc')
-            ->get();
+        $khoaHocOptions = DatKhoaHocSelectOptions::fromDatDSPhien();
 
         $giaoVienOptions = DatDSPhien::query()
             ->selectRaw('MaGiaoVien, MAX(HoTenGiaoVien) as HoTenGiaoVien')

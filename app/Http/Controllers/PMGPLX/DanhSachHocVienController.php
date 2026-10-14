@@ -3,22 +3,16 @@
 namespace App\Http\Controllers\PMGPLX;
 
 use App\Http\Controllers\Controller;
-use App\Models\DaoTao\DatPhanCongHocVien;
-use App\Models\PMGPLX\GiaoVien;
 use App\Models\PMGPLX\KhoaHoc;
 use App\Models\PMGPLX\NguoiLX;
 use App\Models\PMGPLX\NguoiLXHoSo;
-use App\Models\PMGPLX\XeTap;
 use App\Models\PMGPLXOLD\KhoaHoc as KhoaHocOld;
 use App\Services\PMGPLX\DongBoHocVienBanCuService;
-use App\Support\DaoTao\DatPhanCongHocVienSaver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
-use Throwable;
 
 class DanhSachHocVienController extends Controller
 {
@@ -40,141 +34,17 @@ class DanhSachHocVienController extends Controller
             ->orderBy('TenKH')
             ->get(['MaKH', 'TenKH']);
 
-        $giaoViens = GiaoVien::query()
-            ->where('TrangThai', 1)
-            ->orderBy('TenGV')
-            ->orderBy('MaGV')
-            ->get(['MaGV', 'HoTenDem', 'TenGV', 'GhiChu']);
-
-        $gvBienSoByMa = [];
-        foreach ($giaoViens as $gv) {
-            $gvBienSoByMa[(string) $gv->MaGV] = trim((string) ($gv->GhiChu ?? ''));
-        }
-
-        $xeTaps = XeTap::query()->orderBy('BienSoXe')->pluck('BienSoXe');
-
-        $phanCongByRowKey = $this->phanCongByRowKeyForItems($items);
-
-        $maKhFilter = trim((string) $request->input('ma_kh', ''));
-        $phanCongTheoGv = $maKhFilter !== ''
-            ? $this->phanCongGroupedByGiaoVienForKhoa($maKhFilter)
-            : [];
-        $tenKhoaFilter = '';
-        if ($maKhFilter !== '') {
-            $tenKhoaFilter = (string) (KhoaHoc::query()->where('MaKH', $maKhFilter)->value('TenKH') ?? '');
-        }
-
         return view('PMGPLX.danh-muc.hoc-vien', [
             'items' => $items,
             'khoaHocs' => $khoaHocs,
-            'giaoViens' => $giaoViens,
-            'gvBienSoByMa' => $gvBienSoByMa,
-            'xeTaps' => $xeTaps,
-            'phanCongByRowKey' => $phanCongByRowKey,
-            'phanCongTheoGv' => $phanCongTheoGv,
-            'tenKhoaFilter' => $tenKhoaFilter,
             'filters' => [
                 'tu_khoa' => $request->input('tu_khoa', ''),
                 'ma_kh' => $request->input('ma_kh', ''),
                 'hang_gplx' => $request->input('hang_gplx', ''),
                 'trang_thai' => $request->input('trang_thai', ''),
-                'an_da_phan_cong' => $request->boolean('an_da_phan_cong'),
                 'per_page' => $perPage,
             ],
         ]);
-    }
-
-    public function themPhanCong(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'hoc_vien' => ['required', 'array', 'min:1'],
-            'hoc_vien.*.ma_dk' => ['required', 'string', 'max:50'],
-            'hoc_vien.*.ma_khoa_hoc' => ['required', 'string', 'max:50'],
-            'hoc_vien.*.ho_ten' => ['nullable', 'string', 'max:255'],
-            'ma_giao_vien' => ['required', 'string', 'max:50'],
-            'bien_so_xe' => ['nullable', 'string', 'max:50'],
-            'bien_so_xe_tu_dong' => ['nullable', 'string', 'max:50'],
-        ], [
-            'hoc_vien.required' => 'Chọn ít nhất một học viên.',
-            'ma_giao_vien.required' => 'Chọn giáo viên.',
-        ]);
-
-        $maGiaoVien = trim((string) $validated['ma_giao_vien']);
-        $bienSoXe = trim((string) ($validated['bien_so_xe'] ?? ''));
-        $bienSoXeTuDong = trim((string) ($validated['bien_so_xe_tu_dong'] ?? ''));
-
-        $created = 0;
-        $updated = 0;
-        $errors = [];
-
-        foreach ($validated['hoc_vien'] as $index => $hv) {
-            $line = $index + 1;
-            try {
-                $result = DatPhanCongHocVienSaver::upsert(
-                    trim((string) $hv['ma_khoa_hoc']),
-                    trim((string) $hv['ma_dk']),
-                    $maGiaoVien,
-                    $bienSoXe,
-                    trim((string) ($hv['ho_ten'] ?? '')),
-                    'Danh sách học viên PMGPLX',
-                    null,
-                    $bienSoXeTuDong
-                );
-                if ($result['created']) {
-                    $created++;
-                } else {
-                    $updated++;
-                }
-            } catch (ValidationException $e) {
-                $errors[] = "Dòng {$line} ({$hv['ma_dk']}): ".implode(' ', array_map(
-                    static fn (array $msgs): string => (string) ($msgs[0] ?? ''),
-                    $e->errors()
-                ));
-            } catch (Throwable $e) {
-                $errors[] = "Dòng {$line} ({$hv['ma_dk']}): ".$e->getMessage();
-            }
-        }
-
-        if ($created + $updated === 0) {
-            return back()
-                ->withInput()
-                ->with('error', $errors !== [] ? implode("\n", $errors) : 'Không lưu được phân công nào.');
-        }
-
-        $msg = 'Đã ghi phân công: '.number_format($created + $updated).' học viên';
-        if ($created > 0) {
-            $msg .= ' (mới: '.number_format($created);
-            $msg .= $updated > 0 ? ', cập nhật: '.number_format($updated).')' : ')';
-        } elseif ($updated > 0) {
-            $msg .= ' (cập nhật: '.number_format($updated).')';
-        }
-        $msg .= '.';
-
-        if ($errors !== []) {
-            $msg .= ' Một số dòng lỗi: '.implode(' · ', array_slice($errors, 0, 3));
-        }
-
-        return back()->with('success', $msg);
-    }
-
-    public function xoaPhanCong(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'id' => ['required', 'integer', 'min:1'],
-        ]);
-
-        $row = DatPhanCongHocVien::query()->find((int) $validated['id']);
-        if ($row === null) {
-            return back()->with('error', 'Không tìm thấy phân công cần xóa.');
-        }
-
-        $row->delete();
-
-        return back()->with(
-            'success',
-            'Đã xóa học viên '.trim((string) ($row->HoTenHocVien ?: $row->MaHocVien))
-            .' khỏi phân công giáo viên '.trim((string) $row->MaGiaoVien).'.'
-        );
     }
 
     public function dongBoForm(Request $request, DongBoHocVienBanCuService $service): View
@@ -456,127 +326,6 @@ class DanhSachHocVienController extends Controller
         );
     }
 
-    /**
-     * Phân công ĐAT theo khóa + mã HV (MaDK) — cùng nguồn màn phan-cong-hoc-vien.
-     *
-     * @param  \Illuminate\Contracts\Pagination\LengthAwarePaginator<int, object>  $items
-     * @return array<string, array{ma_giao_vien: string, ten_giao_vien: string, bien_so_xe: string, bien_so_xe_tu_dong: string}>
-     */
-    private function phanCongByRowKeyForItems($items): array
-    {
-        $maKhList = [];
-        $maDkList = [];
-        foreach ($items as $row) {
-            $maKh = trim((string) ($row->MaKhoaHoc ?? ''));
-            $maDk = trim((string) ($row->MaDK ?? ''));
-            if ($maKh === '' || $maDk === '') {
-                continue;
-            }
-            $maKhList[$maKh] = true;
-            $maDkList[DatPhanCongHocVienSaver::normalizeMaHocVien($maDk)] = true;
-            $maDkList[$maDk] = true;
-        }
-
-        if ($maKhList === [] || $maDkList === []) {
-            return [];
-        }
-
-        $rows = DatPhanCongHocVien::query()
-            ->whereIn('MaKhoaHoc', array_keys($maKhList))
-            ->whereIn('MaHocVien', array_keys($maDkList))
-            ->get(['MaKhoaHoc', 'MaHocVien', 'MaGiaoVien', 'BienSoXe', 'BienSoXeTuDong']);
-
-        $maGvCodes = $rows->pluck('MaGiaoVien')->filter()->unique()->values()->all();
-        $gvNames = $maGvCodes === []
-            ? collect()
-            : GiaoVien::query()
-                ->whereIn('MaGV', $maGvCodes)
-                ->get(['MaGV', 'HoTenDem', 'TenGV'])
-                ->keyBy('MaGV');
-
-        $out = [];
-        foreach ($rows as $pc) {
-            $maGv = trim((string) ($pc->MaGiaoVien ?? ''));
-            $gv = $gvNames->get($maGv);
-            $tenGv = $gv ? trim($gv->ho_ten) : '';
-            if ($tenGv === '') {
-                $tenGv = $maGv;
-            }
-
-            $payload = [
-                'ma_giao_vien' => $maGv,
-                'ten_giao_vien' => $tenGv,
-                'bien_so_xe' => trim((string) ($pc->BienSoXe ?? '')),
-                'bien_so_xe_tu_dong' => trim((string) ($pc->BienSoXeTuDong ?? '')),
-            ];
-
-            $out[DatPhanCongHocVienSaver::rowKeyForPhanCong(
-                (string) $pc->MaKhoaHoc,
-                (string) $pc->MaHocVien
-            )] = $payload;
-        }
-
-        return $out;
-    }
-
-    /**
-     * Phân công ĐAT theo khóa, nhóm theo giáo viên (màn danh sách HV khi lọc khóa).
-     *
-     * @return list<array{
-     *     ma_giao_vien: string,
-     *     ten_giao_vien: string,
-     *     hoc_vien: list<array{id: int, ma_hoc_vien: string, ho_ten: string}>
-     * }>
-     */
-    private function phanCongGroupedByGiaoVienForKhoa(string $maKh): array
-    {
-        $assignments = DatPhanCongHocVien::query()
-            ->where('MaKhoaHoc', $maKh)
-            ->orderBy('MaGiaoVien')
-            ->orderBy('HoTenHocVien')
-            ->orderBy('MaHocVien')
-            ->get(['Id', 'MaGiaoVien', 'MaHocVien', 'HoTenHocVien']);
-
-        if ($assignments->isEmpty()) {
-            return [];
-        }
-
-        $maGvCodes = $assignments->pluck('MaGiaoVien')->filter()->unique()->values()->all();
-        $gvNames = GiaoVien::query()
-            ->whereIn('MaGV', $maGvCodes)
-            ->get(['MaGV', 'HoTenDem', 'TenGV'])
-            ->keyBy('MaGV');
-
-        $grouped = [];
-        foreach ($assignments as $row) {
-            $maGv = trim((string) ($row->MaGiaoVien ?? ''));
-            if ($maGv === '') {
-                continue;
-            }
-            if (! isset($grouped[$maGv])) {
-                $gv = $gvNames->get($maGv);
-                $tenGv = $gv ? trim($gv->ho_ten) : '';
-                $grouped[$maGv] = [
-                    'ma_giao_vien' => $maGv,
-                    'ten_giao_vien' => $tenGv !== '' ? $tenGv : $maGv,
-                    'hoc_vien' => [],
-                ];
-            }
-
-            $hoTen = trim((string) ($row->HoTenHocVien ?? ''));
-            $maHv = trim((string) ($row->MaHocVien ?? ''));
-            $grouped[$maGv]['hoc_vien'][] = [
-                'id' => (int) $row->Id,
-                'ma_hoc_vien' => $maHv,
-                'ho_ten' => $hoTen !== '' ? $hoTen : $maHv,
-            ];
-        }
-
-        uasort($grouped, static fn (array $a, array $b): int => strcasecmp($a['ten_giao_vien'], $b['ten_giao_vien']));
-
-        return array_values($grouped);
-    }
-
     private function filteredQuery(Request $request): Builder
     {
         $query = NguoiLX::query()
@@ -618,19 +367,6 @@ class DanhSachHocVienController extends Controller
 
         if ($request->filled('trang_thai') && $request->input('trang_thai') !== '') {
             $query->where('n.TrangThai', (string) (int) $request->input('trang_thai'));
-        }
-
-        if ($request->boolean('an_da_phan_cong')) {
-            $pcDb = (string) config('database.connections.sqlsrv_manhlinh.database', 'MANHLINH');
-            $pcTable = '['.$pcDb.'].[dbo].[DatPhanCongHocVien]';
-
-            $query->whereNotExists(function ($sub) use ($pcTable) {
-                $sub->select(DB::raw('1'))
-                    ->from(DB::raw($pcTable.' AS pc'))
-                    ->whereRaw('pc.MaKhoaHoc = h.MaKhoaHoc')
-                    ->whereRaw('pc.MaHocVien = n.MaDK')
-                    ->whereRaw("LTRIM(RTRIM(ISNULL(pc.MaGiaoVien, ''))) <> ''");
-            });
         }
 
         return $query;

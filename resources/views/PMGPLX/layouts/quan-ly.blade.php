@@ -406,12 +406,14 @@
             <li class="nav-item dropdown">
                 @php
                     $pdtActive = (request()->routeIs('daotao.pdt.*') && ! request()->routeIs('daotao.pdt.dat.*'))
-                        || request()->routeIs('daotao.pdt.dat.lich-thuc-hanh*');
+                        || request()->routeIs('daotao.pdt.dat.lich-thuc-hanh*')
+                        || request()->routeIs('daotao.pdt.dat.phan-cong-hoc-vien*');
                     $baoCaoActive = request()->routeIs('daotao.pdt.bc.*');
                     $congCuNhapActive = request()->routeIs('daotao.pdt.cong-cu-nhap.*');
                     $phanCongActive = request()->routeIs(
                         'daotao.pdt.phan-cong-dao-tao.*',
-                        'daotao.pdt.dat.lich-thuc-hanh*'
+                        'daotao.pdt.dat.lich-thuc-hanh*',
+                        'daotao.pdt.dat.phan-cong-hoc-vien*'
                     );
                 @endphp
                 <a class="nav-link dropdown-toggle {{ $pdtActive ? 'active' : '' }}"
@@ -469,7 +471,11 @@
                         <div class="dropdown-menu">
                             <a class="dropdown-item {{ request()->routeIs('daotao.pdt.phan-cong-dao-tao.danh-sach') ? 'active' : '' }}"
                                href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach') }}">
-                                Danh sách phân công
+                                Phân công giáo viên
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.phan-cong-hoc-vien*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.dat.phan-cong-hoc-vien') }}">
+                                Phân công học viên
                             </a>
                             <a class="dropdown-item {{ request()->routeIs('daotao.pdt.phan-cong-dao-tao.danh-sach-tu-lich') ? 'active' : '' }}"
                                href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach-tu-lich') }}">
@@ -490,7 +496,8 @@
             <li class="nav-item dropdown">
                 @php
                     $datActive = request()->routeIs('daotao.pdt.dat.*')
-                        && ! request()->routeIs('daotao.pdt.dat.lich-thuc-hanh*');
+                        && ! request()->routeIs('daotao.pdt.dat.lich-thuc-hanh*')
+                        && ! request()->routeIs('daotao.pdt.dat.phan-cong-hoc-vien*');
                     $datTongHopActive = request()->routeIs(
                         'daotao.pdt.dat.tong-hop-hoc-vien*',
                         'daotao.pdt.dat.theo-doi*'
@@ -505,7 +512,6 @@
                         'daotao.pdt.dat.do-phien-lich-xe*'
                     );
                     $datPhanCongActive = request()->routeIs(
-                        'daotao.pdt.dat.phan-cong-hoc-vien*',
                         'daotao.pdt.dat.giao-vien-day-thay*',
                         'daotao.pdt.dat.xe-day-thay*',
                         'daotao.pdt.dat.nhap-phan-cong-hoc-vien*'
@@ -584,10 +590,6 @@
                             Phân công
                         </a>
                         <div class="dropdown-menu">
-                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.phan-cong-hoc-vien*') ? 'active' : '' }}"
-                               href="{{ route('daotao.pdt.dat.phan-cong-hoc-vien') }}">
-                                Phân công học viên
-                            </a>
                             <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.giao-vien-day-thay*') ? 'active' : '' }}"
                                href="{{ route('daotao.pdt.dat.giao-vien-day-thay') }}">
                                 Giáo viên dạy thay

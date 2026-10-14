@@ -5,6 +5,7 @@ namespace App\Http\Controllers\DaoTao\Dat;
 use App\Http\Controllers\Controller;
 use App\Models\DaoTao\DatDSPhien;
 use App\Models\DaoTao\DatDieuKienDoPhien;
+use App\Support\DaoTao\DatKhoaHocSelectOptions;
 use App\Support\DaoTao\DatPhienLichXeExcelExporter;
 use App\Support\DaoTao\DatPhienLichXeMatcher;
 use Illuminate\Http\RedirectResponse;
@@ -26,13 +27,7 @@ class DoPhienVoiLichXeController extends Controller
         $tuNgay = $parsed['tu_ngay'];
         $denNgay = $parsed['den_ngay'];
 
-        $khoaHocOptions = DatDSPhien::query()
-            ->selectRaw('MaKhoaHoc, MAX(TenKhoaHoc) as TenKhoaHoc')
-            ->whereNotNull('MaKhoaHoc')
-            ->where('MaKhoaHoc', '!=', '')
-            ->groupBy('MaKhoaHoc')
-            ->orderBy('MaKhoaHoc')
-            ->get();
+        $khoaHocOptions = DatKhoaHocSelectOptions::fromDatDSPhien();
 
         $giaoVienOptions = collect();
         $xeOptions = collect();

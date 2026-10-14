@@ -62,7 +62,10 @@
                         Tổng hợp phân công (khoá · xe)
                     </a>
                     <a href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach') }}" class="list-group-item list-group-item-action pl-4">
-                        Danh sách phân công
+                        Phân công giáo viên
+                    </a>
+                    <a href="{{ route('daotao.pdt.dat.phan-cong-hoc-vien') }}" class="list-group-item list-group-item-action pl-4">
+                        Phân công học viên
                     </a>
                 </div>
             </div>
@@ -97,9 +100,6 @@
                         Dò phiên với lịch xe
                     </a>
                     <div class="list-group-item list-group-item-light small font-weight-bold py-2">Phân công</div>
-                    <a href="{{ route('daotao.pdt.dat.phan-cong-hoc-vien') }}" class="list-group-item list-group-item-action pl-4">
-                        Phân công học viên
-                    </a>
                     <a href="{{ route('daotao.pdt.dat.giao-vien-day-thay') }}" class="list-group-item list-group-item-action pl-4">
                         Giáo viên dạy thay
                     </a>
