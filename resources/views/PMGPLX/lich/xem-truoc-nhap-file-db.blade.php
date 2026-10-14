@@ -3,6 +3,7 @@
 @section('title', 'Xem trước dữ liệu lưu DB')
 
 @section('content')
+    @include('PMGPLX.lich.partials.nhap-lich-import-routes')
     @php
         $meta = $payload['meta'] ?? [];
         $gvSave = $payload['lich_giao_vien'] ?? [];
@@ -17,7 +18,7 @@
     <div class="card card-panel">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>Xem trước dữ liệu sẽ lưu vào DB</span>
-            <a href="{{ route('pmgplx.lich.nhap-file.preview-xe') }}" class="btn btn-sm btn-outline-secondary">← Quay lại lịch xe</a>
+            <a href="{{ $nhapLichRoutes['preview_xe'] }}" class="btn btn-sm btn-outline-secondary">← Quay lại lịch xe</a>
         </div>
         <div class="card-body">
             @php
@@ -26,7 +27,17 @@
                 $replaceWipeXe = (int) ($meta['replace_wipe_xe'] ?? 0);
             @endphp
 
-            @if ($replaceMaKh !== [])
+            @if (! empty($meta['slot_replace_import']))
+                <div class="alert alert-primary">
+                    <strong>Nhập lịch thay thế:</strong>
+                    cập nhật GV / xe / ghi chú khi trùng <strong>cùng khóa + khung TG bắt đầu/kết thúc</strong>;
+                    thêm buổi mới nếu chưa có; <strong>không xóa</strong> các buổi khác của khóa.
+                    Dự kiến: GV cập nhật <strong>{{ (int) ($meta['gv_update'] ?? 0) }}</strong>,
+                    thêm mới <strong>{{ (int) ($meta['gv_save'] ?? 0) }}</strong>;
+                    xe cập nhật <strong>{{ (int) ($meta['xe_update'] ?? 0) }}</strong>,
+                    thêm mới <strong>{{ (int) ($meta['xe_save'] ?? 0) }}</strong>.
+                </div>
+            @elseif ($replaceMaKh !== [])
                 <div class="alert alert-danger">
                     <strong>Thay thế lịch theo khóa:</strong>
                     trước khi ghi, hệ thống sẽ xóa <strong>toàn bộ</strong> lịch TH / xe tập lái cũ
@@ -121,12 +132,12 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('pmgplx.lich.nhap-file.confirm') }}" class="mt-2">
+            <form method="POST" action="{{ $nhapLichRoutes['confirm'] }}" class="mt-2">
                 @csrf
                 <button type="submit" class="btn btn-success btn-lg">Xác nhận lưu DB</button>
-                <a href="{{ route('pmgplx.lich.nhap-file.preview-xe') }}" class="btn btn-outline-secondary btn-lg ml-2">← Quay lại lịch xe</a>
-                <a href="{{ route('pmgplx.lich.nhap-file.preview-gv') }}" class="btn btn-outline-secondary btn-lg ml-2">← Quay lại lịch GV</a>
-                <a href="{{ route('pmgplx.lich.nhap-file.cancel') }}" class="btn btn-outline-danger btn-lg ml-2">Hủy</a>
+                <a href="{{ $nhapLichRoutes['preview_xe'] }}" class="btn btn-outline-secondary btn-lg ml-2">← Quay lại lịch xe</a>
+                <a href="{{ $nhapLichRoutes['preview_gv'] }}" class="btn btn-outline-secondary btn-lg ml-2">← Quay lại lịch GV</a>
+                <a href="{{ $nhapLichRoutes['cancel'] }}" class="btn btn-outline-danger btn-lg ml-2">Hủy</a>
             </form>
         </div>
     </div>

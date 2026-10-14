@@ -34,6 +34,7 @@ use App\Http\Controllers\PMGPLX\DoTrungLichGiaoVienController;
 use App\Http\Controllers\PMGPLX\DanhSachLichXeTapController;
 use App\Http\Controllers\PMGPLX\DanhSachXeController;
 use App\Http\Controllers\PMGPLX\NhapHocVienTuFileController;
+use App\Http\Controllers\PMGPLX\NhapLichThayTheTuFileController;
 use App\Http\Controllers\PMGPLX\NhapLichTuFileController;
 use App\Http\Controllers\PMGPLX\TaoLichDayLyThuyetController;
 use App\Http\Controllers\PMGPLX\TaoLichTapHangLoatController;
@@ -135,6 +136,29 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function () {
         ->name('lich.nhap-file.confirm');
     Route::get('/lich/nhap-tu-file/huy', [NhapLichTuFileController::class, 'cancel'])
         ->name('lich.nhap-file.cancel');
+
+    Route::get('/lich/nhap-thay-the', [NhapLichThayTheTuFileController::class, 'create'])
+        ->name('lich.nhap-thay-the.create');
+    Route::post('/lich/nhap-thay-the', [NhapLichThayTheTuFileController::class, 'store'])
+        ->name('lich.nhap-thay-the.store');
+    Route::get('/lich/nhap-thay-the/xem-truoc', [NhapLichThayTheTuFileController::class, 'preview'])
+        ->name('lich.nhap-thay-the.preview');
+    Route::post('/lich/nhap-thay-the/xem-truoc-gv', [NhapLichThayTheTuFileController::class, 'toGvPreview'])
+        ->name('lich.nhap-thay-the.to-gv');
+    Route::get('/lich/nhap-thay-the/lich-giao-vien', [NhapLichThayTheTuFileController::class, 'previewGv'])
+        ->name('lich.nhap-thay-the.preview-gv');
+    Route::post('/lich/nhap-thay-the/lich-xe', [NhapLichThayTheTuFileController::class, 'toXePreview'])
+        ->name('lich.nhap-thay-the.to-xe');
+    Route::get('/lich/nhap-thay-the/lich-xe', [NhapLichThayTheTuFileController::class, 'previewXe'])
+        ->name('lich.nhap-thay-the.preview-xe');
+    Route::post('/lich/nhap-thay-the/xem-truoc-db', [NhapLichThayTheTuFileController::class, 'toDbPreview'])
+        ->name('lich.nhap-thay-the.to-db');
+    Route::get('/lich/nhap-thay-the/xem-truoc-db', [NhapLichThayTheTuFileController::class, 'previewDb'])
+        ->name('lich.nhap-thay-the.preview-db');
+    Route::post('/lich/nhap-thay-the/xac-nhan', [NhapLichThayTheTuFileController::class, 'confirm'])
+        ->name('lich.nhap-thay-the.confirm');
+    Route::get('/lich/nhap-thay-the/huy', [NhapLichThayTheTuFileController::class, 'cancel'])
+        ->name('lich.nhap-thay-the.cancel');
 });
 
 Route::prefix('daotao')->name('daotao.')->group(function () {

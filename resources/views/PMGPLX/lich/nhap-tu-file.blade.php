@@ -3,6 +3,7 @@
 @section('title', 'Nhập lịch từ file')
 
 @section('content')
+    @include('PMGPLX.lich.partials.nhap-lich-import-routes')
     <div class="card card-panel mb-3">
         <div class="card-header bg-light">Hướng dẫn sử dụng</div>
         <div class="card-body pb-2">
@@ -56,8 +57,10 @@
         <div class="card-body">
             <div class="alert alert-danger py-2 mb-3">
                 Nhập lịch sẽ <strong>xóa toàn bộ lịch cũ của khóa đang nhập</strong> và thay thế bằng lịch mới nhập vào.
+                Nếu chỉ cần <strong>thay giáo viên và xe</strong> vào buổi trùng khung thời gian (không xóa cả khóa),
+                dùng <a href="{{ route('pmgplx.lich.nhap-thay-the.create') }}" class="alert-link font-weight-bold">Nhập lịch thay thế</a>.
             </div>
-            <form method="POST" action="{{ route('pmgplx.lich.nhap-file.store') }}" enctype="multipart/form-data">
+            <form method="POST" action="{{ $nhapLichRoutes['store'] }}" enctype="multipart/form-data">
                 @csrf
 
                 <div class="form-group col-md-6 px-0">

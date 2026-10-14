@@ -337,6 +337,7 @@
                 @php
                     $pmgplxMenuActive = request()->routeIs('pmgplx.dm.*', 'pmgplx.lich.*', 'pmgplxold.*');
                     $lichActive = request()->routeIs('pmgplx.lich.*');
+                    $nhapLichActive = request()->routeIs('pmgplx.lich.nhap-file.*', 'pmgplx.lich.nhap-thay-the.*');
                 @endphp
                 <a class="nav-link dropdown-toggle {{ $pmgplxMenuActive ? 'active' : '' }}"
                    href="#"
@@ -398,6 +399,10 @@
                             <a class="dropdown-item {{ request()->routeIs('pmgplx.lich.nhap-file.*') ? 'active' : '' }}"
                                href="{{ route('pmgplx.lich.nhap-file.create') }}">
                                 Nhập lịch từ file
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('pmgplx.lich.nhap-thay-the.*') ? 'active' : '' }}"
+                               href="{{ route('pmgplx.lich.nhap-thay-the.create') }}">
+                                Nhập lịch thay thế
                             </a>
                         </div>
                     </div>

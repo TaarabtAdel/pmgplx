@@ -29,11 +29,56 @@ use Throwable;
 
 class NhapLichTuFileController extends Controller
 {
-    private const SESSION_EXCEL = 'pmgplx.lich.nhap_file.excel';
-
-    private const SESSION_SAVE = 'pmgplx.lich.nhap_file.save';
-
     private const TEN_MON_HOC = 'Thực hành lái xe';
+
+    protected function sessionExcelKey(): string
+    {
+        return 'pmgplx.lich.nhap_file.excel';
+    }
+
+    protected function sessionSaveKey(): string
+    {
+        return 'pmgplx.lich.nhap_file.save';
+    }
+
+    protected function nhapRoutePrefix(): string
+    {
+        return 'pmgplx.lich.nhap-file.';
+    }
+
+    protected function nhapRouteName(string $suffix): string
+    {
+        return $this->nhapRoutePrefix().$suffix;
+    }
+
+    protected function isSlotReplaceImport(): bool
+    {
+        return false;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function enrichImportViewData(array $data): array
+    {
+        return array_merge($data, [
+            'isSlotReplaceImport' => $this->isSlotReplaceImport(),
+            'nhapLichRoutes' => [
+                'store' => route($this->nhapRouteName('store')),
+                'preview' => route($this->nhapRouteName('preview')),
+                'preview_gv' => route($this->nhapRouteName('preview-gv')),
+                'preview_xe' => route($this->nhapRouteName('preview-xe')),
+                'preview_db' => route($this->nhapRouteName('preview-db')),
+                'to_gv' => route($this->nhapRouteName('to-gv')),
+                'to_xe' => route($this->nhapRouteName('to-xe')),
+                'to_db' => route($this->nhapRouteName('to-db')),
+                'confirm' => route($this->nhapRouteName('confirm')),
+                'cancel' => route($this->nhapRouteName('cancel')),
+                'create' => route($this->nhapRouteName('create')),
+            ],
+        ]);
+    }
 
     public const SUBMIT_CHUNK_SIZE = 500;
 
@@ -59,7 +104,7 @@ class NhapLichTuFileController extends Controller
 
     public function create(): View
     {
-        return view('PMGPLX.lich.nhap-tu-file');
+        return view('PMGPLX.lich.nhap-tu-file', $this->enrichImportViewData([]));
     }
 
     public function store(Request $request): RedirectResponse
@@ -101,10 +146,10 @@ class NhapLichTuFileController extends Controller
                 return back()->with('error', 'Không tìm thấy khối giáo viên (mỗi giáo viên cần '.self::COLS_PER_TEACHER.' cột).');
             }
 
-            $request->session()->forget(self::SESSION_SAVE);
-            $request->session()->put(self::SESSION_EXCEL, $preview);
+            $request->session()->forget($this->sessionSaveKey());
+            $request->session()->put($this->sessionExcelKey(), $preview);
 
-            return redirect()->route('pmgplx.lich.nhap-file.preview');
+            return redirect()->route($this->nhapRouteName('preview'));
         } catch (Throwable $e) {
             return back()->with('error', 'Không đọc được file Excel: '.$e->getMessage());
         }
@@ -112,47 +157,47 @@ class NhapLichTuFileController extends Controller
 
     public function preview(Request $request): View|RedirectResponse
     {
-        $preview = $request->session()->get(self::SESSION_EXCEL);
+        $preview = $request->session()->get($this->sessionExcelKey());
         if (! is_array($preview) || empty($preview['teachers'])) {
             return redirect()
-                ->route('pmgplx.lich.nhap-file.create')
+                ->route($this->nhapRouteName('create'))
                 ->with('error', 'Chưa có dữ liệu xem trước. Vui lòng chọn file Excel.');
         }
 
-        return view('PMGPLX.lich.xem-truoc-nhap-file', [
+        return view('PMGPLX.lich.xem-truoc-nhap-file', $this->enrichImportViewData([
             'preview' => $preview,
             'offDayDeletes' => $this->resolveOffDayDeletes($this->buildOffDaySyncFromExcel($preview)),
-        ]);
+        ]));
     }
 
     /** Excel preview → build GV/Xe rows → màn xem trước lịch GV */
     public function toGvPreview(Request $request): RedirectResponse
     {
-        $excel = $request->session()->get(self::SESSION_EXCEL);
+        $excel = $request->session()->get($this->sessionExcelKey());
         if (! is_array($excel) || empty($excel['teachers'])) {
             return redirect()
-                ->route('pmgplx.lich.nhap-file.create')
+                ->route($this->nhapRouteName('create'))
                 ->with('error', 'Chưa có dữ liệu Excel. Vui lòng chọn file.');
         }
 
         $built = $this->buildSaveRows($excel);
         if ($built['gv_rows'] === [] && ($built['off_day_sync'] ?? []) === []) {
             return redirect()
-                ->route('pmgplx.lich.nhap-file.preview')
+                ->route($this->nhapRouteName('preview'))
                 ->with('error', 'Không có buổi nào để lưu (toàn ngày nghỉ hoặc thiếu giờ/ngày).');
         }
 
-        $request->session()->put(self::SESSION_SAVE, $built);
+        $request->session()->put($this->sessionSaveKey(), $built);
 
-        return redirect()->route('pmgplx.lich.nhap-file.preview-gv');
+        return redirect()->route($this->nhapRouteName('preview-gv'));
     }
 
     public function previewGv(Request $request): View|RedirectResponse
     {
-        $save = $request->session()->get(self::SESSION_SAVE);
+        $save = $request->session()->get($this->sessionSaveKey());
         if (! is_array($save) || empty($save['gv_rows'])) {
             return redirect()
-                ->route('pmgplx.lich.nhap-file.preview')
+                ->route($this->nhapRouteName('preview'))
                 ->with('error', 'Chưa có dữ liệu lịch giáo viên.');
         }
 
@@ -175,24 +220,38 @@ class NhapLichTuFileController extends Controller
             }
 
             $maKh = trim((string) ($row['MaKH'] ?? ''));
-            $crossKhoa = $this->gvCrossKhoaConflict($row['MaGV'], $maKh, $row['NgayBD'], $row['NgayKT']);
+            $existingGv = $this->isSlotReplaceImport()
+                ? $this->findGvLichSlotOnKhoa($maKh, $row['NgayBD'], $row['NgayKT'])
+                : null;
+            $ignoreMaLichLv = $existingGv !== null ? (int) $existingGv->MaLichLV : null;
+            $crossKhoa = $this->gvCrossKhoaConflict(
+                $row['MaGV'],
+                $maKh,
+                $row['NgayBD'],
+                $row['NgayKT'],
+                $ignoreMaLichLv
+            );
             if ($crossKhoa) {
                 $row['conflict'] = true;
                 $row['ghi_chu'] = 'Trùng lịch GV khóa khác';
                 $conflictCount++;
+            } elseif ($existingGv !== null) {
+                $row['conflict'] = false;
+                $row['will_update'] = true;
+                $row['ghi_chu'] = 'Thay GV theo khung giờ';
             } else {
                 $row['conflict'] = false;
-                $row['ghi_chu'] = '';
+                $row['ghi_chu'] = $this->isSlotReplaceImport() ? 'Thêm buổi mới' : '';
             }
         }
         unset($row);
 
         $save['gv_rows'] = $rows;
         $save['meta']['gv_conflict_count'] = $conflictCount;
-        $save['meta']['gv_update_count'] = 0;
+        $save['meta']['gv_update_count'] = collect($rows)->where('will_update', true)->count();
         $save['meta']['gv_skip_count'] = $skipCount;
         $save['meta']['gv_ok_count'] = count($rows) - $conflictCount - $skipCount;
-        $request->session()->put(self::SESSION_SAVE, $save);
+        $request->session()->put($this->sessionSaveKey(), $save);
 
         $monHocs = DmMonHoc::active()
             ->orderBy('MaMH')
@@ -236,22 +295,22 @@ class NhapLichTuFileController extends Controller
         unset($row);
 
         $save['gv_rows'] = $rows;
-        $request->session()->put(self::SESSION_SAVE, $save);
+        $request->session()->put($this->sessionSaveKey(), $save);
 
-        return view('PMGPLX.lich.xem-truoc-nhap-file-gv', [
+        return view('PMGPLX.lich.xem-truoc-nhap-file-gv', $this->enrichImportViewData([
             'preview' => $save,
             'rows' => $rows,
             'monHocs' => $monHocs,
             'defaultMaMonHoc' => $defaultMaMonHoc,
-        ]);
+        ]));
     }
 
     /** Lưu chỉnh sửa GV → màn xem trước lịch xe */
     public function toXePreview(Request $request): RedirectResponse|JsonResponse
     {
-        $save = $request->session()->get(self::SESSION_SAVE);
+        $save = $request->session()->get($this->sessionSaveKey());
         if (! is_array($save) || empty($save['gv_rows'])) {
-            return redirect()->route('pmgplx.lich.nhap-file.create')
+            return redirect()->route($this->nhapRouteName('create'))
                 ->with('error', 'Phiên xem trước đã hết hạn.');
         }
 
@@ -277,23 +336,24 @@ class NhapLichTuFileController extends Controller
         $save['xe_rows'] = $xeRows;
         $save['meta']['update_mode'] = false;
         unset($save['gv_chunk_merge']);
-        $request->session()->put(self::SESSION_SAVE, $save);
+        $request->session()->put($this->sessionSaveKey(), $save);
 
-        return redirect()->route('pmgplx.lich.nhap-file.preview-xe');
+        return redirect()->route($this->nhapRouteName('preview-xe'));
     }
 
     public function previewXe(Request $request): View|RedirectResponse
     {
-        $save = $request->session()->get(self::SESSION_SAVE);
+        $save = $request->session()->get($this->sessionSaveKey());
         if (! is_array($save) || empty($save['xe_rows'])) {
             return redirect()
-                ->route('pmgplx.lich.nhap-file.preview-gv')
+                ->route($this->nhapRouteName('preview-gv'))
                 ->with('error', 'Chưa có dữ liệu lịch xe tập lái.');
         }
 
         $rows = $save['xe_rows'];
         $replaceMaKh = $this->maKhoaHocInImport($save['gv_rows'] ?? [], $rows);
         $conflictCount = 0;
+        $updateCount = 0;
         $skipCount = 0;
         foreach ($rows as &$row) {
             $noiDung = (string) ($row['noi_dung'] ?? '');
@@ -311,28 +371,38 @@ class NhapLichTuFileController extends Controller
             }
 
             $bienSo = trim((string) ($row['BienSoXe'] ?? ''));
-            $hasConflict = $this->xeConflict($row['MaGV'], $bienSo, $row['NgayBD'], $row['NgayKT'], $replaceMaKh);
+            $maKhXe = trim((string) ($row['MaKH'] ?? ''));
+            $existingXe = $this->isSlotReplaceImport()
+                ? $this->findXeLichSlotOnKhoa($maKhXe, $row['NgayBD'], $row['NgayKT'])
+                : null;
+            $hasConflict = $existingXe === null
+                && $this->xeConflict($row['MaGV'], $bienSo, $row['NgayBD'], $row['NgayKT'], $replaceMaKh);
             if ($hasConflict) {
                 $row['conflict'] = true;
                 $row['ghi_chu'] = 'Trùng lịch xe/GV khóa khác';
                 $conflictCount++;
+            } elseif ($existingXe !== null) {
+                $row['conflict'] = false;
+                $row['will_update'] = true;
+                $row['ghi_chu'] = 'Thay xe/GV theo khung giờ';
+                $updateCount++;
             } else {
                 $row['conflict'] = false;
-                $row['ghi_chu'] = $bienSo === '' ? 'Chưa gắn xe' : '';
+                $row['ghi_chu'] = $bienSo === '' ? 'Chưa gắn xe' : ($this->isSlotReplaceImport() ? 'Thêm buổi mới' : '');
             }
         }
         unset($row);
 
         $save['xe_rows'] = $rows;
         $save['meta']['xe_conflict_count'] = $conflictCount;
-        $save['meta']['xe_update_count'] = 0;
+        $save['meta']['xe_update_count'] = $updateCount;
         $save['meta']['xe_skip_count'] = $skipCount;
         $save['meta']['xe_ok_count'] = count($rows) - $conflictCount - $skipCount;
-        $request->session()->put(self::SESSION_SAVE, $save);
+        $request->session()->put($this->sessionSaveKey(), $save);
 
         $xeTaps = XeTap::query()->orderBy('BienSoXe')->pluck('BienSoXe');
 
-        return view('PMGPLX.lich.xem-truoc-nhap-file-xe', [
+        return view('PMGPLX.lich.xem-truoc-nhap-file-xe', $this->enrichImportViewData([
             'preview' => $save,
             'rows' => $rows,
             'xeTaps' => $xeTaps,
@@ -340,16 +410,16 @@ class NhapLichTuFileController extends Controller
                 array_unique(array_merge(KhoaHoc::$DIA_DIEM, LichExcelDiaDiem::options())),
                 fn ($v) => $v !== ''
             )),
-        ]);
+        ]));
     }
 
     /** Cập nhật chỉnh sửa xe → màn preview mảng sẽ lưu DB */
     public function toDbPreview(Request $request): RedirectResponse|JsonResponse
     {
-        $save = $request->session()->get(self::SESSION_SAVE);
+        $save = $request->session()->get($this->sessionSaveKey());
         if (! is_array($save) || empty($save['xe_rows'])) {
             return redirect()
-                ->route('pmgplx.lich.nhap-file.create')
+                ->route($this->nhapRouteName('create'))
                 ->with('error', 'Chưa có dữ liệu để xác nhận.');
         }
 
@@ -372,7 +442,7 @@ class NhapLichTuFileController extends Controller
         $built = $this->buildXeRowsFromDbSubmission($save, $validated['rows']);
         if (isset($built['error'])) {
             return redirect()
-                ->route('pmgplx.lich.nhap-file.preview-xe')
+                ->route($this->nhapRouteName('preview-xe'))
                 ->withErrors(['rows' => $built['error']])
                 ->withInput();
         }
@@ -388,33 +458,33 @@ class NhapLichTuFileController extends Controller
             $save['off_day_sync'] ?? []
         );
         unset($save['xe_chunk_merge']);
-        $request->session()->put(self::SESSION_SAVE, $save);
+        $request->session()->put($this->sessionSaveKey(), $save);
 
-        return redirect()->route('pmgplx.lich.nhap-file.preview-db');
+        return redirect()->route($this->nhapRouteName('preview-db'));
     }
 
     public function previewDb(Request $request): View|RedirectResponse
     {
-        $save = $request->session()->get(self::SESSION_SAVE);
+        $save = $request->session()->get($this->sessionSaveKey());
         if (! is_array($save) || empty($save['db_payload'])) {
             return redirect()
-                ->route('pmgplx.lich.nhap-file.preview-xe')
+                ->route($this->nhapRouteName('preview-xe'))
                 ->with('error', 'Chưa có dữ liệu preview lưu DB.');
         }
 
-        return view('PMGPLX.lich.xem-truoc-nhap-file-db', [
+        return view('PMGPLX.lich.xem-truoc-nhap-file-db', $this->enrichImportViewData([
             'preview' => $save,
             'payload' => $save['db_payload'],
-        ]);
+        ]));
     }
 
     /** Xác nhận cuối — ghi lịch GV và xe vào DB */
     public function confirm(Request $request): RedirectResponse
     {
-        $save = $request->session()->get(self::SESSION_SAVE);
+        $save = $request->session()->get($this->sessionSaveKey());
         if (! is_array($save) || empty($save['db_payload'])) {
             return redirect()
-                ->route('pmgplx.lich.nhap-file.create')
+                ->route($this->nhapRouteName('create'))
                 ->with('error', 'Chưa có dữ liệu để xác nhận.');
         }
 
@@ -428,14 +498,14 @@ class NhapLichTuFileController extends Controller
 
         if ($gvRows === [] && $xeRows === [] && $gvDeleteRows === [] && $xeDeleteRows === []) {
             return redirect()
-                ->route('pmgplx.lich.nhap-file.preview-db')
+                ->route($this->nhapRouteName('preview-db'))
                 ->with('error', 'Không có buổi nào đủ điều kiện lưu.');
         }
 
         foreach ($payload['lich_giao_vien_bo_qua'] ?? [] as $skipRow) {
             if (str_contains((string) ($skipRow['_skip_reason'] ?? ''), 'khóa khác')) {
                 return redirect()
-                    ->route('pmgplx.lich.nhap-file.preview-db')
+                    ->route($this->nhapRouteName('preview-db'))
                     ->with(
                         'error',
                         'Không lưu được: file có buổi trùng lịch giáo viên giữa các khóa. Sửa Excel hoặc lịch PMGPLX trước khi xác nhận.'
@@ -451,7 +521,7 @@ class NhapLichTuFileController extends Controller
             }
 
             return redirect()
-                ->route('pmgplx.lich.nhap-file.preview-db')
+                ->route($this->nhapRouteName('preview-db'))
                 ->with('error', "Không lưu được: giáo viên trùng khung giờ giữa các khóa.\n".$detail);
         }
 
@@ -469,7 +539,7 @@ class NhapLichTuFileController extends Controller
         try {
             DB::beginTransaction();
 
-            if ($replaceMaKh !== []) {
+            if (! $this->isSlotReplaceImport() && $replaceMaKh !== []) {
                 $wipedGv = KhoaHocGiaoVien::query()
                     ->whereIn('MaKH', $replaceMaKh)
                     ->where('IsKhoaHocGiaoVien', 0)
@@ -484,16 +554,51 @@ class NhapLichTuFileController extends Controller
                 $ngayBD = Carbon::parse($row['NgayBD']);
                 $ngayKT = Carbon::parse($row['NgayKT']);
                 $dbMon = LichGvMonHoc::dbFields($row['MaMonHoc'] ?? $row['TenMonHoc'] ?? null);
+                $ignoreMaLichLv = ! empty($row['MaLichLV']) ? (int) $row['MaLichLV'] : null;
 
                 if ($this->gvCrossKhoaConflict(
                     $row['MaGV'],
                     (string) ($row['MaKH'] ?? ''),
                     $row['NgayBD'],
-                    $row['NgayKT']
+                    $row['NgayKT'],
+                    $ignoreMaLichLv
                 )) {
                     throw ValidationException::withMessages([
                         'lich_gv' => 'Trùng lịch giáo viên giữa các khóa (kiểm tra lại preview).',
                     ]);
+                }
+
+                if (($row['_action'] ?? '') === 'update') {
+                    $existing = ! empty($row['MaLichLV'])
+                        ? KhoaHocGiaoVien::query()->find($row['MaLichLV'])
+                        : $this->findGvLichSlotOnKhoa(
+                            (string) ($row['MaKH'] ?? ''),
+                            $row['NgayBD'],
+                            $row['NgayKT']
+                        );
+
+                    if ($existing) {
+                        $existing->update([
+                            'MaKH' => $row['MaKH'],
+                            'MaGV' => $row['MaGV'],
+                            'TenGV' => $row['TenGV'],
+                            'LoaiGV' => 'TH',
+                            'GhiChu' => (string) ($row['GhiChu'] ?? ''),
+                            'TrangThai' => 1,
+                            'NgaySua' => $now,
+                            'NgayBD' => $ngayBD,
+                            'NgayKT' => $ngayKT,
+                            'MaMonHoc' => $dbMon['MaMonHoc'],
+                            'TenMonHoc' => $dbMon['TenMonHoc'],
+                        ]);
+                        $updatedGv++;
+
+                        continue;
+                    }
+
+                    $skippedGv++;
+
+                    continue;
                 }
 
                 KhoaHocGiaoVien::create([
@@ -526,6 +631,38 @@ class NhapLichTuFileController extends Controller
                     continue;
                 }
 
+                if (($row['_action'] ?? '') === 'update') {
+                    $existing = ! empty($row['MaLichSD'])
+                        ? KhoaHocXeTap::query()->find($row['MaLichSD'])
+                        : $this->findXeLichSlotOnKhoa(
+                            (string) ($row['MaKH'] ?? ''),
+                            $row['NgayBD'],
+                            $row['NgayKT']
+                        );
+
+                    if ($existing) {
+                        $existing->update([
+                            'MaKH' => $row['MaKH'],
+                            'BienSoXe' => $bienSoXe,
+                            'MaGV' => $row['MaGV'],
+                            'DiaDiem' => (string) ($row['DiaDiem'] ?? ''),
+                            'GhiChu' => (string) ($row['GhiChu'] ?? ''),
+                            'TrangThai' => 1,
+                            'NgayBD' => $ngayBD,
+                            'NgayKT' => $ngayKT,
+                            'NgaySua' => $now,
+                            'TenGV' => $row['TenGV'],
+                        ]);
+                        $updatedXe++;
+
+                        continue;
+                    }
+
+                    $skippedXe++;
+
+                    continue;
+                }
+
                 KhoaHocXeTap::create([
                     'MaKH' => $row['MaKH'],
                     'BienSoXe' => $bienSoXe,
@@ -549,15 +686,15 @@ class NhapLichTuFileController extends Controller
             DB::rollBack();
 
             return redirect()
-                ->route('pmgplx.lich.nhap-file.preview-db')
+                ->route($this->nhapRouteName('preview-db'))
                 ->with('error', 'Lưu DB thất bại: '.$e->getMessage());
         }
 
-        $request->session()->forget([self::SESSION_EXCEL, self::SESSION_SAVE]);
+        $request->session()->forget([$this->sessionExcelKey(), $this->sessionSaveKey()]);
 
         if ($savedGv === 0 && $savedXe === 0 && $updatedGv === 0 && $updatedXe === 0 && $wipedGv === 0 && $wipedXe === 0) {
             return redirect()
-                ->route('pmgplx.lich.nhap-file.create')
+                ->route($this->nhapRouteName('create'))
                 ->with(
                     'error',
                     "Không có buổi nào được lưu. Bỏ qua GV {$gvSkipPreview}, xe {$xeSkipPreview} (preview) + trùng lịch lúc lưu."
@@ -603,7 +740,7 @@ class NhapLichTuFileController extends Controller
         }
 
         return redirect()
-            ->route('pmgplx.lich.nhap-file.create')
+            ->route($this->nhapRouteName('create'))
             ->with('success', $msg);
     }
 
@@ -741,14 +878,14 @@ class NhapLichTuFileController extends Controller
      * @param  list<array{MaGV: string, MaKH: string, ngay: string, ten_gv?: string}>  $offDaySync
      * @return array<string, mixed>
      */
-    private function buildDbPayload(array $gvRows, array $xeRows, bool $updateModeGv = false, bool $updateModeXe = false, array $offDaySync = []): array
+    protected function buildDbPayload(array $gvRows, array $xeRows, bool $updateModeGv = false, bool $updateModeXe = false, array $offDaySync = []): array
     {
         $now = Carbon::now()->format('Y-m-d H:i:s');
         $replaceMaKh = $this->maKhoaHocInImport($gvRows, $xeRows);
-        $replaceWipeGv = $replaceMaKh === []
+        $replaceWipeGv = $this->isSlotReplaceImport() || $replaceMaKh === []
             ? 0
             : KhoaHocGiaoVien::query()->whereIn('MaKH', $replaceMaKh)->where('IsKhoaHocGiaoVien', 0)->count();
-        $replaceWipeXe = $replaceMaKh === []
+        $replaceWipeXe = $this->isSlotReplaceImport() || $replaceMaKh === []
             ? 0
             : KhoaHocXeTap::query()->whereIn('MaKH', $replaceMaKh)->where('IsKhoaHocXeTap', 0)->count();
         $lichGv = [];
@@ -760,7 +897,17 @@ class NhapLichTuFileController extends Controller
 
         foreach ($gvRows as $row) {
             $maKh = trim((string) ($row['MaKH'] ?? ''));
-            $crossKhoa = $this->gvCrossKhoaConflict($row['MaGV'], $maKh, $row['NgayBD'], $row['NgayKT']);
+            $existingGv = $this->isSlotReplaceImport()
+                ? $this->findGvLichSlotOnKhoa($maKh, $row['NgayBD'], $row['NgayKT'])
+                : null;
+            $ignoreMaLichLv = $existingGv !== null ? (int) $existingGv->MaLichLV : null;
+            $crossKhoa = $this->gvCrossKhoaConflict(
+                $row['MaGV'],
+                $maKh,
+                $row['NgayBD'],
+                $row['NgayKT'],
+                $ignoreMaLichLv
+            );
             $dbMon = LichGvMonHoc::dbFields($row['MaMonHoc'] ?? $row['TenMonHoc'] ?? null);
             $record = [
                 'MaKH' => $row['MaKH'],
@@ -787,6 +934,11 @@ class NhapLichTuFileController extends Controller
             )) {
                 $record['_skip_reason'] = LichExcelNoiDungSkip::gvSkipLabel();
                 $lichGvSkip[] = $record;
+            } elseif ($existingGv !== null) {
+                $record['MaLichLV'] = $existingGv->MaLichLV;
+                $record['_action'] = 'update';
+                $lichGv[] = $record;
+                $lichGvUpdate[] = $record;
             } else {
                 $record['_action'] = 'insert';
                 $lichGv[] = $record;
@@ -795,7 +947,12 @@ class NhapLichTuFileController extends Controller
 
         foreach ($xeRows as $row) {
             $bienSo = trim((string) ($row['BienSoXe'] ?? ''));
-            $conflict = $this->xeConflict($row['MaGV'], $bienSo, $row['NgayBD'], $row['NgayKT'], $replaceMaKh);
+            $maKhXe = trim((string) ($row['MaKH'] ?? ''));
+            $existingXe = $this->isSlotReplaceImport()
+                ? $this->findXeLichSlotOnKhoa($maKhXe, $row['NgayBD'], $row['NgayKT'])
+                : null;
+            $conflict = $existingXe === null
+                && $this->xeConflict($row['MaGV'], $bienSo, $row['NgayBD'], $row['NgayKT'], $replaceMaKh);
             $record = [
                 'MaKH' => $row['MaKH'],
                 'BienSoXe' => $bienSo,
@@ -814,6 +971,11 @@ class NhapLichTuFileController extends Controller
             if ($conflict) {
                 $record['_skip_reason'] = 'Trùng lịch xe/GV khóa khác (không lưu được)';
                 $lichXeSkip[] = $record;
+            } elseif ($existingXe !== null) {
+                $record['MaLichSD'] = $existingXe->MaLichSD;
+                $record['_action'] = 'update';
+                $lichXe[] = $record;
+                $lichXeUpdate[] = $record;
             } elseif (LichExcelNoiDungSkip::isXeSkip(
                 (string) ($row['noi_dung'] ?? ''),
                 (string) ($row['chi_tiet'] ?? '')
@@ -863,6 +1025,7 @@ class NhapLichTuFileController extends Controller
                 'replace_ma_kh' => $replaceMaKh,
                 'replace_wipe_gv' => $replaceWipeGv,
                 'replace_wipe_xe' => $replaceWipeXe,
+                'slot_replace_import' => $this->isSlotReplaceImport(),
             ],
         ];
     }
@@ -899,9 +1062,9 @@ class NhapLichTuFileController extends Controller
 
     public function cancel(Request $request): RedirectResponse
     {
-        $request->session()->forget([self::SESSION_EXCEL, self::SESSION_SAVE]);
+        $request->session()->forget([$this->sessionExcelKey(), $this->sessionSaveKey()]);
 
-        return redirect()->route('pmgplx.lich.nhap-file.create');
+        return redirect()->route($this->nhapRouteName('create'));
     }
 
     /**
@@ -1366,7 +1529,7 @@ class NhapLichTuFileController extends Controller
         $save['gv_chunk_merge'] = $merge;
 
         if (! $request->boolean('chunk_finalize')) {
-            $request->session()->put(self::SESSION_SAVE, $save);
+            $request->session()->put($this->sessionSaveKey(), $save);
 
             return response()->json([
                 'ok' => true,
@@ -1392,11 +1555,11 @@ class NhapLichTuFileController extends Controller
 
         $save['gv_rows'] = $gvRows;
         $save['xe_rows'] = $xeRows;
-        $request->session()->put(self::SESSION_SAVE, $save);
+        $request->session()->put($this->sessionSaveKey(), $save);
 
         return response()->json([
             'ok' => true,
-            'redirect' => route('pmgplx.lich.nhap-file.preview-xe'),
+            'redirect' => route($this->nhapRouteName('preview-xe')),
         ]);
     }
 
@@ -1450,7 +1613,7 @@ class NhapLichTuFileController extends Controller
         $save['xe_chunk_merge'] = $merge;
 
         if (! $request->boolean('chunk_finalize')) {
-            $request->session()->put(self::SESSION_SAVE, $save);
+            $request->session()->put($this->sessionSaveKey(), $save);
 
             return response()->json([
                 'ok' => true,
@@ -1485,11 +1648,11 @@ class NhapLichTuFileController extends Controller
             false,
             $save['off_day_sync'] ?? []
         );
-        $request->session()->put(self::SESSION_SAVE, $save);
+        $request->session()->put($this->sessionSaveKey(), $save);
 
         return response()->json([
             'ok' => true,
-            'redirect' => route('pmgplx.lich.nhap-file.preview-db'),
+            'redirect' => route($this->nhapRouteName('preview-db')),
         ]);
     }
 
@@ -1506,6 +1669,68 @@ class NhapLichTuFileController extends Controller
     private function gvSameKhoaConflict(string $maGv, string $maKh, string $ngayBD, string $ngayKT): bool
     {
         return $this->findGvLichForUpdate($maGv, $maKh, $ngayBD, $ngayKT) !== null;
+    }
+
+    protected function findGvLichSlotOnKhoa(string $maKh, string $ngayBD, string $ngayKT): ?KhoaHocGiaoVien
+    {
+        $maKh = trim($maKh);
+        if ($maKh === '') {
+            return null;
+        }
+
+        $bd = Carbon::parse($ngayBD);
+        $kt = Carbon::parse($ngayKT);
+
+        $exact = KhoaHocGiaoVien::query()
+            ->where('MaKH', $maKh)
+            ->where('IsKhoaHocGiaoVien', 0)
+            ->where('NgayBD', $bd)
+            ->where('NgayKT', $kt)
+            ->orderBy('MaLichLV')
+            ->first();
+
+        if ($exact !== null) {
+            return $exact;
+        }
+
+        return KhoaHocGiaoVien::query()
+            ->where('MaKH', $maKh)
+            ->where('IsKhoaHocGiaoVien', 0)
+            ->where('NgayBD', '<', $kt)
+            ->where('NgayKT', '>', $bd)
+            ->orderBy('MaLichLV')
+            ->first();
+    }
+
+    protected function findXeLichSlotOnKhoa(string $maKh, string $ngayBD, string $ngayKT): ?KhoaHocXeTap
+    {
+        $maKh = trim($maKh);
+        if ($maKh === '') {
+            return null;
+        }
+
+        $bd = Carbon::parse($ngayBD);
+        $kt = Carbon::parse($ngayKT);
+
+        $exact = KhoaHocXeTap::query()
+            ->where('MaKH', $maKh)
+            ->where('IsKhoaHocXeTap', 0)
+            ->where('NgayBD', $bd)
+            ->where('NgayKT', $kt)
+            ->orderBy('MaLichSD')
+            ->first();
+
+        if ($exact !== null) {
+            return $exact;
+        }
+
+        return KhoaHocXeTap::query()
+            ->where('MaKH', $maKh)
+            ->where('IsKhoaHocXeTap', 0)
+            ->where('NgayBD', '<', $kt)
+            ->where('NgayKT', '>', $bd)
+            ->orderBy('MaLichSD')
+            ->first();
     }
 
     private function findGvLichForUpdate(string $maGv, string $maKh, string $ngayBD, string $ngayKT): ?KhoaHocGiaoVien

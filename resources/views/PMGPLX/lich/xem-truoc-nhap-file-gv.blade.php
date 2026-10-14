@@ -14,6 +14,7 @@
 @endpush
 
 @section('content')
+    @include('PMGPLX.lich.partials.nhap-lich-import-routes')
     @php
         $okCount = (int) ($preview['meta']['gv_ok_count'] ?? count($rows));
         $conflictCount = (int) ($preview['meta']['gv_conflict_count'] ?? 0);
@@ -25,7 +26,7 @@
     <div class="card card-panel">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>Xem trước Lịch giáo viên — Nhập từ file</span>
-            <a href="{{ route('pmgplx.lich.nhap-file.preview') }}" class="btn btn-sm btn-outline-secondary">← Quay lại Excel</a>
+            <a href="{{ $nhapLichRoutes['preview'] }}" class="btn btn-sm btn-outline-secondary">← Quay lại Excel</a>
         </div>
         <div class="card-body">
             <div class="mb-3">
@@ -54,9 +55,15 @@
                 </div>
             @endif
 
-            <div class="alert alert-danger py-2">
-                Lưu DB sẽ <strong>xóa toàn bộ lịch GV và lịch xe tập cũ</strong> của từng khóa có trong file và thay bằng lịch mới.
-            </div>
+            @if ($isSlotReplaceImport)
+                <div class="alert alert-primary py-2">
+                    Buổi trùng <strong>khóa + khung giờ</strong> sẽ <strong>thay GV</strong>; buổi mới sẽ thêm; lịch cũ không có trong file vẫn giữ.
+                </div>
+            @else
+                <div class="alert alert-danger py-2">
+                    Lưu DB sẽ <strong>xóa toàn bộ lịch GV và lịch xe tập cũ</strong> của từng khóa có trong file và thay bằng lịch mới.
+                </div>
+            @endif
 
             @if ($conflictCount > 0)
                 <div class="alert alert-warning">
@@ -64,7 +71,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('pmgplx.lich.nhap-file.to-xe') }}" id="formNhapFileGv">
+            <form method="POST" action="{{ $nhapLichRoutes['to_xe'] }}" id="formNhapFileGv">
                 @csrf
                 <div class="table-responsive mb-3">
                     <table class="table table-sm table-bordered table-hover mb-0">
@@ -169,8 +176,8 @@
                 </div>
 
                 <button type="submit" class="btn btn-navy btn-lg">Tiếp tục — Xem trước lịch xe tập lái</button>
-                <a href="{{ route('pmgplx.lich.nhap-file.preview') }}" class="btn btn-outline-secondary btn-lg ml-2">← Quay lại Excel</a>
-                <a href="{{ route('pmgplx.lich.nhap-file.cancel') }}" class="btn btn-outline-danger btn-lg ml-2">Hủy</a>
+                <a href="{{ $nhapLichRoutes['preview'] }}" class="btn btn-outline-secondary btn-lg ml-2">← Quay lại Excel</a>
+                <a href="{{ $nhapLichRoutes['cancel'] }}" class="btn btn-outline-danger btn-lg ml-2">Hủy</a>
             </form>
         </div>
     </div>

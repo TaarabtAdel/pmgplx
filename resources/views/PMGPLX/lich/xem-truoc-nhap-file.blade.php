@@ -25,6 +25,7 @@
 @endpush
 
 @section('content')
+    @include('PMGPLX.lich.partials.nhap-lich-import-routes')
     @php
         $okCount = (int) ($preview['meta']['ok_count'] ?? 0);
         $offCount = (int) ($preview['meta']['off_count'] ?? 0);
@@ -38,7 +39,7 @@
     <div class="card card-panel">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>Xem trước — Nhập lịch từ file</span>
-            <a href="{{ route('pmgplx.lich.nhap-file.cancel') }}" class="btn btn-sm btn-outline-secondary">← Quay lại chọn file</a>
+            <a href="{{ $nhapLichRoutes['cancel'] }}" class="btn btn-sm btn-outline-secondary">← Quay lại chọn file</a>
         </div>
         <div class="card-body">
             <div class="mb-3">
@@ -147,10 +148,10 @@
                 </div>
             @endforeach
 
-            <form method="POST" action="{{ route('pmgplx.lich.nhap-file.to-gv') }}" class="mt-2">
+            <form method="POST" action="{{ $nhapLichRoutes['to_gv'] }}" class="mt-2">
                 @csrf
                 <button type="submit" class="btn btn-navy btn-lg">Xem trước lưu vào phần mềm</button>
-                <a href="{{ route('pmgplx.lich.nhap-file.cancel') }}" class="btn btn-outline-secondary btn-lg ml-2">Hủy</a>
+                <a href="{{ $nhapLichRoutes['cancel'] }}" class="btn btn-outline-secondary btn-lg ml-2">Hủy</a>
             </form>
         </div>
     </div>
