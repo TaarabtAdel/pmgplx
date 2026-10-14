@@ -64,7 +64,7 @@ class DatPhienLichXeMatcher
             return self::$evalBySessionId[$sessionId];
         }
 
-        $maKhoaHoc = trim((string) ($session->MaKhoaHoc ?? ''));
+        $maKhoaHoc = self::normalizeMaKhoaHoc((string) ($session->MaKhoaHoc ?? ''));
         $maGiaoVien = self::normalizeMaGv((string) ($session->MaGiaoVien ?? ''));
         $bienSo = LichExcelBienSo::normalize((string) ($session->BienSoXe ?? ''));
         $start = self::toCarbon($session->ThoiGianBatDauPhienHoc);
@@ -186,6 +186,7 @@ class DatPhienLichXeMatcher
         ?array $index = null
     ): ?KhoaHocXeTap {
         $tolerance ??= DatDieuKienDoPhien::hienTai()->toSettingsArray();
+        $maKhoaHoc = self::normalizeMaKhoaHoc($maKhoaHoc);
         $sessionDate = $sessionStart->toDateString();
         $index ??= self::indexFor($scheduleRows);
         $candidates = collect($index[$sessionDate.'|'.$maKhoaHoc.'|'.$maGiaoVien.'|'.$bienSo] ?? []);
@@ -371,7 +372,7 @@ class DatPhienLichXeMatcher
             }
 
             $key = $lichStart->toDateString()
-                .'|'.trim((string) ($lich->MaKH ?? ''))
+                .'|'.self::normalizeMaKhoaHoc((string) ($lich->MaKH ?? ''))
                 .'|'.self::normalizeMaGv((string) ($lich->MaGV ?? ''))
                 .'|'.LichExcelBienSo::normalize((string) ($lich->BienSoXe ?? ''));
             $index[$key][] = $lich;
@@ -390,9 +391,14 @@ class DatPhienLichXeMatcher
         ];
     }
 
+    private static function normalizeMaKhoaHoc(string $maKhoaHoc): string
+    {
+        return strtoupper(trim($maKhoaHoc));
+    }
+
     private static function normalizeMaGv(string $maGv): string
     {
-        return mb_strtoupper(trim($maGv));
+        return DatPhanCongHocVienSaver::normalizeMaGiaoVien($maGv);
     }
 
     private static function toCarbon(mixed $value): ?Carbon
