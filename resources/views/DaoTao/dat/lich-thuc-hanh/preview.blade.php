@@ -7,11 +7,14 @@
     .lich-excel-wrap { max-height: 80vh; overflow: auto; border: 1px solid #dee2e6; }
     .lich-excel-table { font-size: 11px; border-collapse: separate; border-spacing: 0; min-width: max-content; }
     .lich-excel-table th, .lich-excel-table td { border: 1px solid #dee2e6; padding: 2px 4px; vertical-align: middle; white-space: nowrap; color: #212529; }
-    .lich-excel-table thead th { position: sticky; top: 0; z-index: 2; background: #f5f5f5; }
+    .lich-excel-table thead tr:first-child th { position: sticky; top: 0; z-index: 2; background: #f5f5f5; }
+    /* Hàng subhead dính dưới hàng GV (~2 dòng chữ + padding) — tránh che dòng STT = 1 */
+    .lich-excel-table thead tr:nth-child(2) th { position: sticky; top: 2.6rem; z-index: 2; background: #fafafa; }
     .lich-excel-table .gv-group-head { background: #e3f2fd; text-align: center; font-weight: 600; }
     .lich-excel-table .col-subhead { background: #fafafa; font-weight: 600; font-size: 10px; }
     .lich-excel-table .col-ngay { position: sticky; left: 0; z-index: 1; background: #fff; font-weight: 600; }
-    .lich-excel-table thead .col-ngay { z-index: 3; background: #f5f5f5; }
+    .lich-excel-table thead tr:first-child .col-ngay { z-index: 4; background: #f5f5f5; top: 0; }
+    .lich-excel-table thead tr:nth-child(2) .col-ngay { z-index: 4; }
 </style>
 @endpush
 
@@ -76,9 +79,9 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($dates as $iso)
+                            @foreach (array_values($dates) as $stt => $iso)
                                 <tr>
-                                    <td class="col-ngay text-center">{{ $loop->iteration }}</td>
+                                    <td class="col-ngay text-center">{{ $stt + 2 }}</td>
                                     @foreach ($gvs as $gv)
                                         @php
                                             $c = $cells[$iso.'|'.$gv['ma_gv']] ?? [];

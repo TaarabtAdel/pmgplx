@@ -15,6 +15,27 @@
         return html;
     }
 
+    function bienSoOptionsHtml(selected) {
+        var html = '<option value="">— Chọn xe —</option>';
+        var selectedVal = String(selected || '').trim();
+        var found = false;
+        bienSoXe.forEach(function (bien) {
+            var val = String(bien || '').trim();
+            if (val === '') {
+                return;
+            }
+            var sel = val === selectedVal ? ' selected' : '';
+            if (sel) {
+                found = true;
+            }
+            html += '<option value="' + escapeAttr(val) + '"' + sel + '>' + escapeHtml(val) + '</option>';
+        });
+        if (selectedVal !== '' && ! found) {
+            html += '<option value="' + escapeAttr(selectedVal) + '" selected>' + escapeHtml(selectedVal) + '</option>';
+        }
+        return html;
+    }
+
     function escapeHtml(s) {
         return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
     }
@@ -60,6 +81,16 @@
     }
 
     function bindCapRow($tr) {
+        $tr.find('.bien-so-select').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            placeholder: '— Chọn xe —',
+            allowClear: true,
+            dropdownParent: $tr.closest('.lich-th-section').length
+                ? $tr.closest('.lich-th-section')
+                : $(document.body)
+        });
+
         $tr.find('.gv-select').select2({
             theme: 'bootstrap4',
             width: '100%',
@@ -84,8 +115,8 @@
             '<input type="hidden" class="cap-stt-input" name="cap_xe[' + idx + '][stt]" value="' + (data.stt || idx + 1) + '"></td>'
         );
         $tr.append(
-            '<td><input type="text" class="form-control form-control-sm" name="cap_xe[' + idx + '][bien_so]" ' +
-            'list="datalist-bien-so" value="' + escapeAttr(data.bien_so || '') + '" placeholder="74A-…"></td>'
+            '<td><select class="form-control form-control-sm bien-so-select" name="cap_xe[' + idx + '][bien_so]">' +
+            bienSoOptionsHtml(data.bien_so || '') + '</select></td>'
         );
         $tr.append(
             '<td><select class="form-control form-control-sm gv-select" name="cap_xe[' + idx + '][gv_sang]" ' +
@@ -273,7 +304,13 @@
         });
 
         $(document).on('click', '.btn-xoa-cap', function () {
-            $(this).closest('tr').remove();
+            var $tr = $(this).closest('tr');
+            $tr.find('.bien-so-select, .gv-select').each(function () {
+                if ($(this).data('select2')) {
+                    $(this).select2('destroy');
+                }
+            });
+            $tr.remove();
             reindexCapXe();
         });
 
@@ -332,7 +369,7 @@
                     return;
                 }
                 var params = { hang_dao_tao: next };
-                ['ma_khoa', 'ngay_khai_giang', 'ngay_ket_thuc_du_kien', 'he_so_quy_doi', 'gio_day_moi_ngay', 'so_hoc_vien_mac_dinh'].forEach(function (field) {
+                ['ma_khoa', 'ngay_khai_giang', 'ngay_ket_thuc_du_kien'].forEach(function (field) {
                     var $el = $('[name="' + field + '"]');
                     if ($el.length && $el.val()) {
                         params[field] = $el.val();

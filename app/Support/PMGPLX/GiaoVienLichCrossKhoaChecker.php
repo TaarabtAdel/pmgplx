@@ -4,6 +4,7 @@ namespace App\Support\PMGPLX;
 
 use App\Models\PMGPLX\KhoaHocGiaoVien;
 use App\Models\PMGPLX\KhoaHocXeTap;
+use App\Support\DaoTao\DatPhanCongGiaoVienThayResolver;
 use App\Support\DaoTao\DatPhanCongHocVienSaver;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -184,7 +185,9 @@ class GiaoVienLichCrossKhoaChecker
         string $maGiaoVienGoc,
         string $maGiaoVienThay,
         Carbon $tuNgay,
-        ?Carbon $denNgay
+        ?Carbon $denNgay,
+        ?string $tuGio = null,
+        ?string $denGio = null
     ): void {
         $maKh = trim($maKhoaHoc);
         $maGoc = DatPhanCongHocVienSaver::normalizeMaGiaoVien($maGiaoVienGoc);
@@ -197,7 +200,13 @@ class GiaoVienLichCrossKhoaChecker
         $subEnd = ($denNgay ?? $tuNgay->copy())->toDateString();
         $subStart = $tuNgay->toDateString();
 
-        $slots = self::courseMainGvThSlots($maKh, $maGoc, $subStart, $subEnd);
+        $slots = self::courseMainGvThSlots($maKh, $maGoc, $subStart, $subEnd)
+            ->filter(fn (array $slot): bool => DatPhanCongGiaoVienThayResolver::gioTrongKhung(
+                DatPhanCongGiaoVienThayResolver::gioTuThoiDiem($slot['ngay_bd']),
+                $tuGio,
+                $denGio
+            ))
+            ->values();
         if ($slots->isEmpty()) {
             return;
         }

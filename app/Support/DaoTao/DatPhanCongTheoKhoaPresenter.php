@@ -65,7 +65,7 @@ final class DatPhanCongTheoKhoaPresenter
             ];
         }
 
-        $allMaGv = array_values(array_unique(array_merge($gvFromLich, array_keys($hvByGv))));
+        $allMaGv = DatPhanCongHocVienSaver::maGiaoVienQueryValues(array_merge($gvFromLich, array_keys($hvByGv)));
         if ($allMaGv === []) {
             return [];
         }
@@ -117,7 +117,7 @@ final class DatPhanCongTheoKhoaPresenter
             ->whereIn('MaHocVien', array_keys($maDkList))
             ->get(['MaKhoaHoc', 'MaHocVien', 'MaGiaoVien', 'BienSoXe', 'BienSoXeTuDong']);
 
-        $maGvCodes = $rows->pluck('MaGiaoVien')->filter()->unique()->values()->all();
+        $maGvCodes = DatPhanCongHocVienSaver::maGiaoVienQueryValues($rows->pluck('MaGiaoVien'));
         $gvNames = $maGvCodes === []
             ? collect()
             : GiaoVien::query()

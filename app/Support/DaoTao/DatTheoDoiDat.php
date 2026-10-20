@@ -514,6 +514,7 @@ class DatTheoDoiDat
      */
     private static function loadGiaoVienNames(array $maGvCodes): Collection
     {
+        $maGvCodes = DatPhanCongHocVienSaver::maGiaoVienQueryValues($maGvCodes);
         if ($maGvCodes === []) {
             return collect();
         }
@@ -601,7 +602,8 @@ class DatTheoDoiDat
         $expectedGv = DatPhanCongGiaoVienThayResolver::resolveForDate(
             $assignment,
             self::sessionDate($session),
-            $gvSubstitutes
+            $gvSubstitutes,
+            DatPhanCongGiaoVienThayResolver::gioTuThoiDiem($session->ThoiGianBatDauPhienHoc)
         );
         $sessionGv = DatPhanCongHocVienSaver::normalizeMaGiaoVien((string) ($session->MaGiaoVien ?? ''));
 

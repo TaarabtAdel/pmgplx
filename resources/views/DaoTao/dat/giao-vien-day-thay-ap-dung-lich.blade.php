@@ -45,6 +45,7 @@
                                 <th>GV gốc → GV thay</th>
                                 <th>Từ ngày</th>
                                 <th>Đến ngày</th>
+                                <th>Khung giờ</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -53,6 +54,7 @@
                                     <td><code>{{ $kb['ma_giao_vien_goc'] }}</code> → <code>{{ $kb['ma_giao_vien'] }}</code></td>
                                     <td>{{ $kb['tu_ngay'] }}</td>
                                     <td>{{ $kb['den_ngay'] ?? '—' }}</td>
+                                    <td>{{ \App\Support\DaoTao\DatPhanCongGiaoVienThayResolver::nhanKhungGio($kb['tu_gio'] ?? null, $kb['den_gio'] ?? null) }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -83,7 +85,7 @@
                                 <td><code>{{ $row['bien_so_xe'] ?: '—' }}</code></td>
                                 <td><code>{{ $row['ma_gv_cu'] }}</code> {{ $row['ten_gv_cu'] }}</td>
                                 <td class="table-warning"><code>{{ $row['ma_gv_moi'] }}</code> {{ $row['ten_gv_moi'] }}</td>
-                                <td class="text-nowrap small">{{ $row['tu_ngay_thay'] }} — {{ $row['den_ngay_thay'] ?? '∞' }}</td>
+                                <td class="text-nowrap small">{{ $row['tu_ngay_thay'] }} — {{ $row['den_ngay_thay'] ?? '∞' }}<br><span class="text-muted">{{ $row['khung_gio_thay'] ?? 'cả ngày' }}</span></td>
                             </tr>
                         @empty
                             <tr><td colspan="7" class="text-muted text-center py-3">Không có dòng lịch GV cần đổi.</td></tr>
@@ -115,7 +117,7 @@
                                 <td><code>{{ $row['bien_so_xe'] ?: '—' }}</code></td>
                                 <td><code>{{ $row['ma_gv_cu'] }}</code> {{ $row['ten_gv_cu'] }}</td>
                                 <td class="table-warning"><code>{{ $row['ma_gv_moi'] }}</code> {{ $row['ten_gv_moi'] }}</td>
-                                <td class="text-nowrap small">{{ $row['tu_ngay_thay'] }} — {{ $row['den_ngay_thay'] ?? '∞' }}</td>
+                                <td class="text-nowrap small">{{ $row['tu_ngay_thay'] }} — {{ $row['den_ngay_thay'] ?? '∞' }}<br><span class="text-muted">{{ $row['khung_gio_thay'] ?? 'cả ngày' }}</span></td>
                             </tr>
                         @empty
                             <tr><td colspan="7" class="text-muted text-center py-3">Không có dòng lịch xe cần đổi.</td></tr>

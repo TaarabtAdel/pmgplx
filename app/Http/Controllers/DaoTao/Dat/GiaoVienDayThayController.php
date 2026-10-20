@@ -179,11 +179,15 @@ class GiaoVienDayThayController extends Controller
             'ma_giao_vien' => ['required', 'string', 'max:50'],
             'tu_ngay' => ['required', 'date'],
             'den_ngay' => ['nullable', 'date'],
+            'tu_gio' => ['nullable', 'date_format:H:i'],
+            'den_gio' => ['nullable', 'date_format:H:i'],
         ], [
             'ma_khoa_hoc.required' => 'Chọn mã khóa học.',
             'ma_giao_vien_goc.required' => 'Chọn giáo viên được dạy thay.',
             'ma_giao_vien.required' => 'Nhập mã giáo viên dạy thay.',
             'tu_ngay.required' => 'Nhập từ ngày.',
+            'tu_gio.date_format' => 'Giờ bắt đầu không hợp lệ (HH:MM).',
+            'den_gio.date_format' => 'Giờ kết thúc không hợp lệ (HH:MM).',
         ]);
 
         $maKhoaHoc = trim((string) $validated['ma_khoa_hoc']);
@@ -194,7 +198,9 @@ class GiaoVienDayThayController extends Controller
                 trim((string) $validated['ma_giao_vien_goc']),
                 trim((string) $validated['ma_giao_vien']),
                 (string) $validated['tu_ngay'],
-                isset($validated['den_ngay']) ? (string) $validated['den_ngay'] : null
+                isset($validated['den_ngay']) ? (string) $validated['den_ngay'] : null,
+                $validated['tu_gio'] ?? null,
+                $validated['den_gio'] ?? null
             );
         } catch (Throwable $e) {
             if ($e instanceof \Illuminate\Validation\ValidationException) {

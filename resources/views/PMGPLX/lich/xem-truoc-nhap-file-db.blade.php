@@ -13,6 +13,18 @@
         $xeSkip = $payload['lich_xe_tap_bo_qua'] ?? [];
         $xeDelete = $payload['lich_xe_tap_xoa'] ?? [];
         $offDaySummary = $meta['off_day_summary'] ?? [];
+        $gvTrungKhoa = array_values(array_filter($gvSkip, static fn (array $r): bool => ($r['_trung_khoa'] ?? '') !== ''));
+        $xeTrungKhoa = array_values(array_filter($xeSkip, static fn (array $r): bool => ($r['_trung_khoa'] ?? '') !== ''));
+        $khungGio = static function ($bd, $kt): string {
+            try {
+                $b = \Carbon\Carbon::parse($bd);
+                $k = \Carbon\Carbon::parse($kt);
+            } catch (\Throwable) {
+                return trim((string) $bd).' – '.trim((string) $kt);
+            }
+
+            return $b->isSameDay($k) ? $b->format('d/m/Y H:i').' – '.$k->format('H:i') : $b->format('d/m/Y H:i').' – '.$k->format('d/m/Y H:i');
+        };
     @endphp
 
     <div class="card card-panel">
@@ -84,6 +96,45 @@
                             </li>
                         @endforeach
                     </ul>
+                </div>
+            @endif
+
+            @if ($gvTrungKhoa !== [] || $xeTrungKhoa !== [])
+                <div class="alert alert-danger">
+                    <strong>Buổi trùng lịch với khóa khác — không lưu được</strong>
+                    @if ($gvTrungKhoa !== [])
+                        (lịch giáo viên: <strong>{{ count($gvTrungKhoa) }}</strong> buổi — phải sửa trước khi xác nhận)
+                    @endif
+                    @if ($xeTrungKhoa !== [])
+                        (lịch xe: <strong>{{ count($xeTrungKhoa) }}</strong> buổi — sẽ bỏ qua)
+                    @endif
+                    <div class="table-responsive mt-2 mb-0">
+                        <table class="table table-sm table-bordered bg-white mb-0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Loại</th>
+                                    <th>Giáo viên</th>
+                                    <th>Buổi trong file</th>
+                                    <th>Trùng với</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ([['GV', $gvTrungKhoa], ['Xe', $xeTrungKhoa]] as [$loai, $dsTrung])
+                                    @foreach ($dsTrung as $r)
+                                        <tr>
+                                            <td>{{ $loai }}</td>
+                                            <td class="text-nowrap">{{ $r['TenGV'] ?? '' }} ({{ $r['MaGV'] ?? '' }})</td>
+                                            <td class="text-nowrap">
+                                                Khóa {{ $r['MaKH'] ?? '' }}@if (($r['BienSoXe'] ?? '') !== ''), xe {{ $r['BienSoXe'] }}@endif<br>
+                                                {{ $khungGio($r['NgayBD'] ?? '', $r['NgayKT'] ?? '') }}
+                                            </td>
+                                            <td>{{ preg_replace(['/^Trùng lịch (GV|xe\/GV) /u', '/ \(không lưu được\)$/u'], '', (string) ($r['_skip_reason'] ?? '')) }}</td>
+                                        </tr>
+                                    @endforeach
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             @endif
 

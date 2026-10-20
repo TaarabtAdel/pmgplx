@@ -34,6 +34,23 @@
         $offDeleteGvCount = (int) ($offDayDeletes['gv_count'] ?? 0);
         $offDeleteXeCount = (int) ($offDayDeletes['xe_count'] ?? 0);
         $cellClass = fn (?string $text) => \App\Support\PMGPLX\LichExcelCellStyle::classFor($text);
+        $gvKhongKhop = array_values(array_filter(
+            $preview['teachers'],
+            fn (array $gv): bool => ($gv['kiem_tra_gv']['trang_thai'] ?? \App\Support\PMGPLX\KiemTraGiaoVienNhapLich::KHOP)
+                !== \App\Support\PMGPLX\KiemTraGiaoVienNhapLich::KHOP
+        ));
+        $moTaKiemTraGv = function (array $gv): string {
+            $kt = $gv['kiem_tra_gv'] ?? [];
+            $goiY = collect($kt['goi_y'] ?? [])->map(fn ($g) => $g['ho_ten'].' ('.$g['ma_gv'].')')->implode(', ');
+            $text = match ($kt['trang_thai'] ?? '') {
+                \App\Support\PMGPLX\KiemTraGiaoVienNhapLich::LECH_TEN => 'Mã '.$gv['ma_gv'].' trong danh mục là «'.$kt['ten_danh_muc'].'» — không khớp tên trong file.',
+                \App\Support\PMGPLX\KiemTraGiaoVienNhapLich::KHONG_CO_MA => 'Mã '.$gv['ma_gv'].' không có trong danh mục giáo viên.',
+                \App\Support\PMGPLX\KiemTraGiaoVienNhapLich::THIEU_MA => 'File không có mã giáo viên.',
+                default => '',
+            };
+
+            return $goiY !== '' ? $text.' Có thể là: '.$goiY.'.' : $text;
+        };
     @endphp
 
     <div class="card card-panel">
@@ -51,6 +68,26 @@
                     bỏ qua <strong class="text-warning">{{ $offCount }}</strong> ngày nghỉ (Nội dung + Chi tiết trống)
                 </div>
             </div>
+
+            @if ($gvKhongKhop !== [])
+                <div class="alert alert-danger mb-3">
+                    <strong>{{ count($gvKhongKhop) }} giáo viên có mã / tên không khớp danh mục giáo viên PMGPLX</strong>
+                    — kiểm tra lại file trước khi lưu, nếu không lịch sẽ ghi sai giáo viên:
+                    <ul class="mb-0 mt-2 pl-3">
+                        @foreach ($gvKhongKhop as $gv)
+                            <li>
+                                <strong>Giáo viên {{ $gv['index'] }}: {{ $gv['ten_gv'] !== '' ? $gv['ten_gv'] : '—' }}</strong>
+                                @if (($gv['ma_gv'] ?? '') !== '') ({{ $gv['ma_gv'] }}) @endif
+                                — {{ $moTaKiemTraGv($gv) }}
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @elseif ($preview['teachers'] !== [])
+                <div class="alert alert-success mb-3 py-2">
+                    Mã và tên của cả {{ count($preview['teachers']) }} giáo viên trong file đều khớp danh mục giáo viên PMGPLX.
+                </div>
+            @endif
 
             <div class="alert alert-warning mb-3">
                 Dòng nền vàng là <strong>ngày nghỉ</strong> (cột Nội dung và Chi tiết đều trống).
@@ -97,7 +134,15 @@
                         @if (($gv['bien_so_xe'] ?? '') !== '')
                             — {{ $gv['bien_so_xe'] }}
                         @endif
+                        @if (($gv['kiem_tra_gv']['trang_thai'] ?? '') === \App\Support\PMGPLX\KiemTraGiaoVienNhapLich::KHOP)
+                            <span class="badge badge-success align-middle ml-1" title="Khớp: {{ $gv['kiem_tra_gv']['ten_danh_muc'] }}">✓ Khớp danh mục</span>
+                        @elseif (isset($gv['kiem_tra_gv']))
+                            <span class="badge badge-danger align-middle ml-1">✕ Không khớp danh mục</span>
+                        @endif
                     </h5>
+                    @if (isset($gv['kiem_tra_gv']) && $gv['kiem_tra_gv']['trang_thai'] !== \App\Support\PMGPLX\KiemTraGiaoVienNhapLich::KHOP)
+                        <div class="small text-danger mb-1">{{ $moTaKiemTraGv($gv) }}</div>
+                    @endif
                     <div class="mb-2 small">
                         <span class="mr-3"><strong>Mã GV:</strong> {{ $gv['ma_gv'] !== '' ? $gv['ma_gv'] : '—' }}</span>
                         <span class="mr-3"><strong>Mã khóa học:</strong> {{ $gv['ma_kh'] !== '' ? $gv['ma_kh'] : '—' }}</span>

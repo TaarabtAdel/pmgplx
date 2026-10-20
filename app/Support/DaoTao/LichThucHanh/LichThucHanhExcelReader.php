@@ -2,6 +2,7 @@
 
 namespace App\Support\DaoTao\LichThucHanh;
 
+use App\Support\DaoTao\DatPhanCongHocVienSaver;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
@@ -36,9 +37,9 @@ final class LichThucHanhExcelReader
             $headerMa = trim((string) $sheet->getCell(Coordinate::stringFromColumnIndex($colMa).'1')->getValue());
             preg_match('/(\d{2}A-\d+\.\d+)/u', $headerName, $mBien);
             $bien = $mBien[1] ?? '';
-            preg_match('/^(\d+)-(\d+)/', $headerMa, $mMa);
-            $maGv = $mMa[1] ?? '';
-            $maKhoa = $mMa[2] ?? '';
+            preg_match('/^([^-]+)-(.+)$/', $headerMa, $mMa);
+            $maGv = DatPhanCongHocVienSaver::normalizeMaGiaoVien($mMa[1] ?? '');
+            $maKhoa = trim($mMa[2] ?? '');
             $hoTen = preg_replace('/\s*-\s*\d{2}A-.*/u', '', $headerName) ?? $headerName;
             $hoTen = trim($hoTen);
             $ca = ($b % 2 === 0) ? 'sang' : 'chieu';

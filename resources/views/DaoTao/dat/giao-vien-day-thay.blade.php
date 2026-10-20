@@ -102,6 +102,7 @@
                                                     @endif
                                                     · từ <span class="text-nowrap">{{ $tuSub }}</span>
                                                     đến <span class="text-nowrap">{{ $denSub }}</span>
+                                                    · <span class="text-nowrap">{{ \App\Support\DaoTao\DatPhanCongGiaoVienThayResolver::nhanKhungGio($sub['tu_gio'] ?? null, $sub['den_gio'] ?? null) }}</span>
                                                 </div>
                                             @endforeach
                                         @endif
@@ -225,6 +226,32 @@
                                     @enderror
                                 </div>
                             </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-3 mb-2">
+                                    <label for="gvt_tu_gio" class="small mb-1">Giờ bắt đầu</label>
+                                    <input type="time" name="tu_gio" id="gvt_tu_gio" step="60"
+                                           class="form-control form-control-sm @error('tu_gio') is-invalid @enderror"
+                                           value="{{ old('tu_gio') }}">
+                                    @error('tu_gio')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="form-group col-md-3 mb-2">
+                                    <label for="gvt_den_gio" class="small mb-1">Giờ kết thúc</label>
+                                    <input type="time" name="den_gio" id="gvt_den_gio" step="60"
+                                           class="form-control form-control-sm @error('den_gio') is-invalid @enderror"
+                                           value="{{ old('den_gio') }}">
+                                    @error('den_gio')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="col-md-6 mb-2 d-flex align-items-end">
+                                    <small class="text-muted">
+                                        Áp dụng cho mỗi ngày trong khoảng ngày trên: buổi nào có giờ bắt đầu nằm trong khung này thì đổi sang GV dạy thay.
+                                        <strong>Để trống cả hai = thay cả ngày.</strong>
+                                    </small>
+                                </div>
+                            </div>
                             <p id="gvt_date_bounds_hint" class="small text-muted mb-2"></p>
                             <div class="custom-control custom-checkbox mb-2">
                                 <input type="checkbox" class="custom-control-input" id="gvt_ap_dung_lich" name="ap_dung_lich" value="1">
@@ -322,8 +349,17 @@
             return 'khi có khai báo mới';
         }
 
-        function formatKhoangDayThay(tuNgay, denNgay) {
-            return 'Từ <strong>' + formatIsoDate(tuNgay) + '</strong> đến <strong>' + escapeHtml(formatDenNgayLabel(denNgay)) + '</strong>';
+        function formatKhungGio(tuGio, denGio) {
+            if (!tuGio && !denGio) {
+                return 'cả ngày';
+            }
+
+            return (tuGio || '00:00') + ' – ' + (denGio || '24:00');
+        }
+
+        function formatKhoangDayThay(tuNgay, denNgay, tuGio, denGio) {
+            return 'Từ <strong>' + formatIsoDate(tuNgay) + '</strong> đến <strong>' + escapeHtml(formatDenNgayLabel(denNgay)) + '</strong>' +
+                '<br><span class="text-muted">Khung giờ: <strong>' + escapeHtml(formatKhungGio(tuGio, denGio)) + '</strong></span>';
         }
 
         function tenGiaoVienThay(maGv) {
@@ -375,6 +411,7 @@
                 var tenThay = tenGiaoVienThay(row.ma_giao_vien);
                 return '<div class="mb-1"><strong>' + escapeHtml(tenDuocThay) + '</strong> được dạy thay ' +
                     formatDuocDayThayTuDen(row.tu_ngay, row.den_ngay) +
+                    ' <span class="text-muted">(' + escapeHtml(formatKhungGio(row.tu_gio, row.den_gio)) + ')</span>' +
                     ' <span class="text-muted">· GV dạy thay: <strong>' + escapeHtml(tenThay) + '</strong></span></div>';
             }).join('');
         }
@@ -416,7 +453,7 @@
                 $body.append(
                     '<tr>' +
                         '<td>' + renderGvThayCell(row.ma_giao_vien) + '</td>' +
-                        '<td class="small">' + formatKhoangDayThay(row.tu_ngay, row.den_ngay) + '</td>' +
+                        '<td class="small">' + formatKhoangDayThay(row.tu_ngay, row.den_ngay, row.tu_gio, row.den_gio) + '</td>' +
                         '<td class="text-nowrap">' +
                             '<form method="POST" action="' + applyUrl + '" class="d-inline mr-1" onsubmit="return confirm(\'Áp dụng khai báo này vào lịch PMGPLX?\');">' +
                                 '<input type="hidden" name="_token" value="' + csrfToken + '">' +
@@ -530,6 +567,8 @@
             renderModalHeadline(substitutes, teachingSpans, tenGvGoc, maGvGoc);
             applyGvtTeachingDateBounds(teachingSpans);
             $('#gvt_ap_dung_lich').prop('checked', false);
+            $('#gvt_tu_gio').val('');
+            $('#gvt_den_gio').val('');
             $('#gvt_ma_giao_vien').val(null).trigger('change');
             renderSubstituteSummary(substitutes);
             renderSubstituteList(substitutes);
@@ -593,6 +632,8 @@
             $('#gvt_ma_giao_vien').val(@json(old('ma_giao_vien'))).trigger('change');
             $('#gvt_tu_ngay').val(@json(old('tu_ngay')));
             $('#gvt_den_ngay').val(@json(old('den_ngay')));
+            $('#gvt_tu_gio').val(@json(old('tu_gio')));
+            $('#gvt_den_gio').val(@json(old('den_gio')));
             $gvtModal.modal('show');
         @endif
     })();

@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DaoTao\DatDieuKienDat;
 use App\Models\DaoTao\DatLichThucHanhDuAn;
 use App\Models\DaoTao\DatLichThucHanhPhienBan;
-use App\Models\DaoTao\XeTapLai;
+use App\Models\PMGPLX\XeTap;
 use App\Support\DaoTao\PhanCongTuLichPmgplxQuery;
 use App\Support\DaoTao\LichThucHanh\CauHinhDefaults;
 use App\Support\DaoTao\LichThucHanh\LichExcelExporter;
@@ -47,21 +47,11 @@ class DatLichThucHanhController extends Controller
                 $cauHinh[$field] = $v;
             }
         }
-        if ($request->filled('he_so_quy_doi')) {
-            $cauHinh['he_so_quy_doi'] = (float) $request->input('he_so_quy_doi');
-        }
-        if ($request->filled('gio_day_moi_ngay')) {
-            $cauHinh['gio_day_moi_ngay'] = (int) $request->input('gio_day_moi_ngay');
-        }
-        if ($request->filled('so_hoc_vien_mac_dinh')) {
-            $cauHinh['so_hoc_vien_mac_dinh'] = (int) $request->input('so_hoc_vien_mac_dinh');
-        }
-
         return view('DaoTao.dat.lich-thuc-hanh.edit', [
             'duAn' => null,
             'cauHinh' => $cauHinh,
             'giaoViens' => PhanCongTuLichPmgplxQuery::filterGiaoVienOptions(),
-            'xeTaps' => XeTapLai::query()->orderBy('BienSo')->get(),
+            'xeTaps' => XeTap::query()->orderBy('BienSoXe')->get(['BienSoXe']),
             'dieuKienHang' => DatDieuKienDat::query()->orderBy('ThuTu')->get(),
             'phienBan' => null,
         ]);
@@ -96,7 +86,7 @@ class DatLichThucHanhController extends Controller
             'duAn' => $duAn,
             'cauHinh' => $cauHinh,
             'giaoViens' => PhanCongTuLichPmgplxQuery::filterGiaoVienOptions(),
-            'xeTaps' => XeTapLai::query()->orderBy('BienSo')->get(),
+            'xeTaps' => XeTap::query()->orderBy('BienSoXe')->get(['BienSoXe']),
             'dieuKienHang' => DatDieuKienDat::query()->orderBy('ThuTu')->get(),
             'coLichDaSinh' => $duAn->phienBans()->exists(),
         ]);
@@ -124,6 +114,13 @@ class DatLichThucHanhController extends Controller
     {
         $duAn = DatLichThucHanhDuAn::query()->findOrFail($id);
         $cauHinh = CauHinhDefaults::merge($duAn->cauHinh(), $duAn->MaKhoaHoc, $duAn->HangDaoTao);
+        // Sinh lịch theo hạng + cặp GV sáng/chiều/xe — không phát lại / overlay kế hoạch Excel.
+        unset($cauHinh['ke_hoach_theo_gv'], $cauHinh['moc_lich']);
+        $cauHinh['dung_ke_hoach_import'] = false;
+        $cauHinh['mau_ke_hoach_sang'] = false;
+        $cauHinh['mau_ke_hoach_chieu'] = false;
+        $cauHinh['mau_sang_bk54'] = false;
+        $cauHinh['mau_chieu_bk54'] = false;
 
         try {
             $generator = new LichGenerator;
@@ -229,6 +226,19 @@ class DatLichThucHanhController extends Controller
         return redirect()->route('daotao.pdt.dat.lich-thuc-hanh.export', $duAnId);
     }
 
+    public function destroy(int $id): RedirectResponse
+    {
+        $duAn = DatLichThucHanhDuAn::query()->findOrFail($id);
+        $maKhoa = $duAn->MaKhoaHoc;
+
+        $duAn->phienBans()->delete();
+        $duAn->delete();
+
+        return redirect()
+            ->route('daotao.pdt.dat.lich-thuc-hanh.index')
+            ->with('success', 'Đã xóa dự án lịch «'.$maKhoa.'».');
+    }
+
     private function latestPhienBan(DatLichThucHanhDuAn $duAn): ?DatLichThucHanhPhienBan
     {
         return $duAn->phienBans()->orderByDesc('Id')->first();
@@ -242,9 +252,6 @@ class DatLichThucHanhController extends Controller
             'hang_dao_tao' => ['required', 'string', 'max:20'],
             'ngay_khai_giang' => ['required', 'date'],
             'ngay_ket_thuc_du_kien' => ['nullable', 'date', 'after_or_equal:ngay_khai_giang'],
-            'he_so_quy_doi' => ['nullable', 'numeric', 'min:0'],
-            'gio_day_moi_ngay' => ['nullable', 'integer', 'in:8,9,10'],
-            'gio_day_moi_ngay_toi_da' => ['nullable', 'integer', 'min:1', 'max:24'],
         ], [
             'ngay_ket_thuc_du_kien.after_or_equal' => 'Ngày kết thúc phải từ ngày khai giảng trở đi (hoặc để trống).',
         ]);
@@ -263,10 +270,10 @@ class DatLichThucHanhController extends Controller
         $base['ngay_khai_giang'] = $validated['ngay_khai_giang'];
         $base['ngay_ket_thuc_du_kien'] = $validated['ngay_ket_thuc_du_kien'] ?? '';
         $base['lich_den_ngay'] = $validated['ngay_ket_thuc_du_kien'] ?? ($base['lich_den_ngay'] ?? '');
-        $base['he_so_quy_doi'] = (float) ($request->input('he_so_quy_doi', 2));
-        $base['gio_day_moi_ngay'] = (int) ($request->input('gio_day_moi_ngay', 8));
-        $base['gio_day_moi_ngay_toi_da'] = (int) ($request->input('gio_day_moi_ngay_toi_da', 10));
-        $base['so_hoc_vien_mac_dinh'] = (int) ($request->input('so_hoc_vien_mac_dinh', 5));
+        $base['he_so_quy_doi'] = (float) ($existing['he_so_quy_doi'] ?? $base['he_so_quy_doi'] ?? 2);
+        $base['gio_day_moi_ngay'] = (int) ($existing['gio_day_moi_ngay'] ?? $base['gio_day_moi_ngay'] ?? 8);
+        $base['gio_day_moi_ngay_toi_da'] = (int) ($existing['gio_day_moi_ngay_toi_da'] ?? $base['gio_day_moi_ngay_toi_da'] ?? 10);
+        $base['so_hoc_vien_mac_dinh'] = (int) ($existing['so_hoc_vien_mac_dinh'] ?? $base['so_hoc_vien_mac_dinh'] ?? 5);
 
         $base['cap_xe'] = $this->parseCapXeFromRequest($request);
 
@@ -322,8 +329,8 @@ class DatLichThucHanhController extends Controller
                 'gv_chieu' => $gvChieu,
                 'ten_gv_sang' => trim((string) ($row['ten_gv_sang'] ?? '')),
                 'ten_gv_chieu' => trim((string) ($row['ten_gv_chieu'] ?? '')),
-                'so_hoc_vien_gv_sang' => (int) ($row['so_hoc_vien_gv_sang'] ?? $request->input('so_hoc_vien_mac_dinh', 5)),
-                'so_hoc_vien_gv_chieu' => (int) ($row['so_hoc_vien_gv_chieu'] ?? $request->input('so_hoc_vien_mac_dinh', 5)),
+                'so_hoc_vien_gv_sang' => (int) ($row['so_hoc_vien_gv_sang'] ?? 5),
+                'so_hoc_vien_gv_chieu' => (int) ($row['so_hoc_vien_gv_chieu'] ?? 5),
             ];
         }
         usort($out, fn ($a, $b) => ((int) ($a['stt'] ?? 0)) <=> ((int) ($b['stt'] ?? 0)));

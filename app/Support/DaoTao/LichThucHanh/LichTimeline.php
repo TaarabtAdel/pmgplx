@@ -61,7 +61,14 @@ final class LichTimeline
 
     public function mauPhucTapForDate(string $iso): string
     {
-        $pivot = '2026-09-07';
+        $dates = $this->calendarDates();
+        $work = $this->workDaysForCap($dates, 1);
+        if ($work === []) {
+            return 'phuc_tap_giai_doan_dau';
+        }
+
+        // Nửa khóa đầu: khung phức tạp giai đoạn đầu; nửa sau: khung sau (ban đêm xoay…).
+        $pivot = $work[(int) floor(count($work) / 2)] ?? $work[0];
 
         return $iso >= $pivot ? 'phuc_tap_sau' : 'phuc_tap_giai_doan_dau';
     }

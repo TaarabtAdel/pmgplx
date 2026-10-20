@@ -77,8 +77,19 @@
                         'den_ngay' => $filters['den_ngay'] ?: null,
                     ])) }}" class="btn btn-outline-success">◻ Dò lịch trống</a>
                     <button type="button" class="btn btn-warning" disabled>✎ Xem - Sửa</button>
-                    <button type="button" class="btn btn-danger" disabled>✕ Xóa</button>
                 </div>
+                @if ($khoaChon)
+                    <form method="POST" action="{{ route('pmgplx.lich.gv.destroy-theo-khoa') }}" class="mr-2 mb-2"
+                          onsubmit="return confirm(@js('Xóa toàn bộ '.number_format($khoaChon['so_buoi']).' buổi lịch giáo viên của khóa '.$khoaChon['ten_kh'].' ('.$khoaChon['ma_kh'].')? Không thể hoàn tác.'));">
+                        @csrf
+                        @method('DELETE')
+                        <input type="hidden" name="ma_kh" value="{{ $khoaChon['ma_kh'] }}">
+                        <input type="hidden" name="return_query" value="{{ http_build_query(request()->except('page')) }}">
+                        <button type="submit" class="btn btn-sm btn-danger" @disabled($khoaChon['so_buoi'] === 0)>
+                            ✕ Xóa toàn bộ khóa {{ $khoaChon['ten_kh'] }}
+                        </button>
+                    </form>
+                @endif
 
                 <div class="ml-auto d-flex flex-wrap align-items-center mb-2">
                     <span class="mr-3">Tổng số bản ghi: <strong>{{ number_format($items->total()) }}</strong></span>
@@ -128,6 +139,7 @@
                             <th>TG kết thúc</th>
                             <th>Môn học GD</th>
                             <th>Ghi chú</th>
+                            <th width="100">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -145,10 +157,31 @@
                                 <td>{{ optional($row->NgayKT)->format('d/m/Y H:i') }}</td>
                                 <td>{{ \App\Support\PMGPLX\LichGvMonHoc::displayLabel($row->TenMonHoc, $row->MaMonHoc, $monMap) }}</td>
                                 <td class="small">{{ $row->GhiChu }}</td>
+                                <td class="text-nowrap">
+                                    @if (! $row->IsKhoaHocGiaoVien && $row->NgayBD)
+                                        <div class="dropdown lich-gv-thao-tac">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                Thao tác
+                                            </button>
+                                            <div class="dropdown-menu dropdown-menu-right">
+                                                <form method="POST" action="{{ route('pmgplx.lich.gv.destroy', $row->MaLichLV) }}" class="m-0"
+                                                      onsubmit="return confirm(@js('Xóa buổi lịch GV '.$row->TenGV.' ('.optional($row->NgayBD)->format('d/m/Y H:i').')?'));">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <input type="hidden" name="return_query" value="{{ http_build_query(request()->query()) }}">
+                                                    <button type="submit" class="dropdown-item text-danger">✕ Xóa buổi này</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <span class="text-muted small" title="Dòng gán giáo viên vào khóa, không phải buổi lịch">—</span>
+                                    @endif
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="text-center py-4">Không có dữ liệu</td>
+                                <td colspan="10" class="text-center py-4">Không có dữ liệu</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -160,6 +193,11 @@
 
 @push('scripts')
 <script>
+    // Menu nằm trong .table-responsive (overflow) — dùng position fixed để không bị cắt.
+    $('.lich-gv-thao-tac [data-toggle="dropdown"]').dropdown({
+        popperConfig: { positionFixed: true }
+    });
+
     $('#filter_ma_kh').select2({
         theme: 'bootstrap4',
         placeholder: 'Tìm khóa học...',

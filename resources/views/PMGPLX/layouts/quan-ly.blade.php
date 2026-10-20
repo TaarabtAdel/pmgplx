@@ -326,7 +326,16 @@
     @stack('styles')
 </head>
 <body>
-    <div class="app-header">Quản Lý Trung Tâm— Trung Tâm Giáo Dục Nghề Nghiệp Mạnh Linh</div>
+    <div class="app-header d-flex justify-content-between align-items-center">
+        <span>Quản Lý Trung Tâm— Trung Tâm Giáo Dục Nghề Nghiệp Mạnh Linh</span>
+        @auth
+            <form method="POST" action="{{ route('logout') }}" class="form-inline mb-0">
+                @csrf
+                <span class="mr-2 font-weight-normal">{{ auth()->user()->Ten }}</span>
+                <button type="submit" class="btn btn-sm btn-outline-light">Đăng xuất</button>
+            </form>
+        @endauth
+    </div>
 
     <nav class="app-nav">
         <ul class="nav">
@@ -364,6 +373,10 @@
                     <a class="dropdown-item {{ request()->routeIs('pmgplx.dm.xe.*') ? 'active' : '' }}"
                        href="{{ route('pmgplx.dm.xe.index') }}">
                         Quản lý xe
+                    </a>
+                    <a class="dropdown-item {{ request()->routeIs('pmgplx.dm.khoa-hoc.*') ? 'active' : '' }}"
+                       href="{{ route('pmgplx.dm.khoa-hoc.index') }}">
+                        Quản lý khoá học
                     </a>
                     <div class="dropdown-divider"></div>
                     <div class="dropdown-submenu">
@@ -645,6 +658,23 @@
                     </div>
                 </div>
             </li>
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle {{ request()->routeIs('hethong.*') ? 'active' : '' }}"
+                   href="#"
+                   id="navHeThongDropdown"
+                   role="button"
+                   data-toggle="dropdown"
+                   aria-haspopup="true"
+                   aria-expanded="false">
+                    Hệ Thống
+                </a>
+                <div class="dropdown-menu" aria-labelledby="navHeThongDropdown">
+                    <a class="dropdown-item {{ request()->routeIs('hethong.nguoi-dung.*') ? 'active' : '' }}"
+                       href="{{ route('hethong.nguoi-dung.index') }}">
+                        Người dùng
+                    </a>
+                </div>
+            </li>
         </ul>
     </nav>
 
@@ -659,7 +689,7 @@
         @endif
         @if (session('error'))
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                {{ session('error') }}
+                {!! nl2br(e(session('error'))) !!}
                 <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -678,7 +708,7 @@
         @yield('content')
 
         <div class="status-bar">
-            <span>Tài khoản đăng nhập: ADMIN</span>
+            <span>Tài khoản đăng nhập: {{ auth()->user()?->SoDienThoai ?? '—' }}</span>
             <span>Hôm nay ngày: {{ now()->format('d/m/Y') }}</span>
         </div>
     </div>

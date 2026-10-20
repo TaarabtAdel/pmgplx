@@ -107,8 +107,19 @@
                 <div class="btn-group btn-group-sm mr-2 mb-2" role="group">
                     <a href="{{ route('pmgplx.lich.thuc-hanh.create') }}" class="btn btn-success">＋ Thêm mới</a>
                     <button type="button" class="btn btn-warning" disabled>✎ Xem - Sửa</button>
-                    <button type="button" class="btn btn-danger" disabled>✕ Xóa</button>
                 </div>
+                @if ($khoaChon)
+                    <form method="POST" action="{{ route('pmgplx.lich.xe.destroy-theo-khoa') }}" class="mr-2 mb-2"
+                          onsubmit="return confirm(@js('Xóa toàn bộ '.number_format($khoaChon['so_buoi']).' buổi lịch xe của khóa '.$khoaChon['ten_kh'].' ('.$khoaChon['ma_kh'].')? Không thể hoàn tác.'));">
+                        @csrf
+                        @method('DELETE')
+                        <input type="hidden" name="ma_kh" value="{{ $khoaChon['ma_kh'] }}">
+                        <input type="hidden" name="return_query" value="{{ http_build_query(request()->except('page')) }}">
+                        <button type="submit" class="btn btn-sm btn-danger" @disabled($khoaChon['so_buoi'] === 0)>
+                            ✕ Xóa toàn bộ khóa {{ $khoaChon['ten_kh'] }}
+                        </button>
+                    </form>
+                @endif
 
                 <div class="ml-auto d-flex flex-wrap align-items-center mb-2">
                     <span class="mr-3">Tổng số bản ghi: <strong>{{ number_format($items->total()) }}</strong></span>
@@ -198,27 +209,41 @@
                                 <td>{{ $row->NgayBG ? \Carbon\Carbon::parse($row->NgayBG)->format('d/m/Y') : '' }}</td>
                                 <td class="small text-left">{{ trim((string) ($row->GhiChu ?? '')) !== '' ? $row->GhiChu : '—' }}</td>
                                 <td class="text-nowrap">
-                                    @if ($row->MaKH !== '' && $ngayLich !== '')
-                                        <a href="{{ route('daotao.pdt.dat.do-phien-lich-xe', array_filter([
-                                            'ma_khoa_hoc' => $row->MaKH,
-                                            'ma_giao_vien' => $row->MaGV,
-                                            'bien_so_xe' => $row->BienSoXe,
-                                            'tu_ngay' => $ngayLich,
-                                            'den_ngay' => $ngayLich,
-                                        ])) }}"
-                                           class="btn btn-sm btn-outline-primary"
-                                           target="_blank"
-                                           rel="noopener">
-                                            Xem phiên
-                                        </a>
-                                    @else
-                                        —
-                                    @endif
+                                    <div class="dropdown lich-xe-thao-tac">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                            Thao tác
+                                        </button>
+                                        <div class="dropdown-menu dropdown-menu-right">
+                                            @if ($row->MaKH !== '' && $ngayLich !== '')
+                                                <a class="dropdown-item"
+                                                   href="{{ route('daotao.pdt.dat.do-phien-lich-xe', array_filter([
+                                                       'ma_khoa_hoc' => $row->MaKH,
+                                                       'ma_giao_vien' => $row->MaGV,
+                                                       'bien_so_xe' => $row->BienSoXe,
+                                                       'tu_ngay' => $ngayLich,
+                                                       'den_ngay' => $ngayLich,
+                                                   ])) }}"
+                                                   target="_blank"
+                                                   rel="noopener">
+                                                    Xem phiên
+                                                </a>
+                                                <div class="dropdown-divider"></div>
+                                            @endif
+                                            <form method="POST" action="{{ route('pmgplx.lich.xe.destroy', $row->MaLichSD) }}" class="m-0"
+                                                  onsubmit="return confirm(@js('Xóa buổi xe '.$row->BienSoXe.' – '.$row->TenGV.' ('.optional($row->NgayBD)->format('d/m/Y H:i').')?'));">
+                                                @csrf
+                                                @method('DELETE')
+                                                <input type="hidden" name="return_query" value="{{ http_build_query(request()->query()) }}">
+                                                <button type="submit" class="dropdown-item text-danger">✕ Xóa buổi này</button>
+                                            </form>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="12" class="text-center py-4">Không có dữ liệu</td>
+                                <td colspan="13" class="text-center py-4">Không có dữ liệu</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -230,6 +255,11 @@
 
 @push('scripts')
 <script>
+    // Menu nằm trong .table-responsive (overflow) — dùng position fixed để không bị cắt.
+    $('.lich-xe-thao-tac [data-toggle="dropdown"]').dropdown({
+        popperConfig: { positionFixed: true }
+    });
+
     $('#filter_ma_kh').select2({
         theme: 'bootstrap4',
         placeholder: 'Tìm khóa học...',

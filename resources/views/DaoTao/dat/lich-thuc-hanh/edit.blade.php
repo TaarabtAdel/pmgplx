@@ -77,7 +77,7 @@
                             <label class="small mb-1">Hạng</label>
                             <select class="form-control form-control-sm" name="hang_dao_tao" id="js-hang-dao-tao"
                                     data-initial-hang="{{ $hangHienTai }}">
-                                @foreach (['B' => 'B (sàn)', 'B.01' => 'B tự động', 'C1' => 'C1'] as $val => $label)
+                                @foreach (['B' => 'B — số sàn', 'B.01' => 'B.01 — tự động', 'C1' => 'C1'] as $val => $label)
                                     <option value="{{ $val }}" @selected($hangHienTai === $val)>{{ $label }}</option>
                                 @endforeach
                             </select>
@@ -92,7 +92,7 @@
                             <input type="date" class="form-control form-control-sm" name="ngay_khai_giang" required
                                    value="{{ old('ngay_khai_giang', $cauHinh['ngay_khai_giang'] ?? '') }}">
                         </div>
-                        <div class="col-md-2 form-group">
+                        <div class="col-md-5 form-group mb-0">
                             <label class="small mb-1">Ngày kết thúc (dự kiến)</label>
                             <input type="date" class="form-control form-control-sm @if($ngayKtTruocKg) is-invalid @endif" name="ngay_ket_thuc_du_kien"
                                    value="{{ old('ngay_ket_thuc_du_kien', $cauHinh['ngay_ket_thuc_du_kien'] ?? '') }}">
@@ -101,88 +101,22 @@
                                 <div class="invalid-feedback d-block">Ngày kết thúc đang trước ngày khai giảng — sinh lịch sẽ không có dòng ngày.</div>
                             @endif
                         </div>
-                        <div class="col-md-2 form-group">
-                            <label class="small mb-1">Hệ số quy đổi</label>
-                            <input type="number" step="0.1" class="form-control form-control-sm" name="he_so_quy_doi"
-                                   value="{{ old('he_so_quy_doi', $cauHinh['he_so_quy_doi'] ?? 2) }}">
-                            <span class="badge badge-warning mt-1">chưa được sếp xác nhận</span>
-                        </div>
-                        <div class="col-md-1 form-group">
-                            <label class="small mb-1">Giờ/ngày</label>
-                            <select class="form-control form-control-sm" name="gio_day_moi_ngay">
-                                @foreach ([8, 9, 10] as $h)
-                                    <option value="{{ $h }}" @selected((int) old('gio_day_moi_ngay', $cauHinh['gio_day_moi_ngay'] ?? 8) === $h)>{{ $h }}h</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-2 form-group mb-0">
-                            <label class="small mb-1">Số HV mặc định / GV</label>
-                            <input type="number" min="1" max="99" class="form-control form-control-sm" name="so_hoc_vien_mac_dinh"
-                                   value="{{ $soHvMacDinh }}">
-                        </div>
-                        <div class="col-md-2 form-group mb-0">
-                            <label class="small mb-1">Tối đa giờ/ngày</label>
-                            <input type="number" class="form-control form-control-sm" name="gio_day_moi_ngay_toi_da"
-                                   value="{{ old('gio_day_moi_ngay_toi_da', $cauHinh['gio_day_moi_ngay_toi_da'] ?? 10) }}">
-                        </div>
                     </div>
                 </div>
-
-                @if ($cauHinh['dieu_kien_dat_hang'] ?? null)
-                    @php
-                        $dkDat = $cauHinh['dieu_kien_dat_hang'];
-                        $gt = (float) ($dkDat['gio_cao_toc_gio'] ?? 0);
-                        $fmtDatSo = static function ($v): string {
-                            return rtrim(rtrim(number_format((float) $v, 2, '.', ''), '0'), '.');
-                        };
-                    @endphp
-                    @if ($gt <= 0)
-                        <div class="alert alert-warning small py-2">
-                            Hạng {{ $hangHienTai }} chưa khai giờ cao tốc trên
-                            <a href="{{ route('daotao.pdt.dat.dieu-kien-dat') }}">Điều kiện đạt DAT</a>.
-                        </div>
-                    @endif
-                    <div class="mb-3">
-                        <div class="small mb-1">
-                            <strong>Điều kiện DAT (từ DB)</strong>
-                            — <a href="{{ route('daotao.pdt.dat.dieu-kien-dat') }}">Quản lý ngưỡng</a>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered mb-0 bg-light">
-                                <thead class="thead-light">
-                                    <tr>
-                                        <th>Hạng</th>
-                                        <th>Tập lái ban đêm (giờ)</th>
-                                        <th>Xe số tự động (giờ)</th>
-                                        <th>Giờ cao tốc</th>
-                                        <th>Số giờ học</th>
-                                        <th>Tổng quãng đường (km)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>{{ $dkDat['hang'] ?? $hangHienTai }}</td>
-                                        <td>{{ $fmtDatSo($dkDat['tap_lai_ban_dem_gio'] ?? 0) }}</td>
-                                        <td>{{ $fmtDatSo($dkDat['xe_so_tu_dong_gio'] ?? 0) }}</td>
-                                        <td>{{ $fmtDatSo($dkDat['gio_cao_toc_gio'] ?? 0) }}</td>
-                                        <td>{{ $fmtDatSo($dkDat['so_gio_hoc'] ?? 0) }}</td>
-                                        <td>{{ $fmtDatSo($dkDat['tong_quang_duong_km'] ?? 0) }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                @endif
 
                 <div class="lich-th-section">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h6 class="mb-0">Cặp xe / giáo viên</h6>
                         <button type="button" class="btn btn-sm btn-outline-primary" id="btn-them-cap">+ Thêm cặp</button>
                     </div>
-                    <p class="small text-muted mb-1">Mỗi dòng = một cặp xe (GV sáng + GV chiều cùng biển số).</p>
-                    <p class="small text-muted mb-2">GV sáng và GV chiều có thể chọn cùng một giáo viên.</p>
+                    <div class="alert alert-light border small py-2 mb-2">
+                        <strong>Cách xếp lịch:</strong>
+                        cả <strong>B sàn</strong> và <strong>B.01 tự động</strong> đều xếp theo cặp
+                        <strong>GV sáng + GV chiều + một xe</strong> (vd. khóa tự động <code>44007K261012</code>).
+                        Thêm từng cặp vào bảng dưới; lịch sinh theo chương trình hạng, không bám file Excel mẫu.
+                    </div>
+                    <p class="small text-muted mb-1">Mỗi dòng = một cặp xe (GV sáng + GV chiều cùng biển số) — bắt buộc đủ cả hai ca.</p>
+                    <p class="small text-muted mb-2">GV sáng và GV chiều có thể chọn cùng một giáo viên nếu cần.</p>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered mb-0" id="cap-xe-table">
                             <thead class="thead-light">
@@ -205,8 +139,18 @@
                                             <input type="hidden" class="cap-stt-input" name="cap_xe[{{ $i }}][stt]" value="{{ $cap['stt'] ?? ($i + 1) }}">
                                         </td>
                                         <td>
-                                            <input type="text" class="form-control form-control-sm" name="cap_xe[{{ $i }}][bien_so]"
-                                                   list="datalist-bien-so" value="{{ $cap['bien_so'] ?? '' }}">
+                                            @php $bienSoVal = trim((string) ($cap['bien_so'] ?? '')); @endphp
+                                            <select class="form-control form-control-sm bien-so-select" name="cap_xe[{{ $i }}][bien_so]">
+                                                <option value="">— Chọn xe —</option>
+                                                @if ($bienSoVal !== '' && ! $xeTaps->contains('BienSoXe', $bienSoVal))
+                                                    <option value="{{ $bienSoVal }}" selected>{{ $bienSoVal }}</option>
+                                                @endif
+                                                @foreach ($xeTaps as $xe)
+                                                    <option value="{{ $xe->BienSoXe }}" @selected($bienSoVal === $xe->BienSoXe)>
+                                                        {{ $xe->BienSoXe }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
                                         </td>
                                         <td>
                                             <select class="form-control form-control-sm gv-select" name="cap_xe[{{ $i }}][gv_sang]" data-ten-target=".ten-sang">
@@ -245,11 +189,6 @@
                             </tbody>
                         </table>
                     </div>
-                    <datalist id="datalist-bien-so">
-                        @foreach ($xeTaps as $xe)
-                            <option value="{{ $xe->BienSo }}"></option>
-                        @endforeach
-                    </datalist>
                 </div>
 
                 <div class="lich-th-section">
@@ -413,7 +352,7 @@
 <script>
 window.lichThucHanhForm = {
     giaoViens: @json($giaoViens->map(fn ($g) => ['ma' => (string) $g->MaGV, 'ten' => (string) $g->ho_ten])->values()),
-    bienSoXe: @json($xeTaps->pluck('BienSo')->values()),
+    bienSoXe: @json($xeTaps->pluck('BienSoXe')->values()),
     chuongTrinhMacDinhB: @json(CauHinhDefaults::chuongTrinhHangB()),
     chuongTrinhMacDinhB01: @json(CauHinhDefaults::chuongTrinhHangB01()),
     soHocVienMacDinh: {{ $soHvMacDinh }},

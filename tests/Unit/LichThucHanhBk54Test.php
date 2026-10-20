@@ -34,6 +34,7 @@ class LichThucHanhBk54Test extends TestCase
     {
         $cauHinh = $this->loadCauHinh();
         $this->assertNotEmpty($cauHinh['ke_hoach_theo_gv'] ?? null);
+        $cauHinh['dung_ke_hoach_import'] = true;
 
         $gen = (new LichGenerator)->generate($cauHinh);
         $lich = $gen['lich'];
@@ -58,6 +59,7 @@ class LichThucHanhBk54Test extends TestCase
     public function test_validator_has_no_errors_on_bk54_preset(): void
     {
         $cauHinh = $this->loadCauHinh();
+        $cauHinh['dung_ke_hoach_import'] = true;
         $gen = (new LichGenerator)->generate($cauHinh);
         $result = LichValidator::validate($cauHinh, $gen['lich'], $gen['tom_tat']);
 

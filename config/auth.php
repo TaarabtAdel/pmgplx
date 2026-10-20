@@ -38,7 +38,7 @@ return [
     'guards' => [
         'web' => [
             'driver' => 'session',
-            'provider' => 'users',
+            'provider' => 'nguoi_dung',
         ],
     ],
 
@@ -60,6 +60,11 @@ return [
     */
 
     'providers' => [
+        'nguoi_dung' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\HeThong\NguoiDung::class,
+        ],
+
         'users' => [
             'driver' => 'eloquent',
             'model' => App\Models\User::class,

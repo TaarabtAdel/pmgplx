@@ -9,8 +9,10 @@ use App\Models\PMGPLX\KhoaHocXeTap;
 use App\Models\PMGPLX\XeTap;
 use App\Support\DaoTao\DatPhienLichXeThongKe;
 use App\Support\PMGPLX\LichXeLoaiGhiChu;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class DanhSachLichXeTapController extends Controller
@@ -42,7 +44,8 @@ class DanhSachLichXeTapController extends Controller
                 'k.NgayBG',
             ]);
 
-        if ($maKH = trim((string) $request->input('ma_kh'))) {
+        $maKH = trim((string) $request->input('ma_kh'));
+        if ($maKH !== '') {
             $query->where('x.MaKH', $maKH);
         }
 
@@ -122,8 +125,22 @@ class DanhSachLichXeTapController extends Controller
             ->orderBy('BienSoXe')
             ->pluck('BienSoXe');
 
+        $khoaChon = null;
+        if ($maKH !== '' && ($kh = $khoaHocs->firstWhere('MaKH', $maKH)) !== null) {
+            $khoaChon = [
+                'ma_kh' => $kh->MaKH,
+                'ten_kh' => trim((string) $kh->TenKH),
+                'so_buoi' => KhoaHocXeTap::query()
+                    ->where('MaKH', $kh->MaKH)
+                    ->where('IsKhoaHocXeTap', 0)
+                    ->whereNotNull('NgayBD')
+                    ->count(),
+            ];
+        }
+
         return view('PMGPLX.lich.danh-sach-lich-xe', [
             'items' => $items,
+            'khoaChon' => $khoaChon,
             'phienStats' => $phienStats,
             'khoaHocs' => $khoaHocs,
             'giaoViens' => $giaoViens,
@@ -140,6 +157,62 @@ class DanhSachLichXeTapController extends Controller
                 'per_page' => $perPage,
             ],
         ]);
+    }
+
+    public function destroy(Request $request, int $maLichSd): RedirectResponse
+    {
+        $row = KhoaHocXeTap::query()
+            ->where('MaLichSD', $maLichSd)
+            ->where('IsKhoaHocXeTap', 0)
+            ->first(['MaLichSD', 'MaKH', 'BienSoXe', 'TenGV', 'NgayBD']);
+
+        if ($row === null) {
+            return $this->backToList($request)->with('error', 'Không tìm thấy buổi lịch xe cần xóa.');
+        }
+
+        KhoaHocXeTap::query()
+            ->where('MaLichSD', $maLichSd)
+            ->where('IsKhoaHocXeTap', 0)
+            ->delete();
+
+        return $this->backToList($request)->with('success', sprintf(
+            'Đã xóa buổi xe %s – %s (%s, khóa %s).',
+            trim((string) $row->BienSoXe),
+            trim((string) $row->TenGV),
+            optional($row->NgayBD)->format('d/m/Y H:i'),
+            trim((string) $row->MaKH)
+        ));
+    }
+
+    public function destroyTheoKhoa(Request $request): RedirectResponse
+    {
+        $maKh = trim((string) $request->input('ma_kh'));
+        $khoa = $maKh !== '' ? KhoaHoc::query()->where('MaKH', $maKh)->first(['MaKH', 'TenKH']) : null;
+        if ($khoa === null) {
+            return $this->backToList($request)->with('error', 'Chọn khóa học trước khi xóa toàn bộ lịch xe.');
+        }
+
+        $deleted = DB::connection('sqlsrv')->transaction(fn (): int => KhoaHocXeTap::query()
+            ->where('MaKH', $khoa->MaKH)
+            ->where('IsKhoaHocXeTap', 0)
+            ->whereNotNull('NgayBD')
+            ->delete());
+
+        return $this->backToList($request)->with('success', sprintf(
+            'Đã xóa %s buổi lịch xe của khóa %s (%s).',
+            number_format($deleted),
+            trim((string) $khoa->TenKH),
+            $khoa->MaKH
+        ));
+    }
+
+    private function backToList(Request $request): RedirectResponse
+    {
+        $query = $request->input('return_query');
+        parse_str(is_string($query) ? $query : '', $params);
+        unset($params['page']);
+
+        return redirect()->route('pmgplx.lich.xe.index', $params);
     }
 
     private function applyLoaiGhiChuFilter($query, string $loai): void

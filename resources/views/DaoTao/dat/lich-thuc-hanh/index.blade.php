@@ -30,8 +30,16 @@
                             <td>{{ $row->HangDaoTao }}</td>
                             <td>{{ $row->NgayKhaiGiang?->format('d/m/Y') }}</td>
                             <td>{{ $row->NgayKetThucDuKien?->format('d/m/Y') ?? '—' }}</td>
-                            <td>
+                            <td class="text-nowrap">
                                 <a href="{{ route('daotao.pdt.dat.lich-thuc-hanh.edit', $row->Id) }}">Mở</a>
+                                <form method="POST"
+                                      action="{{ route('daotao.pdt.dat.lich-thuc-hanh.destroy', $row->Id) }}"
+                                      class="d-inline"
+                                      onsubmit="return confirm('Xóa dự án lịch khóa «{{ $row->MaKhoaHoc }}» (hạng {{ $row->HangDaoTao }})?\nCác phiên bản lịch đã sinh cũng sẽ bị xóa.');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-link btn-sm text-danger p-0 align-baseline">Xóa</button>
+                                </form>
                             </td>
                         </tr>
                     @empty

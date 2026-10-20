@@ -17,6 +17,9 @@
                     <a href="{{ route('pmgplx.dm.xe.index') }}" class="list-group-item list-group-item-action">
                         Quản lý xe
                     </a>
+                    <a href="{{ route('pmgplx.dm.khoa-hoc.index') }}" class="list-group-item list-group-item-action">
+                        Quản lý khoá học
+                    </a>
                     <a href="{{ route('pmgplx.lich.gv.index') }}" class="list-group-item list-group-item-action">
                         Lịch làm việc giáo viên
                     </a>
@@ -131,7 +134,7 @@
         </div>
 
         <div class="col-lg-3 mb-3">
-            <div class="card card-panel h-100">
+            <div class="card card-panel">
                 <div class="card-header">Trung Tâm</div>
                 <div class="list-group list-group-flush">
                     <a href="{{ route('trungtam.giao-vien.danh-sach') }}" class="list-group-item list-group-item-action">
@@ -139,6 +142,14 @@
                     </a>
                     <a href="{{ route('trungtam.xe-tap-lai.danh-sach') }}" class="list-group-item list-group-item-action">
                         Xe tập lái
+                    </a>
+                </div>
+            </div>
+            <div class="card card-panel mt-3">
+                <div class="card-header">Hệ Thống</div>
+                <div class="list-group list-group-flush">
+                    <a href="{{ route('hethong.nguoi-dung.index') }}" class="list-group-item list-group-item-action">
+                        Người dùng
                     </a>
                 </div>
             </div>

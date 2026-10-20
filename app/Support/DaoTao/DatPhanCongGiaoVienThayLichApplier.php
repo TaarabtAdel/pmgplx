@@ -225,6 +225,8 @@ class DatPhanCongGiaoVienThayLichApplier
             'ma_giao_vien' => DatPhanCongHocVienSaver::normalizeMaGiaoVien((string) $row->MaGiaoVien),
             'tu_ngay' => Carbon::parse($row->TuNgay)->toDateString(),
             'den_ngay' => $row->DenNgay !== null ? Carbon::parse($row->DenNgay)->toDateString() : null,
+            'tu_gio' => DatPhanCongGiaoVienThay::gioHienThi($row->TuGio),
+            'den_gio' => DatPhanCongGiaoVienThay::gioHienThi($row->DenGio),
         ];
     }
 
@@ -261,7 +263,7 @@ class DatPhanCongGiaoVienThayLichApplier
             if (! $this->maGvMatches((string) $row->MaGV, $maThay)) {
                 continue;
             }
-            if (! $this->lichOverlapsSubstitute($row->NgayBD, $row->NgayKT, $sub['tu_ngay'], $sub['den_ngay'])) {
+            if (! $this->lichOverlapsSubstitute($row->NgayBD, $row->NgayKT, $sub)) {
                 continue;
             }
             if ($this->maGvMatches((string) $row->MaGV, $maGoc)) {
@@ -281,7 +283,7 @@ class DatPhanCongGiaoVienThayLichApplier
             if (! $this->maGvMatches((string) $row->MaGV, $maThay)) {
                 continue;
             }
-            if (! $this->lichOverlapsSubstitute($row->NgayBD, $row->NgayKT, $sub['tu_ngay'], $sub['den_ngay'])) {
+            if (! $this->lichOverlapsSubstitute($row->NgayBD, $row->NgayKT, $sub)) {
                 continue;
             }
 
@@ -316,6 +318,8 @@ class DatPhanCongGiaoVienThayLichApplier
                 'ma_giao_vien' => trim((string) $row->MaGiaoVien),
                 'tu_ngay' => Carbon::parse($row->TuNgay)->toDateString(),
                 'den_ngay' => $row->DenNgay !== null ? Carbon::parse($row->DenNgay)->toDateString() : null,
+                'tu_gio' => DatPhanCongGiaoVienThay::gioHienThi($row->TuGio),
+                'den_gio' => DatPhanCongGiaoVienThay::gioHienThi($row->DenGio),
             ])
             ->all();
     }
@@ -336,7 +340,7 @@ class DatPhanCongGiaoVienThayLichApplier
         $names = [];
         if ($codes !== []) {
             GiaoVien::query()
-                ->whereIn('MaGV', array_keys($codes))
+                ->whereIn('MaGV', DatPhanCongHocVienSaver::maGiaoVienQueryValues(array_keys($codes)))
                 ->get(['MaGV', 'HoTenDem', 'TenGV'])
                 ->each(function (GiaoVien $gv) use (&$names): void {
                     $names[DatPhanCongHocVienSaver::normalizeMaGiaoVien((string) $gv->MaGV)] = $this->formatTenGv($gv);
@@ -382,7 +386,7 @@ class DatPhanCongGiaoVienThayLichApplier
                 if (! $this->maGvMatches((string) $row->MaGV, $maGoc)) {
                     continue;
                 }
-                if (! $this->lichOverlapsSubstitute($row->NgayBD, $row->NgayKT, $sub['tu_ngay'], $sub['den_ngay'])) {
+                if (! $this->lichOverlapsSubstitute($row->NgayBD, $row->NgayKT, $sub)) {
                     continue;
                 }
                 if ($this->maGvMatches((string) $row->MaGV, $maThay)) {
@@ -401,6 +405,7 @@ class DatPhanCongGiaoVienThayLichApplier
                     'ten_gv_moi' => $tenThay,
                     'tu_ngay_thay' => $sub['tu_ngay'],
                     'den_ngay_thay' => $sub['den_ngay'],
+                    'khung_gio_thay' => DatPhanCongGiaoVienThayResolver::nhanKhungGio($sub['tu_gio'] ?? null, $sub['den_gio'] ?? null),
                     'khai_bao_id' => $sub['id'],
                 ];
             }
@@ -409,7 +414,7 @@ class DatPhanCongGiaoVienThayLichApplier
                 if (! $this->maGvMatches((string) $row->MaGV, $maGoc)) {
                     continue;
                 }
-                if (! $this->lichOverlapsSubstitute($row->NgayBD, $row->NgayKT, $sub['tu_ngay'], $sub['den_ngay'])) {
+                if (! $this->lichOverlapsSubstitute($row->NgayBD, $row->NgayKT, $sub)) {
                     continue;
                 }
                 if ($this->maGvMatches((string) $row->MaGV, $maThay)) {
@@ -428,6 +433,7 @@ class DatPhanCongGiaoVienThayLichApplier
                     'ten_gv_moi' => $tenThay,
                     'tu_ngay_thay' => $sub['tu_ngay'],
                     'den_ngay_thay' => $sub['den_ngay'],
+                    'khung_gio_thay' => DatPhanCongGiaoVienThayResolver::nhanKhungGio($sub['tu_gio'] ?? null, $sub['den_gio'] ?? null),
                     'khai_bao_id' => $sub['id'],
                 ];
             }
@@ -474,7 +480,8 @@ class DatPhanCongGiaoVienThayLichApplier
         return DatPhanCongHocVienSaver::normalizeMaGiaoVien($a) === DatPhanCongHocVienSaver::normalizeMaGiaoVien($b);
     }
 
-    private function lichOverlapsSubstitute(mixed $ngayBd, mixed $ngayKt, string $tuNgay, ?string $denNgay): bool
+    /** @param  array<string, mixed>  $sub */
+    private function lichOverlapsSubstitute(mixed $ngayBd, mixed $ngayKt, array $sub): bool
     {
         if ($ngayBd === null) {
             return false;
@@ -487,9 +494,16 @@ class DatPhanCongGiaoVienThayLichApplier
             return false;
         }
 
-        $subEnd = $denNgay ?? '9999-12-31';
+        $subEnd = $sub['den_ngay'] ?? '9999-12-31';
+        if (! ($sub['tu_ngay'] <= $slotEnd && $slotStart <= $subEnd)) {
+            return false;
+        }
 
-        return $tuNgay <= $slotEnd && $slotStart <= $subEnd;
+        return DatPhanCongGiaoVienThayResolver::gioTrongKhung(
+            DatPhanCongGiaoVienThayResolver::gioTuThoiDiem($ngayBd),
+            $sub['tu_gio'] ?? null,
+            $sub['den_gio'] ?? null
+        );
     }
 
     private function formatDateTime(mixed $value): ?string

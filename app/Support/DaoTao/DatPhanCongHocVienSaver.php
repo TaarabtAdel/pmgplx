@@ -55,11 +55,20 @@ class DatPhanCongHocVienSaver
         return strtoupper(trim($maKhoaHoc)).'|'.self::normalizeMaHocVien($maHocVien);
     }
 
-    public static function normalizeMaGiaoVien(?string $value): string
+    public static function normalizeMaGiaoVien(mixed $value): string
     {
         $value = trim((string) $value);
         if ($value === '') {
             return '';
+        }
+
+        // Mã GV có thể chứa chữ (vd 4400769A) — không được lọc bỏ ký tự.
+        if (preg_match('/[A-Za-z]/', $value) === 1) {
+            return mb_strtoupper(preg_replace('/\s+/u', '', $value) ?? $value);
+        }
+
+        if (preg_match('/^(\d+)\.0+$/', $value, $m) === 1) {
+            $value = $m[1];
         }
 
         $digits = preg_replace('/\D+/', '', $value) ?? '';
@@ -68,6 +77,26 @@ class DatPhanCongHocVienSaver
         }
 
         return $value;
+    }
+
+    /**
+     * Giá trị mã GV cho where/whereIn: luôn là chuỗi. Key mảng PHP '44007008' tự thành int,
+     * SQL Server khi so varchar với int sẽ ép cả cột sang int và lỗi ở mã có chữ (4400769A).
+     *
+     * @param  iterable<mixed>  $values
+     * @return list<string>
+     */
+    public static function maGiaoVienQueryValues(iterable $values): array
+    {
+        $out = [];
+        foreach ($values as $value) {
+            $value = trim((string) $value);
+            if ($value !== '') {
+                $out[$value] = $value;
+            }
+        }
+
+        return array_values($out);
     }
 
     public static function normalizeBienSo(?string $value): string

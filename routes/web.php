@@ -26,7 +26,9 @@ use App\Http\Controllers\DaoTao\NhapFileSoPhanCongGiaoVienController;
 use App\Http\Controllers\DaoTao\NhapFileTienDoDaoTaoController;
 use App\Http\Controllers\DaoTao\NhapKetQuaDaoTaoController;
 use App\Http\Controllers\DaoTao\NhapXmlBienBanTongHopController;
+use App\Http\Controllers\HeThong\NguoiDungController;
 use App\Http\Controllers\PMGPLX\DanhSachGiaoVienController;
+use App\Http\Controllers\PMGPLX\DanhSachKhoaHocController;
 use App\Http\Controllers\PMGPLX\DanhSachHocVienController;
 use App\Http\Controllers\PMGPLX\DanhSachLichGiaoVienController;
 use App\Http\Controllers\PMGPLX\DoTrongLichGiaoVienController;
@@ -80,8 +82,16 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function () {
     Route::get('/danh-muc/xe', [DanhSachXeController::class, 'index'])
         ->name('dm.xe.index');
 
+    Route::get('/danh-muc/khoa-hoc', [DanhSachKhoaHocController::class, 'index'])
+        ->name('dm.khoa-hoc.index');
+
     Route::get('/lich/giao-vien', [DanhSachLichGiaoVienController::class, 'index'])
         ->name('lich.gv.index');
+    Route::delete('/lich/giao-vien/theo-khoa', [DanhSachLichGiaoVienController::class, 'destroyTheoKhoa'])
+        ->name('lich.gv.destroy-theo-khoa');
+    Route::delete('/lich/giao-vien/{maLichLv}', [DanhSachLichGiaoVienController::class, 'destroy'])
+        ->whereNumber('maLichLv')
+        ->name('lich.gv.destroy');
     Route::get('/lich/giao-vien/do-trung', [DoTrungLichGiaoVienController::class, 'show'])
         ->name('lich.gv.do-trung');
     Route::get('/lich/giao-vien/do-trong', [DoTrongLichGiaoVienController::class, 'show'])
@@ -91,6 +101,11 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function () {
 
     Route::get('/lich/xe-tap', [DanhSachLichXeTapController::class, 'index'])
         ->name('lich.xe.index');
+    Route::delete('/lich/xe-tap/theo-khoa', [DanhSachLichXeTapController::class, 'destroyTheoKhoa'])
+        ->name('lich.xe.destroy-theo-khoa');
+    Route::delete('/lich/xe-tap/{maLichSd}', [DanhSachLichXeTapController::class, 'destroy'])
+        ->whereNumber('maLichSd')
+        ->name('lich.xe.destroy');
 
     Route::get('/lich/ly-thuyet', [TaoLichDayLyThuyetController::class, 'create'])
         ->name('lich.ly-thuyet.create');
@@ -321,6 +336,9 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
     Route::put('/phong-dao-tao/dat/lich-thuc-hanh/{id}', [DatLichThucHanhController::class, 'update'])
         ->whereNumber('id')
         ->name('pdt.dat.lich-thuc-hanh.update');
+    Route::delete('/phong-dao-tao/dat/lich-thuc-hanh/{id}', [DatLichThucHanhController::class, 'destroy'])
+        ->whereNumber('id')
+        ->name('pdt.dat.lich-thuc-hanh.destroy');
     Route::post('/phong-dao-tao/dat/lich-thuc-hanh/{id}/sinh-lich', [DatLichThucHanhController::class, 'generate'])
         ->whereNumber('id')
         ->name('pdt.dat.lich-thuc-hanh.generate');
@@ -416,6 +434,19 @@ Route::prefix('trung-tam')->name('trungtam.')->group(function () {
         ->name('giao-vien.gop.store');
     Route::get('/xe-tap-lai', [TrungTamDanhSachXeTapLaiController::class, 'index'])
         ->name('xe-tap-lai.danh-sach');
+});
+
+Route::prefix('he-thong')->name('hethong.')->group(function () {
+    Route::get('/nguoi-dung', [NguoiDungController::class, 'index'])
+        ->name('nguoi-dung.index');
+    Route::post('/nguoi-dung', [NguoiDungController::class, 'store'])
+        ->name('nguoi-dung.store');
+    Route::put('/nguoi-dung/{id}', [NguoiDungController::class, 'update'])
+        ->whereNumber('id')
+        ->name('nguoi-dung.update');
+    Route::delete('/nguoi-dung/{id}', [NguoiDungController::class, 'destroy'])
+        ->whereNumber('id')
+        ->name('nguoi-dung.destroy');
 });
 
 Route::prefix('pmgplxold')->name('pmgplxold.')->group(function () {

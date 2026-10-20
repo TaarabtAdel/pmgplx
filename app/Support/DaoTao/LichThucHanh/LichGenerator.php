@@ -26,7 +26,8 @@ final class LichGenerator
             throw new \InvalidArgumentException('Chưa khai báo cặp xe / giáo viên.');
         }
 
-        if ($this->coKeHoachImport($cauHinh)) {
+        // Chỉ phát lại kế hoạch Excel khi bật rõ ràng — sinh lịch thường đi theo thủ tục + cặp xe.
+        if ($this->coKeHoachImport($cauHinh) && ($cauHinh['dung_ke_hoach_import'] ?? false) === true) {
             return $this->generateFromImportedKeHoach($cauHinh, $giaoViens, $gioNgay);
         }
 
@@ -138,13 +139,21 @@ final class LichGenerator
 
         $cabinQueue = new CabinQueue;
         $autoQueue = new AutoQueue;
-        $this->scheduleCabinByDates($cells, $cauHinh, $giaoViens, $cabinQueue->datesByCap($workDaysByCap, $moc['cabin_neo']), $hoursLeft, $mauCa);
+        $cabinByCap = $cabinQueue->datesByCap($workDaysByCap, $moc['cabin_neo']);
+        // Cabin GV sáng trước; GV chiều xếp sau khối tự động (tránh trùng ngày cabin cả ngày).
+        $this->scheduleCabinForCa($cells, $cauHinh, $giaoViens, $cabinByCap, $hoursLeft, $mauCa, 'sang');
         $this->scheduleAutoByBlocks($cells, $cauHinh, $giaoViens, $autoQueue->blocksByCap($workDaysByCap, $moc['auto_neo']), $hoursLeft, $mauCa, $cauHinh['hang_dao_tao'] ?? 'B');
+        $this->scheduleCabinChieu($cells, $cauHinh, $giaoViens, $workDaysByCap, $cabinByCap, $hoursLeft, $mauCa);
 
         (new StageScheduler)->fill($cells, $cauHinh, $giaoViens, $workDaysByCap, $hoursLeft, $mauCa, $gioNgay, $timeline);
 
-        $this->applyMauKeHoachCa($cells, $cauHinh, $giaoViens, 'sang');
-        $this->applyMauKeHoachCa($cells, $cauHinh, $giaoViens, 'chieu');
+        // Overlay mẫu Excel (BK54) chỉ khi bật tường minh trên cấu hình.
+        if (($cauHinh['mau_ke_hoach_sang'] ?? $cauHinh['mau_sang_bk54'] ?? false) === true) {
+            $this->applyMauKeHoachCa($cells, $cauHinh, $giaoViens, 'sang');
+        }
+        if (($cauHinh['mau_ke_hoach_chieu'] ?? $cauHinh['mau_chieu_bk54'] ?? false) === true) {
+            $this->applyMauKeHoachCa($cells, $cauHinh, $giaoViens, 'chieu');
+        }
 
         foreach ($dates as $iso) {
             $day = Carbon::parse($iso);
@@ -295,21 +304,25 @@ final class LichGenerator
         return $hasStl && $hasTd;
     }
 
-    /** @param array<string, array<string, mixed>> $cells */
-    private function scheduleCabinByDates(
+    /**
+     * @param  array<string, array<string, mixed>>  $cells
+     * @param  array<int, string>  $datesByCap
+     */
+    private function scheduleCabinForCa(
         array &$cells,
         array $cauHinh,
         array $giaoViens,
         array $datesByCap,
         array &$hoursLeft,
-        array $mauCa
+        array $mauCa,
+        string $ca
     ): void {
         foreach ($datesByCap as $stt => $iso) {
             if ($iso === '') {
                 continue;
             }
             foreach ($giaoViens as $gv) {
-                if ((int) $gv['cap_stt'] !== (int) $stt || ($gv['ca'] ?? '') !== 'sang') {
+                if ((int) $gv['cap_stt'] !== (int) $stt || ($gv['ca'] ?? '') !== $ca) {
                     continue;
                 }
                 $key = $iso.'|'.$gv['ma_gv'];
@@ -322,7 +335,83 @@ final class LichGenerator
         }
     }
 
-    /** @param array<string, array<string, mixed>> $cells */
+    /**
+     * Cabin GV chiều (B sàn và B.01): ngày làm việc trống sau cabin sáng,
+     * tối đa 2 ô cabin/ngày (1 sáng + 1 chiều hoặc 2 ca khác cặp).
+     *
+     * @param  array<string, array<string, mixed>>  $cells
+     * @param  array<int, list<string>>  $workDaysByCap
+     * @param  array<int, string>  $datesByCap
+     */
+    private function scheduleCabinChieu(
+        array &$cells,
+        array $cauHinh,
+        array $giaoViens,
+        array $workDaysByCap,
+        array $datesByCap,
+        array &$hoursLeft,
+        array $mauCa
+    ): void {
+        $cabinCountByDay = $this->countCabinByDay($cells);
+
+        foreach ($giaoViens as $gv) {
+            if (($gv['ca'] ?? '') !== 'chieu') {
+                continue;
+            }
+            if (($hoursLeft[$gv['ma_gv']]['cabin'] ?? 0) <= 0) {
+                continue;
+            }
+            $stt = (int) $gv['cap_stt'];
+            $days = $workDaysByCap[$stt] ?? [];
+            $after = $datesByCap[$stt] ?? ($days[0] ?? '');
+            $iso = null;
+            foreach ($days as $day) {
+                if ($after !== '' && $day <= $after) {
+                    continue;
+                }
+                $key = $day.'|'.$gv['ma_gv'];
+                if (isset($cells[$key])) {
+                    continue;
+                }
+                if (($cabinCountByDay[$day] ?? 0) >= 2) {
+                    continue;
+                }
+                $iso = $day;
+                break;
+            }
+            if ($iso === null) {
+                continue;
+            }
+            $cells[$iso.'|'.$gv['ma_gv']] = $this->cellCabin($iso, $gv, $mauCa, $cauHinh);
+            $hoursLeft[$gv['ma_gv']]['cabin'] = max(0, ($hoursLeft[$gv['ma_gv']]['cabin'] ?? 0) - 10);
+            $cabinCountByDay[$iso] = ($cabinCountByDay[$iso] ?? 0) + 1;
+        }
+    }
+
+    /**
+     * @param  array<string, array<string, mixed>>  $cells
+     * @return array<string, int>
+     */
+    private function countCabinByDay(array $cells): array
+    {
+        $counts = [];
+        foreach ($cells as $key => $cell) {
+            if (! is_array($cell) || ($cell['mau'] ?? '') !== BaiGiang::CABIN) {
+                continue;
+            }
+            [$iso] = explode('|', (string) $key, 2);
+            $counts[$iso] = ($counts[$iso] ?? 0) + 1;
+        }
+
+        return $counts;
+    }
+
+    /**
+     * Tự động (chỉ hạng B sàn): cả GV sáng và chiều — cùng ngày, khung giờ theo ca (xe tự động chung).
+     *
+     * @param  array<string, array<string, mixed>>  $cells
+     * @param  array<int, list<string>>  $blocksByCap
+     */
     private function scheduleAutoByBlocks(
         array &$cells,
         array $cauHinh,
@@ -339,7 +428,7 @@ final class LichGenerator
         foreach ($blocksByCap as $stt => $block) {
             foreach ($block as $iso) {
                 foreach ($giaoViens as $gv) {
-                    if ((int) $gv['cap_stt'] !== (int) $stt || ($gv['ca'] ?? '') !== 'sang') {
+                    if ((int) $gv['cap_stt'] !== (int) $stt) {
                         continue;
                     }
                     $key = $iso.'|'.$gv['ma_gv'];
@@ -410,7 +499,7 @@ final class LichGenerator
     }
 
     /**
-     * Hạng B (không import kế hoạch): áp kế hoạch mẫu theo ca từ mốc ngày (file Data/mau_hang_b_*).
+     * Overlay kế hoạch mẫu theo ca (file Data/mau_hang_b_*) — tắt mặc định khi sinh lịch mới.
      *
      * @param  array<string, array<string, mixed>>  $cells
      * @param  array<string, mixed>  $cauHinh
@@ -418,16 +507,8 @@ final class LichGenerator
      */
     private function applyMauKeHoachCa(array &$cells, array $cauHinh, array $giaoViens, string $ca): void
     {
-        if ($this->coKeHoachImport($cauHinh)) {
-            return;
-        }
         $hang = strtoupper(trim((string) ($cauHinh['hang_dao_tao'] ?? 'B')));
         if ($hang !== 'B') {
-            return;
-        }
-        $flag = $ca === 'sang' ? 'mau_ke_hoach_sang' : 'mau_ke_hoach_chieu';
-        $legacy = $ca === 'sang' ? 'mau_sang_bk54' : 'mau_chieu_bk54';
-        if (($cauHinh[$flag] ?? $cauHinh[$legacy] ?? true) === false) {
             return;
         }
 

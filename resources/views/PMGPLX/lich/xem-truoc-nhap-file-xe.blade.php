@@ -201,6 +201,9 @@
                                         @else
                                             <span class="text-success">Sẽ lưu mới</span>
                                         @endif
+                                        @if (! $skipSave && ($row['trung_chi_tiet'] ?? '') !== '')
+                                            <div class="small text-danger mt-1">Trùng {{ $row['trung_chi_tiet'] }}</div>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach

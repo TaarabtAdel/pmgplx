@@ -432,6 +432,7 @@ class GiaoVienLichTrungScanner
         $seen = [];
 
         foreach ($slots->groupBy('ma_gv_norm') as $maGvNorm => $group) {
+            $maGvNorm = (string) $maGvNorm;
             if ($maGvNorm === '') {
                 continue;
             }

@@ -412,7 +412,8 @@ class DatDSPhienKiemTra
                 $expectedGv = DatPhanCongGiaoVienThayResolver::resolveForDate(
                     $assignment,
                     $sessionDate,
-                    $substitutesGv
+                    $substitutesGv,
+                    DatPhanCongGiaoVienThayResolver::gioTuThoiDiem($session->ThoiGianBatDauPhienHoc)
                 );
                 $expectedGvCode = $expectedGv['ma_giao_vien'];
                 $sessionGv = self::normalizeMaGv((string) ($session->MaGiaoVien ?? ''));
