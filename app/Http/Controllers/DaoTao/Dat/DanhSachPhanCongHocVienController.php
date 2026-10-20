@@ -37,6 +37,7 @@ class DanhSachPhanCongHocVienController extends Controller
         $hocVienItems = new LengthAwarePaginator([], 0, $hocVienFilters['per_page']);
         $phanCongByRowKey = [];
         $phanCongTrungMaHocVien = [];
+        $gvLocOptions = [];
 
         $giaoViens = GiaoVien::query()
             ->where('TrangThai', 1)
@@ -58,7 +59,8 @@ class DanhSachPhanCongHocVienController extends Controller
             $hocVienItems = DatPhanCongTheoKhoaPresenter::hocVienQuery(
                 $maKhoaHoc,
                 $hocVienFilters['tu_khoa'],
-                $hocVienFilters['an_da_phan_cong']
+                $hocVienFilters['an_da_phan_cong'],
+                $hocVienFilters['gv_phan_cong']
             )
                 ->paginate($hocVienFilters['per_page'])
                 ->withQueryString();
@@ -68,6 +70,16 @@ class DanhSachPhanCongHocVienController extends Controller
             if ($phanCongTheoGv !== []) {
                 $allowedMaGv = array_column($phanCongTheoGv, 'ma_giao_vien');
                 $giaoViensPhanCong = $giaoViens->whereIn('MaGV', $allowedMaGv)->values();
+            }
+
+            $hvTheoGv = DatPhanCongTheoKhoaPresenter::hocVienTheoGvHienTai($maKhoaHoc);
+            foreach ($phanCongTheoGv as $gvGroup) {
+                $maGv = (string) ($gvGroup['ma_giao_vien'] ?? '');
+                $soHv = count($hvTheoGv[$maGv] ?? []);
+                $gvLocOptions[] = [
+                    'ma_giao_vien' => $maGv,
+                    'label' => (($gvGroup['ten_giao_vien'] ?? '') ?: $maGv).' ('.$maGv.') — '.$soHv.' HV',
+                ];
             }
         }
 
@@ -86,6 +98,7 @@ class DanhSachPhanCongHocVienController extends Controller
             'hocVienItems' => $hocVienItems,
             'phanCongByRowKey' => $phanCongByRowKey,
             'phanCongTrungMaHocVien' => $phanCongTrungMaHocVien,
+            'gvLocOptions' => $gvLocOptions,
             'giaoViens' => $giaoViensPhanCong,
             'gvBienSoByMa' => $gvBienSoByMa,
             'xeTaps' => $xeTaps,
@@ -103,15 +116,18 @@ class DanhSachPhanCongHocVienController extends Controller
             'ma_giao_vien' => ['required', 'string', 'max:50'],
             'bien_so_xe' => ['nullable', 'string', 'max:50'],
             'bien_so_xe_tu_dong' => ['nullable', 'string', 'max:50'],
+            'tu_ngay' => ['nullable', 'date'],
         ], [
             'hoc_vien.required' => 'Chọn ít nhất một học viên.',
             'ma_giao_vien.required' => 'Chọn giáo viên.',
+            'tu_ngay.date' => 'Từ ngày không hợp lệ.',
         ]);
 
         $maKhoaHoc = trim((string) $validated['ma_khoa_hoc']);
         $maGiaoVien = trim((string) $validated['ma_giao_vien']);
         $bienSoXe = trim((string) ($validated['bien_so_xe'] ?? ''));
         $bienSoXeTuDong = trim((string) ($validated['bien_so_xe_tu_dong'] ?? ''));
+        $tuNgay = trim((string) ($validated['tu_ngay'] ?? '')) ?: null;
 
         $created = 0;
         $updated = 0;
@@ -129,7 +145,8 @@ class DanhSachPhanCongHocVienController extends Controller
                     'Phân công học viên (ĐAT)',
                     null,
                     $bienSoXeTuDong,
-                    true
+                    true,
+                    $tuNgay
                 );
                 if ($result['created']) {
                     $created++;
@@ -151,6 +168,7 @@ class DanhSachPhanCongHocVienController extends Controller
             'tu_khoa' => $request->input('tu_khoa'),
             'per_page' => $request->input('per_page'),
             'an_da_phan_cong' => $request->boolean('an_da_phan_cong') ? '1' : null,
+            'gv_phan_cong' => $request->input('gv_phan_cong'),
         ]));
 
         if ($created + $updated === 0) {
@@ -209,7 +227,10 @@ class DanhSachPhanCongHocVienController extends Controller
 
         $maKhoa = trim((string) $row->MaKhoaHoc);
         $label = trim((string) ($row->HoTenHocVien ?: $row->MaHocVien));
-        $row->delete();
+        if ($row->nhanKhoangNgay() !== '') {
+            $label .= ' ('.$row->nhanKhoangNgay().')';
+        }
+        DatPhanCongHocVienSaver::xoaDong($row);
 
         return redirect()
             ->route('daotao.pdt.dat.phan-cong-hoc-vien', array_filter(['ma_khoa_hoc' => $maKhoa]))

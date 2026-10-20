@@ -72,10 +72,13 @@ class DatPhanCongHocVienImporter
                     'NgayNhap' => $now,
                 ];
 
-                $existing = DatPhanCongHocVien::query()
-                    ->where('MaKhoaHoc', $maKhoaHoc)
-                    ->where('MaHocVien', $maHocVien)
-                    ->first();
+                $existing = DatPhanCongHocVienTheoNgay::hienTai(
+                    DatPhanCongHocVien::query()
+                        ->where('MaKhoaHoc', $maKhoaHoc)
+                        ->where('MaHocVien', $maHocVien)
+                        ->get()
+                        ->all()
+                );
 
                 if ($existing !== null) {
                     $existing->update($payload);

@@ -56,7 +56,22 @@
                                    value="{{ $hocVienFilters['tu_khoa'] ?? '' }}"
                                    placeholder="Tùy chọn...">
                         </div>
-                        <div class="form-group col-md-4 mb-2 d-flex align-items-end">
+                        <div class="form-group col-md-4 mb-2">
+                            <label for="filter_gv_phan_cong" class="small mb-1">Giáo viên (đã phân công)</label>
+                            <select name="gv_phan_cong" id="filter_gv_phan_cong" class="form-control form-control-sm">
+                                <option value="">— Tất cả học viên —</option>
+                                <option value="{{ \App\Support\DaoTao\DatPhanCongTheoKhoaPresenter::LOC_CHUA_PHAN_CONG }}"
+                                        @selected(($hocVienFilters['gv_phan_cong'] ?? '') === \App\Support\DaoTao\DatPhanCongTheoKhoaPresenter::LOC_CHUA_PHAN_CONG)>
+                                    — Chưa phân công —
+                                </option>
+                                @foreach ($gvLocOptions ?? [] as $opt)
+                                    <option value="{{ $opt['ma_giao_vien'] }}" @selected(($hocVienFilters['gv_phan_cong'] ?? '') === $opt['ma_giao_vien'])>
+                                        {{ $opt['label'] }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="form-group col-md-3 mb-2 d-flex align-items-end">
                             <div class="custom-control custom-checkbox mb-1">
                                 <input type="checkbox" class="custom-control-input" id="filter_an_da_phan_cong"
                                        name="an_da_phan_cong" value="1"
@@ -164,11 +179,18 @@
                                                                     <div class="small text-muted">
                                                                         <code>{{ $gvGroup['ma_giao_vien'] ?? '' }}</code>
                                                                     </div>
+                                                                    <a class="btn btn-sm btn-outline-primary py-0 mt-1"
+                                                                       href="{{ route('daotao.pdt.dat.phan-cong-hoc-vien', ['ma_khoa_hoc' => $maKhoaHoc, 'gv_phan_cong' => $gvGroup['ma_giao_vien'] ?? '', 'per_page' => 200]) }}#danh-sach-hoc-vien">
+                                                                        Lọc HV của GV này
+                                                                    </a>
                                                                 </td>
                                                             @endif
                                                             <td>
                                                                 {{ $hv['ho_ten'] ?? '' }}
                                                                 <span class="text-muted small">(<code>{{ $hv['ma_hoc_vien'] ?? '' }}</code>)</span>
+                                                                @if (($hv['khoang_ngay'] ?? '') !== '')
+                                                                    <span class="badge badge-light border small ml-1">{{ $hv['khoang_ngay'] }}</span>
+                                                                @endif
                                                             </td>
                                                             <td class="text-center align-middle">
                                                                 <form method="POST"
@@ -190,8 +212,20 @@
                     </div>
                 </div>
 
-                <div class="card border">
-                    <div class="card-header py-2">Học viên khóa {{ $maKhoaHoc }}</div>
+                <div class="card border" id="danh-sach-hoc-vien">
+                    <div class="card-header py-2">
+                        Học viên khóa {{ $maKhoaHoc }}
+                        @php $gvLocChon = $hocVienFilters['gv_phan_cong'] ?? ''; @endphp
+                        @if ($gvLocChon !== '')
+                            @php
+                                $gvLocLabel = $gvLocChon === \App\Support\DaoTao\DatPhanCongTheoKhoaPresenter::LOC_CHUA_PHAN_CONG
+                                    ? 'chưa phân công'
+                                    : (collect($gvLocOptions ?? [])->firstWhere('ma_giao_vien', $gvLocChon)['label'] ?? $gvLocChon);
+                            @endphp
+                            <span class="badge badge-info ml-1">Đang lọc: {{ $gvLocLabel }}</span>
+                            <a class="small ml-1" href="{{ route('daotao.pdt.dat.phan-cong-hoc-vien', array_filter(['ma_khoa_hoc' => $maKhoaHoc, 'tu_khoa' => $hocVienFilters['tu_khoa'] ?? null, 'per_page' => $hocVienFilters['per_page'] ?? null])) }}#danh-sach-hoc-vien">bỏ lọc GV</a>
+                        @endif
+                    </div>
                     <div class="card-body">
                         <div class="d-flex flex-wrap align-items-center mb-3">
                             <button type="button" class="btn btn-sm btn-primary mb-2 mr-2" id="btn-them-phan-cong" disabled
@@ -203,6 +237,7 @@
                                 <form method="GET" action="{{ route('daotao.pdt.dat.phan-cong-hoc-vien') }}" class="form-inline">
                                     <input type="hidden" name="ma_khoa_hoc" value="{{ $maKhoaHoc }}">
                                     <input type="hidden" name="tu_khoa" value="{{ $hocVienFilters['tu_khoa'] ?? '' }}">
+                                    <input type="hidden" name="gv_phan_cong" value="{{ $hocVienFilters['gv_phan_cong'] ?? '' }}">
                                     @if ($hocVienFilters['an_da_phan_cong'] ?? false)
                                         <input type="hidden" name="an_da_phan_cong" value="1">
                                     @endif
@@ -259,9 +294,19 @@
                                             <td>{{ $row->SoCMT }}</td>
                                             <td>{{ $row->SoHoSo }}</td>
                                             <td class="small">
-                                                @if ($pc && ($pc['ma_giao_vien'] ?? '') !== '')
+                                                @if ($pc && ($pc['lich_su'] ?? []) !== [])
+                                                    @foreach ($pc['lich_su'] as $ls)
+                                                        <div class="{{ $ls['hien_tai'] ? '' : 'text-muted' }}">
+                                                            @if ($ls['hien_tai'])<strong>@endif{{ $ls['ten_giao_vien'] }}@if ($ls['hien_tai'])</strong>@endif
+                                                            <code>{{ $ls['ma_giao_vien'] }}</code>
+                                                            <span class="text-nowrap">— {{ $ls['khoang_ngay'] !== '' ? $ls['khoang_ngay'] : 'cả khóa' }}</span>
+                                                        </div>
+                                                    @endforeach
+                                                @elseif ($pc && ($pc['ma_giao_vien'] ?? '') !== '')
                                                     {{ $pc['ten_giao_vien'] ?? $pc['ma_giao_vien'] }}
-                                                    <div class="text-muted"><code>{{ $pc['ma_giao_vien'] }}</code></div>
+                                                    <div class="text-muted"><code>{{ $pc['ma_giao_vien'] }}</code>
+                                                        @if (($pc['khoang_ngay'] ?? '') !== '') · {{ $pc['khoang_ngay'] }} @endif
+                                                    </div>
                                                 @else
                                                     —
                                                 @endif
@@ -295,6 +340,7 @@
                 <input type="hidden" name="ma_khoa_hoc" value="{{ $maKhoaHoc ?? '' }}">
                 <input type="hidden" name="tu_khoa" value="{{ $hocVienFilters['tu_khoa'] ?? '' }}">
                 <input type="hidden" name="per_page" value="{{ $hocVienFilters['per_page'] ?? 50 }}">
+                <input type="hidden" name="gv_phan_cong" value="{{ $hocVienFilters['gv_phan_cong'] ?? '' }}">
                 @if ($hocVienFilters['an_da_phan_cong'] ?? false)
                     <input type="hidden" name="an_da_phan_cong" value="1">
                 @endif
@@ -339,6 +385,16 @@
                                     @endforeach
                                 </select>
                             </div>
+                            <div class="form-group col-md-6 mb-0">
+                                <label for="pc_tu_ngay" class="small mb-1">Từ ngày (chuyển giáo viên)</label>
+                                <input type="date" name="tu_ngay" id="pc_tu_ngay" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <small class="text-muted">
+                                    Để trống = phân công cho cả khóa. Nhập ngày khi học viên <strong>chuyển</strong> sang GV/xe khác:
+                                    phân công cũ tự kết thúc ngày hôm trước, phân công mới áp dụng từ ngày này.
+                                </small>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer py-2">
@@ -367,6 +423,9 @@
         ma = String(ma || '').trim();
         if (ma === '') {
             return '';
+        }
+        if (/[A-Za-z]/.test(ma)) {
+            return ma.replace(/\s+/g, '').toUpperCase();
         }
         var digits = ma.replace(/\D+/g, '');
         if (digits !== '' && digits.length <= 8) {
@@ -415,10 +474,13 @@
         var targetGv = $('#pc_ma_giao_vien').val();
         var conflicts = collectPhanCongConflicts(targetGv);
         if (warnEl && conflicts.length > 0) {
+            var tuNgay = $('#pc_tu_ngay').val();
             warnEl.classList.remove('d-none');
             warnEl.textContent = conflicts.map(function (c) {
                 return c.hoTen + ' (' + c.maDk + ') đang thuộc GV ' + c.tenGv;
-            }).join(' · ');
+            }).join(' · ') + (tuNgay
+                ? ' → sẽ chuyển sang GV mới từ ngày ' + tuNgay.split('-').reverse().join('/') + '.'
+                : ' → nhập "Từ ngày" để chuyển giáo viên.');
         }
         checks.forEach(function (cb) {
             var maDk = cb.getAttribute('data-ma-dk') || '';
@@ -484,19 +546,36 @@
         if (conflicts.length === 0) {
             return;
         }
-        e.preventDefault();
         var lines = conflicts.map(function (c) {
             return '• ' + c.hoTen + ' (' + c.maDk + ') → đang phân công GV ' + c.tenGv;
         });
-        alert('Không thể gán thêm giáo viên khác cho cùng học viên:\n\n' + lines.join('\n')
-            + '\n\nXóa phân công cũ (× trên bảng GV) rồi thử lại.');
+        var tuNgay = $('#pc_tu_ngay').val();
+        if (! tuNgay) {
+            e.preventDefault();
+            alert('Các học viên sau đang thuộc giáo viên khác:\n\n' + lines.join('\n')
+                + '\n\nNhập "Từ ngày (chuyển giáo viên)" để chuyển sang GV mới từ ngày đó.');
+            return;
+        }
+        if (! confirm('Chuyển các học viên sau sang GV mới từ ngày ' + tuNgay.split('-').reverse().join('/') + ':\n\n'
+            + lines.join('\n') + '\n\nPhân công cũ sẽ kết thúc ngày hôm trước.')) {
+            e.preventDefault();
+        }
     });
+
+    $('#pc_tu_ngay').on('change', rebuildPhanCongModalLists);
 
     $('#filter_ma_khoa_hoc').select2({
         theme: 'bootstrap4',
         allowClear: true,
         width: '100%',
         placeholder: '— Chọn khóa —'
+    });
+
+    $('#filter_gv_phan_cong').select2({
+        theme: 'bootstrap4',
+        width: '100%'
+    }).on('select2:select', function () {
+        this.form.submit();
     });
 
     $('#pc_ma_giao_vien, #pc_bien_so_xe, #pc_bien_so_xe_tu_dong').select2({

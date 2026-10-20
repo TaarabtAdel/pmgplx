@@ -380,12 +380,13 @@ class DatDSPhienKiemTra
                 continue;
             }
 
-            $assignments = DatPhanCongHocVien::query()
-                ->where('MaKhoaHoc', $maKhoaHoc)
-                ->get(['Id', 'MaHocVien', 'MaGiaoVien', 'BienSoXe', 'BienSoXeTuDong'])
-                ->keyBy(fn (DatPhanCongHocVien $row): string => trim((string) ($row->MaHocVien ?? '')));
+            $assignmentsByHocVien = DatPhanCongHocVienTheoNgay::nhomTheoHocVien(
+                DatPhanCongHocVien::query()
+                    ->where('MaKhoaHoc', $maKhoaHoc)
+                    ->get(['Id', 'MaKhoaHoc', 'MaHocVien', 'MaGiaoVien', 'BienSoXe', 'BienSoXeTuDong', 'TuNgay', 'DenNgay'])
+            );
 
-            if ($assignments->isEmpty()) {
+            if ($assignmentsByHocVien === []) {
                 continue;
             }
 
@@ -398,15 +399,17 @@ class DatDSPhienKiemTra
                     continue;
                 }
 
-                $assignment = $assignments->get($maHocVien);
+                $sessionDate = self::sessionDateString($session);
+                $assignment = DatPhanCongHocVienTheoNgay::chonTheoNgay(
+                    $assignmentsByHocVien[$maHocVien] ?? [],
+                    $sessionDate
+                );
                 if ($assignment === null) {
                     continue;
                 }
 
                 $id = (int) $session->Id;
                 $violations[$id] ??= [];
-
-                $sessionDate = self::sessionDateString($session);
 
                 $substitutesGv = DatPhanCongGiaoVienThayResolver::substitutesForAssignment($assignment, $substitutesGvByKey);
                 $expectedGv = DatPhanCongGiaoVienThayResolver::resolveForDate(

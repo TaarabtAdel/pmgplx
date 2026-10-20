@@ -47,9 +47,9 @@ final class DatPhanCongTheoKhoaPresenter
             ->orderBy('MaGiaoVien')
             ->orderBy('HoTenHocVien')
             ->orderBy('MaHocVien')
-            ->get(['Id', 'MaGiaoVien', 'MaHocVien', 'HoTenHocVien']);
+            ->get(['Id', 'MaGiaoVien', 'MaHocVien', 'HoTenHocVien', 'TuNgay', 'DenNgay']);
 
-        /** @var array<string, list<array{id: int, ma_hoc_vien: string, ho_ten: string}>> $hvByGv */
+        /** @var array<string, list<array{id: int, ma_hoc_vien: string, ho_ten: string, khoang_ngay: string}>> $hvByGv */
         $hvByGv = [];
         foreach ($assignments as $row) {
             $maGv = trim((string) ($row->MaGiaoVien ?? ''));
@@ -62,6 +62,7 @@ final class DatPhanCongTheoKhoaPresenter
                 'id' => (int) $row->Id,
                 'ma_hoc_vien' => $maHv,
                 'ho_ten' => $hoTen !== '' ? $hoTen : $maHv,
+                'khoang_ngay' => $row->nhanKhoangNgay(),
             ];
         }
 
@@ -115,7 +116,7 @@ final class DatPhanCongTheoKhoaPresenter
         $rows = DatPhanCongHocVien::query()
             ->where('MaKhoaHoc', $maKh)
             ->whereIn('MaHocVien', array_keys($maDkList))
-            ->get(['MaKhoaHoc', 'MaHocVien', 'MaGiaoVien', 'BienSoXe', 'BienSoXeTuDong']);
+            ->get(['Id', 'MaKhoaHoc', 'MaHocVien', 'MaGiaoVien', 'BienSoXe', 'BienSoXeTuDong', 'TuNgay', 'DenNgay']);
 
         $maGvCodes = DatPhanCongHocVienSaver::maGiaoVienQueryValues($rows->pluck('MaGiaoVien'));
         $gvNames = $maGvCodes === []
@@ -124,29 +125,70 @@ final class DatPhanCongTheoKhoaPresenter
                 ->whereIn('MaGV', $maGvCodes)
                 ->get(['MaGV', 'HoTenDem', 'TenGV'])
                 ->keyBy('MaGV');
+        $tenGv = static function (string $maGv) use ($gvNames): string {
+            $gv = $gvNames->get($maGv);
+
+            return $gv ? trim($gv->ho_ten) : $maGv;
+        };
 
         $out = [];
-        foreach ($rows as $pc) {
+        foreach (DatPhanCongHocVienTheoNgay::nhomTheoHocVien($rows) as $hvRows) {
+            $pc = DatPhanCongHocVienTheoNgay::hienTai($hvRows);
             $maGv = trim((string) ($pc->MaGiaoVien ?? ''));
-            $gv = $gvNames->get($maGv);
-            $tenGv = $gv ? trim($gv->ho_ten) : ($maGv !== '' ? $maGv : '');
 
             $out[DatPhanCongHocVienSaver::rowKeyForPhanCong(
                 (string) $pc->MaKhoaHoc,
                 (string) $pc->MaHocVien
             )] = [
                 'ma_giao_vien' => $maGv,
-                'ten_giao_vien' => $tenGv,
+                'ten_giao_vien' => $tenGv($maGv),
                 'bien_so_xe' => trim((string) ($pc->BienSoXe ?? '')),
                 'bien_so_xe_tu_dong' => trim((string) ($pc->BienSoXeTuDong ?? '')),
+                'khoang_ngay' => $pc->nhanKhoangNgay(),
+                'lich_su' => count($hvRows) > 1
+                    ? array_map(static fn (DatPhanCongHocVien $r): array => [
+                        'ten_giao_vien' => $tenGv(trim((string) $r->MaGiaoVien)),
+                        'ma_giao_vien' => trim((string) $r->MaGiaoVien),
+                        'khoang_ngay' => $r->nhanKhoangNgay(),
+                        'hien_tai' => $r->Id === $pc->Id,
+                    ], $hvRows)
+                    : [],
             ];
         }
 
         return $out;
     }
 
-    public static function hocVienQuery(string $maKhoaHoc, string $tuKhoa = '', bool $anDaPhanCong = false): Builder
+    public const LOC_CHUA_PHAN_CONG = '__chua__';
+
+    /**
+     * MaGiaoVien (đang áp dụng) => danh sách MaHocVien.
+     *
+     * @return array<string, list<string>>
+     */
+    public static function hocVienTheoGvHienTai(string $maKhoaHoc): array
     {
+        $rows = DatPhanCongHocVien::query()
+            ->where('MaKhoaHoc', trim($maKhoaHoc))
+            ->get(['Id', 'MaHocVien', 'MaGiaoVien', 'TuNgay', 'DenNgay']);
+
+        $out = [];
+        foreach (DatPhanCongHocVienTheoNgay::nhomTheoHocVien($rows) as $maHv => $hvRows) {
+            $maGv = trim((string) (DatPhanCongHocVienTheoNgay::hienTai($hvRows)?->MaGiaoVien ?? ''));
+            if ($maGv !== '') {
+                $out[$maGv][] = (string) $maHv;
+            }
+        }
+
+        return $out;
+    }
+
+    public static function hocVienQuery(
+        string $maKhoaHoc,
+        string $tuKhoa = '',
+        bool $anDaPhanCong = false,
+        string $gvPhanCong = ''
+    ): Builder {
         $maKh = trim($maKhoaHoc);
         $query = NguoiLX::query()
             ->from('NguoiLX as n')
@@ -178,7 +220,24 @@ final class DatPhanCongTheoKhoaPresenter
             });
         }
 
-        if ($anDaPhanCong && $maKh !== '') {
+        $gvPhanCong = trim($gvPhanCong);
+        if ($gvPhanCong !== '' && $gvPhanCong !== self::LOC_CHUA_PHAN_CONG && $maKh !== '') {
+            $theoGv = self::hocVienTheoGvHienTai($maKh);
+            $gvNorm = DatPhanCongHocVienSaver::normalizeMaGiaoVien($gvPhanCong);
+            $maHvList = [];
+            foreach ($theoGv as $maGv => $list) {
+                if (DatPhanCongHocVienSaver::normalizeMaGiaoVien((string) $maGv) === $gvNorm) {
+                    array_push($maHvList, ...$list);
+                }
+            }
+            if ($maHvList === []) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $query->whereIn('n.MaDK', array_values(array_unique($maHvList)));
+            }
+        }
+
+        if (($anDaPhanCong || $gvPhanCong === self::LOC_CHUA_PHAN_CONG) && $maKh !== '') {
             $assignedMa = DatPhanCongHocVien::query()
                 ->where('MaKhoaHoc', $maKh)
                 ->pluck('MaHocVien')
@@ -200,7 +259,7 @@ final class DatPhanCongTheoKhoaPresenter
     }
 
     /**
-     * @return array{per_page: int, tu_khoa: string, an_da_phan_cong: bool}
+     * @return array{per_page: int, tu_khoa: string, an_da_phan_cong: bool, gv_phan_cong: string}
      */
     public static function parseHocVienFilters(Request $request): array
     {
@@ -213,6 +272,7 @@ final class DatPhanCongTheoKhoaPresenter
             'tu_khoa' => trim((string) $request->input('tu_khoa', '')),
             'per_page' => $perPage,
             'an_da_phan_cong' => $request->boolean('an_da_phan_cong'),
+            'gv_phan_cong' => trim((string) $request->input('gv_phan_cong', '')),
         ];
     }
 }

@@ -125,8 +125,10 @@ class DatPhanCongHocVienSaver
         ?string $fileNguon = null,
         ?int $recordId = null,
         string $bienSoXeTuDong = '',
-        bool $blockReassignToOtherGiaoVien = false
+        bool $blockReassignToOtherGiaoVien = false,
+        ?string $tuNgayChuyen = null
     ): array {
+        $tuNgayChuyen = self::parseNgayOrNull($tuNgayChuyen, 'tu_ngay');
         $maKhoaHoc = trim($maKhoaHoc);
         $maHocVien = self::normalizeMaHocVien($maHocVien);
         $maGiaoVien = self::normalizeMaGiaoVien($maGiaoVien);
@@ -163,7 +165,8 @@ class DatPhanCongHocVienSaver
             $maHocVien,
             $recordId,
             $maGiaoVien,
-            $blockReassignToOtherGiaoVien
+            $blockReassignToOtherGiaoVien,
+            $tuNgayChuyen
         ): array {
             if ($recordId !== null) {
                 return self::saveExistingRecord($recordId, $maKhoaHoc, $maHocVien, $payload);
@@ -171,28 +174,100 @@ class DatPhanCongHocVienSaver
 
             $existingRows = self::assignmentsForHocVienInKhoa($maKhoaHoc, $maHocVien);
 
-            if ($blockReassignToOtherGiaoVien && count($existingRows) > 1) {
+            if ($existingRows === []) {
+                $item = DatPhanCongHocVien::query()->create($payload + ['TuNgay' => $tuNgayChuyen]);
+
+                return ['created' => true, 'item' => $item];
+            }
+
+            if ($tuNgayChuyen !== null) {
+                return self::chuyenTuNgay($existingRows, $payload, $tuNgayChuyen, $maHocVien);
+            }
+
+            $current = DatPhanCongHocVienTheoNgay::hienTai($existingRows);
+            if ($blockReassignToOtherGiaoVien) {
+                self::assertSameGiaoVienOrFail($current, $maGiaoVien, $maHocVien);
+            }
+            $current->update($payload);
+
+            return ['created' => false, 'item' => $current->fresh()];
+        });
+    }
+
+    /**
+     * Từ ngày $tuNgay học viên thuộc GV/xe mới: kết thúc dòng đang áp dụng ở ngày hôm trước, tạo dòng mới.
+     *
+     * @param  list<DatPhanCongHocVien>  $rows
+     * @param  array<string, mixed>  $payload
+     * @return array{created: bool, item: DatPhanCongHocVien}
+     *
+     * @throws ValidationException
+     */
+    private static function chuyenTuNgay(array $rows, array $payload, string $tuNgay, string $maHocVien): array
+    {
+        foreach ($rows as $row) {
+            $rowTu = $row->TuNgay?->toDateString();
+            if ($rowTu !== null && $rowTu > $tuNgay) {
                 throw ValidationException::withMessages([
-                    'ma_hoc_vien' => 'Mã học viên '.$maHocVien.' có '.count($existingRows)
-                        .' dòng phân công trùng trong khóa — xóa bớt trước khi gán lại.',
+                    'tu_ngay' => 'Học viên '.$maHocVien.' đã có phân công bắt đầu từ '.$row->TuNgay->format('d/m/Y')
+                        .' (sau ngày chuyển '.Carbon::parse($tuNgay)->format('d/m/Y').') — xóa phân công đó trước.',
                 ]);
             }
+        }
 
-            $existing = $existingRows[0] ?? null;
+        $active = DatPhanCongHocVienTheoNgay::chonTheoNgay($rows, $tuNgay);
 
-            if ($existing !== null) {
-                if ($blockReassignToOtherGiaoVien) {
-                    self::assertSameGiaoVienOrFail($existing, $maGiaoVien, $maHocVien);
-                }
-                $existing->update($payload);
+        if ($active !== null && $active->TuNgay?->toDateString() === $tuNgay) {
+            $active->update($payload);
 
-                return ['created' => false, 'item' => $existing->fresh()];
+            return ['created' => false, 'item' => $active->fresh()];
+        }
+
+        if ($active !== null) {
+            $active->update(['DenNgay' => Carbon::parse($tuNgay)->subDay()->toDateString()]);
+        }
+
+        $item = DatPhanCongHocVien::query()->create($payload + [
+            'TuNgay' => $tuNgay,
+            'DenNgay' => null,
+        ]);
+
+        return ['created' => true, 'item' => $item];
+    }
+
+    /**
+     * Xóa một dòng phân công; nếu dòng liền trước kết thúc đúng ngày trước dòng này thì nối dài nó (hoàn tác "chuyển GV").
+     */
+    public static function xoaDong(DatPhanCongHocVien $row): void
+    {
+        DB::connection('sqlsrv_manhlinh')->transaction(function () use ($row): void {
+            $tu = $row->TuNgay?->toDateString();
+            if ($tu !== null) {
+                $ngayTruoc = Carbon::parse($tu)->subDay()->toDateString();
+                $truoc = DatPhanCongHocVien::query()
+                    ->where('MaKhoaHoc', $row->MaKhoaHoc)
+                    ->where('MaHocVien', $row->MaHocVien)
+                    ->where('Id', '!=', $row->Id)
+                    ->whereDate('DenNgay', $ngayTruoc)
+                    ->first();
+                $truoc?->update(['DenNgay' => $row->DenNgay?->toDateString()]);
             }
-
-            $item = DatPhanCongHocVien::query()->create($payload);
-
-            return ['created' => true, 'item' => $item];
+            $row->delete();
         });
+    }
+
+    private static function parseNgayOrNull(?string $value, string $field): ?string
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->toDateString();
+        } catch (\Throwable) {
+            throw ValidationException::withMessages([$field => 'Ngày không hợp lệ.']);
+        }
     }
 
     /**
@@ -210,19 +285,6 @@ class DatPhanCongHocVienSaver
 
         if (trim((string) $current->MaKhoaHoc) !== $maKhoaHoc) {
             throw ValidationException::withMessages(['ma_khoa_hoc' => 'Không thể đổi mã khóa khi sửa.']);
-        }
-
-        $duplicate = DatPhanCongHocVien::query()
-            ->where('MaKhoaHoc', $maKhoaHoc)
-            ->where('MaHocVien', $maHocVien)
-            ->where('Id', '!=', $recordId)
-            ->first();
-
-        if ($duplicate !== null) {
-            $duplicate->update($payload);
-            $current->delete();
-
-            return ['created' => false, 'item' => $duplicate->fresh()];
         }
 
         $current->update($payload);
@@ -243,15 +305,18 @@ class DatPhanCongHocVienSaver
             ltrim($maHocVien, '0'),
         ])));
 
-        return DatPhanCongHocVien::query()
-            ->where('MaKhoaHoc', $maKhoaHoc)
-            ->whereIn('MaHocVien', $variants)
-            ->orderBy('Id')
-            ->first();
+        return DatPhanCongHocVienTheoNgay::hienTai(
+            DatPhanCongHocVien::query()
+                ->where('MaKhoaHoc', $maKhoaHoc)
+                ->whereIn('MaHocVien', $variants)
+                ->orderBy('Id')
+                ->get()
+                ->all()
+        );
     }
 
     /**
-     * Một mã HV trong khóa gắn nhiều dòng hoặc nhiều giáo viên (trùng phân công).
+     * Một mã HV trong khóa có các dòng phân công chồng khoảng ngày (cùng lúc thuộc 2 dòng).
      *
      * @return list<array{ma_hoc_vien: string, count: int, ma_giao_vien_list: list<string>}>
      */
@@ -265,9 +330,9 @@ class DatPhanCongHocVienSaver
         $rows = DatPhanCongHocVien::query()
             ->where('MaKhoaHoc', $maKhoaHoc)
             ->orderBy('Id')
-            ->get(['Id', 'MaHocVien', 'MaGiaoVien']);
+            ->get(['Id', 'MaHocVien', 'MaGiaoVien', 'TuNgay', 'DenNgay']);
 
-        /** @var array<string, array{count: int, ma_giao_vien_list: list<string>}> $byNorm */
+        /** @var array<string, array{count: int, ma_giao_vien_list: list<string>, rows: list<DatPhanCongHocVien>}> $byNorm */
         $byNorm = [];
         foreach ($rows as $row) {
             $norm = self::normalizeMaHocVien((string) $row->MaHocVien);
@@ -275,9 +340,10 @@ class DatPhanCongHocVienSaver
                 continue;
             }
             if (! isset($byNorm[$norm])) {
-                $byNorm[$norm] = ['count' => 0, 'ma_giao_vien_list' => []];
+                $byNorm[$norm] = ['count' => 0, 'ma_giao_vien_list' => [], 'rows' => []];
             }
             $byNorm[$norm]['count']++;
+            $byNorm[$norm]['rows'][] = $row;
             $gv = self::normalizeMaGiaoVien((string) $row->MaGiaoVien);
             if ($gv !== '' && ! in_array($gv, $byNorm[$norm]['ma_giao_vien_list'], true)) {
                 $byNorm[$norm]['ma_giao_vien_list'][] = $gv;
@@ -286,7 +352,7 @@ class DatPhanCongHocVienSaver
 
         $out = [];
         foreach ($byNorm as $norm => $data) {
-            if ($data['count'] <= 1 && count($data['ma_giao_vien_list']) <= 1) {
+            if ($data['count'] <= 1 || ! DatPhanCongHocVienTheoNgay::coChongKhoang($data['rows'])) {
                 continue;
             }
             $out[] = [
@@ -342,8 +408,8 @@ class DatPhanCongHocVienSaver
         $label = trim((string) ($existing->HoTenHocVien ?: $maHocVien));
 
         throw ValidationException::withMessages([
-            'ma_giao_vien' => 'Học viên '.$label.' ('.$maHocVien.') đã phân công giáo viên '
-                .$existing->MaGiaoVien.'. Một học viên chỉ thuộc một giáo viên trong khóa — xóa phân công cũ trước khi gán GV khác.',
+            'ma_giao_vien' => 'Học viên '.$label.' ('.$maHocVien.') đang phân công giáo viên '
+                .$existing->MaGiaoVien.'. Để chuyển sang GV khác, nhập "Từ ngày" chuyển (phân công cũ kết thúc ngày hôm trước).',
         ]);
     }
 }

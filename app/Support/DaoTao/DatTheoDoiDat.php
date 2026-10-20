@@ -232,21 +232,19 @@ class DatTheoDoiDat
             )
         );
 
-        /** @var array<string, DatPhanCongHocVien> $assignmentByMaHocVien */
-        $assignmentByMaHocVien = [];
-        foreach ($assignments as $assignment) {
-            $maHocVien = trim((string) ($assignment->MaHocVien ?? ''));
-            if ($maHocVien !== '') {
-                $assignmentByMaHocVien[$maHocVien] = $assignment;
-            }
-        }
+        $assignmentsByMaHocVien = DatPhanCongHocVienTheoNgay::nhomTheoHocVien($assignments);
 
         /** @var array<string, list<DatDSPhien>> $sessionsByGroupKey */
         $sessionsByGroupKey = [];
         foreach ($sessions as $session) {
             $maHocVien = trim((string) ($session->MaHocVien ?? ''));
-            if ($maHocVien !== '' && isset($assignmentByMaHocVien[$maHocVien])) {
-                $assignment = $assignmentByMaHocVien[$maHocVien];
+            $assignment = $maHocVien !== ''
+                ? DatPhanCongHocVienTheoNgay::chonTheoNgay(
+                    $assignmentsByMaHocVien[$maHocVien] ?? [],
+                    self::sessionDate($session)
+                )
+                : null;
+            if ($assignment !== null) {
                 $groupKey = self::assignmentGroupKey(
                     (string) ($assignment->MaGiaoVien ?? ''),
                     (string) ($assignment->BienSoXe ?? '')
@@ -265,6 +263,20 @@ class DatTheoDoiDat
 
             $groupKey = self::sessionGroupKey($session);
             $sessionsByGroupKey[$groupKey][] = $session;
+        }
+
+        // HV có nhiều khoảng phân công chỉ hiển thị ở GV của khoảng áp dụng tại ngày xem (mặc định hôm nay).
+        $ngayHienThi = $ngay !== '' ? $ngay : Carbon::today()->toDateString();
+        $assignmentIdHienThi = [];
+        $allRowsByHocVien = DatPhanCongHocVienTheoNgay::nhomTheoHocVien(
+            DatPhanCongHocVien::query()
+                ->where('MaKhoaHoc', $maKhoaHoc)
+                ->get(['Id', 'MaHocVien', 'TuNgay', 'DenNgay'])
+        );
+        foreach ($allRowsByHocVien as $maHocVien => $hvRows) {
+            if (count($hvRows) > 1) {
+                $assignmentIdHienThi[$maHocVien] = DatPhanCongHocVienTheoNgay::chonGanNhat($hvRows, $ngayHienThi)?->Id;
+            }
         }
 
         $groups = [];
@@ -300,18 +312,28 @@ class DatTheoDoiDat
             $students = [];
             $stt = 0;
 
+            $daHienThi = [];
             foreach ($groupAssignments as $assignment) {
                 $maHocVien = trim((string) ($assignment->MaHocVien ?? ''));
-                if ($maHocVien === '') {
+                if ($maHocVien === '' || isset($daHienThi[$maHocVien])) {
                     continue;
                 }
+                if (array_key_exists($maHocVien, $assignmentIdHienThi)
+                    && $assignmentIdHienThi[$maHocVien] !== $assignment->Id) {
+                    continue;
+                }
+                $daHienThi[$maHocVien] = true;
 
                 $stt++;
                 $studentSessions = $sessionsByMaHocVien->get($maHocVien, collect());
+                $hoTen = trim((string) ($assignment->HoTenHocVien ?? '')) ?: $maHocVien;
+                if (array_key_exists($maHocVien, $assignmentIdHienThi) && $assignment->nhanKhoangNgay() !== '') {
+                    $hoTen .= ' ('.$assignment->nhanKhoangNgay().')';
+                }
 
                 $students[] = self::buildStudentRow(
                     $maHocVien,
-                    trim((string) ($assignment->HoTenHocVien ?? '')) ?: $maHocVien,
+                    $hoTen,
                     $studentSessions,
                     $studentDayTotals,
                     $ngay,
