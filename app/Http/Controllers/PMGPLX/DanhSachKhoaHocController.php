@@ -22,9 +22,24 @@ class DanhSachKhoaHocController extends Controller
             ->selectRaw('COUNT(*)')
             ->whereColumn('NguoiLX_HoSo.MaKhoaHoc', 'KhoaHoc.MaKH');
 
+        // Cùng điều kiện với màn Lịch làm việc GV / Lịch sử dụng xe để số khớp khi bấm vào.
+        $soLichGv = DB::connection('sqlsrv')
+            ->table('KhoaHoc_GiaoVien')
+            ->selectRaw('COUNT(*)')
+            ->whereColumn('KhoaHoc_GiaoVien.MaKH', 'KhoaHoc.MaKH');
+
+        $soLichXe = DB::connection('sqlsrv')
+            ->table('KhoaHoc_XeTap')
+            ->selectRaw('COUNT(*)')
+            ->whereColumn('KhoaHoc_XeTap.MaKH', 'KhoaHoc.MaKH')
+            ->where('KhoaHoc_XeTap.IsKhoaHocXeTap', 0)
+            ->whereNotNull('KhoaHoc_XeTap.NgayBD');
+
         $query = KhoaHoc::query()
             ->select('KhoaHoc.*')
-            ->selectSub($soHocVien, 'so_hoc_vien');
+            ->selectSub($soHocVien, 'so_hoc_vien')
+            ->selectSub($soLichGv, 'so_lich_gv')
+            ->selectSub($soLichXe, 'so_lich_xe');
 
         if ($keyword = trim((string) $request->input('tu_khoa'))) {
             $like = '%'.$keyword.'%';
@@ -52,7 +67,7 @@ class DanhSachKhoaHocController extends Controller
         }
 
         $items = $query
-            ->orderByDesc('NgayKG')
+            ->orderByDesc('TenKH')
             ->orderByDesc('MaKH')
             ->paginate($perPage)
             ->withQueryString();

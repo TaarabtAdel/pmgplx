@@ -98,16 +98,13 @@
                             <th>STT</th>
                             <th>Mã khoá</th>
                             <th>Tên khoá</th>
-                            <th>Hạng GPLX</th>
-                            <th>Hạng ĐT</th>
-                            <th>Số QĐ khai giảng</th>
-                            <th>Ngày KG</th>
-                            <th>Ngày BG</th>
+                            <th>Hạng GPLX | Hạng ĐT</th>
+                            <th>Ngày KG - Ngày BG</th>
                             <th class="text-right">Thời gian ĐT (ngày)</th>
                             <th class="text-right">Tổng số HV</th>
                             <th class="text-right">HV đã nhập</th>
-                            <th>Ghi chú</th>
-                            <th>Xem nhanh</th>
+                            <th class="text-right">Lịch GV</th>
+                            <th class="text-right">Lịch xe</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -119,24 +116,29 @@
                                     {{ $row->MaKH }}
                                 </td>
                                 <td>{{ $row->TenKH }}</td>
-                                <td>{{ $row->HangGPLX }}</td>
-                                <td>{{ $row->HangDT }}</td>
-                                <td>{{ $row->SoQD_KhaiGiang }}</td>
-                                <td class="text-nowrap">{{ $row->NgayKG?->format('d/m/Y') }}</td>
-                                <td class="text-nowrap">{{ $row->NgayBG?->format('d/m/Y') }}</td>
+                                <td class="text-nowrap">{{ trim((string) $row->HangGPLX) ?: '—' }} | {{ trim((string) $row->HangDT) ?: '—' }}</td>
+                                <td class="text-nowrap">{{ $row->NgayKG?->format('d/m/Y') ?? '—' }} - {{ $row->NgayBG?->format('d/m/Y') ?? '—' }}</td>
                                 <td class="text-right">{{ $row->ThoiGianDT }}</td>
                                 <td class="text-right">{{ $row->TongSoHV }}</td>
-                                <td class="text-right">{{ number_format((int) $row->so_hoc_vien) }}</td>
-                                <td>{{ $row->GhiChu }}</td>
-                                <td class="text-nowrap js-no-row-select">
-                                    <a href="{{ route('pmgplx.dm.hoc-vien.index', ['ma_kh' => $row->MaKH]) }}">Học viên</a>
-                                    · <a href="{{ route('pmgplx.lich.gv.index', ['ma_kh' => $row->MaKH]) }}">Lịch GV</a>
-                                    · <a href="{{ route('pmgplx.lich.xe.index', ['ma_kh' => $row->MaKH]) }}">Lịch xe</a>
+                                <td class="text-right js-no-row-select">
+                                    <a href="{{ route('pmgplx.dm.hoc-vien.index', ['ma_kh' => $row->MaKH]) }}" title="Xem học viên khoá {{ $row->MaKH }}">
+                                        {{ number_format((int) $row->so_hoc_vien) }}
+                                    </a>
+                                </td>
+                                <td class="text-right js-no-row-select">
+                                    <a href="{{ route('pmgplx.lich.gv.index', ['ma_kh' => $row->MaKH]) }}" title="Xem lịch giáo viên khoá {{ $row->MaKH }}">
+                                        {{ number_format((int) $row->so_lich_gv) }}
+                                    </a>
+                                </td>
+                                <td class="text-right js-no-row-select">
+                                    <a href="{{ route('pmgplx.lich.xe.index', ['ma_kh' => $row->MaKH]) }}" title="Xem lịch xe khoá {{ $row->MaKH }}">
+                                        {{ number_format((int) $row->so_lich_xe) }}
+                                    </a>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="13" class="text-center py-4">Không có dữ liệu</td>
+                                <td colspan="10" class="text-center py-4">Không có dữ liệu</td>
                             </tr>
                         @endforelse
                     </tbody>

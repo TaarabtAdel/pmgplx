@@ -8,7 +8,6 @@ use App\Http\Controllers\DaoTao\Dat\DanhSachPhanCongHocVienController;
 use App\Http\Controllers\DaoTao\Dat\GiaoVienDayThayController;
 use App\Http\Controllers\DaoTao\Dat\XeDayThayController;
 use App\Http\Controllers\DaoTao\Dat\DieuKienCanhBaoController;
-use App\Http\Controllers\DaoTao\Dat\DatLichThucHanhController;
 use App\Http\Controllers\DaoTao\Dat\DieuKienDatController;
 use App\Http\Controllers\DaoTao\Dat\DieuKienDoPhienController;
 use App\Http\Controllers\DaoTao\Dat\NhapFileDatDSPhienController;
@@ -324,34 +323,9 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
     Route::delete('/phong-dao-tao/dat/dieu-kien-dat/{id}', [DieuKienDatController::class, 'destroy'])
         ->name('pdt.dat.dieu-kien-dat.destroy');
 
-    Route::get('/phong-dao-tao/dat/lich-thuc-hanh', [DatLichThucHanhController::class, 'index'])
-        ->name('pdt.dat.lich-thuc-hanh.index');
-    Route::get('/phong-dao-tao/dat/lich-thuc-hanh/tao', [DatLichThucHanhController::class, 'create'])
-        ->name('pdt.dat.lich-thuc-hanh.create');
-    Route::post('/phong-dao-tao/dat/lich-thuc-hanh', [DatLichThucHanhController::class, 'store'])
-        ->name('pdt.dat.lich-thuc-hanh.store');
-    Route::get('/phong-dao-tao/dat/lich-thuc-hanh/{id}', [DatLichThucHanhController::class, 'edit'])
-        ->whereNumber('id')
-        ->name('pdt.dat.lich-thuc-hanh.edit');
-    Route::put('/phong-dao-tao/dat/lich-thuc-hanh/{id}', [DatLichThucHanhController::class, 'update'])
-        ->whereNumber('id')
-        ->name('pdt.dat.lich-thuc-hanh.update');
-    Route::delete('/phong-dao-tao/dat/lich-thuc-hanh/{id}', [DatLichThucHanhController::class, 'destroy'])
-        ->whereNumber('id')
-        ->name('pdt.dat.lich-thuc-hanh.destroy');
-    Route::post('/phong-dao-tao/dat/lich-thuc-hanh/{id}/sinh-lich', [DatLichThucHanhController::class, 'generate'])
-        ->whereNumber('id')
-        ->name('pdt.dat.lich-thuc-hanh.generate');
-    Route::get('/phong-dao-tao/dat/lich-thuc-hanh/{id}/xem', [DatLichThucHanhController::class, 'preview'])
-        ->whereNumber('id')
-        ->name('pdt.dat.lich-thuc-hanh.preview');
-    Route::get('/phong-dao-tao/dat/lich-thuc-hanh/{duAnId}/xem/{phienBanId}', [DatLichThucHanhController::class, 'previewLegacy'])
-        ->whereNumber(['duAnId', 'phienBanId']);
-    Route::get('/phong-dao-tao/dat/lich-thuc-hanh/{id}/xuat', [DatLichThucHanhController::class, 'export'])
-        ->whereNumber('id')
-        ->name('pdt.dat.lich-thuc-hanh.export');
-    Route::get('/phong-dao-tao/dat/lich-thuc-hanh/{duAnId}/xuat/{phienBanId}', [DatLichThucHanhController::class, 'exportLegacy'])
-        ->whereNumber(['duAnId', 'phienBanId']);
+    // Đã chuyển sang QLĐT Ô TÔ (routes/qldtoto.php) — giữ link cũ.
+    Route::get('/phong-dao-tao/dat/lich-thuc-hanh/{duongDan?}', fn () => redirect('/qldt-oto/lich-du-kien/thuc-hanh', 301))
+        ->where('duongDan', '.*');
 
     Route::get('/phong-dao-tao/dat/nhap-du-lieu-phien', [NhapFileDatDSPhienController::class, 'create'])
         ->name('pdt.dat.nhap-du-lieu-phien');

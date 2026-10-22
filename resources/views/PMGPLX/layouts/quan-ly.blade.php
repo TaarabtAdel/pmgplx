@@ -83,6 +83,18 @@
         .app-nav .dropdown-submenu .dropdown-submenu > .dropdown-menu {
             min-width: 12rem;
         }
+        .app-nav .menu-qldt,
+        .app-nav .menu-qldt .dropdown-menu {
+            width: 20rem;
+        }
+        .app-nav .menu-qldt .dropdown-item {
+            white-space: normal;
+            line-height: 1.3;
+        }
+        .app-nav .dropdown-submenu > .dropdown-menu.mo-trai {
+            left: auto;
+            right: 100%;
+        }
         .app-nav .dropdown-submenu:hover > .dropdown-menu,
         .app-nav .dropdown-submenu.show > .dropdown-menu {
             display: block;
@@ -218,6 +230,30 @@
             margin: 0 !important;
             position: static !important;
             border-width: 5px 4px 0 4px !important;
+        }
+
+        /* Select2 allowClear: nút × nằm bên phải, cạnh mũi tên */
+        .select2-container--bootstrap4 .select2-selection--single .select2-selection__clear {
+            position: absolute !important;
+            top: 50% !important;
+            right: 1.75rem !important;
+            transform: translateY(-50%);
+            float: none !important;
+            margin: 0 !important;
+            padding: 0 0.25rem !important;
+            border: 0 !important;
+            background: none !important;
+            color: #6c757d !important;
+            font-size: 1.1rem !important;
+            line-height: 1 !important;
+            cursor: pointer;
+            z-index: 2;
+        }
+        .select2-container--bootstrap4 .select2-selection--single .select2-selection__clear:hover {
+            color: #dc3545 !important;
+        }
+        .select2-container--bootstrap4 .select2-selection--single:has(.select2-selection__clear) .select2-selection__rendered {
+            padding-right: 3.25rem !important;
         }
 
         /* Native select: mũi tên không bị lệch */
@@ -424,13 +460,11 @@
             <li class="nav-item dropdown">
                 @php
                     $pdtActive = (request()->routeIs('daotao.pdt.*') && ! request()->routeIs('daotao.pdt.dat.*'))
-                        || request()->routeIs('daotao.pdt.dat.lich-thuc-hanh*')
                         || request()->routeIs('daotao.pdt.dat.phan-cong-hoc-vien*');
                     $baoCaoActive = request()->routeIs('daotao.pdt.bc.*');
                     $congCuNhapActive = request()->routeIs('daotao.pdt.cong-cu-nhap.*');
                     $phanCongActive = request()->routeIs(
                         'daotao.pdt.phan-cong-dao-tao.*',
-                        'daotao.pdt.dat.lich-thuc-hanh*',
                         'daotao.pdt.dat.phan-cong-hoc-vien*'
                     );
                 @endphp
@@ -503,10 +537,6 @@
                                href="{{ route('daotao.pdt.phan-cong-dao-tao.danh-sach-tu-lich-tong-hop') }}">
                                 Tổng hợp phân công (khoá · xe)
                             </a>
-                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.dat.lich-thuc-hanh*') ? 'active' : '' }}"
-                               href="{{ route('daotao.pdt.dat.lich-thuc-hanh.index') }}">
-                                Tạo lịch TH giảng dạy
-                            </a>
                         </div>
                     </div>
                 </div>
@@ -514,7 +544,6 @@
             <li class="nav-item dropdown">
                 @php
                     $datActive = request()->routeIs('daotao.pdt.dat.*')
-                        && ! request()->routeIs('daotao.pdt.dat.lich-thuc-hanh*')
                         && ! request()->routeIs('daotao.pdt.dat.phan-cong-hoc-vien*');
                     $datTongHopActive = request()->routeIs(
                         'daotao.pdt.dat.tong-hop-hoc-vien*',
@@ -658,8 +687,28 @@
                     </div>
                 </div>
             </li>
+            @foreach (config('menu_qldt.tabs', []) as $tabIndex => $tab)
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {{ \App\Support\MenuQldt::dangChon($tab) || request()->routeIs('qldtoto.index') ? 'active' : '' }}"
+                       href="#"
+                       id="navQldtDropdown{{ $tabIndex }}"
+                       role="button"
+                       data-toggle="dropdown"
+                       aria-haspopup="true"
+                       aria-expanded="false">
+                        {{ $tab['title'] }}
+                    </a>
+                    <div class="dropdown-menu menu-qldt" aria-labelledby="navQldtDropdown{{ $tabIndex }}">
+                        <a class="dropdown-item {{ request()->routeIs('qldtoto.index') ? 'active' : '' }}" href="{{ route('qldtoto.index') }}">
+                            Tổng quan các bước
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        @include('PMGPLX.layouts.partials.menu-con', ['items' => $tab['children'] ?? []])
+                    </div>
+                </li>
+            @endforeach
             <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle {{ request()->routeIs('hethong.*') ? 'active' : '' }}"
+                <a class="nav-link dropdown-toggle {{ request()->routeIs('hethong.*', 'qldtoto.cau-hinh-bai-day.*') ? 'active' : '' }}"
                    href="#"
                    id="navHeThongDropdown"
                    role="button"
@@ -672,6 +721,10 @@
                     <a class="dropdown-item {{ request()->routeIs('hethong.nguoi-dung.*') ? 'active' : '' }}"
                        href="{{ route('hethong.nguoi-dung.index') }}">
                         Người dùng
+                    </a>
+                    <a class="dropdown-item {{ request()->routeIs('qldtoto.cau-hinh-bai-day.*') ? 'active' : '' }}"
+                       href="{{ route('qldtoto.cau-hinh-bai-day.index') }}">
+                        Cấu hình bài dạy theo hạng
                     </a>
                 </div>
             </li>
@@ -726,6 +779,23 @@
                 e.preventDefault();
                 e.stopPropagation();
                 $(this).parent().toggleClass('show').siblings('.dropdown-submenu').removeClass('show');
+            });
+
+            $('.app-nav a.menu-chua-co-trang').on('click', function (e) {
+                e.preventDefault();
+            });
+
+            // Menu con nhiều tầng: không đủ chỗ bên phải thì mở sang trái.
+            $('.app-nav').on('mouseenter click', '.dropdown-submenu', function () {
+                var $menu = $(this).children('.dropdown-menu');
+                if (! $menu.length) {
+                    return;
+                }
+                $menu.removeClass('mo-trai').css('display', 'block');
+                if ($menu[0].getBoundingClientRect().right > window.innerWidth - 8) {
+                    $menu.addClass('mo-trai');
+                }
+                $menu.css('display', '');
             });
         });
     </script>

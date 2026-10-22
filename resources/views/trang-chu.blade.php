@@ -151,6 +151,9 @@
                     <a href="{{ route('hethong.nguoi-dung.index') }}" class="list-group-item list-group-item-action">
                         Người dùng
                     </a>
+                    <a href="{{ route('qldtoto.cau-hinh-bai-day.index') }}" class="list-group-item list-group-item-action">
+                        Cấu hình bài dạy theo hạng
+                    </a>
                 </div>
             </div>
         </div>
