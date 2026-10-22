@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\DB;
  * Mỗi nhóm 'Hạng|ca' có trong DU_LIEU: xoá các ngày cũ rồi ghi lại đúng danh sách (theo thứ tự);
  * nhóm không có trong DU_LIEU giữ nguyên.
  *
- * Nguồn: B-Sáng.xlsx (B sáng), LOGIC Tạo lịch.xlsx (B chiều, B01 sáng, B01 chiều — file này không có cột Ngày thứ, đánh số theo thứ tự dòng). Thêm hạng/ca khác: php database/seeders/cong-cu/excel-bai-day.php <file.xlsx> <Hang> <Ca>
+ * Dữ liệu xuất từ màn cấu hình bài dạy (B sáng/chiều, B01 sáng/chiều) ngày 22/10/2026.
+ * Thêm hạng/ca từ Excel: php database/seeders/cong-cu/excel-bai-day.php <file.xlsx> <Hang> <Ca>
  */
 class QldtOtoBaiDaySeeder extends Seeder
 {
@@ -31,7 +32,7 @@ class QldtOtoBaiDaySeeder extends Seeder
             [4, 8, 'Hình (S)', '5h59', '13h59'],
             [5, 10, 'Cabin', '7h00', '17h00'],
             [6, 5, 'Tự động (S)', '7h00', '12h00'],
-            [7, 5, 'Tự động  (S)', '7h00', '12h00'],
+            [7, 5, 'Tự động (S)', '7h00', '12h00'],
             [8, 8, 'Phức tạp(4) - Ban đêm', '13H59\' -17H59\'', '18h00-22h00'],
             [9, 8, 'Phức tạp(4) - Ban đêm', '13H59\' -17H59\'', '18h00-22h00'],
             [10, 8, 'Phức tạp(4) - Ban đêm', '13H59\' -17H59\'', '18h00-22h00'],
@@ -58,12 +59,12 @@ class QldtOtoBaiDaySeeder extends Seeder
             [31, 8, 'Có tải - Có tải (S8)', '5H59 -11h59', '20H01\'-22H01\''],
             [32, 8, 'Bổ sung (S)', '5H59 -11h59', '20H01\'-22H01\''],
             [33, 8, 'Bổ sung tự động (S)', '5H59 -11h59', '20H01\'-22H01\''],
-            [34, 8, 'Hình (S)', '5H59', '13H59'],
-            [35, 8, 'Hình (S)', '5H59', '13H59'],
-            [36, 8, 'Hình (S)', '5H59', '13H59'],
-            [37, 8, 'Hình (S)', '5H59', '13H59'],
-            [38, 8, 'Hình (S)', '5H59', '13H59'],
-            [39, 8, 'Hình (S)', '5H59', '13H59'],
+            [34, 8, 'Hình (S)', '5h59', '13h59'],
+            [35, 8, 'Hình (S)', '5h59', '13h59'],
+            [36, 8, 'Hình (S)', '5h59', '13h59'],
+            [37, 8, 'Hình (S)', '5h59', '13h59'],
+            [38, 8, 'Hình (S)', '5h59', '13h59'],
+            [39, 8, 'Hình (S)', '5h59', '13h59'],
             [40, 8, 'Ôn luyện', '5H59', '13H59'],
             [41, 8, 'Ôn luyện', '5H59', '13H59'],
             [42, null, 'Kiểm tra', null, null],
@@ -100,7 +101,7 @@ class QldtOtoBaiDaySeeder extends Seeder
             [28, 8, 'DỐC, QC - Có tải (C8)', '12H00\'', '20H00'],
             [29, 8, 'Cao Tốc - Có tải (C8)', '12H00\'', '20H00'],
             [30, 8, 'Cao Tốc - Có tải (C8)', '12H00\'', '20H00'],
-            [31, 8, 'Có tải - Có tải (S8)', '12H00\'', '20H00'],
+            [31, 8, 'Có tải - Có tải (C8)', '12H00\'', '20H00'],
             [32, 8, 'Bổ sung (C)', '12H00\'', '20H00'],
             [33, 8, 'Bổ sung tự động (C)', '12H00\'', '20H00'],
             [34, 8, 'Hình (C)', '14h00', '22h00'],
