@@ -5,9 +5,12 @@ namespace App\Http\Controllers\PMGPLX;
 use App\Http\Controllers\Controller;
 use App\Models\PMGPLX\GiaoVien;
 use App\Models\PMGPLX\XeTap;
+use App\Support\PMGPLX\DanhMucBangExcelExporter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DanhSachGiaoVienController extends Controller
 {
@@ -56,7 +59,21 @@ class DanhSachGiaoVienController extends Controller
                 'bien_so_xe' => $request->input('bien_so_xe', ''),
                 'per_page' => $perPage,
             ],
+            'tongBanGhi' => GiaoVien::query()->count(),
         ]);
+    }
+
+    public function export(): StreamedResponse
+    {
+        $columns = Schema::getColumnListing((new GiaoVien)->getTable());
+        $rows = GiaoVien::query()->orderBy('TenGV')->orderBy('MaGV')->get();
+
+        return DanhMucBangExcelExporter::download(
+            'Danh mục giáo viên (GiaoVien)',
+            'danh-muc-giao-vien',
+            $columns,
+            $rows,
+        );
     }
 
     public function ganXe(Request $request): RedirectResponse

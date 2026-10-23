@@ -86,6 +86,9 @@
                     <button type="button" class="btn btn-warning" disabled title="Sắp hỗ trợ">✎ Xem - Sửa</button>
                     <button type="button" class="btn btn-danger" disabled title="Sắp hỗ trợ">✕ Xóa</button>
                 </div>
+                <a href="{{ route('pmgplx.dm.giao-vien.export') }}"
+                   class="btn btn-sm btn-success mb-2 mr-2"
+                   title="Xuất toàn bộ {{ number_format($tongBanGhi ?? 0) }} giáo viên, mọi cột bảng GiaoVien">⬇ Xuất Excel ({{ number_format($tongBanGhi ?? 0) }})</a>
 
                 <div class="ml-auto d-flex flex-wrap align-items-center mb-2">
                     <span class="mr-3">Tổng số bản ghi: <strong>{{ number_format($items->total()) }}</strong></span>

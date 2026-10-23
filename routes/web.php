@@ -55,6 +55,8 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function () {
 
     Route::get('/danh-muc/giao-vien', [DanhSachGiaoVienController::class, 'index'])
         ->name('dm.giao-vien.index');
+    Route::get('/danh-muc/giao-vien/xuat-excel', [DanhSachGiaoVienController::class, 'export'])
+        ->name('dm.giao-vien.export');
     Route::post('/danh-muc/giao-vien/gan-xe', [DanhSachGiaoVienController::class, 'ganXe'])
         ->name('dm.giao-vien.gan-xe');
 
@@ -82,6 +84,8 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function () {
 
     Route::get('/danh-muc/xe', [DanhSachXeController::class, 'index'])
         ->name('dm.xe.index');
+    Route::get('/danh-muc/xe/xuat-excel', [DanhSachXeController::class, 'export'])
+        ->name('dm.xe.export');
 
     Route::get('/danh-muc/khoa-hoc', [DanhSachKhoaHocController::class, 'index'])
         ->name('dm.khoa-hoc.index');

@@ -5,8 +5,11 @@ namespace App\Http\Controllers\PMGPLX;
 use App\Http\Controllers\Controller;
 
 use App\Models\PMGPLX\XeTap;
+use App\Support\PMGPLX\DanhMucBangExcelExporter;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DanhSachXeController extends Controller
 {
@@ -50,6 +53,20 @@ class DanhSachXeController extends Controller
                 'trang_thai' => $request->input('trang_thai', ''),
                 'per_page' => $perPage,
             ],
+            'tongBanGhi' => XeTap::query()->count(),
         ]);
+    }
+
+    public function export(): StreamedResponse
+    {
+        $columns = Schema::getColumnListing((new XeTap)->getTable());
+        $rows = XeTap::query()->orderBy('BienSoXe')->get();
+
+        return DanhMucBangExcelExporter::download(
+            'Danh mục xe tập lái (XeTap)',
+            'danh-muc-xe-tap',
+            $columns,
+            $rows,
+        );
     }
 }
