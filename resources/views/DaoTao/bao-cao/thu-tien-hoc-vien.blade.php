@@ -165,7 +165,7 @@
                     </select>
                 </div>
                 <div class="form-group col-md-2 mb-0">
-                    <label title="Theo KetLuanCSDT (NguoiLX_HoSo)">Tốt nghiệp</label>
+                    <label title="Thủ công hoặc KetLuanCSDT PMGPLX">Tốt nghiệp</label>
                     <select name="tot_nghiep" class="form-control form-control-sm">
                         <option value="">—Tất cả—</option>
                         <option value="1" @selected($filters['tot_nghiep'] === '1')>Đã tốt nghiệp</option>
@@ -210,6 +210,10 @@
                 <div class="btn-group btn-group-sm mr-2 mb-2">
                     <button type="button" class="btn btn-success btn-hang-loat" data-hanh-dong="thu_tien">✔ Đã thu tiền</button>
                     <button type="button" class="btn btn-outline-success btn-hang-loat" data-hanh-dong="bo_thu_tien">Bỏ thu tiền</button>
+                </div>
+                <div class="btn-group btn-group-sm mr-2 mb-2">
+                    <button type="button" class="btn btn-info btn-hang-loat" data-hanh-dong="tot_nghiep">✔ Đã tốt nghiệp</button>
+                    <button type="button" class="btn btn-outline-info btn-hang-loat" data-hanh-dong="bo_tot_nghiep">Bỏ tốt nghiệp</button>
                 </div>
                 <button type="button" class="btn btn-sm btn-outline-danger mr-2 mb-2 btn-hang-loat" data-hanh-dong="xoa">✕ Xoá khỏi danh sách</button>
                 <span class="small text-muted mb-2 mr-auto">Đã chọn <strong id="so-tick">0</strong></span>
@@ -290,10 +294,19 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if (ThuTienHocVien::daTotNghiepTuHoSo($hv))
-                                        <span class="badge badge-info" title="KetLuanCSDT = Đạt">Đã tốt nghiệp</span>
+                                    @php
+                                        $tnPm = ThuTienHocVien::daTotNghiepTuHoSo($hv);
+                                        $tnHien = ThuTienHocVien::daTotNghiepHienThi($hv, (bool) $row->DaTotNghiep);
+                                    @endphp
+                                    @if ($tnHien)
+                                        <span class="badge badge-info">Đã tốt nghiệp</span>
+                                        @if ($tnPm && ! $row->DaTotNghiep)
+                                            <span class="badge badge-light border" title="KetLuanCSDT = 1">PM</span>
+                                        @elseif ($row->DaTotNghiep && ! $tnPm)
+                                            <span class="badge badge-light border" title="Đánh dấu thủ công">Tay</span>
+                                        @endif
                                     @else
-                                        <span class="badge badge-light border" title="Theo KetLuanCSDT PMGPLX">Chưa</span>
+                                        <span class="badge badge-light border">Chưa</span>
                                     @endif
                                 </td>
                                 <td>
@@ -329,6 +342,7 @@
                                             data-url-gd="{{ route('daotao.pdt.bc.thu-tien-hoc-vien.giao-dich', $row->Id) }}"
                                             data-url-lan-thi="{{ route('daotao.pdt.bc.thu-tien-hoc-vien.lan-thi.store', $row->Id) }}"
                                             data-ten="{{ $row->MaDK }} — {{ $hoTen }}"
+                                            data-tot-nghiep="{{ (int) ThuTienHocVien::daTotNghiepHienThi($hv, (bool) $row->DaTotNghiep) }}"
                                             data-thu-tien="{{ (int) $row->DaThuTien }}"
                                             data-ghi-chu="{{ $row->GhiChu }}"
                                             title="Sửa">✎</button>
@@ -382,7 +396,12 @@
                 </div>
                 <div class="modal-body">
                     <p class="font-weight-bold mb-3" id="sua-ten"></p>
-                    <p class="small text-muted mb-2">Tốt nghiệp theo <code>KetLuanCSDT</code> trên PMGPLX (nhập kết quả đào tạo), không chỉnh tại đây.</p>
+                    <div class="custom-control custom-checkbox mb-2">
+                        <input type="hidden" name="da_tot_nghiep" value="0">
+                        <input type="checkbox" class="custom-control-input" id="sua-tot-nghiep" name="da_tot_nghiep" value="1">
+                        <label class="custom-control-label" for="sua-tot-nghiep">Đã tốt nghiệp (thủ công)</label>
+                    </div>
+                    <p class="small text-muted mb-2"><code>KetLuanCSDT = 1</code> trên PMGPLX sẽ tự bật khi mở danh sách.</p>
                     <div class="custom-control custom-checkbox mb-3">
                         <input type="hidden" name="da_thu_tien" value="0">
                         <input type="checkbox" class="custom-control-input" id="sua-thu-tien" name="da_thu_tien" value="1">
@@ -412,7 +431,7 @@
                     </div>
                 </div>
                 <div class="modal-footer py-2">
-                    <span class="small text-muted mr-auto">Lưu: thu tiền, ghi chú. Kết quả thi ghi ngay khi bấm.</span>
+                    <span class="small text-muted mr-auto">Lưu: tốt nghiệp (tay), thu tiền, ghi chú. Kết quả thi ghi ngay khi bấm.</span>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
                     <button type="submit" class="btn btn-navy">Lưu</button>
                 </div>
@@ -824,6 +843,7 @@
             sua.daGui = false;
             thongBaoKq('', '');
             document.getElementById('sua-ten').textContent = d.ten;
+            document.getElementById('sua-tot-nghiep').checked = d.totNghiep === '1';
             document.getElementById('sua-thu-tien').checked = d.thuTien === '1';
             document.getElementById('sua-ghi-chu').value = d.ghiChu || '';
             document.getElementById('sua-ngay-thi').value = new Date().toISOString().slice(0, 10);

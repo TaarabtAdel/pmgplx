@@ -345,7 +345,7 @@ class ThuTienHocVien extends Model
         return number_format($v, 0, ',', '.');
     }
 
-    /** Tốt nghiệp lấy từ NguoiLX_HoSo.KetLuanCSDT (1 = Đạt), không chỉnh trên màn thu tiền. */
+    /** PMGPLX: NguoiLX_HoSo.KetLuanCSDT = 1 (Đạt). */
     public static function daTotNghiepTuHoSo(?object $hoSoRow): bool
     {
         if ($hoSoRow === null) {
@@ -353,5 +353,11 @@ class ThuTienHocVien extends Model
         }
 
         return (int) ($hoSoRow->KetLuanCSDT ?? 0) === 1;
+    }
+
+    /** Hiển thị / lọc: đã tốt nghiệp thủ công (DaTotNghiep) hoặc KetLuanCSDT = 1. */
+    public static function daTotNghiepHienThi(?object $hoSoRow, bool $daTotNghiep): bool
+    {
+        return $daTotNghiep || self::daTotNghiepTuHoSo($hoSoRow);
     }
 }

@@ -42,6 +42,9 @@ class ThuTienHocVienController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
+        $hocVien = self::thongTinHocVien($items->pluck('MaDK'));
+        self::dongBoTotNghiepTuKetLuan($items->getCollection(), $hocVien);
+
         $themKh = trim((string) $request->input('them_kh', ''));
         $khoaHocs = KhoaHoc::query()->orderByDesc('TenKH')->get(['MaKH', 'TenKH']);
         $maTrongDanhSach = ThuTienHocVien::query()->whereNotNull('MaKhoaHoc')->distinct()->pluck('MaKhoaHoc')
@@ -49,7 +52,7 @@ class ThuTienHocVienController extends Controller
 
         return view('DaoTao.bao-cao.thu-tien-hoc-vien', [
             'items' => $items,
-            'hocVien' => self::thongTinHocVien($items->pluck('MaDK')),
+            'hocVien' => $hocVien,
             'tong' => ThuTienHocVien::tongTheoKhoan($this->locDanhSach($filters)),
             'tongPhaiThu' => ThuTienHocVien::tongPhaiThuTheoKhoan($this->locDanhSach($filters)),
             'filters' => $filters,
@@ -71,6 +74,8 @@ class ThuTienHocVienController extends Controller
     {
         $filters = self::boLoc($request);
         $rows = $this->locDanhSach($filters)->kemSoDu()->with('lanThis')->orderByDesc('MaKhoaHoc')->orderBy('Id')->get();
+        $hocVienExport = self::thongTinHocVien($rows->pluck('MaDK'));
+        self::dongBoTotNghiepTuKetLuan($rows, $hocVienExport);
 
         $moTa = [];
         if ($filters['ma_kh'] !== '') {
@@ -95,7 +100,7 @@ class ThuTienHocVienController extends Controller
             .($filters['ma_kh'] !== '' ? '-'.(preg_replace('/[^A-Za-z0-9_-]+/', '-', $filters['ma_kh']) ?: 'khoa') : '')
             .'-'.now()->format('Ymd-His').'.xlsx';
 
-        return ThuTienHocVienExcelExporter::download($rows, self::thongTinHocVien($rows->pluck('MaDK')), $moTa, $tenFile);
+        return ThuTienHocVienExcelExporter::download($rows, $hocVienExport, $moTa, $tenFile);
     }
 
     /** @return array{tu_khoa: string, ma_kh: string, tot_nghiep: string, thu_tien: string, can_thu: string, per_page: int} */
@@ -239,7 +244,7 @@ class ThuTienHocVienController extends Controller
     public function hangLoat(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'hanh_dong' => ['required', Rule::in(['thu_tien', 'bo_thu_tien', 'xoa'])],
+            'hanh_dong' => ['required', Rule::in(['thu_tien', 'bo_thu_tien', 'tot_nghiep', 'bo_tot_nghiep', 'xoa'])],
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer'],
         ], [
@@ -247,6 +252,7 @@ class ThuTienHocVienController extends Controller
         ]);
 
         $q = ThuTienHocVien::query()->whereIn('Id', $data['ids']);
+        $now = Carbon::now();
         $doiThuTien = function (bool $daThu) use ($q): int {
             // Đổi trạng thái thu tiền phải ghi giao dịch từng học viên.
             return DB::connection('sqlsrv_manhlinh')->transaction(function () use ($q, $daThu): int {
@@ -261,6 +267,8 @@ class ThuTienHocVienController extends Controller
         [$n, $viec] = match ($data['hanh_dong']) {
             'thu_tien' => [$doiThuTien(true), 'đánh dấu đã thu tiền'],
             'bo_thu_tien' => [$doiThuTien(false), 'bỏ đã thu tiền'],
+            'tot_nghiep' => [(clone $q)->update(['DaTotNghiep' => true, 'NgayCapNhat' => $now]), 'đánh dấu đã tốt nghiệp'],
+            'bo_tot_nghiep' => [(clone $q)->update(['DaTotNghiep' => false, 'NgayCapNhat' => $now]), 'bỏ đã tốt nghiệp (thủ công)'],
             'xoa' => [(clone $q)->delete(), 'xoá khỏi danh sách'],
         };
 
@@ -270,11 +278,13 @@ class ThuTienHocVienController extends Controller
     public function update(Request $request, ThuTienHocVien $thuTien): RedirectResponse
     {
         $data = $request->validate([
+            'da_tot_nghiep' => ['boolean'],
             'da_thu_tien' => ['boolean'],
             'ghi_chu' => ['nullable', 'string', 'max:500'],
         ]);
 
         DB::connection('sqlsrv_manhlinh')->transaction(fn () => $thuTien->capNhatTrangThai([
+            'DaTotNghiep' => (bool) ($data['da_tot_nghiep'] ?? false),
             'DaThuTien' => (bool) ($data['da_thu_tien'] ?? false),
             'GhiChu' => trim((string) ($data['ghi_chu'] ?? '')) ?: null,
         ], auth()->id()));
@@ -422,9 +432,20 @@ class ThuTienHocVienController extends Controller
         if ($filters['ma_kh'] !== '') {
             $q->where('MaKhoaHoc', $filters['ma_kh']);
         }
-        if (in_array($filters['tot_nghiep'], ['0', '1'], true)) {
-            $maTheoTn = self::maDkTheoKetLuanCsdT($filters['tot_nghiep'] === '1');
-            $q->whereIn('MaDK', $maTheoTn ?: ['']);
+        if ($filters['tot_nghiep'] === '1') {
+            $maKetLuanDat = self::maDkCoKetLuanDat();
+            $q->where(function (Builder $w) use ($maKetLuanDat): void {
+                $w->where('DaTotNghiep', true);
+                if ($maKetLuanDat !== []) {
+                    $w->orWhereIn('MaDK', $maKetLuanDat);
+                }
+            });
+        } elseif ($filters['tot_nghiep'] === '0') {
+            $maKetLuanDat = self::maDkCoKetLuanDat();
+            $q->where('DaTotNghiep', false);
+            if ($maKetLuanDat !== []) {
+                $q->whereNotIn('MaDK', $maKetLuanDat);
+            }
         }
         if (in_array($filters['thu_tien'], ['0', '1'], true)) {
             $q->where('DaThuTien', $filters['thu_tien'] === '1');
@@ -511,22 +532,39 @@ class ThuTienHocVienController extends Controller
             ]);
     }
 
-    /** @return list<string> */
-    private static function maDkTheoKetLuanCsdT(bool $daTotNghiep): array
+    /** @return list<string> MaDK có KetLuanCSDT = 1 trên PMGPLX. */
+    private static function maDkCoKetLuanDat(): array
     {
-        $q = NguoiLX::query()
+        return NguoiLX::query()
             ->from('NguoiLX as n')
-            ->join('NguoiLX_HoSo as h', 'h.MaDK', '=', 'n.MaDK');
+            ->join('NguoiLX_HoSo as h', 'h.MaDK', '=', 'n.MaDK')
+            ->where('h.KetLuanCSDT', 1)
+            ->pluck('n.MaDK')
+            ->map(fn ($m) => (string) $m)
+            ->all();
+    }
 
-        if ($daTotNghiep) {
-            $q->where('h.KetLuanCSDT', 1);
-        } else {
-            $q->where(function (Builder $w): void {
-                $w->whereNull('h.KetLuanCSDT')
-                    ->orWhere('h.KetLuanCSDT', '!=', 1);
-            });
+    /**
+     * KetLuanCSDT = 1 → bật DaTotNghiep trên danh sách thu tiền (đồng bộ tự động).
+     *
+     * @param  \Illuminate\Support\Collection<int, ThuTienHocVien>  $rows
+     * @param  Collection<string, object>  $hocVien
+     */
+    private static function dongBoTotNghiepTuKetLuan($rows, Collection $hocVien): void
+    {
+        $ids = [];
+        foreach ($rows as $row) {
+            $hv = $hocVien->get((string) $row->MaDK);
+            if (ThuTienHocVien::daTotNghiepTuHoSo($hv) && ! $row->DaTotNghiep) {
+                $ids[] = (int) $row->Id;
+                $row->DaTotNghiep = true;
+            }
         }
-
-        return $q->pluck('n.MaDK')->map(fn ($m) => (string) $m)->all();
+        if ($ids === []) {
+            return;
+        }
+        ThuTienHocVien::query()
+            ->whereIn('Id', $ids)
+            ->update(['DaTotNghiep' => true, 'NgayCapNhat' => Carbon::now()]);
     }
 }
