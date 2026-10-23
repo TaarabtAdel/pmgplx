@@ -344,4 +344,14 @@ class ThuTienHocVien extends Model
     {
         return number_format($v, 0, ',', '.');
     }
+
+    /** Tốt nghiệp lấy từ NguoiLX_HoSo.KetLuanCSDT (1 = Đạt), không chỉnh trên màn thu tiền. */
+    public static function daTotNghiepTuHoSo(?object $hoSoRow): bool
+    {
+        if ($hoSoRow === null) {
+            return false;
+        }
+
+        return (int) ($hoSoRow->KetLuanCSDT ?? 0) === 1;
+    }
 }

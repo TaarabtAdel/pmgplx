@@ -69,6 +69,20 @@
                 </div>
             </form>
 
+            <div class="border-top mt-3 pt-3">
+                <p class="small text-muted mb-2">Hoặc tìm theo tên / CMT / Mã ĐK (không cần chọn khoá trước):</p>
+                <form method="POST" action="{{ route('daotao.pdt.bc.thu-tien-hoc-vien.store') }}" class="form-row align-items-end" id="form-them-tim-hv">
+                    @csrf
+                    <div class="form-group col-md-9 mb-0">
+                        <label for="tim_hv_them">Học viên</label>
+                        <select name="ma_dk[]" id="tim_hv_them" class="form-control form-control-sm" required></select>
+                    </div>
+                    <div class="form-group col-md-3 mb-0">
+                        <button type="submit" class="btn btn-sm btn-success btn-block">＋ Thêm học viên</button>
+                    </div>
+                </form>
+            </div>
+
             @if ($ungVien !== null)
                 @php $soChuaCo = $ungVien->where('da_co', false)->count(); @endphp
                 <form method="POST" action="{{ route('daotao.pdt.bc.thu-tien-hoc-vien.store') }}" class="mt-3" id="form-them-hv">
@@ -151,7 +165,7 @@
                     </select>
                 </div>
                 <div class="form-group col-md-2 mb-0">
-                    <label>Tốt nghiệp</label>
+                    <label title="Theo KetLuanCSDT (NguoiLX_HoSo)">Tốt nghiệp</label>
                     <select name="tot_nghiep" class="form-control form-control-sm">
                         <option value="">—Tất cả—</option>
                         <option value="1" @selected($filters['tot_nghiep'] === '1')>Đã tốt nghiệp</option>
@@ -196,10 +210,6 @@
                 <div class="btn-group btn-group-sm mr-2 mb-2">
                     <button type="button" class="btn btn-success btn-hang-loat" data-hanh-dong="thu_tien">✔ Đã thu tiền</button>
                     <button type="button" class="btn btn-outline-success btn-hang-loat" data-hanh-dong="bo_thu_tien">Bỏ thu tiền</button>
-                </div>
-                <div class="btn-group btn-group-sm mr-2 mb-2">
-                    <button type="button" class="btn btn-info btn-hang-loat" data-hanh-dong="tot_nghiep">✔ Đã tốt nghiệp</button>
-                    <button type="button" class="btn btn-outline-info btn-hang-loat" data-hanh-dong="bo_tot_nghiep">Bỏ tốt nghiệp</button>
                 </div>
                 <button type="button" class="btn btn-sm btn-outline-danger mr-2 mb-2 btn-hang-loat" data-hanh-dong="xoa">✕ Xoá khỏi danh sách</button>
                 <span class="small text-muted mb-2 mr-auto">Đã chọn <strong id="so-tick">0</strong></span>
@@ -280,10 +290,10 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if ($row->DaTotNghiep)
-                                        <span class="badge badge-info">Đã tốt nghiệp</span>
+                                    @if (ThuTienHocVien::daTotNghiepTuHoSo($hv))
+                                        <span class="badge badge-info" title="KetLuanCSDT = Đạt">Đã tốt nghiệp</span>
                                     @else
-                                        <span class="badge badge-light border">Chưa</span>
+                                        <span class="badge badge-light border" title="Theo KetLuanCSDT PMGPLX">Chưa</span>
                                     @endif
                                 </td>
                                 <td>
@@ -319,7 +329,6 @@
                                             data-url-gd="{{ route('daotao.pdt.bc.thu-tien-hoc-vien.giao-dich', $row->Id) }}"
                                             data-url-lan-thi="{{ route('daotao.pdt.bc.thu-tien-hoc-vien.lan-thi.store', $row->Id) }}"
                                             data-ten="{{ $row->MaDK }} — {{ $hoTen }}"
-                                            data-tot-nghiep="{{ (int) $row->DaTotNghiep }}"
                                             data-thu-tien="{{ (int) $row->DaThuTien }}"
                                             data-ghi-chu="{{ $row->GhiChu }}"
                                             title="Sửa">✎</button>
@@ -373,11 +382,7 @@
                 </div>
                 <div class="modal-body">
                     <p class="font-weight-bold mb-3" id="sua-ten"></p>
-                    <div class="custom-control custom-checkbox mb-2">
-                        <input type="hidden" name="da_tot_nghiep" value="0">
-                        <input type="checkbox" class="custom-control-input" id="sua-tot-nghiep" name="da_tot_nghiep" value="1">
-                        <label class="custom-control-label" for="sua-tot-nghiep">Đã tốt nghiệp</label>
-                    </div>
+                    <p class="small text-muted mb-2">Tốt nghiệp theo <code>KetLuanCSDT</code> trên PMGPLX (nhập kết quả đào tạo), không chỉnh tại đây.</p>
                     <div class="custom-control custom-checkbox mb-3">
                         <input type="hidden" name="da_thu_tien" value="0">
                         <input type="checkbox" class="custom-control-input" id="sua-thu-tien" name="da_thu_tien" value="1">
@@ -407,7 +412,7 @@
                     </div>
                 </div>
                 <div class="modal-footer py-2">
-                    <span class="small text-muted mr-auto">Lưu: tốt nghiệp, thu tiền, ghi chú. Kết quả thi ghi ngay khi bấm.</span>
+                    <span class="small text-muted mr-auto">Lưu: thu tiền, ghi chú. Kết quả thi ghi ngay khi bấm.</span>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
                     <button type="submit" class="btn btn-navy">Lưu</button>
                 </div>
@@ -499,6 +504,43 @@
                 dropdownParent: $(id).closest('.form-group'),
                 language: { noResults: function () { return 'Không tìm thấy khoá học'; } },
             });
+        });
+
+        $('#tim_hv_them').select2({
+            theme: 'bootstrap4',
+            placeholder: 'Nhập tên, CMT hoặc Mã ĐK...',
+            allowClear: true,
+            width: '100%',
+            dropdownParent: $('#tim_hv_them').closest('.form-group'),
+            minimumInputLength: 1,
+            ajax: {
+                url: @json(route('daotao.pdt.bc.thu-tien-hoc-vien.tim-hoc-vien')),
+                dataType: 'json',
+                delay: 300,
+                data: function (params) {
+                    return { q: params.term || '', page: params.page || 1 };
+                },
+                processResults: function (data, params) {
+                    params.page = params.page || 1;
+                    return {
+                        results: data.results || [],
+                        pagination: { more: !!(data.pagination && data.pagination.more) },
+                    };
+                },
+                cache: true,
+            },
+            language: {
+                inputTooShort: function () { return 'Nhập ít nhất 1 ký tự'; },
+                searching: function () { return 'Đang tìm...'; },
+                noResults: function () { return 'Không tìm thấy học viên'; },
+            },
+        });
+        $('#form-them-tim-hv').on('submit', function () {
+            var v = $('#tim_hv_them').val();
+            if (! v) {
+                alert('Chọn học viên cần thêm.');
+                return false;
+            }
         });
 
         // Accordion "Thêm học viên": đổi chữ nút theo trạng thái mở / đóng.
@@ -782,7 +824,6 @@
             sua.daGui = false;
             thongBaoKq('', '');
             document.getElementById('sua-ten').textContent = d.ten;
-            document.getElementById('sua-tot-nghiep').checked = d.totNghiep === '1';
             document.getElementById('sua-thu-tien').checked = d.thuTien === '1';
             document.getElementById('sua-ghi-chu').value = d.ghiChu || '';
             document.getElementById('sua-ngay-thi').value = new Date().toISOString().slice(0, 10);

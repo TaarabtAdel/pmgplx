@@ -182,6 +182,8 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
         ->name('pdt.bc.luu-luong-dao-tao');
     Route::get('/phong-dao-tao/bao-cao/thu-tien-hoc-vien', [ThuTienHocVienController::class, 'index'])
         ->name('pdt.bc.thu-tien-hoc-vien');
+    Route::get('/phong-dao-tao/bao-cao/thu-tien-hoc-vien/tim-hoc-vien', [ThuTienHocVienController::class, 'timHocVienOptions'])
+        ->name('pdt.bc.thu-tien-hoc-vien.tim-hoc-vien');
     Route::post('/phong-dao-tao/bao-cao/thu-tien-hoc-vien', [ThuTienHocVienController::class, 'store'])
         ->name('pdt.bc.thu-tien-hoc-vien.store');
     Route::get('/phong-dao-tao/bao-cao/thu-tien-hoc-vien/xuat-excel', [ThuTienHocVienController::class, 'export'])

@@ -96,7 +96,7 @@ final class ThuTienHocVienExcelExporter
                 (string) ($hv->SoCMT ?? ''),
                 (string) $row->MaKhoaHoc,
                 (string) ($hv->HangGPLX ?? ''),
-                $row->DaTotNghiep ? 'Đã tốt nghiệp' : 'Chưa',
+                ThuTienHocVien::daTotNghiepTuHoSo($hv) ? 'Đã tốt nghiệp' : 'Chưa',
                 $row->DaThuTien ? 'Đã thu '.($row->NgayThuTien?->format('d/m/Y') ?? '') : 'Chưa thu',
                 $row->tien('ly_thuyet'),
                 self::nhanKq($row, 'ly_thuyet'),

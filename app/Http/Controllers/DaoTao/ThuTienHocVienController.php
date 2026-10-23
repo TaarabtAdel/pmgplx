@@ -8,6 +8,7 @@ use App\Models\DaoTao\ThuTienHocVienGiaoDich;
 use App\Models\PMGPLX\KhoaHoc;
 use App\Models\PMGPLX\NguoiLX;
 use App\Support\DaoTao\ThuTienHocVienExcelExporter;
+use App\Support\PMGPLX\NgayVn;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -112,27 +113,54 @@ class ThuTienHocVienController extends Controller
         ];
     }
 
-    /** Thêm các học viên đã chọn của một khoá vào danh sách (bỏ qua học viên đã có). */
+    /** Thêm học viên vào danh sách (theo khoá hoặc chọn từ tìm kiếm tên). */
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'ma_kh' => ['required', 'string', 'max:50'],
+            'ma_kh' => ['nullable', 'string', 'max:50'],
             'ma_dk' => ['required', 'array', 'min:1'],
             'ma_dk.*' => ['string', 'max:50'],
         ], [
             'ma_dk.required' => 'Chọn ít nhất một học viên để thêm.',
         ]);
 
-        $hopLe = self::hocVienCuaKhoa($data['ma_kh'])->pluck('MaDK')->map(fn ($m) => (string) $m)->all();
-        $chon = array_values(array_intersect(array_map('strval', $data['ma_dk']), $hopLe));
-        $daCo = ThuTienHocVien::query()->whereIn('MaDK', $chon ?: [''])->pluck('MaDK')->map(fn ($m) => (string) $m)->all();
-        $moi = array_values(array_diff($chon, $daCo));
+        $maKhForm = trim((string) ($data['ma_kh'] ?? ''));
+        $chon = array_values(array_unique(array_map('strval', $data['ma_dk'])));
+
+        $hocViens = self::truyVanHocVien()
+            ->whereIn('n.MaDK', $chon)
+            ->get()
+            ->keyBy(fn ($r) => (string) $r->MaDK);
+
+        $them = [];
+        foreach ($chon as $maDk) {
+            $hv = $hocViens->get($maDk);
+            if (! $hv) {
+                continue;
+            }
+            $maKh = (string) ($hv->MaKhoaHoc ?? '');
+            if ($maKhForm !== '' && $maKh !== $maKhForm) {
+                continue;
+            }
+            if ($maKh === '') {
+                continue;
+            }
+            $them[] = ['MaDK' => $maDk, 'MaKhoaHoc' => $maKh];
+        }
+
+        $daCo = ThuTienHocVien::query()
+            ->whereIn('MaDK', array_column($them, 'MaDK') ?: [''])
+            ->pluck('MaDK')
+            ->map(fn ($m) => (string) $m)
+            ->flip();
+
+        $moi = array_values(array_filter($them, fn (array $row): bool => ! $daCo->has($row['MaDK'])));
 
         $now = Carbon::now();
         foreach (array_chunk($moi, 200) as $chunk) {
-            ThuTienHocVien::query()->insert(array_map(fn (string $maDk): array => [
-                'MaDK' => $maDk,
-                'MaKhoaHoc' => $data['ma_kh'],
+            ThuTienHocVien::query()->insert(array_map(fn (array $row): array => [
+                'MaDK' => $row['MaDK'],
+                'MaKhoaHoc' => $row['MaKhoaHoc'],
                 'DaTotNghiep' => false,
                 'DaThuTien' => false,
                 'NguoiTaoId' => auth()->id(),
@@ -141,17 +169,77 @@ class ThuTienHocVienController extends Controller
             ], $chunk));
         }
 
+        $redirectMaKh = $maKhForm !== '' ? $maKhForm : ($moi[0]['MaKhoaHoc'] ?? '');
+
         return redirect()
-            ->route('daotao.pdt.bc.thu-tien-hoc-vien', ['ma_kh' => $data['ma_kh']])
-            ->with('success', 'Đã thêm '.count($moi).' học viên khoá '.$data['ma_kh'].' vào danh sách'
-                .(count($daCo) ? ' (bỏ qua '.count($daCo).' học viên đã có)' : '').'.');
+            ->route('daotao.pdt.bc.thu-tien-hoc-vien', array_filter(['ma_kh' => $redirectMaKh]))
+            ->with('success', 'Đã thêm '.count($moi).' học viên vào danh sách'
+                .($daCo->count() ? ' (bỏ qua '.$daCo->count().' học viên đã có)' : '').'.');
+    }
+
+    /** Select2: tìm học viên PMGPLX theo tên / CMT / Mã ĐK. */
+    public function timHocVienOptions(Request $request): JsonResponse
+    {
+        $search = trim((string) $request->input('q', ''));
+        $page = max(1, (int) $request->input('page', 1));
+        $perPage = 30;
+
+        if ($search === '') {
+            return response()->json(['results' => [], 'pagination' => ['more' => false]]);
+        }
+
+        $like = '%'.$search.'%';
+        $query = self::truyVanHocVien()
+            ->where(function (Builder $w) use ($like): void {
+                $w->where('n.HoVaTen', 'like', $like)
+                    ->orWhere('n.TenNLX', 'like', $like)
+                    ->orWhere('n.HoDemNLX', 'like', $like)
+                    ->orWhere('n.SoCMT', 'like', $like)
+                    ->orWhere('n.MaDK', 'like', $like);
+            })
+            ->orderByRaw('n.TenNLX COLLATE Vietnamese_CI_AS ASC')
+            ->orderByRaw('n.HoDemNLX COLLATE Vietnamese_CI_AS ASC')
+            ->orderBy('n.MaDK');
+
+        $offset = ($page - 1) * $perPage;
+        $rows = (clone $query)->skip($offset)->take($perPage + 1)->get();
+        $more = $rows->count() > $perPage;
+
+        $maDks = $rows->take($perPage)->pluck('MaDK')->map(fn ($m) => (string) $m)->all();
+        $daCo = ThuTienHocVien::query()
+            ->whereIn('MaDK', $maDks ?: [''])
+            ->pluck('MaDK')
+            ->map(fn ($m) => (string) $m)
+            ->flip();
+
+        $results = $rows->take($perPage)->map(function ($row) use ($daCo): array {
+            $maDk = (string) $row->MaDK;
+            $ten = $row->HoVaTen ?: trim(($row->HoDemNLX ?? '').' '.($row->TenNLX ?? ''));
+            $ns = NgayVn::format($row->NgaySinh, 'yyyymmdd');
+            $cmt = trim((string) ($row->SoCMT ?? ''));
+            $tenKh = trim((string) ($row->TenKhoaHoc ?? ''));
+            $maKh = trim((string) ($row->MaKhoaHoc ?? ''));
+            $khoa = $tenKh !== '' ? $tenKh.' ('.$maKh.')' : $maKh;
+            $text = implode(' - ', array_filter([$ten, $ns, $cmt, $khoa], fn (string $p): bool => $p !== ''));
+
+            return [
+                'id' => $maDk,
+                'text' => $text.($daCo->has($maDk) ? ' — đã có trong danh sách' : ''),
+                'disabled' => $daCo->has($maDk),
+            ];
+        })->values()->all();
+
+        return response()->json([
+            'results' => $results,
+            'pagination' => ['more' => $more],
+        ]);
     }
 
     /** Thao tác hàng loạt trên các dòng đã tick. */
     public function hangLoat(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'hanh_dong' => ['required', Rule::in(['thu_tien', 'bo_thu_tien', 'tot_nghiep', 'bo_tot_nghiep', 'xoa'])],
+            'hanh_dong' => ['required', Rule::in(['thu_tien', 'bo_thu_tien', 'xoa'])],
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer'],
         ], [
@@ -159,7 +247,6 @@ class ThuTienHocVienController extends Controller
         ]);
 
         $q = ThuTienHocVien::query()->whereIn('Id', $data['ids']);
-        $now = Carbon::now();
         $doiThuTien = function (bool $daThu) use ($q): int {
             // Đổi trạng thái thu tiền phải ghi giao dịch từng học viên.
             return DB::connection('sqlsrv_manhlinh')->transaction(function () use ($q, $daThu): int {
@@ -174,8 +261,6 @@ class ThuTienHocVienController extends Controller
         [$n, $viec] = match ($data['hanh_dong']) {
             'thu_tien' => [$doiThuTien(true), 'đánh dấu đã thu tiền'],
             'bo_thu_tien' => [$doiThuTien(false), 'bỏ đã thu tiền'],
-            'tot_nghiep' => [(clone $q)->update(['DaTotNghiep' => true, 'NgayCapNhat' => $now]), 'đánh dấu đã tốt nghiệp'],
-            'bo_tot_nghiep' => [(clone $q)->update(['DaTotNghiep' => false, 'NgayCapNhat' => $now]), 'bỏ đã tốt nghiệp'],
             'xoa' => [(clone $q)->delete(), 'xoá khỏi danh sách'],
         };
 
@@ -185,13 +270,11 @@ class ThuTienHocVienController extends Controller
     public function update(Request $request, ThuTienHocVien $thuTien): RedirectResponse
     {
         $data = $request->validate([
-            'da_tot_nghiep' => ['boolean'],
             'da_thu_tien' => ['boolean'],
             'ghi_chu' => ['nullable', 'string', 'max:500'],
         ]);
 
         DB::connection('sqlsrv_manhlinh')->transaction(fn () => $thuTien->capNhatTrangThai([
-            'DaTotNghiep' => (bool) ($data['da_tot_nghiep'] ?? false),
             'DaThuTien' => (bool) ($data['da_thu_tien'] ?? false),
             'GhiChu' => trim((string) ($data['ghi_chu'] ?? '')) ?: null,
         ], auth()->id()));
@@ -340,7 +423,8 @@ class ThuTienHocVienController extends Controller
             $q->where('MaKhoaHoc', $filters['ma_kh']);
         }
         if (in_array($filters['tot_nghiep'], ['0', '1'], true)) {
-            $q->where('DaTotNghiep', $filters['tot_nghiep'] === '1');
+            $maTheoTn = self::maDkTheoKetLuanCsdT($filters['tot_nghiep'] === '1');
+            $q->whereIn('MaDK', $maTheoTn ?: ['']);
         }
         if (in_array($filters['thu_tien'], ['0', '1'], true)) {
             $q->where('DaThuTien', $filters['thu_tien'] === '1');
@@ -419,9 +503,30 @@ class ThuTienHocVienController extends Controller
         return NguoiLX::query()
             ->from('NguoiLX as n')
             ->leftJoin('NguoiLX_HoSo as h', 'h.MaDK', '=', 'n.MaDK')
+            ->leftJoin('KhoaHoc as kh', 'kh.MaKH', '=', 'h.MaKhoaHoc')
             ->select([
                 'n.MaDK', 'n.HoDemNLX', 'n.TenNLX', 'n.HoVaTen', 'n.NgaySinh', 'n.GioiTinh', 'n.SoCMT', 'n.TrangThai',
-                'h.SoHoSo', 'h.MaKhoaHoc', 'h.HangGPLX',
+                'h.SoHoSo', 'h.MaKhoaHoc', 'h.HangGPLX', 'h.KetLuanCSDT',
+                'kh.TenKH as TenKhoaHoc',
             ]);
+    }
+
+    /** @return list<string> */
+    private static function maDkTheoKetLuanCsdT(bool $daTotNghiep): array
+    {
+        $q = NguoiLX::query()
+            ->from('NguoiLX as n')
+            ->join('NguoiLX_HoSo as h', 'h.MaDK', '=', 'n.MaDK');
+
+        if ($daTotNghiep) {
+            $q->where('h.KetLuanCSDT', 1);
+        } else {
+            $q->where(function (Builder $w): void {
+                $w->whereNull('h.KetLuanCSDT')
+                    ->orWhere('h.KetLuanCSDT', '!=', 1);
+            });
+        }
+
+        return $q->pluck('n.MaDK')->map(fn ($m) => (string) $m)->all();
     }
 }
