@@ -54,6 +54,9 @@
                     <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-dao-tao') }}" class="list-group-item list-group-item-action pl-4">
                         Nhập kết quả đào tạo
                     </a>
+                    <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-sat-hach') }}" class="list-group-item list-group-item-action pl-4">
+                        Nhập kết quả sát hạch
+                    </a>
                     <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban') }}" class="list-group-item list-group-item-action pl-4">
                         Nhập XML xuất biên bản
                     </a>

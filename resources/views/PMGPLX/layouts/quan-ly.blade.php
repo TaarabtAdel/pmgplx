@@ -487,6 +487,10 @@
                                href="{{ route('daotao.pdt.bc.luu-luong-dao-tao') }}">
                                 Báo cáo Lưu lượng đào tạo
                             </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.bc.thu-tien-hoc-vien*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.bc.thu-tien-hoc-vien') }}">
+                                Quản lý thu tiền học viên
+                            </a>
                         </div>
                     </div>
                     <div class="dropdown-submenu">
@@ -509,6 +513,10 @@
                             <a class="dropdown-item {{ request()->routeIs('daotao.pdt.cong-cu-nhap.nhap-ket-qua-dao-tao*') ? 'active' : '' }}"
                                href="{{ route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-dao-tao') }}">
                                 Nhập kết quả đào tạo
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.cong-cu-nhap.nhap-ket-qua-sat-hach*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-sat-hach') }}">
+                                Nhập kết quả sát hạch
                             </a>
                             <a class="dropdown-item {{ request()->routeIs('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban*') ? 'active' : '' }}"
                                href="{{ route('daotao.pdt.cong-cu-nhap.nhap-xml-bien-ban') }}">
