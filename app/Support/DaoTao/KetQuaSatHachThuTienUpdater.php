@@ -4,7 +4,6 @@ namespace App\Support\DaoTao;
 
 use App\Models\DaoTao\ThuTienHocVien;
 use App\Models\PMGPLX\NguoiLX;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class KetQuaSatHachThuTienUpdater
@@ -38,9 +37,8 @@ class KetQuaSatHachThuTienUpdater
         $rows = [];
         $meta = [
             'record_count' => count($records),
-            'pmglx_matched' => 0,
             'matched' => 0,
-            'will_add_thu_tien' => 0,
+            'not_in_thu_tien' => 0,
             'will_update' => 0,
             'skip' => 0,
             'mon_cap_nhat' => 0,
@@ -49,16 +47,11 @@ class KetQuaSatHachThuTienUpdater
         foreach ($records as $record) {
             $row = $this->analyzeOne($record, $pmglxIndex, $thuTienByMaDk);
             $rows[] = $row;
-            if (in_array($row['status'], ['matched', 'will_add_thu_tien'], true)) {
-                $meta['pmglx_matched']++;
-            }
             if ($row['status'] === 'matched') {
                 $meta['matched']++;
-            }
-            if ($row['status'] === 'will_add_thu_tien') {
-                $meta['will_add_thu_tien']++;
-            }
-            if (! in_array($row['status'], ['matched', 'will_add_thu_tien'], true)) {
+            } elseif ($row['status'] === 'not_in_thu_tien') {
+                $meta['not_in_thu_tien']++;
+            } else {
                 $meta['skip']++;
             }
             if ($row['will_apply']) {
@@ -82,18 +75,12 @@ class KetQuaSatHachThuTienUpdater
 
         DB::connection('sqlsrv_manhlinh')->transaction(function () use ($analysis, $nguoiId, &$updatedHv, &$updatedMon, &$skipped): void {
             foreach ($analysis['rows'] as $row) {
-                if (! $row['will_apply'] || empty($row['ma_dk'])) {
+                if (! $row['will_apply'] || empty($row['thu_tien_id'])) {
                     $skipped++;
 
                     continue;
                 }
-                $tt = $this->resolveThuTienForApply($row, $nguoiId);
-                if (! $tt) {
-                    $skipped++;
-
-                    continue;
-                }
-                $tt = ThuTienHocVien::query()->lockForUpdate()->find($tt->Id);
+                $tt = ThuTienHocVien::query()->lockForUpdate()->find($row['thu_tien_id']);
                 if (! $tt) {
                     $skipped++;
 
@@ -181,11 +168,20 @@ class KetQuaSatHachThuTienUpdater
         foreach (KetQuaSatHachExcelParser::MON as $khoan => $cols) {
             /** @var array{kq: ?string, kq_raw: string, lan: int} $src */
             $src = $record['mon'][$khoan] ?? ['kq' => null, 'kq_raw' => '', 'lan' => 1];
-            if ($tt) {
-                $monRows[$khoan] = $this->planMon($tt, $khoan, $src['kq'], (int) $src['lan'], $src['kq_raw']);
-            } else {
-                $monRows[$khoan] = $this->planMonMoi($khoan, $src['kq'], (int) $src['lan'], $src['kq_raw']);
+            if (! $tt) {
+                $monRows[$khoan] = [
+                    'nhan' => KetQuaSatHachExcelParser::MON[$khoan]['nhan'],
+                    'kq_raw' => $src['kq_raw'],
+                    'kq' => $src['kq'],
+                    'lan' => (int) $src['lan'],
+                    'hien_tai' => '—',
+                    'action' => 'bo_qua',
+                    'ghi_chu' => 'Chưa có trong danh sách thu tiền',
+                ];
+
+                continue;
             }
+            $monRows[$khoan] = $this->planMon($tt, $khoan, $src['kq'], (int) $src['lan'], $src['kq_raw']);
             if ($monRows[$khoan]['action'] === 'cap_nhat') {
                 $willApply = true;
             }
@@ -197,21 +193,23 @@ class KetQuaSatHachThuTienUpdater
             'hang_pmglx' => $match['hang_gplx'],
             'hang_dao_tao' => $match['hang_dao_tao'],
             'mon' => $monRows,
-            'will_apply' => $willApply,
+            'will_apply' => false,
         ];
 
-        if ($tt) {
+        if (! $tt) {
             return array_merge($base, $shared, [
-                'status' => 'matched',
-                'message' => '',
-                'thu_tien_id' => $tt->Id,
+                'status' => 'not_in_thu_tien',
+                'message' => 'Khớp PMGPLX (HangGPLX '.($match['hang_gplx'] ?? '').') nhưng chưa có trong danh sách thu tiền — thêm học viên trước, không tạo mới khi import.',
+                'thu_tien_id' => null,
             ]);
         }
 
+        $shared['will_apply'] = $willApply;
+
         return array_merge($base, $shared, [
-            'status' => 'will_add_thu_tien',
-            'message' => 'Khớp PMGPLX (HangGPLX '.$match['hang_gplx'].') — chưa có trong danh sách thu tiền, sẽ thêm khi xác nhận.',
-            'thu_tien_id' => null,
+            'status' => 'matched',
+            'message' => '',
+            'thu_tien_id' => $tt->Id,
         ]);
     }
 
@@ -302,73 +300,6 @@ class KetQuaSatHachThuTienUpdater
         }
 
         return array_values($uniq);
-    }
-
-    /**
-     * @param  array<string, mixed>  $row
-     */
-    private function resolveThuTienForApply(array $row, ?int $nguoiId): ?ThuTienHocVien
-    {
-        $maDk = (string) ($row['ma_dk'] ?? '');
-        if ($maDk === '') {
-            return null;
-        }
-
-        $existing = ThuTienHocVien::query()->where('MaDK', $maDk)->first();
-        if ($existing) {
-            return $existing;
-        }
-
-        $maKh = trim((string) ($row['ma_khoa_hoc'] ?? ''));
-        if ($maKh === '') {
-            $maKh = (string) NguoiLX::query()
-                ->from('NguoiLX as n')
-                ->leftJoin('NguoiLX_HoSo as h', 'h.MaDK', '=', 'n.MaDK')
-                ->where('n.MaDK', $maDk)
-                ->value('h.MaKhoaHoc');
-        }
-
-        $now = Carbon::now();
-
-        return ThuTienHocVien::query()->create([
-            'MaDK' => $maDk,
-            'MaKhoaHoc' => $maKh !== '' ? $maKh : null,
-            'DaTotNghiep' => false,
-            'DaThuTien' => false,
-            'DaXuLy' => false,
-            'NguoiTaoId' => $nguoiId,
-            'NgayTao' => $now,
-            'NgayCapNhat' => $now,
-        ]);
-    }
-
-    /**
-     * @return array{nhan: string, kq_raw: string, kq: ?string, lan: int, hien_tai: string, action: string, ghi_chu: string}
-     */
-    private function planMonMoi(string $khoan, ?string $targetKq, int $targetLan, string $kqRaw): array
-    {
-        $nhan = KetQuaSatHachExcelParser::MON[$khoan]['nhan'];
-        if ($targetKq === null) {
-            return [
-                'nhan' => $nhan,
-                'kq_raw' => $kqRaw,
-                'kq' => null,
-                'lan' => $targetLan,
-                'hien_tai' => 'Chưa thi',
-                'action' => 'bo_qua',
-                'ghi_chu' => 'Chưa thi (—)',
-            ];
-        }
-
-        return [
-            'nhan' => $nhan,
-            'kq_raw' => $kqRaw,
-            'kq' => $targetKq,
-            'lan' => $targetLan,
-            'hien_tai' => 'Chưa thi',
-            'action' => 'cap_nhat',
-            'ghi_chu' => 'Ghi lần '.$targetLan.' · '.ThuTienHocVien::NHAN_KQ[$targetKq],
-        ];
     }
 
     /**

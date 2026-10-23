@@ -18,8 +18,9 @@
                 Hệ thống xem trước <strong>tất cả</strong> dòng, đối chiếu <strong>Số định danh</strong> (cột F) với <strong>Số CMT</strong>
                 và <strong>Hạng</strong> (cột I) với PMGPLX (<code>HangGPLX</code> / <code>HangDaoTao</code>), giống
                 <a href="{{ route('pmgplx.dm.hoc-vien.index') }}">Danh mục học viên</a>.
-                Kết quả thi ghi vào <a href="{{ route('daotao.pdt.bc.thu-tien-hoc-vien') }}">Quản lý thu tiền học viên</a>
-                (học viên chưa có trong danh sách sẽ được <strong>thêm tự động</strong> khi xác nhận).
+                Chỉ <strong>cập nhật</strong> học viên đã có trong
+                <a href="{{ route('daotao.pdt.bc.thu-tien-hoc-vien') }}">Quản lý thu tiền học viên</a>
+                (không tạo mới — cần thêm học viên vào danh sách thu tiền trước).
                 <ul class="mb-0 mt-2 small">
                     <li>Lý thuyết: cột L + số lần M · Sa hình: N + O · Đường: P + Q</li>
                     <li><strong>Đ</strong> → Đậu · <strong>KĐ</strong> → Rớt · <strong>—</strong> → bỏ qua môn đó</li>

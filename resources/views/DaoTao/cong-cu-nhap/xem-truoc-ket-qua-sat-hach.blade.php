@@ -27,9 +27,8 @@
             <div><strong>Sheet:</strong> {{ $preview['sheet_name'] ?? '' }}</div>
             <div>
                 <strong>Dòng file:</strong> {{ number_format((int) ($meta['record_count'] ?? count($rows))) }}
-                · <strong>Khớp PMGPLX:</strong> {{ number_format((int) ($meta['pmglx_matched'] ?? 0)) }}
-                · <strong>Đã có thu tiền:</strong> {{ number_format((int) ($meta['matched'] ?? 0)) }}
-                · <strong>Sẽ thêm thu tiền:</strong> {{ number_format((int) ($meta['will_add_thu_tien'] ?? 0)) }}
+                · <strong>Trong danh sách thu tiền:</strong> {{ number_format((int) ($meta['matched'] ?? 0)) }}
+                · <strong>Chưa có thu tiền:</strong> {{ number_format((int) ($meta['not_in_thu_tien'] ?? 0)) }}
                 · <strong>Sẽ cập nhật KQ:</strong> {{ number_format((int) ($meta['will_update'] ?? 0)) }}
                 · <strong>Lượt môn:</strong> {{ number_format((int) ($meta['mon_cap_nhat'] ?? 0)) }}
             </div>
@@ -64,7 +63,8 @@
                         @foreach ($rows as $row)
                             @php
                                 $trClass = match ($row['status'] ?? '') {
-                                    'matched', 'will_add_thu_tien' => ($row['will_apply'] ?? false) ? 'row-will-update' : 'row-skip',
+                                    'matched' => ($row['will_apply'] ?? false) ? 'row-will-update' : 'row-skip',
+                                    'not_in_thu_tien' => 'row-error',
                                     default => 'row-error',
                                 };
                                 $fmtMon = static function (array $mon): string {
@@ -109,12 +109,8 @@
                                         @else
                                             <span class="text-muted">Khớp · không đổi</span>
                                         @endif
-                                    @elseif (($row['status'] ?? '') === 'will_add_thu_tien')
-                                        @if ($row['will_apply'] ?? false)
-                                            <span class="text-warning">Khớp PMGPLX · thêm thu tiền + KQ</span>
-                                        @else
-                                            <span class="text-info">Khớp PMGPLX · thêm thu tiền</span>
-                                        @endif
+                                    @elseif (($row['status'] ?? '') === 'not_in_thu_tien')
+                                        <span class="text-danger">Chưa có trong danh sách thu tiền</span>
                                         @if (! empty($row['message']))
                                             <br><small>{{ $row['message'] }}</small>
                                         @endif
