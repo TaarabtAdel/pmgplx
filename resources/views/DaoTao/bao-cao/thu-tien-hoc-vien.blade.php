@@ -37,10 +37,27 @@
 
 @section('content')
     @php
-        $moThemHv = $themKh !== '' || request()->boolean('mo_them');
+        use App\Http\Controllers\DaoTao\ThuTienHocVienController as ThuTienCtrl;
+        $tab = $tab ?? ($filters['tab'] ?? ThuTienCtrl::TAB_DANG_XU_LY);
+        $laDaXuLy = $tab === ThuTienCtrl::TAB_DA_XU_LY;
+        $moThemHv = ! $laDaXuLy && ($themKh !== '' || request()->boolean('mo_them'));
+        $queryGiuLoc = array_merge(request()->except(['page', 'them_kh']), ['tab' => $tab]);
+        $urlTabDang = route('daotao.pdt.bc.thu-tien-hoc-vien', array_merge($queryGiuLoc, ['tab' => ThuTienCtrl::TAB_DANG_XU_LY]));
+        $urlTabDa = route('daotao.pdt.bc.thu-tien-hoc-vien', array_merge($queryGiuLoc, ['tab' => ThuTienCtrl::TAB_DA_XU_LY]));
         // Ẩn danh sách học viên của khoá: bỏ them_kh, giữ bộ lọc, accordion vẫn mở để chọn khoá khác.
-        $urlBoChonKhoa = route('daotao.pdt.bc.thu-tien-hoc-vien', array_merge(request()->except(['them_kh', 'page']), ['mo_them' => 1]));
+        $urlBoChonKhoa = route('daotao.pdt.bc.thu-tien-hoc-vien', array_merge(request()->except(['them_kh', 'page']), ['mo_them' => 1, 'tab' => ThuTienCtrl::TAB_DANG_XU_LY]));
     @endphp
+
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link {{ ! $laDaXuLy ? 'active font-weight-bold' : '' }}" href="{{ $urlTabDang }}">Danh sách thu tiền học viên</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{ $laDaXuLy ? 'active font-weight-bold' : '' }}" href="{{ $urlTabDa }}">Danh sách đã xử lý</a>
+        </li>
+    </ul>
+
+    @if (! $laDaXuLy)
     <div class="card card-panel">
         <div class="card-header d-flex align-items-center">
             <span class="mr-auto">Thêm học viên vào danh sách thu tiền</span>
@@ -52,6 +69,7 @@
         <div class="collapse {{ $moThemHv ? 'show' : '' }}" id="khung-them-hv">
         <div class="card-body">
             <form method="GET" action="{{ route('daotao.pdt.bc.thu-tien-hoc-vien') }}" class="form-row align-items-end">
+                <input type="hidden" name="tab" value="{{ ThuTienCtrl::TAB_DANG_XU_LY }}">
                 @foreach (array_filter(['tu_khoa' => $filters['tu_khoa'], 'ma_kh' => $filters['ma_kh'], 'tot_nghiep' => $filters['tot_nghiep'], 'thu_tien' => $filters['thu_tien'], 'can_thu' => $filters['can_thu']]) as $k => $v)
                     <input type="hidden" name="{{ $k }}" value="{{ $v }}">
                 @endforeach
@@ -144,11 +162,13 @@
         </div>
         </div>
     </div>
+    @endif
 
     <div class="card card-panel">
-        <div class="card-header">Tìm kiếm</div>
+        <div class="card-header">Tìm kiếm{{ $laDaXuLy ? ' — đã xử lý' : '' }}</div>
         <div class="card-body">
             <form method="GET" action="{{ route('daotao.pdt.bc.thu-tien-hoc-vien') }}" class="form-row align-items-end">
+                <input type="hidden" name="tab" value="{{ $tab }}">
                 <div class="form-group col-md-2 mb-0">
                     <label>Mã ĐK|Họ tên|CMT|Số hồ sơ</label>
                     <input type="text" class="form-control form-control-sm" name="tu_khoa" value="{{ $filters['tu_khoa'] }}" placeholder="Nhập từ khoá">
@@ -192,14 +212,14 @@
                 </div>
                 <div class="form-group col-md-2 mb-0">
                     <button type="submit" class="btn btn-sm btn-primary btn-block">Tìm kiếm</button>
-                    <a href="{{ route('daotao.pdt.bc.thu-tien-hoc-vien') }}" class="btn btn-sm btn-outline-secondary btn-block mt-1" title="Làm mới">↻</a>
+                    <a href="{{ route('daotao.pdt.bc.thu-tien-hoc-vien', ['tab' => $tab]) }}" class="btn btn-sm btn-outline-secondary btn-block mt-1" title="Làm mới">↻</a>
                 </div>
             </form>
         </div>
     </div>
 
     <div class="card card-panel">
-        <div class="card-header">Danh sách thu tiền học viên</div>
+        <div class="card-header">{{ $laDaXuLy ? 'Danh sách đã xử lý' : 'Danh sách thu tiền học viên' }}</div>
         <div class="card-body">
             <form method="POST" action="{{ route('daotao.pdt.bc.thu-tien-hoc-vien.hang-loat') }}" id="form-hang-loat">
                 @csrf
@@ -215,9 +235,14 @@
                     <button type="button" class="btn btn-info btn-hang-loat" data-hanh-dong="tot_nghiep">✔ Đã tốt nghiệp</button>
                     <button type="button" class="btn btn-outline-info btn-hang-loat" data-hanh-dong="bo_tot_nghiep">Bỏ tốt nghiệp</button>
                 </div>
+                @if ($laDaXuLy)
+                    <button type="button" class="btn btn-sm btn-outline-primary mr-2 mb-2 btn-hang-loat" data-hanh-dong="chuyen_dang_xu_ly">← Về danh sách thu tiền</button>
+                @else
+                    <button type="button" class="btn btn-sm btn-outline-secondary mr-2 mb-2 btn-hang-loat" data-hanh-dong="chuyen_da_xu_ly">→ Chuyển sang đã xử lý</button>
+                @endif
                 <button type="button" class="btn btn-sm btn-outline-danger mr-2 mb-2 btn-hang-loat" data-hanh-dong="xoa">✕ Xoá khỏi danh sách</button>
                 <span class="small text-muted mb-2 mr-auto">Đã chọn <strong id="so-tick">0</strong></span>
-                <a href="{{ route('daotao.pdt.bc.thu-tien-hoc-vien.export', array_filter(request()->only(['tu_khoa', 'ma_kh', 'tot_nghiep', 'thu_tien', 'can_thu']), fn ($v) => $v !== null && $v !== '')) }}"
+                <a href="{{ route('daotao.pdt.bc.thu-tien-hoc-vien.export', array_filter(array_merge(request()->only(['tu_khoa', 'ma_kh', 'tot_nghiep', 'thu_tien', 'can_thu', 'tab']), ['tab' => $tab]), fn ($v) => $v !== null && $v !== '')) }}"
                    class="btn btn-sm btn-outline-success mr-3 mb-2"
                    title="Xuất toàn bộ {{ number_format($items->total()) }} học viên theo bộ lọc hiện tại (không phân trang)">⬇ Xuất Excel ({{ number_format($items->total()) }})</a>
 
@@ -343,6 +368,7 @@
                                             data-url-lan-thi="{{ route('daotao.pdt.bc.thu-tien-hoc-vien.lan-thi.store', $row->Id) }}"
                                             data-ten="{{ $row->MaDK }} — {{ $hoTen }}"
                                             data-tot-nghiep="{{ (int) ThuTienHocVien::daTotNghiepHienThi($hv, (bool) $row->DaTotNghiep) }}"
+                                            data-da-xu-ly="{{ (int) $row->DaXuLy }}"
                                             data-thu-tien="{{ (int) $row->DaThuTien }}"
                                             data-ghi-chu="{{ $row->GhiChu }}"
                                             title="Sửa">✎</button>
@@ -402,6 +428,12 @@
                         <label class="custom-control-label" for="sua-tot-nghiep">Đã tốt nghiệp (thủ công)</label>
                     </div>
                     <p class="small text-muted mb-2"><code>KetLuanCSDT = 1</code> trên PMGPLX sẽ tự bật khi mở danh sách.</p>
+                    <div class="custom-control custom-checkbox mb-2">
+                        <input type="hidden" name="da_xu_ly" value="0">
+                        <input type="checkbox" class="custom-control-input" id="sua-da-xu-ly" name="da_xu_ly" value="1">
+                        <label class="custom-control-label" for="sua-da-xu-ly">Đã xử lý (tab riêng)</label>
+                    </div>
+                    <p class="small text-muted mb-2">Tự chuyển sang tab «Đã xử lý» khi <strong>Lý thuyết + Sa hình + Đường</strong> đều <strong>Đậu</strong>.</p>
                     <div class="custom-control custom-checkbox mb-3">
                         <input type="hidden" name="da_thu_tien" value="0">
                         <input type="checkbox" class="custom-control-input" id="sua-thu-tien" name="da_thu_tien" value="1">
@@ -844,6 +876,7 @@
             thongBaoKq('', '');
             document.getElementById('sua-ten').textContent = d.ten;
             document.getElementById('sua-tot-nghiep').checked = d.totNghiep === '1';
+            document.getElementById('sua-da-xu-ly').checked = d.daXuLy === '1';
             document.getElementById('sua-thu-tien').checked = d.thuTien === '1';
             document.getElementById('sua-ghi-chu').value = d.ghiChu || '';
             document.getElementById('sua-ngay-thi').value = new Date().toISOString().slice(0, 10);

@@ -29,6 +29,10 @@ class ThuTienHocVienController extends Controller
 {
     private const SO_DONG_TRANG = [20, 50, 100, 200];
 
+    public const TAB_DANG_XU_LY = 'dang_xu_ly';
+
+    public const TAB_DA_XU_LY = 'da_xu_ly';
+
     public function index(Request $request): View
     {
         $filters = self::boLoc($request);
@@ -47,7 +51,11 @@ class ThuTienHocVienController extends Controller
 
         $themKh = trim((string) $request->input('them_kh', ''));
         $khoaHocs = KhoaHoc::query()->orderByDesc('TenKH')->get(['MaKH', 'TenKH']);
-        $maTrongDanhSach = ThuTienHocVien::query()->whereNotNull('MaKhoaHoc')->distinct()->pluck('MaKhoaHoc')
+        $maTrongDanhSach = ThuTienHocVien::query()
+            ->where('DaXuLy', $filters['tab'] === self::TAB_DA_XU_LY)
+            ->whereNotNull('MaKhoaHoc')
+            ->distinct()
+            ->pluck('MaKhoaHoc')
             ->map(fn ($m) => (string) $m)->flip();
 
         return view('DaoTao.bao-cao.thu-tien-hoc-vien', [
@@ -56,6 +64,7 @@ class ThuTienHocVienController extends Controller
             'tong' => ThuTienHocVien::tongTheoKhoan($this->locDanhSach($filters)),
             'tongPhaiThu' => ThuTienHocVien::tongPhaiThuTheoKhoan($this->locDanhSach($filters)),
             'filters' => $filters,
+            'tab' => $filters['tab'],
             'khoaHocs' => $khoaHocs,
             'tenKhoa' => $khoaHocs->mapWithKeys(fn ($kh) => [(string) $kh->MaKH => (string) $kh->TenKH]),
             // Lọc theo khoá: chỉ các khoá đã có học viên trong danh sách, hiện "Tên khoá (Mã khoá)" như ô Chọn khoá.
@@ -64,8 +73,8 @@ class ThuTienHocVienController extends Controller
                     ->diff($khoaHocs->pluck('MaKH')->map(fn ($m) => (string) $m))
                     ->map(fn (string $ma) => (object) ['MaKH' => $ma, 'TenKH' => null]))
                 ->values(),
-            'themKh' => $themKh,
-            'ungVien' => $themKh !== '' ? self::hocVienCuaKhoa($themKh) : null,
+            'themKh' => $filters['tab'] === self::TAB_DANG_XU_LY ? $themKh : '',
+            'ungVien' => ($filters['tab'] === self::TAB_DANG_XU_LY && $themKh !== '') ? self::hocVienCuaKhoa($themKh) : null,
         ]);
     }
 
@@ -103,12 +112,14 @@ class ThuTienHocVienController extends Controller
         return ThuTienHocVienExcelExporter::download($rows, $hocVienExport, $moTa, $tenFile);
     }
 
-    /** @return array{tu_khoa: string, ma_kh: string, tot_nghiep: string, thu_tien: string, can_thu: string, per_page: int} */
+    /** @return array{tab: string, tu_khoa: string, ma_kh: string, tot_nghiep: string, thu_tien: string, can_thu: string, per_page: int} */
     private static function boLoc(Request $request): array
     {
         $perPage = (int) $request->input('per_page', 50);
+        $tab = (string) $request->input('tab', self::TAB_DANG_XU_LY);
 
         return [
+            'tab' => $tab === self::TAB_DA_XU_LY ? self::TAB_DA_XU_LY : self::TAB_DANG_XU_LY,
             'tu_khoa' => trim((string) $request->input('tu_khoa', '')),
             'ma_kh' => trim((string) $request->input('ma_kh', '')),
             'tot_nghiep' => (string) $request->input('tot_nghiep', ''),
@@ -168,6 +179,7 @@ class ThuTienHocVienController extends Controller
                 'MaKhoaHoc' => $row['MaKhoaHoc'],
                 'DaTotNghiep' => false,
                 'DaThuTien' => false,
+                'DaXuLy' => false,
                 'NguoiTaoId' => auth()->id(),
                 'NgayTao' => $now,
                 'NgayCapNhat' => $now,
@@ -177,7 +189,10 @@ class ThuTienHocVienController extends Controller
         $redirectMaKh = $maKhForm !== '' ? $maKhForm : ($moi[0]['MaKhoaHoc'] ?? '');
 
         return redirect()
-            ->route('daotao.pdt.bc.thu-tien-hoc-vien', array_filter(['ma_kh' => $redirectMaKh]))
+            ->route('daotao.pdt.bc.thu-tien-hoc-vien', array_filter([
+                'ma_kh' => $redirectMaKh,
+                'tab' => self::TAB_DANG_XU_LY,
+            ]))
             ->with('success', 'Đã thêm '.count($moi).' học viên vào danh sách'
                 .($daCo->count() ? ' (bỏ qua '.$daCo->count().' học viên đã có)' : '').'.');
     }
@@ -216,9 +231,18 @@ class ThuTienHocVienController extends Controller
             ->pluck('MaDK')
             ->map(fn ($m) => (string) $m)
             ->flip();
+        $daXuLy = ThuTienHocVien::query()
+            ->where('DaXuLy', true)
+            ->whereIn('MaDK', $maDks ?: [''])
+            ->pluck('MaDK')
+            ->map(fn ($m) => (string) $m)
+            ->flip();
 
-        $results = $rows->take($perPage)->map(function ($row) use ($daCo): array {
+        $results = $rows->take($perPage)->map(function ($row) use ($daCo, $daXuLy): array {
             $maDk = (string) $row->MaDK;
+            if ($daXuLy->has($maDk)) {
+                return null;
+            }
             $ten = $row->HoVaTen ?: trim(($row->HoDemNLX ?? '').' '.($row->TenNLX ?? ''));
             $ns = NgayVn::format($row->NgaySinh, 'yyyymmdd');
             $cmt = trim((string) ($row->SoCMT ?? ''));
@@ -232,7 +256,7 @@ class ThuTienHocVienController extends Controller
                 'text' => $text.($daCo->has($maDk) ? ' — đã có trong danh sách' : ''),
                 'disabled' => $daCo->has($maDk),
             ];
-        })->values()->all();
+        })->filter()->values()->all();
 
         return response()->json([
             'results' => $results,
@@ -244,7 +268,7 @@ class ThuTienHocVienController extends Controller
     public function hangLoat(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'hanh_dong' => ['required', Rule::in(['thu_tien', 'bo_thu_tien', 'tot_nghiep', 'bo_tot_nghiep', 'xoa'])],
+            'hanh_dong' => ['required', Rule::in(['thu_tien', 'bo_thu_tien', 'tot_nghiep', 'bo_tot_nghiep', 'chuyen_da_xu_ly', 'chuyen_dang_xu_ly', 'xoa'])],
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer'],
         ], [
@@ -269,6 +293,8 @@ class ThuTienHocVienController extends Controller
             'bo_thu_tien' => [$doiThuTien(false), 'bỏ đã thu tiền'],
             'tot_nghiep' => [(clone $q)->update(['DaTotNghiep' => true, 'NgayCapNhat' => $now]), 'đánh dấu đã tốt nghiệp'],
             'bo_tot_nghiep' => [(clone $q)->update(['DaTotNghiep' => false, 'NgayCapNhat' => $now]), 'bỏ đã tốt nghiệp (thủ công)'],
+            'chuyen_da_xu_ly' => [(clone $q)->update(['DaXuLy' => true, 'NgayCapNhat' => $now]), 'chuyển sang tab đã xử lý'],
+            'chuyen_dang_xu_ly' => [(clone $q)->update(['DaXuLy' => false, 'NgayCapNhat' => $now]), 'chuyển về danh sách thu tiền'],
             'xoa' => [(clone $q)->delete(), 'xoá khỏi danh sách'],
         };
 
@@ -280,14 +306,18 @@ class ThuTienHocVienController extends Controller
         $data = $request->validate([
             'da_tot_nghiep' => ['boolean'],
             'da_thu_tien' => ['boolean'],
+            'da_xu_ly' => ['boolean'],
             'ghi_chu' => ['nullable', 'string', 'max:500'],
         ]);
 
-        DB::connection('sqlsrv_manhlinh')->transaction(fn () => $thuTien->capNhatTrangThai([
-            'DaTotNghiep' => (bool) ($data['da_tot_nghiep'] ?? false),
-            'DaThuTien' => (bool) ($data['da_thu_tien'] ?? false),
-            'GhiChu' => trim((string) ($data['ghi_chu'] ?? '')) ?: null,
-        ], auth()->id()));
+        DB::connection('sqlsrv_manhlinh')->transaction(function () use ($thuTien, $data): void {
+            $thuTien->capNhatTrangThai([
+                'DaTotNghiep' => (bool) ($data['da_tot_nghiep'] ?? false),
+                'DaThuTien' => (bool) ($data['da_thu_tien'] ?? false),
+                'DaXuLy' => (bool) ($data['da_xu_ly'] ?? false),
+                'GhiChu' => trim((string) ($data['ghi_chu'] ?? '')) ?: null,
+            ], auth()->id());
+        });
 
         return back()->with('success', 'Đã cập nhật học viên '.$thuTien->MaDK.'.');
     }
@@ -428,7 +458,7 @@ class ThuTienHocVienController extends Controller
     /** @param  array<string, mixed>  $filters */
     private function locDanhSach(array $filters): Builder
     {
-        $q = ThuTienHocVien::query();
+        $q = ThuTienHocVien::query()->where('DaXuLy', $filters['tab'] === self::TAB_DA_XU_LY);
         if ($filters['ma_kh'] !== '') {
             $q->where('MaKhoaHoc', $filters['ma_kh']);
         }
@@ -508,15 +538,19 @@ class ThuTienHocVienController extends Controller
             ->orderByRaw('n.HoDemNLX COLLATE Vietnamese_CI_AS ASC')
             ->orderBy('n.MaDK')
             ->get();
-        $daCo = ThuTienHocVien::query()
-            ->whereIn('MaDK', $ds->pluck('MaDK')->map(fn ($m) => (string) $m)->all() ?: [''])
-            ->pluck('MaDK')
-            ->map(fn ($m) => (string) $m)
-            ->flip();
+        $maDks = $ds->pluck('MaDK')->map(fn ($m) => (string) $m)->all();
+        $trongThuTien = ThuTienHocVien::query()
+            ->whereIn('MaDK', $maDks ?: [''])
+            ->get(['MaDK', 'DaXuLy'])
+            ->keyBy(fn ($r) => (string) $r->MaDK);
 
-        return $ds->each(function ($r) use ($daCo): void {
-            $r->da_co = $daCo->has((string) $r->MaDK);
-        });
+        return $ds->filter(function ($r) use ($trongThuTien): bool {
+            $tt = $trongThuTien->get((string) $r->MaDK);
+
+            return ! $tt || ! $tt->DaXuLy;
+        })->each(function ($r) use ($trongThuTien): void {
+            $r->da_co = $trongThuTien->has((string) $r->MaDK);
+        })->values();
     }
 
     private static function truyVanHocVien(): Builder

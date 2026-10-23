@@ -61,6 +61,7 @@ class ThuTienHocVien extends Model
         'MaKhoaHoc',
         'DaTotNghiep',
         'DaThuTien',
+        'DaXuLy',
         'NgayThuTien',
         'KetQuaLyThuyet',
         'KetQuaSaHinh',
@@ -74,6 +75,7 @@ class ThuTienHocVien extends Model
     protected $casts = [
         'DaTotNghiep' => 'boolean',
         'DaThuTien' => 'boolean',
+        'DaXuLy' => 'boolean',
         'NgayThuTien' => 'datetime',
         'NgayTao' => 'datetime',
         'NgayCapNhat' => 'datetime',
@@ -147,6 +149,7 @@ class ThuTienHocVien extends Model
         $this->{$cot} = $ketQua;
         $this->NgayCapNhat = $now;
         $this->save();
+        $this->capNhatTrangThaiXuLyTuKetQua();
 
         return $lanThi;
     }
@@ -170,6 +173,37 @@ class ThuTienHocVien extends Model
         ]);
         $this->{self::COT_KET_QUA[$khoan]} = $this->lanThis()->where('Khoan', $khoan)->orderByDesc('LanThi')->value('KetQua');
         $this->NgayCapNhat = $now;
+        $this->save();
+        $this->capNhatTrangThaiXuLyTuKetQua();
+    }
+
+    /** Cả 3 môn LT / Sa hình / Đường đều đậu. */
+    public function duDieuKienTuDongXuLy(): bool
+    {
+        foreach (self::COT_KET_QUA as $cot) {
+            if ($this->{$cot} !== self::DAU) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /** Tự bật «Đã xử lý» khi đủ 3 môn đậu; tắt khi không còn đủ (vd huỷ lần thi). */
+    public function capNhatTrangThaiXuLyTuKetQua(): void
+    {
+        if ($this->duDieuKienTuDongXuLy()) {
+            if ($this->DaXuLy) {
+                return;
+            }
+            $this->DaXuLy = true;
+        } else {
+            if (! $this->DaXuLy) {
+                return;
+            }
+            $this->DaXuLy = false;
+        }
+        $this->NgayCapNhat = Carbon::now();
         $this->save();
     }
 

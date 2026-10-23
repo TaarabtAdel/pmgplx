@@ -111,6 +111,7 @@ class KetQuaSatHachThuTienUpdater
                     $tt->refresh();
                 }
                 if ($changed > 0) {
+                    $tt->capNhatTrangThaiXuLyTuKetQua();
                     $updatedHv++;
                     $updatedMon += $changed;
                 } else {
@@ -334,6 +335,7 @@ class KetQuaSatHachThuTienUpdater
             'MaKhoaHoc' => $maKh !== '' ? $maKh : null,
             'DaTotNghiep' => false,
             'DaThuTien' => false,
+            'DaXuLy' => false,
             'NguoiTaoId' => $nguoiId,
             'NgayTao' => $now,
             'NgayCapNhat' => $now,
