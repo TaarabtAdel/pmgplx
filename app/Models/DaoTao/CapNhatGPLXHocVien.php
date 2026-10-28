@@ -4,6 +4,7 @@ namespace App\Models\DaoTao;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Cập nhật GPLX học viên. Bảng CapNhatGPLXHocVien (MANHLINH) chỉ giữ MaDK + trạng thái / số GPLX mới;
@@ -67,5 +68,10 @@ class CapNhatGPLXHocVien extends Model
         $this->fill(array_diff_key($thayDoi, array_flip(['DaCapNhatGPLX'])));
         $this->NgayCapNhat = $now;
         $this->save();
+    }
+
+    public function boSung(): HasOne
+    {
+        return $this->hasOne(CapNhatGPLXHocVienBoSung::class, 'CapNhatGPLXHocVienId', 'Id');
     }
 }

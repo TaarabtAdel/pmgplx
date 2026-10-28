@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DaoTao\CapNhatGPLXHocVien;
 use App\Models\PMGPLX\KhoaHoc;
 use App\Models\PMGPLX\NguoiLX;
+use App\Support\DaoTao\CapNhatGPLXHienThi;
 use App\Support\DaoTao\CapNhatGPLXHocVienExcelExporter;
 use App\Support\PMGPLX\NgayVn;
 use Carbon\Carbon;
@@ -37,6 +38,7 @@ class CapNhatGPLXHocVienController extends Controller
         $perPage = $filters['per_page'];
 
         $items = $this->locDanhSach($filters)
+            ->with('boSung')
             ->orderByDesc('MaKhoaHoc')
             ->orderBy('Id')
             ->paginate($perPage)
@@ -74,7 +76,7 @@ class CapNhatGPLXHocVienController extends Controller
     public function export(Request $request): StreamedResponse
     {
         $filters = self::boLoc($request);
-        $rows = $this->locDanhSach($filters)->orderByDesc('MaKhoaHoc')->orderBy('Id')->get();
+        $rows = $this->locDanhSach($filters)->with('boSung')->orderByDesc('MaKhoaHoc')->orderBy('Id')->get();
         $hocVienExport = self::thongTinHocVien($rows->pluck('MaDK'));
 
         $moTa = [];
@@ -288,8 +290,13 @@ class CapNhatGPLXHocVienController extends Controller
             'ngay_cap_gplx' => ['nullable', 'date'],
             'ngay_hh_gplx' => ['nullable', 'date'],
             'noi_cap_gplx' => ['nullable', 'string', 'max:255'],
-            'ghi_chu' => ['nullable', 'string', 'max:500'],
+            'noi_dk_ho_khau' => ['nullable', 'string', 'max:500'],
+            'da_co_gplx' => ['nullable', 'string', 'max:30'],
+            'ngay_trung_tuyen' => ['nullable', 'date'],
         ]);
+
+        $hv = self::thongTinHocVien(collect([$gplx->MaDK]))->first();
+        CapNhatGPLXHienThi::luuBoSungThieuPm($gplx, $hv, $data);
 
         $gplx->capNhatTrangThai([
             'DaCapNhatGPLX' => (bool) ($data['da_cap_nhat_gplx'] ?? false),
@@ -299,7 +306,6 @@ class CapNhatGPLXHocVienController extends Controller
             'NgayCapGPLX' => $data['ngay_cap_gplx'] ?? null,
             'NgayHHGPLX' => $data['ngay_hh_gplx'] ?? null,
             'NoiCapGPLX' => trim((string) ($data['noi_cap_gplx'] ?? '')) ?: null,
-            'GhiChu' => trim((string) ($data['ghi_chu'] ?? '')) ?: null,
         ]);
 
         return back()->with('success', 'Đã cập nhật GPLX học viên '.$gplx->MaDK.'.');
@@ -401,9 +407,10 @@ class CapNhatGPLXHocVienController extends Controller
             ->leftJoin('KhoaHoc as kh', 'kh.MaKH', '=', 'h.MaKhoaHoc')
             ->select([
                 'n.MaDK', 'n.HoDemNLX', 'n.TenNLX', 'n.HoVaTen', 'n.NgaySinh', 'n.GioiTinh', 'n.SoCMT', 'n.TrangThai',
+                'n.NoiTT', 'n.NoiCT',
                 'h.SoHoSo', 'h.MaKhoaHoc', 'h.HangGPLX',
                 'h.SoGPLXDaCo', 'h.HangGPLXDaCo', 'h.DonViCapGPLXDaCo', 'h.NoiCapGPLXDaCo',
-                'h.NgayCapGPLXDaCo', 'h.NgayHHGPLXDaCo', 'h.SoGPLXTmp',
+                'h.NgayCapGPLXDaCo', 'h.NgayHHGPLXDaCo', 'h.NgayTTGPLXDaCo', 'h.SoGPLXTmp',
                 'kh.TenKH as TenKhoaHoc',
             ]);
     }
