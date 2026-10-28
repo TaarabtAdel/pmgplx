@@ -27,8 +27,12 @@
             <div><strong>Sheet:</strong> {{ $preview['sheet_name'] ?? '' }}</div>
             <div>
                 <strong>Dòng file:</strong> {{ number_format((int) ($meta['record_count'] ?? count($rows))) }}
-                · <strong>Trong danh sách thu tiền:</strong> {{ number_format((int) ($meta['matched'] ?? 0)) }}
+                · <strong>Khớp thu tiền:</strong> {{ number_format((int) ($meta['matched'] ?? 0)) }}
                 · <strong>Chưa có thu tiền:</strong> {{ number_format((int) ($meta['not_in_thu_tien'] ?? 0)) }}
+                · <strong>Không khớp PMGPLX:</strong> {{ number_format((int) ($meta['not_found'] ?? 0)) }}
+                @if ((int) ($meta['ambiguous'] ?? 0) > 0)
+                    · <strong>Trùng HV PMGPLX:</strong> {{ number_format((int) $meta['ambiguous']) }}
+                @endif
                 · <strong>Sẽ cập nhật KQ:</strong> {{ number_format((int) ($meta['will_update'] ?? 0)) }}
                 · <strong>Lượt môn:</strong> {{ number_format((int) ($meta['mon_cap_nhat'] ?? 0)) }}
             </div>
@@ -51,7 +55,7 @@
                             <th>#</th>
                             <th>Họ tên</th>
                             <th>Số ĐD</th>
-                            <th>Hạng</th>
+                            <th>Hạng (file)</th>
                             <th>Mã ĐK</th>
                             <th>Lý thuyết</th>
                             <th>Sa hình</th>

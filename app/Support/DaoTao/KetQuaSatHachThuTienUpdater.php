@@ -39,6 +39,8 @@ class KetQuaSatHachThuTienUpdater
             'record_count' => count($records),
             'matched' => 0,
             'not_in_thu_tien' => 0,
+            'not_found' => 0,
+            'ambiguous' => 0,
             'will_update' => 0,
             'skip' => 0,
             'mon_cap_nhat' => 0,
@@ -51,6 +53,12 @@ class KetQuaSatHachThuTienUpdater
                 $meta['matched']++;
             } elseif ($row['status'] === 'not_in_thu_tien') {
                 $meta['not_in_thu_tien']++;
+            } elseif ($row['status'] === 'not_found') {
+                $meta['not_found']++;
+                $meta['skip']++;
+            } elseif ($row['status'] === 'ambiguous') {
+                $meta['ambiguous']++;
+                $meta['skip']++;
             } else {
                 $meta['skip']++;
             }
@@ -199,7 +207,7 @@ class KetQuaSatHachThuTienUpdater
         if (! $tt) {
             return array_merge($base, $shared, [
                 'status' => 'not_in_thu_tien',
-                'message' => 'Khớp PMGPLX (HangGPLX '.($match['hang_gplx'] ?? '').') nhưng chưa có trong danh sách thu tiền — thêm học viên trước, không tạo mới khi import.',
+                'message' => 'Khớp PMGPLX (GPLX '.($match['hang_gplx'] ?? '—').' · ĐT '.($match['hang_dao_tao'] ?? '—').') nhưng chưa có trong danh sách thu tiền — thêm học viên trước, không tạo mới khi import.',
                 'thu_tien_id' => null,
             ]);
         }
