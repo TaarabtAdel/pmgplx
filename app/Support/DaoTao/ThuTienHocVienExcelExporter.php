@@ -52,7 +52,7 @@ final class ThuTienHocVienExcelExporter
 
         $cot = [
             ['STT', 5], ['Mã ĐK', 22], ['Họ và tên', 26], ['Ngày sinh', 11], ['Số CMT', 15], ['Mã khoá học', 15],
-            ['Hạng GPLX', 8], ['Tốt nghiệp', 11], ['Thu tiền', 13],
+            ['Hạng ĐT', 10], ['Tốt nghiệp', 11], ['Thu tiền', 13],
             ['Tiền LT', 12], ['KQ LT', 15], ['Tiền Sa hình', 12], ['KQ Sa hình', 15], ['Tiền Đường', 12], ['KQ Đường', 15],
             ['Bìa', 11], ['Tổng', 13], ['Phải thu', 13], ['Ghi chú', 28],
         ];
@@ -95,7 +95,7 @@ final class ThuTienHocVienExcelExporter
                 $hv ? NgayVn::format($hv->NgaySinh, 'yyyymmdd') : '',
                 (string) ($hv->SoCMT ?? ''),
                 (string) $row->MaKhoaHoc,
-                (string) ($hv->HangGPLX ?? ''),
+                ThuTienHocVien::hangDaoTaoTuHoSo($hv),
                 ThuTienHocVien::daTotNghiepHienThi($hv, (bool) $row->DaTotNghiep) ? 'Đã tốt nghiệp' : 'Chưa',
                 $row->DaThuTien ? 'Đã thu '.($row->NgayThuTien?->format('d/m/Y') ?? '') : 'Chưa thu',
                 $row->tien('ly_thuyet'),

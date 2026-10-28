@@ -277,7 +277,7 @@
                             <th>STT</th>
                             <th>Họ và tên / Mã ĐK</th>
                             <th>Số CMT / Ngày sinh</th>
-                            <th>Tên khoá học / Hạng</th>
+                            <th>Tên khoá học / Hạng ĐT</th>
                             <th>Tốt nghiệp</th>
                             <th>Thu tiền</th>
                             <th class="text-right">Tiền LT</th>
@@ -313,9 +313,14 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <div title="{{ $row->MaKhoaHoc }}">{{ ($tenKhoa[(string) $row->MaKhoaHoc] ?? '') ?: $row->MaKhoaHoc }}</div>
-                                    @if ($hv?->HangGPLX)
-                                        <small class="text-muted">Hạng {{ $hv->HangGPLX }}</small>
+                                    @php
+                                        $maKhHien = (string) ($row->MaKhoaHoc ?: ($hv->MaKhoaHoc ?? ''));
+                                        $tenKhHien = trim((string) (($tenKhoa[$maKhHien] ?? '') ?: ($hv->TenKhoaHoc ?? '')));
+                                        $hangDt = ThuTienHocVien::hangDaoTaoTuHoSo($hv);
+                                    @endphp
+                                    <div title="{{ $maKhHien }}">{{ $tenKhHien !== '' ? $tenKhHien : $maKhHien }}</div>
+                                    @if ($hangDt !== '')
+                                        <small class="text-muted">Hạng ĐT {{ $hangDt }}</small>
                                     @endif
                                 </td>
                                 <td>

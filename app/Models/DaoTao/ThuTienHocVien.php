@@ -394,4 +394,18 @@ class ThuTienHocVien extends Model
     {
         return $daTotNghiep || self::daTotNghiepTuHoSo($hoSoRow);
     }
+
+    /** Hạng đào tạo PMGPLX: NguoiLX_HoSo.HangDaoTao, fallback KhoaHoc.HangDT. */
+    public static function hangDaoTaoTuHoSo(?object $hoSoRow): string
+    {
+        if ($hoSoRow === null) {
+            return '';
+        }
+        $hang = trim((string) ($hoSoRow->HangDaoTao ?? ''));
+        if ($hang !== '') {
+            return $hang;
+        }
+
+        return trim((string) ($hoSoRow->HangDTKhoa ?? ''));
+    }
 }

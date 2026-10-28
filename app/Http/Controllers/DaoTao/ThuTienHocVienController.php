@@ -561,8 +561,8 @@ class ThuTienHocVienController extends Controller
             ->leftJoin('KhoaHoc as kh', 'kh.MaKH', '=', 'h.MaKhoaHoc')
             ->select([
                 'n.MaDK', 'n.HoDemNLX', 'n.TenNLX', 'n.HoVaTen', 'n.NgaySinh', 'n.GioiTinh', 'n.SoCMT', 'n.TrangThai',
-                'h.SoHoSo', 'h.MaKhoaHoc', 'h.HangGPLX', 'h.KetLuanCSDT',
-                'kh.TenKH as TenKhoaHoc',
+                'h.SoHoSo', 'h.MaKhoaHoc', 'h.HangGPLX', 'h.HangDaoTao', 'h.KetLuanCSDT',
+                'kh.TenKH as TenKhoaHoc', 'kh.HangDT as HangDTKhoa',
             ]);
     }
 
