@@ -3,6 +3,7 @@
 namespace App\Support\DaoTao;
 
 use App\Models\DaoTao\DatDSPhien;
+use App\Models\PMGPLX\KhoaHoc;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -14,6 +15,27 @@ final class DatKhoaHocSelectOptions
     public static function fromDatDSPhien(): Collection
     {
         return self::datDSPhienQuery()->get();
+    }
+
+    /**
+     * Toàn bộ khoá trên PMGPLX (bảng KhoaHoc — cùng nguồn màn /pmgplx/danh-muc/khoa-hoc).
+     *
+     * @return Collection<int, object{MaKhoaHoc: string, TenKhoaHoc: string}>
+     */
+    public static function fromPmgplx(): Collection
+    {
+        $options = KhoaHoc::query()
+            ->whereNotNull('MaKH')
+            ->where('MaKH', '!=', '')
+            ->orderByDesc('TenKH')
+            ->orderByDesc('MaKH')
+            ->get(['MaKH', 'TenKH'])
+            ->map(static fn (KhoaHoc $kh): object => (object) [
+                'MaKhoaHoc' => (string) $kh->MaKH,
+                'TenKhoaHoc' => trim((string) ($kh->TenKH ?? '')),
+            ]);
+
+        return self::sortAlphabetical($options);
     }
 
     /**

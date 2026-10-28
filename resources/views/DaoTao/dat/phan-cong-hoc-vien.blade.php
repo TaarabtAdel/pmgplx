@@ -46,7 +46,7 @@
                                 </option>
                             @endforeach
                         </select>
-                        <small class="text-muted">Chọn khóa để xem phân công và danh sách học viên. GV lấy từ <a href="{{ route('pmgplx.lich.xe.index') }}" target="_blank" rel="noopener">lịch xe tập</a> khóa.</small>
+                        <small class="text-muted">Danh sách khoá từ <a href="{{ route('pmgplx.dm.khoa-hoc.index') }}" target="_blank" rel="noopener">Quản lý khoá học</a> (PMGPLX). GV lấy từ <a href="{{ route('pmgplx.lich.xe.index') }}" target="_blank" rel="noopener">lịch xe tập</a> khóa.</small>
                     </div>
                     @if (($maKhoaHoc ?? '') !== '')
                         <div class="form-group col-md-3 mb-2">

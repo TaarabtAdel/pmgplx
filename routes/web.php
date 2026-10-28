@@ -18,6 +18,7 @@ use App\Http\Controllers\DaoTao\Dat\TheoDoiDatController;
 use App\Http\Controllers\DaoTao\Dat\TongHopDatHocVienController;
 use App\Http\Controllers\DaoTao\BaoCaoLuuLuongDaoTaoController as DaoTaoBaoCaoLuuLuongDaoTaoController;
 use App\Http\Controllers\DaoTao\ThuTienHocVienController;
+use App\Http\Controllers\DaoTao\CapNhatGPLXHocVienController;
 use App\Http\Controllers\DaoTao\DanhSachPhanCongDaoTaoController;
 use App\Http\Controllers\DaoTao\DanhSachPhanCongTuLichController;
 use App\Http\Controllers\DaoTao\DanhSachPhanCongTuLichTongHopController;
@@ -214,6 +215,19 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
         ->whereNumber('thuTien')
         ->whereNumber('giaoDich')
         ->name('pdt.bc.thu-tien-hoc-vien.giao-dich.destroy');
+    Route::get('/phong-dao-tao/bao-cao/cap-nhat-gplx', [CapNhatGPLXHocVienController::class, 'index'])
+        ->name('pdt.bc.cap-nhat-gplx');
+    Route::get('/phong-dao-tao/bao-cao/cap-nhat-gplx/tim-hoc-vien', [CapNhatGPLXHocVienController::class, 'timHocVienOptions'])
+        ->name('pdt.bc.cap-nhat-gplx.tim-hoc-vien');
+    Route::post('/phong-dao-tao/bao-cao/cap-nhat-gplx', [CapNhatGPLXHocVienController::class, 'store'])
+        ->name('pdt.bc.cap-nhat-gplx.store');
+    Route::get('/phong-dao-tao/bao-cao/cap-nhat-gplx/xuat-excel', [CapNhatGPLXHocVienController::class, 'export'])
+        ->name('pdt.bc.cap-nhat-gplx.export');
+    Route::post('/phong-dao-tao/bao-cao/cap-nhat-gplx/hang-loat', [CapNhatGPLXHocVienController::class, 'hangLoat'])
+        ->name('pdt.bc.cap-nhat-gplx.hang-loat');
+    Route::put('/phong-dao-tao/bao-cao/cap-nhat-gplx/{gplx}', [CapNhatGPLXHocVienController::class, 'update'])
+        ->whereNumber('gplx')
+        ->name('pdt.bc.cap-nhat-gplx.update');
     Route::get('/phong-dao-tao/cong-cu-nhap/nhap-file-tien-do-dao-tao', [NhapFileTienDoDaoTaoController::class, 'create'])
         ->name('pdt.cong-cu-nhap.nhap-file-tien-do-dao-tao');
     Route::post('/phong-dao-tao/cong-cu-nhap/nhap-file-tien-do-dao-tao', [NhapFileTienDoDaoTaoController::class, 'store'])

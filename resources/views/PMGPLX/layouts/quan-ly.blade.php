@@ -491,6 +491,10 @@
                                href="{{ route('daotao.pdt.bc.thu-tien-hoc-vien') }}">
                                 Quản lý thu tiền học viên
                             </a>
+                            <a class="dropdown-item {{ request()->routeIs('daotao.pdt.bc.cap-nhat-gplx*') ? 'active' : '' }}"
+                               href="{{ route('daotao.pdt.bc.cap-nhat-gplx') }}">
+                                Quản lý cập nhật GPLX học viên
+                            </a>
                         </div>
                     </div>
                     <div class="dropdown-submenu">

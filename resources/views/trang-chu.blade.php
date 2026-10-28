@@ -41,6 +41,12 @@
                     <a href="{{ route('daotao.pdt.bc.luu-luong-dao-tao') }}" class="list-group-item list-group-item-action pl-4">
                         Báo cáo Lưu lượng đào tạo
                     </a>
+                    <a href="{{ route('daotao.pdt.bc.thu-tien-hoc-vien') }}" class="list-group-item list-group-item-action pl-4">
+                        Quản lý thu tiền học viên
+                    </a>
+                    <a href="{{ route('daotao.pdt.bc.cap-nhat-gplx') }}" class="list-group-item list-group-item-action pl-4">
+                        Quản lý cập nhật GPLX học viên
+                    </a>
                     <div class="list-group-item list-group-item-light small font-weight-bold py-2">Công cụ nhập</div>
                     <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-file-tien-do-dao-tao') }}" class="list-group-item list-group-item-action pl-4">
                         Nhập file tiến độ đào tạo

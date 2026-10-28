@@ -8,6 +8,7 @@ use App\Models\PMGPLX\GiaoVien;
 use App\Models\PMGPLX\KhoaHoc;
 use App\Models\PMGPLX\XeTap;
 use App\Support\DaoTao\DatPhanCongGiaoVienThaySaver;
+use App\Support\DaoTao\DatKhoaHocSelectOptions;
 use App\Support\DaoTao\DatPhanCongHocVienBoLoc;
 use App\Support\DaoTao\DatPhanCongHocVienSaver;
 use App\Support\DaoTao\DatPhanCongTheoKhoaPresenter;
@@ -27,7 +28,7 @@ class DanhSachPhanCongHocVienController extends Controller
         $maKhoaHoc = (string) ($filters['ma_khoa_hoc'] ?? '');
         $hocVienFilters = DatPhanCongTheoKhoaPresenter::parseHocVienFilters($request);
 
-        $khoaHocOptions = DatPhanCongHocVienBoLoc::khoaHocOptions();
+        $khoaHocOptions = DatKhoaHocSelectOptions::fromPmgplx();
         $tenKhoa = '';
         if ($maKhoaHoc !== '') {
             $tenKhoa = (string) (KhoaHoc::query()->where('MaKH', $maKhoaHoc)->value('TenKH') ?? '');
