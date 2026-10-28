@@ -52,6 +52,8 @@ return [
                                         [
                                             'title' => 'Xuất file "Báo cáo đăng ký"',
                                             'trang' => '1-bao-cao-dang-ky',
+                                            'route' => 'qldtoto.bao-cao-dang-ky.index',
+                                            'active' => 'qldtoto.bao-cao-dang-ky.*',
                                         ],
                                         [
                                             'title' => 'Xuất file "Danh sách học sinh lái xe"',

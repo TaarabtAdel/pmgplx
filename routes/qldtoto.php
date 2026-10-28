@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\QldtOto\BaoCaoDangKyController;
 use App\Http\Controllers\QldtOto\CauHinhBaiDayController;
 use App\Http\Controllers\QldtOto\LichDuKien\ThucHanhController;
 use App\Http\Controllers\QldtOto\TrangController;
@@ -41,6 +42,10 @@ Route::prefix('qldt-oto')->name('qldtoto.')->group(function () {
         ->whereIn('ca', $caBaiDay)
         ->whereNumber('baiHoc')
         ->name('cau-hinh-bai-day.bai-hoc.destroy');
+
+    Route::get('/1-bao-cao-dang-ky', [BaoCaoDangKyController::class, 'index'])->name('bao-cao-dang-ky.index');
+    Route::post('/1-bao-cao-dang-ky/xuat', [BaoCaoDangKyController::class, 'export'])->name('bao-cao-dang-ky.export');
+    Route::get('/1-bao-cao-dang-ky/khoa/{maKh}', [BaoCaoDangKyController::class, 'khoaJson'])->name('bao-cao-dang-ky.khoa');
 
     Route::prefix('lich-du-kien/thuc-hanh')->name('lich-du-kien.thuc-hanh.')->group(function () {
         Route::get('/', [ThucHanhController::class, 'index'])->name('index');

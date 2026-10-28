@@ -48,11 +48,15 @@ final class MenuQldt
     /** @param  array<string, mixed>  $item */
     public static function routeName(array $item): ?string
     {
+        if (! empty($item['route'])) {
+            return (string) $item['route'];
+        }
+
         if (! empty($item['trang'])) {
             return self::ROUTE_PREFIX.self::tenRouteTrang((string) $item['trang']);
         }
 
-        return ! empty($item['route']) ? (string) $item['route'] : null;
+        return null;
     }
 
     /** Slug 'lich-du-kien/ly-thuyet' → tên route 'lich-du-kien.ly-thuyet' (chưa gồm tiền tố). */
@@ -75,7 +79,7 @@ final class MenuQldt
             foreach ($items as $item) {
                 if (! empty($item['children'])) {
                     $walk($item['children']);
-                } elseif (! empty($item['trang'])) {
+                } elseif (! empty($item['trang']) && empty($item['route'])) {
                     $out[] = (string) $item['trang'];
                 }
             }
