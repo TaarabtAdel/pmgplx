@@ -19,7 +19,8 @@ final class CapNhatGPLXHienThi
      *     so_gplx: string,
      *     ngay_cap_gplx: string,
      *     ngay_trung_tuyen: string,
-     *     pm: array<string, bool>
+     *     pm: array<string, bool>,
+     *     ml: array<string, bool>
      * }
      */
     public static function dong(
@@ -52,11 +53,11 @@ final class CapNhatGPLXHienThi
             'ho_ten' => $hoTen,
             'ngay_sinh' => $hv ? NgayVn::format($hv->NgaySinh, 'yyyymmdd') : '',
             'so_cmnd' => (string) ($hv->SoCMT ?? ''),
-            'noi_dk_ho_khau' => $noiPm !== '' ? $noiPm : $noiBs,
-            'da_co_gplx' => $daCoPm !== '' ? $daCoPm : $daCoBs,
+            'noi_dk_ho_khau' => $noiBs !== '' ? $noiBs : $noiPm,
+            'da_co_gplx' => $daCoBs !== '' ? $daCoBs : $daCoPm,
             'so_gplx' => $soMl !== '' ? $soMl : ($soPm !== '' ? $soPm : $soTmp),
             'ngay_cap_gplx' => $ngayCapMl !== '' ? $ngayCapMl : $ngayCapPm,
-            'ngay_trung_tuyen' => $ngayTtPm !== '' ? $ngayTtPm : $ngayTtBs,
+            'ngay_trung_tuyen' => $ngayTtBs !== '' ? $ngayTtBs : $ngayTtPm,
             'pm' => [
                 'noi_dk_ho_khau' => $noiPm !== '',
                 'da_co_gplx' => $daCoPm !== '',
@@ -64,40 +65,49 @@ final class CapNhatGPLXHienThi
                 'ngay_cap_gplx' => $ngayCapPm !== '',
                 'ngay_trung_tuyen' => $ngayTtPm !== '',
             ],
+            'ml' => [
+                'noi_dk_ho_khau' => $noiBs !== '',
+                'da_co_gplx' => $daCoBs !== '',
+                'ngay_trung_tuyen' => $ngayTtBs !== '',
+            ],
         ];
     }
 
-    /**
-     * Lưu bổ sung: chỉ ghi MANHLINH khi PMGPLX không có giá trị tương ứng.
-     *
-     * @param  array<string, mixed>  $input
-     */
-    public static function luuBoSungThieuPm(
-        CapNhatGPLXHocVien $row,
-        ?object $hv,
-        array $input,
-    ): void {
+    /** Giá trị mặc định form bổ sung: MANHLINH đã lưu, không có thì gợi ý từ PM (chỉ hiển thị, lưu vẫn vào MANHLINH). */
+    public static function giaTriFormBoSung(?CapNhatGPLXHocVienBoSung $bs, ?object $hv): array
+    {
         $noiPm = trim((string) ($hv?->NoiTT ?? ''));
         if ($noiPm === '') {
             $noiPm = trim((string) ($hv?->NoiCT ?? ''));
         }
+        $noiBs = trim((string) ($bs?->NoiDKHoKhauThuongTru ?? ''));
+        $daCoBs = trim((string) ($bs?->DaCoGPLX ?? ''));
         $daCoPm = trim((string) ($hv?->HangGPLXDaCo ?? ''));
-        $ngayTtPm = self::fmtNgay($hv?->NgayTTGPLXDaCo ?? null);
 
-        $payload = [];
-        if ($noiPm === '') {
-            $v = trim((string) ($input['noi_dk_ho_khau'] ?? ''));
-            $payload['NoiDKHoKhauThuongTru'] = $v !== '' ? $v : null;
-        }
-        if ($daCoPm === '') {
-            $v = trim((string) ($input['da_co_gplx'] ?? ''));
-            $payload['DaCoGPLX'] = $v !== '' ? $v : null;
-        }
-        if ($ngayTtPm === '') {
-            $payload['NgayTrungTuyen'] = ! empty($input['ngay_trung_tuyen']) ? $input['ngay_trung_tuyen'] : null;
-        }
+        return [
+            'noi_dk_ho_khau' => $noiBs !== '' ? $noiBs : $noiPm,
+            'da_co_gplx' => $daCoBs !== '' ? $daCoBs : $daCoPm,
+            'ngay_trung_tuyen' => $bs?->NgayTrungTuyen?->format('Y-m-d')
+                ?? self::ngayPmSangInput($hv?->NgayTTGPLXDaCo ?? null),
+        ];
+    }
 
-        if ($payload === []) {
+    /**
+     * Ghi / cập nhật bảng bổ sung MANHLINH (không ghi PMGPLX).
+     *
+     * @param  array<string, mixed>  $input
+     */
+    public static function luuBoSungManhlinh(CapNhatGPLXHocVien $row, array $input): void
+    {
+        $payload = [
+            'NoiDKHoKhauThuongTru' => trim((string) ($input['noi_dk_ho_khau'] ?? '')) ?: null,
+            'DaCoGPLX' => trim((string) ($input['da_co_gplx'] ?? '')) ?: null,
+            'NgayTrungTuyen' => ! empty($input['ngay_trung_tuyen']) ? $input['ngay_trung_tuyen'] : null,
+        ];
+
+        if ($payload['NoiDKHoKhauThuongTru'] === null
+            && $payload['DaCoGPLX'] === null
+            && $payload['NgayTrungTuyen'] === null) {
             CapNhatGPLXHocVienBoSung::query()->where('CapNhatGPLXHocVienId', $row->Id)->delete();
 
             return;
@@ -110,6 +120,25 @@ final class CapNhatGPLXHienThi
             ['CapNhatGPLXHocVienId' => $row->Id],
             $payload
         );
+    }
+
+    private static function ngayPmSangInput(mixed $value): string
+    {
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d');
+        }
+        $s = trim((string) $value);
+        if ($s === '') {
+            return '';
+        }
+        if (strlen($s) >= 10 && preg_match('/^\d{4}-\d{2}-\d{2}/', $s)) {
+            return substr($s, 0, 10);
+        }
+        if (strlen($s) >= 8 && ctype_digit($s)) {
+            return substr($s, 0, 4).'-'.substr($s, 4, 2).'-'.substr($s, 6, 2);
+        }
+
+        return '';
     }
 
     private static function fmtNgay(mixed $value): string

@@ -245,7 +245,7 @@
             <p class="small text-muted mb-2">
                 Bảng giống mẫu báo cáo: đọc <strong>NguoiLX / NguoiLX_HoSo</strong> (PMGPLX).
                 <strong>Số GPLX</strong> / <strong>Ngày cấp GPLX</strong> ưu tiên dữ liệu đã nhập trên MANHLINH, không có thì lấy GPLX đã có trên PM.
-                Ô nền vàng nhạt = giá trị lưu bổ sung trên MANHLINH (<code>CapNhatGPLXHocVienBoSung</code>) khi PM thiếu.
+                Ô nền vàng nhạt = đang dùng giá trị lưu trên MANHLINH (<code>CapNhatGPLXHocVienBoSung</code>), ưu tiên hơn PMGPLX. Cập nhật không ghi vào PMGPLX.
             </p>
 
             <div class="table-responsive">
@@ -273,11 +273,12 @@
                                 $bs = $row->boSung;
                                 $ht = CapNhatGPLXHienThi::dong($row, $hv, $bs);
                                 $hoTen = $ht['ho_ten'];
-                                $cellMl = static function (string $val, bool $tuPm, bool $tuBs): string {
+                                $formBs = CapNhatGPLXHienThi::giaTriFormBoSung($bs, $hv);
+                                $cellMl = static function (string $val, bool $tuMl): string {
                                     if ($val === '') {
                                         return '<span class="text-muted">—</span>';
                                     }
-                                    $cls = (! $tuPm && $tuBs) ? ' cell-ml' : '';
+                                    $cls = $tuMl ? ' cell-ml' : '';
 
                                     return '<span class="'.$cls.'">'.e($val).'</span>';
                                 };
@@ -293,13 +294,13 @@
                                     @endif
                                     <small class="text-muted" title="Khoá {{ $row->MaKhoaHoc }}">{{ $row->MaDK }}</small>
                                 </td>
-                                <td>{!! $cellMl($ht['ngay_sinh'], true, false) !!}</td>
-                                <td><code>{!! $cellMl($ht['so_cmnd'], true, false) !!}</code></td>
-                                <td class="col-noi-hk">{!! $cellMl($ht['noi_dk_ho_khau'], $ht['pm']['noi_dk_ho_khau'], $bs && $bs->NoiDKHoKhauThuongTru) !!}</td>
-                                <td>{!! $cellMl($ht['da_co_gplx'], $ht['pm']['da_co_gplx'], $bs && $bs->DaCoGPLX) !!}</td>
-                                <td>{!! $cellMl($ht['so_gplx'], $ht['pm']['so_gplx'] && ! $row->SoGPLX, (bool) $row->SoGPLX) !!}</td>
-                                <td>{!! $cellMl($ht['ngay_cap_gplx'], $ht['pm']['ngay_cap_gplx'] && ! $row->NgayCapGPLX, (bool) $row->NgayCapGPLX) !!}</td>
-                                <td>{!! $cellMl($ht['ngay_trung_tuyen'], $ht['pm']['ngay_trung_tuyen'], $bs && $bs->NgayTrungTuyen) !!}</td>
+                                <td>{!! $cellMl($ht['ngay_sinh'], false) !!}</td>
+                                <td><code>{!! $cellMl($ht['so_cmnd'], false) !!}</code></td>
+                                <td class="col-noi-hk">{!! $cellMl($ht['noi_dk_ho_khau'], $ht['ml']['noi_dk_ho_khau']) !!}</td>
+                                <td>{!! $cellMl($ht['da_co_gplx'], $ht['ml']['da_co_gplx']) !!}</td>
+                                <td>{!! $cellMl($ht['so_gplx'], (bool) $row->SoGPLX) !!}</td>
+                                <td>{!! $cellMl($ht['ngay_cap_gplx'], (bool) $row->NgayCapGPLX) !!}</td>
+                                <td>{!! $cellMl($ht['ngay_trung_tuyen'], $ht['ml']['ngay_trung_tuyen']) !!}</td>
                                 <td>
                                     @if ($row->DaCapNhatGPLX)
                                         <span class="badge badge-success" title="{{ $row->NgayCapNhatGPLX?->format('d/m/Y H:i') }}">Đã cập nhật {{ $row->NgayCapNhatGPLX?->format('d/m') }}</span>
@@ -318,12 +319,9 @@
                                             data-ngay-cap="{{ $row->NgayCapGPLX?->format('Y-m-d') }}"
                                             data-ngay-hh="{{ $row->NgayHHGPLX?->format('Y-m-d') }}"
                                             data-noi-cap="{{ $row->NoiCapGPLX }}"
-                                            data-noi-hk="{{ $bs?->NoiDKHoKhauThuongTru ?? '' }}"
-                                            data-da-co-gplx="{{ $bs?->DaCoGPLX ?? '' }}"
-                                            data-ngay-tt="{{ $bs?->NgayTrungTuyen?->format('Y-m-d') ?? '' }}"
-                                            data-pm-noi-hk="{{ trim((string) (($hv->NoiTT ?? '') ?: ($hv->NoiCT ?? ''))) }}"
-                                            data-pm-da-co="{{ $hv?->HangGPLXDaCo ?? '' }}"
-                                            data-pm-ngay-tt="{{ $fmtNgayPm($hv?->NgayTTGPLXDaCo) }}"
+                                            data-noi-hk="{{ $formBs['noi_dk_ho_khau'] }}"
+                                            data-da-co-gplx="{{ $formBs['da_co_gplx'] }}"
+                                            data-ngay-tt="{{ $formBs['ngay_trung_tuyen'] }}"
                                             data-pm-so="{{ $hv?->SoGPLXDaCo ?? '' }}"
                                             data-pm-hang="{{ $hv?->HangGPLXDaCo ?? '' }}"
                                             data-pm-ngay-cap="{{ $fmtNgayPm($hv?->NgayCapGPLXDaCo) }}"
@@ -383,17 +381,18 @@
                         <label class="custom-control-label" for="sua-cap-nhat">Đã cập nhật GPLX</label>
                     </div>
                     <p class="small text-muted mb-2">Đánh dấu hàng loạt «Đã cập nhật GPLX» sẽ tự chuyển sang tab đã xử lý. Ở đây tick «Đã xử lý» nếu muốn chuyển ngay.</p>
-                    <div id="sua-khung-bo-sung" class="border rounded p-2 mb-3 d-none">
-                        <p class="small font-weight-bold mb-2">Bổ sung MANHLINH (PMGPLX đang thiếu)</p>
-                        <div class="form-group mb-2 d-none" id="grp-noi-hk">
-                            <label for="sua-noi-hk" class="small mb-1">Nơi đăng ký hộ khẩu thường trú</label>
+                    <div id="sua-khung-bo-sung" class="border rounded p-2 mb-3 bg-light">
+                        <p class="small font-weight-bold mb-1">Bổ sung / chỉnh trên MANHLINH</p>
+                        <p class="small text-muted mb-2">HKTT, Đã có GPLX, Ngày TT — luôn lưu bảng <code>CapNhatGPLXHocVienBoSung</code>, không sửa PMGPLX. Ô trống = xóa giá trị MANHLINH (hiển thị lại PM nếu có).</p>
+                        <div class="form-group mb-2">
+                            <label for="sua-noi-hk" class="small mb-1">HKTT</label>
                             <input type="text" class="form-control form-control-sm" id="sua-noi-hk" name="noi_dk_ho_khau" maxlength="500">
                         </div>
-                        <div class="form-group mb-2 d-none" id="grp-da-co">
-                            <label for="sua-da-co-gplx" class="small mb-1">Đã có GPLX</label>
+                        <div class="form-group mb-2">
+                            <label for="sua-da-co-gplx" class="small mb-1">Đã có GPLX (hạng)</label>
                             <input type="text" class="form-control form-control-sm" id="sua-da-co-gplx" name="da_co_gplx" maxlength="30">
                         </div>
-                        <div class="form-group mb-0 d-none" id="grp-ngay-tt">
+                        <div class="form-group mb-0">
                             <label for="sua-ngay-tt" class="small mb-1">Ngày trúng tuyển</label>
                             <input type="date" class="form-control form-control-sm" id="sua-ngay-tt" name="ngay_trung_tuyen">
                         </div>
@@ -549,27 +548,9 @@
             document.getElementById('sua-ngay-cap').value = d.ngayCap || '';
             document.getElementById('sua-ngay-hh').value = d.ngayHh || '';
             document.getElementById('sua-noi-cap').value = d.noiCap || '';
-            var khungBs = document.getElementById('sua-khung-bo-sung');
-            var showBs = false;
-            [['grp-noi-hk', 'pmNoiHk', 'noiHk', 'sua-noi-hk'],
-             ['grp-da-co', 'pmDaCo', 'daCoGplx', 'sua-da-co-gplx'],
-             ['grp-ngay-tt', 'pmNgayTt', 'ngayTt', 'sua-ngay-tt']].forEach(function (cfg) {
-                var grp = document.getElementById(cfg[0]);
-                var pmCo = (d[cfg[1]] || '').trim() !== '';
-                if (! pmCo) {
-                    grp.classList.remove('d-none');
-                    showBs = true;
-                    document.getElementById(cfg[3]).value = d[cfg[2]] || '';
-                } else {
-                    grp.classList.add('d-none');
-                    document.getElementById(cfg[3]).value = '';
-                }
-            });
-            if (showBs) {
-                khungBs.classList.remove('d-none');
-            } else {
-                khungBs.classList.add('d-none');
-            }
+            document.getElementById('sua-noi-hk').value = d.noiHk || '';
+            document.getElementById('sua-da-co-gplx').value = d.daCoGplx || '';
+            document.getElementById('sua-ngay-tt').value = d.ngayTt || '';
             var pm = [];
             if (d.pmSo) { pm.push('Số GPLX đã có: ' + d.pmSo); }
             if (d.pmHang) { pm.push('Hạng: ' + d.pmHang); }

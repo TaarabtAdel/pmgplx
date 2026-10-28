@@ -295,8 +295,7 @@ class CapNhatGPLXHocVienController extends Controller
             'ngay_trung_tuyen' => ['nullable', 'date'],
         ]);
 
-        $hv = self::thongTinHocVien(collect([$gplx->MaDK]))->first();
-        CapNhatGPLXHienThi::luuBoSungThieuPm($gplx, $hv, $data);
+        CapNhatGPLXHienThi::luuBoSungManhlinh($gplx, $data);
 
         $gplx->capNhatTrangThai([
             'DaCapNhatGPLX' => (bool) ($data['da_cap_nhat_gplx'] ?? false),
