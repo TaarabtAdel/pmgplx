@@ -89,6 +89,8 @@ return [
                                 [
                                     'title' => 'Xuất file "Quyết định điều động xe" của từng giáo viên',
                                     'trang' => '1-quyet-dinh-dieu-dong-xe-cua-tung-giao-vien',
+                                    'route' => 'qldtoto.quyet-dinh-dieu-dong-xe.index',
+                                    'active' => 'qldtoto.quyet-dinh-dieu-dong-xe.*',
                                 ],
                             ],
                         ],
@@ -104,6 +106,8 @@ return [
                                 [
                                     'title' => 'Xuất file "Sổ theo dõi kết quả học tập của học viên"',
                                     'trang' => '1-so-theo-doi-ket-qua-hoc-tap-cua-hoc-vien',
+                                    'route' => 'qldtoto.so-theo-doi-ket-qua-hoc-tap.index',
+                                    'active' => 'qldtoto.so-theo-doi-ket-qua-hoc-tap.*',
                                 ],
                                 [
                                     'title' => 'Xuất file "Sổ tay các giáo viên lý thuyết"',
