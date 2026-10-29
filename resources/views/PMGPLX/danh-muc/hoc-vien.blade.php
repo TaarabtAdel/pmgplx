@@ -68,6 +68,17 @@
                     </a>
                 </div>
 
+                <a href="{{ route('pmgplx.dm.hoc-vien.export', array_filter([
+                    'tu_khoa' => $filters['tu_khoa'],
+                    'ma_kh' => $filters['ma_kh'],
+                    'hang_gplx' => $filters['hang_gplx'],
+                    'trang_thai' => $filters['trang_thai'],
+                ])) }}"
+                   class="btn btn-sm btn-success mb-2 mr-2"
+                   title="Xuất Excel theo bộ lọc hiện tại — đủ cột NguoiLX và NguoiLX_HoSo">
+                    ⬇ Xuất Excel ({{ number_format($items->total()) }})
+                </a>
+
                 <div class="ml-auto d-flex flex-wrap align-items-center mb-2">
                     <span class="mr-3">Tổng số bản ghi: <strong>{{ number_format($items->total()) }}</strong></span>
                     <form method="GET" action="{{ route('pmgplx.dm.hoc-vien.index') }}" class="form-inline mr-3">

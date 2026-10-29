@@ -57,8 +57,10 @@ return [
                                         ],
                                         [
                                             'title' => 'Xuất file "Danh sách học sinh lái xe"',
-                                            'mo_ta' => 'Xuất từ phần mềm',
+                                            'mo_ta' => 'Chọn khoá PMGPLX, quyết định kèm theo — xuất Excel theo mẫu QLĐT',
                                             'trang' => '1-danh-sach-hoc-sinh-lai-xe',
+                                            'route' => 'qldtoto.danh-sach-hoc-sinh-lai-xe.index',
+                                            'active' => 'qldtoto.danh-sach-hoc-sinh-lai-xe.*',
                                         ],
                                         [
                                             'title' => 'Xuất file "Kế hoạch đào tạo"',
@@ -69,6 +71,8 @@ return [
                                 [
                                     'title' => 'Xuất file "Quyết định thành lập lớp học + danh sách học viên"',
                                     'trang' => '1-quyet-dinh-thanh-lap-lop-hoc-danh-sach-hoc-vien',
+                                    'route' => 'qldtoto.quyet-dinh-thanh-lap-lop-hoc.index',
+                                    'active' => 'qldtoto.quyet-dinh-thanh-lap-lop-hoc.*',
                                 ],
                                 [
                                     'title' => 'Xuất file "Biên bản xác nhận phổ biến nội quy quy chế chương trình đào tạo"',
@@ -94,6 +98,8 @@ return [
                                 [
                                     'title' => 'Xuất file "Sổ phân công giáo viên, xe tham gia giảng dạy của khoá"',
                                     'trang' => '1-so-phan-cong-giao-vien-xe-tham-gia-giang-day-cua-khoa',
+                                    'route' => 'qldtoto.so-phan-cong-gv-xe-tap-lai.index',
+                                    'active' => 'qldtoto.so-phan-cong-gv-xe-tap-lai.*',
                                 ],
                                 [
                                     'title' => 'Xuất file "Sổ theo dõi kết quả học tập của học viên"',

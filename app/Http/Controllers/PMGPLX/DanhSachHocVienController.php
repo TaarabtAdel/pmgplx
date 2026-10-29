@@ -8,11 +8,14 @@ use App\Models\PMGPLX\NguoiLX;
 use App\Models\PMGPLX\NguoiLXHoSo;
 use App\Models\PMGPLXOLD\KhoaHoc as KhoaHocOld;
 use App\Services\PMGPLX\DongBoHocVienBanCuService;
+use App\Support\PMGPLX\DanhMucBangExcelExporter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DanhSachHocVienController extends Controller
 {
@@ -45,6 +48,37 @@ class DanhSachHocVienController extends Controller
                 'per_page' => $perPage,
             ],
         ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        [$columns, $selects] = $this->exportColumnSelects();
+        $rawRows = $this->filteredQuery($request, $selects)
+            ->orderByRaw('n.TenNLX COLLATE Vietnamese_CI_AS ASC')
+            ->orderByRaw('n.HoDemNLX COLLATE Vietnamese_CI_AS ASC')
+            ->orderBy('n.MaDK')
+            ->get();
+
+        $rows = $rawRows->map(function ($row) use ($columns): array {
+            $out = [];
+            foreach ($columns as $col) {
+                $out[$col] = $row->{$col} ?? null;
+            }
+
+            return $out;
+        })->all();
+
+        $title = 'Danh mục học viên (NguoiLX + NguoiLX_HoSo)';
+        if ($maKh = trim((string) $request->input('ma_kh'))) {
+            $title .= ' · khóa '.$maKh;
+        }
+
+        return DanhMucBangExcelExporter::downloadFromArrays(
+            $title,
+            'danh-muc-hoc-vien',
+            $columns,
+            $rows,
+        );
     }
 
     public function dongBoForm(Request $request, DongBoHocVienBanCuService $service): View
@@ -326,12 +360,43 @@ class DanhSachHocVienController extends Controller
         );
     }
 
-    private function filteredQuery(Request $request): Builder
+    /**
+     * @return array{0: list<string>, 1: list<\Illuminate\Contracts\Database\Query\Expression|string>}
+     */
+    private function exportColumnSelects(): array
+    {
+        $colsN = Schema::connection('sqlsrv')->getColumnListing('NguoiLX');
+        $colsH = Schema::connection('sqlsrv')->getColumnListing('NguoiLX_HoSo');
+
+        $columns = [];
+        $selects = [];
+        foreach ($colsN as $col) {
+            $alias = 'NguoiLX.'.$col;
+            $columns[] = $alias;
+            $selects[] = DB::raw('n.['.$col.'] as ['.$alias.']');
+        }
+        foreach ($colsH as $col) {
+            $alias = 'NguoiLX_HoSo.'.$col;
+            $columns[] = $alias;
+            $selects[] = DB::raw('h.['.$col.'] as ['.$alias.']');
+        }
+
+        return [$columns, $selects];
+    }
+
+    /**
+     * @param  list<\Illuminate\Contracts\Database\Query\Expression|string>|null  $select
+     */
+    private function filteredQuery(Request $request, ?array $select = null): Builder
     {
         $query = NguoiLX::query()
             ->from('NguoiLX as n')
-            ->leftJoin('NguoiLX_HoSo as h', 'h.MaDK', '=', 'n.MaDK')
-            ->select([
+            ->leftJoin('NguoiLX_HoSo as h', 'h.MaDK', '=', 'n.MaDK');
+
+        if ($select !== null) {
+            $query->select($select);
+        } else {
+            $query->select([
                 'n.MaDK',
                 'n.HoDemNLX',
                 'n.TenNLX',
@@ -345,7 +410,15 @@ class DanhSachHocVienController extends Controller
                 'h.HangGPLX',
                 'h.HangDaoTao',
             ]);
+        }
 
+        $this->applyListFilters($query, $request);
+
+        return $query;
+    }
+
+    private function applyListFilters(Builder $query, Request $request): void
+    {
         if ($keyword = trim((string) $request->input('tu_khoa'))) {
             $query->where(function ($q) use ($keyword) {
                 $q->where('n.MaDK', 'like', '%'.$keyword.'%')
@@ -368,8 +441,6 @@ class DanhSachHocVienController extends Controller
         if ($request->filled('trang_thai') && $request->input('trang_thai') !== '') {
             $query->where('n.TrangThai', (string) (int) $request->input('trang_thai'));
         }
-
-        return $query;
     }
 
     /**

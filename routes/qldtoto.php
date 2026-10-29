@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\QldtOto\BaoCaoDangKyController;
+use App\Http\Controllers\QldtOto\DanhSachHocSinhLaiXeController;
+use App\Http\Controllers\QldtOto\QuyetDinhThanhLapLopHocController;
+use App\Http\Controllers\QldtOto\SoPhanCongGvXeTapLaiController;
 use App\Http\Controllers\QldtOto\CauHinhBaiDayController;
 use App\Http\Controllers\QldtOto\LichDuKien\ThucHanhController;
 use App\Http\Controllers\QldtOto\TrangController;
@@ -46,6 +49,25 @@ Route::prefix('qldt-oto')->name('qldtoto.')->group(function () {
     Route::get('/1-bao-cao-dang-ky', [BaoCaoDangKyController::class, 'index'])->name('bao-cao-dang-ky.index');
     Route::post('/1-bao-cao-dang-ky/xuat', [BaoCaoDangKyController::class, 'export'])->name('bao-cao-dang-ky.export');
     Route::get('/1-bao-cao-dang-ky/khoa/{maKh}', [BaoCaoDangKyController::class, 'khoaJson'])->name('bao-cao-dang-ky.khoa');
+
+    $slugDanhSachHv = '1-danh-sach-hoc-sinh-lai-xe';
+    Route::get('/'.$slugDanhSachHv, [DanhSachHocSinhLaiXeController::class, 'index'])->name('danh-sach-hoc-sinh-lai-xe.index');
+    Route::post('/'.$slugDanhSachHv.'/xuat', [DanhSachHocSinhLaiXeController::class, 'export'])->name('danh-sach-hoc-sinh-lai-xe.export');
+    Route::get('/'.$slugDanhSachHv.'/khoa/{maKh}', [DanhSachHocSinhLaiXeController::class, 'khoaJson'])->name('danh-sach-hoc-sinh-lai-xe.khoa');
+
+    $slugSoPhanCong = '1-so-phan-cong-giao-vien-xe-tham-gia-giang-day-cua-khoa';
+    Route::get('/'.$slugSoPhanCong, [SoPhanCongGvXeTapLaiController::class, 'index'])->name('so-phan-cong-gv-xe-tap-lai.index');
+    Route::post('/'.$slugSoPhanCong.'/xem-truoc', [SoPhanCongGvXeTapLaiController::class, 'previewStore'])->name('so-phan-cong-gv-xe-tap-lai.preview.store');
+    Route::get('/'.$slugSoPhanCong.'/xem-truoc', [SoPhanCongGvXeTapLaiController::class, 'preview'])->name('so-phan-cong-gv-xe-tap-lai.preview');
+    Route::get('/'.$slugSoPhanCong.'/xuat', [SoPhanCongGvXeTapLaiController::class, 'export'])->name('so-phan-cong-gv-xe-tap-lai.export');
+    Route::post('/'.$slugSoPhanCong.'/nhap-phan-cong', [SoPhanCongGvXeTapLaiController::class, 'import'])->name('so-phan-cong-gv-xe-tap-lai.import');
+    Route::get('/'.$slugSoPhanCong.'/huy', [SoPhanCongGvXeTapLaiController::class, 'cancel'])->name('so-phan-cong-gv-xe-tap-lai.cancel');
+    Route::get('/'.$slugSoPhanCong.'/khoa/{maKh}', [SoPhanCongGvXeTapLaiController::class, 'khoaJson'])->name('so-phan-cong-gv-xe-tap-lai.khoa');
+
+    $slugQuyetDinh = '1-quyet-dinh-thanh-lap-lop-hoc-danh-sach-hoc-vien';
+    Route::get('/'.$slugQuyetDinh, [QuyetDinhThanhLapLopHocController::class, 'index'])->name('quyet-dinh-thanh-lap-lop-hoc.index');
+    Route::post('/'.$slugQuyetDinh.'/xuat', [QuyetDinhThanhLapLopHocController::class, 'export'])->name('quyet-dinh-thanh-lap-lop-hoc.export');
+    Route::get('/'.$slugQuyetDinh.'/khoa/{maKh}', [QuyetDinhThanhLapLopHocController::class, 'khoaJson'])->name('quyet-dinh-thanh-lap-lop-hoc.khoa');
 
     Route::prefix('lich-du-kien/thuc-hanh')->name('lich-du-kien.thuc-hanh.')->group(function () {
         Route::get('/', [ThucHanhController::class, 'index'])->name('index');

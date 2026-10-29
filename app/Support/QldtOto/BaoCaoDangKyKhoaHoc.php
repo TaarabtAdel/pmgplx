@@ -19,6 +19,17 @@ class BaoCaoDangKyKhoaHoc
         };
     }
 
+    /** Nhãn hạng trên mẫu quyết định thành lập lớp (viết hoa «Số sàn»). */
+    public static function nhanHangGplxQuyetDinh(?string $hangGplx): string
+    {
+        $code = mb_strtoupper(trim((string) $hangGplx));
+        return match ($code) {
+            'B1' => 'B (Số sàn)',
+            'B11' => 'B (Tự động)',
+            default => trim((string) $hangGplx) !== '' ? trim((string) $hangGplx) : '—',
+        };
+    }
+
     /** Số khóa (vd. 56) từ TenKH dạng …BK56 hoặc …K56. */
     public static function soKhoaTuTen(?string $tenKh): ?string
     {

@@ -25,7 +25,9 @@
 @push('styles')
 <style>
     .gplx-table td, .gplx-table th { vertical-align: middle; white-space: nowrap; }
-    .gplx-table .col-noi-hk { white-space: normal; min-width: 11rem; max-width: 16rem; overflow-wrap: anywhere; font-size: .85rem; }
+    .gplx-table .col-ho-ten { white-space: normal; min-width: 14rem; max-width: 22rem; }
+    .gplx-table .col-ho-ten .ma-hoc-vien { font-size: .85rem; color: #6c757d; }
+    .gplx-table .col-noi-hk { white-space: normal; min-width: 11rem; max-width: 18rem; overflow-wrap: anywhere; font-size: .85rem; }
     .gplx-table .cell-ml { background: #fffef5; }
     .gplx-table tbody tr.selected { background-color: #dcf2e1 !important; color: #212529; }
     .gplx-table tfoot td { font-weight: 600; background: #f1f3f5; }
@@ -36,26 +38,10 @@
 
 @section('content')
     @php
-        use App\Http\Controllers\DaoTao\CapNhatGPLXHocVienController as GplxCtrl;
-        $tab = $tab ?? ($filters['tab'] ?? GplxCtrl::TAB_DANG_XU_LY);
-        $laDaXuLy = $tab === GplxCtrl::TAB_DA_XU_LY;
-        $moThemHv = ! $laDaXuLy && ($themKh !== '' || request()->boolean('mo_them'));
-        $queryGiuLoc = array_merge(request()->except(['page', 'them_kh']), ['tab' => $tab]);
-        $urlTabDang = route('daotao.pdt.bc.cap-nhat-gplx', array_merge($queryGiuLoc, ['tab' => GplxCtrl::TAB_DANG_XU_LY]));
-        $urlTabDa = route('daotao.pdt.bc.cap-nhat-gplx', array_merge($queryGiuLoc, ['tab' => GplxCtrl::TAB_DA_XU_LY]));
-        $urlBoChonKhoa = route('daotao.pdt.bc.cap-nhat-gplx', array_merge(request()->except(['them_kh', 'page']), ['mo_them' => 1, 'tab' => GplxCtrl::TAB_DANG_XU_LY]));
+        $moThemHv = $themKh !== '' || request()->boolean('mo_them');
+        $urlBoChonKhoa = route('daotao.pdt.bc.cap-nhat-gplx', array_merge(request()->except(['them_kh', 'page']), ['mo_them' => 1]));
     @endphp
 
-    <ul class="nav nav-tabs mb-3">
-        <li class="nav-item">
-            <a class="nav-link {{ ! $laDaXuLy ? 'active font-weight-bold' : '' }}" href="{{ $urlTabDang }}">Danh sách cập nhật GPLX</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link {{ $laDaXuLy ? 'active font-weight-bold' : '' }}" href="{{ $urlTabDa }}">Danh sách đã xử lý</a>
-        </li>
-    </ul>
-
-    @if (! $laDaXuLy)
     <div class="card card-panel">
         <div class="card-header d-flex align-items-center">
             <span class="mr-auto">Thêm học viên vào danh sách cập nhật GPLX</span>
@@ -68,7 +54,6 @@
         <div class="card-body">
             <p class="small text-muted mb-3">Danh sách lưu trên MANHLINH. Không ghi / sửa dữ liệu bên <code>GPLX_BAN_MOI</code>.</p>
             <form method="GET" action="{{ route('daotao.pdt.bc.cap-nhat-gplx') }}" class="form-row align-items-end">
-                <input type="hidden" name="tab" value="{{ GplxCtrl::TAB_DANG_XU_LY }}">
                 @foreach (array_filter(['tu_khoa' => $filters['tu_khoa'], 'ma_kh' => $filters['ma_kh'], 'cap_nhat' => $filters['cap_nhat']]) as $k => $v)
                     <input type="hidden" name="{{ $k }}" value="{{ $v }}">
                 @endforeach
@@ -163,13 +148,11 @@
         </div>
         </div>
     </div>
-    @endif
 
     <div class="card card-panel">
-        <div class="card-header">Tìm kiếm{{ $laDaXuLy ? ' — đã xử lý' : '' }}</div>
+        <div class="card-header">Tìm kiếm</div>
         <div class="card-body">
             <form method="GET" action="{{ route('daotao.pdt.bc.cap-nhat-gplx') }}" class="form-row align-items-end">
-                <input type="hidden" name="tab" value="{{ $tab }}">
                 <div class="form-group col-md-4 mb-0">
                     <label>Mã ĐK|Họ tên|CMT|Số hồ sơ|Số GPLX</label>
                     <input type="text" class="form-control form-control-sm" name="tu_khoa" value="{{ $filters['tu_khoa'] }}" placeholder="Nhập từ khoá">
@@ -195,14 +178,14 @@
                 </div>
                 <div class="form-group col-md-2 mb-0">
                     <button type="submit" class="btn btn-sm btn-primary btn-block">Tìm kiếm</button>
-                    <a href="{{ route('daotao.pdt.bc.cap-nhat-gplx', ['tab' => $tab]) }}" class="btn btn-sm btn-outline-secondary btn-block mt-1" title="Làm mới">↻</a>
+                    <a href="{{ route('daotao.pdt.bc.cap-nhat-gplx') }}" class="btn btn-sm btn-outline-secondary btn-block mt-1" title="Làm mới">↻</a>
                 </div>
             </form>
         </div>
     </div>
 
     <div class="card card-panel">
-        <div class="card-header">{{ $laDaXuLy ? 'Danh sách đã xử lý' : 'Danh sách cập nhật GPLX học viên' }}</div>
+        <div class="card-header">Danh sách cập nhật GPLX học viên</div>
         <div class="card-body">
             <form method="POST" action="{{ route('daotao.pdt.bc.cap-nhat-gplx.hang-loat') }}" id="form-hang-loat">
                 @csrf
@@ -214,14 +197,9 @@
                     <button type="button" class="btn btn-success btn-hang-loat" data-hanh-dong="cap_nhat">✔ Đã cập nhật GPLX</button>
                     <button type="button" class="btn btn-outline-success btn-hang-loat" data-hanh-dong="bo_cap_nhat">Bỏ cập nhật</button>
                 </div>
-                @if ($laDaXuLy)
-                    <button type="button" class="btn btn-sm btn-outline-primary mr-2 mb-2 btn-hang-loat" data-hanh-dong="chuyen_dang_xu_ly">← Về danh sách cập nhật GPLX</button>
-                @else
-                    <button type="button" class="btn btn-sm btn-outline-secondary mr-2 mb-2 btn-hang-loat" data-hanh-dong="chuyen_da_xu_ly">→ Chuyển sang đã xử lý</button>
-                @endif
                 <button type="button" class="btn btn-sm btn-outline-danger mr-2 mb-2 btn-hang-loat" data-hanh-dong="xoa">✕ Xoá khỏi danh sách</button>
                 <span class="small text-muted mb-2 mr-auto">Đã chọn <strong id="so-tick">0</strong></span>
-                <a href="{{ route('daotao.pdt.bc.cap-nhat-gplx.export', array_filter(array_merge(request()->only(['tu_khoa', 'ma_kh', 'cap_nhat', 'tab']), ['tab' => $tab]), fn ($v) => $v !== null && $v !== '')) }}"
+                <a href="{{ route('daotao.pdt.bc.cap-nhat-gplx.export', array_filter(request()->only(['tu_khoa', 'ma_kh', 'cap_nhat']), fn ($v) => $v !== null && $v !== '')) }}"
                    class="btn btn-sm btn-outline-success mr-3 mb-2"
                    title="Xuất toàn bộ {{ number_format($items->total()) }} học viên theo bộ lọc hiện tại (không phân trang)">⬇ Xuất Excel ({{ number_format($items->total()) }})</a>
 
@@ -243,9 +221,9 @@
             </div>
 
             <p class="small text-muted mb-2">
-                Bảng giống mẫu báo cáo: đọc <strong>NguoiLX / NguoiLX_HoSo</strong> (PMGPLX).
-                <strong>Số GPLX</strong> / <strong>Ngày cấp GPLX</strong> ưu tiên dữ liệu đã nhập trên MANHLINH, không có thì lấy GPLX đã có trên PM.
-                Ô nền vàng nhạt = đang dùng giá trị lưu trên MANHLINH (<code>CapNhatGPLXHocVienBoSung</code>), ưu tiên hơn PMGPLX. Cập nhật không ghi vào PMGPLX.
+                Cột giống mẫu Excel: HKTT, Đã có GPLX, Ngày trúng tuyển lấy MANHLINH nếu đã nhập, không có thì PMGPLX (địa chỉ qua <code>DM_DVHC</code>).
+                <strong>Số GPLX</strong> / <strong>Ngày cấp GPLX</strong> ưu tiên GPLX cập nhật trên MANHLINH. Dòng dưới họ tên = <strong>Mã ĐK</strong> (vd. <code>44007-…</code>).
+                Ô nền vàng nhạt = giá trị MANHLINH (<code>CapNhatGPLXHocVienBoSung</code>).
             </p>
 
             <div class="table-responsive">
@@ -253,16 +231,16 @@
                     <thead>
                         <tr>
                             <th class="text-center"><input type="checkbox" id="tick-tat-ca" title="Chọn cả trang"></th>
+                            <th class="text-center" style="width: 1.75rem;" title="Đã cập nhật GPLX"></th>
                             <th>STT</th>
-                            <th>Họ tên</th>
-                            <th title="Ngày tháng năm sinh">Ngày sinh</th>
-                            <th title="Số CMND">CMND</th>
-                            <th class="col-noi-hk" title="Nơi đăng ký hộ khẩu thường trú">HKTT</th>
-                            <th title="Đã có GPLX (hạng)">Đã có</th>
+                            <th class="col-ho-ten">Họ và tên</th>
+                            <th>Ngày sinh</th>
+                            <th>Số CMND</th>
+                            <th class="col-noi-hk" title="HKTT — MANHLINH hoặc PMGPLX (DM_DVHC)">Nơi đăng ký hộ khẩu</th>
+                            <th>Đã có GPLX</th>
                             <th>Số GPLX</th>
-                            <th title="Ngày cấp GPLX">Ngày cấp</th>
-                            <th title="Ngày trúng tuyển">Ngày TT</th>
-                            <th title="Trạng thái cập nhật GPLX">TT</th>
+                            <th>Ngày cấp GPLX</th>
+                            <th>Ngày trúng tuyển</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -271,9 +249,10 @@
                             @php
                                 $hv = $hocVien[(string) $row->MaDK] ?? null;
                                 $bs = $row->boSung;
-                                $ht = CapNhatGPLXHienThi::dong($row, $hv, $bs);
+                                $ht = CapNhatGPLXHienThi::dong($row, $hv, $bs, $dvhcMap ?? []);
                                 $hoTen = $ht['ho_ten'];
-                                $formBs = CapNhatGPLXHienThi::giaTriFormBoSung($bs, $hv);
+                                $formBs = CapNhatGPLXHienThi::giaTriFormBoSung($bs, $hv, $dvhcMap ?? []);
+                                $formGplx = CapNhatGPLXHienThi::giaTriFormGplx($row, $hv);
                                 $cellMl = static function (string $val, bool $tuMl): string {
                                     if ($val === '') {
                                         return '<span class="text-muted">—</span>';
@@ -285,14 +264,21 @@
                             @endphp
                             <tr>
                                 <td class="text-center"><input type="checkbox" class="tick-dong" name="ids[]" value="{{ $row->Id }}" form="form-hang-loat"></td>
+                                <td class="text-center">
+                                    @if ($row->DaCapNhatGPLX)
+                                        <span class="text-success font-weight-bold" title="Đã cập nhật GPLX">✓</span>
+                                    @endif
+                                </td>
                                 <td>{{ $items->firstItem() + $i }}</td>
-                                <td>
+                                <td class="col-ho-ten">
                                     @if ($hoTen !== '')
                                         <div>{{ $hoTen }}</div>
+                                        @if ($ht['ma_hoc_vien'] !== '')
+                                            <div class="ma-hoc-vien" title="Mã ĐK">{{ $ht['ma_hoc_vien'] }}</div>
+                                        @endif
                                     @else
                                         <div class="text-danger">Không tìm thấy bên PMGPLX</div>
                                     @endif
-                                    <small class="text-muted" title="Khoá {{ $row->MaKhoaHoc }}">{{ $row->MaDK }}</small>
                                 </td>
                                 <td>{!! $cellMl($ht['ngay_sinh'], false) !!}</td>
                                 <td><code>{!! $cellMl($ht['so_cmnd'], false) !!}</code></td>
@@ -301,32 +287,23 @@
                                 <td>{!! $cellMl($ht['so_gplx'], (bool) $row->SoGPLX) !!}</td>
                                 <td>{!! $cellMl($ht['ngay_cap_gplx'], (bool) $row->NgayCapGPLX) !!}</td>
                                 <td>{!! $cellMl($ht['ngay_trung_tuyen'], $ht['ml']['ngay_trung_tuyen']) !!}</td>
-                                <td>
-                                    @if ($row->DaCapNhatGPLX)
-                                        <span class="badge badge-success" title="{{ $row->NgayCapNhatGPLX?->format('d/m/Y H:i') }}">Đã cập nhật {{ $row->NgayCapNhatGPLX?->format('d/m') }}</span>
-                                    @else
-                                        <span class="badge badge-light border">Chưa</span>
-                                    @endif
-                                </td>
                                 <td class="text-nowrap">
                                     <button type="button" class="btn btn-sm btn-outline-primary py-0 btn-sua"
                                             data-url="{{ route('daotao.pdt.bc.cap-nhat-gplx.update', $row->Id) }}"
                                             data-ten="{{ $row->MaDK }} — {{ $hoTen }}"
-                                            data-da-xu-ly="{{ (int) $row->DaXuLy }}"
                                             data-cap-nhat="{{ (int) $row->DaCapNhatGPLX }}"
-                                            data-so-gplx="{{ $row->SoGPLX }}"
-                                            data-hang-gplx="{{ $row->HangGPLX }}"
-                                            data-ngay-cap="{{ $row->NgayCapGPLX?->format('Y-m-d') }}"
-                                            data-ngay-hh="{{ $row->NgayHHGPLX?->format('Y-m-d') }}"
-                                            data-noi-cap="{{ $row->NoiCapGPLX }}"
+                                            data-so-gplx="{{ $formGplx['so_gplx'] }}"
+                                            data-ngay-cap="{{ $formGplx['ngay_cap_gplx'] }}"
                                             data-noi-hk="{{ $formBs['noi_dk_ho_khau'] }}"
                                             data-da-co-gplx="{{ $formBs['da_co_gplx'] }}"
                                             data-ngay-tt="{{ $formBs['ngay_trung_tuyen'] }}"
+                                            data-ngay-sinh="{{ $ht['ngay_sinh'] }}"
+                                            data-so-cmnd="{{ $ht['so_cmnd'] }}"
+                                            data-pm-hk="{{ $ht['noi_dk_ho_khau_pm'] }}"
+                                            data-pm-da-co="{{ $hv?->HangGPLXDaCo ?? '' }}"
                                             data-pm-so="{{ $hv?->SoGPLXDaCo ?? '' }}"
-                                            data-pm-hang="{{ $hv?->HangGPLXDaCo ?? '' }}"
                                             data-pm-ngay-cap="{{ $fmtNgayPm($hv?->NgayCapGPLXDaCo) }}"
-                                            data-pm-ngay-hh="{{ $fmtNgayPm($hv?->NgayHHGPLXDaCo) }}"
-                                            data-pm-noi="{{ $hv?->NoiCapGPLXDaCo ?? ($hv?->DonViCapGPLXDaCo ?? '') }}"
+                                            data-pm-ngay-tt="{{ $fmtNgayPm($hv?->NgayTTGPLXDaCo) }}"
                                             title="Sửa">✎</button>
                                 </td>
                             </tr>
@@ -368,55 +345,35 @@
                     <button type="button" class="close" data-dismiss="modal" aria-label="Đóng"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
-                    <p class="font-weight-bold mb-2" id="sua-ten"></p>
-                    <div class="small text-muted border rounded p-2 mb-3" id="sua-pm-gplx"></div>
-                    <div class="custom-control custom-checkbox mb-2">
-                        <input type="hidden" name="da_xu_ly" value="0">
-                        <input type="checkbox" class="custom-control-input" id="sua-da-xu-ly" name="da_xu_ly" value="1">
-                        <label class="custom-control-label" for="sua-da-xu-ly">Đã xử lý (tab riêng)</label>
-                    </div>
+                    <p class="font-weight-bold mb-1" id="sua-ten"></p>
+                    <p class="small text-muted mb-2" id="sua-pm-co-ban"></p>
+                    <div class="small text-muted border rounded p-2 mb-3 bg-light" id="sua-pm-gplx"></div>
                     <div class="custom-control custom-checkbox mb-3">
                         <input type="hidden" name="da_cap_nhat_gplx" value="0">
                         <input type="checkbox" class="custom-control-input" id="sua-cap-nhat" name="da_cap_nhat_gplx" value="1">
                         <label class="custom-control-label" for="sua-cap-nhat">Đã cập nhật GPLX</label>
                     </div>
-                    <p class="small text-muted mb-2">Đánh dấu hàng loạt «Đã cập nhật GPLX» sẽ tự chuyển sang tab đã xử lý. Ở đây tick «Đã xử lý» nếu muốn chuyển ngay.</p>
-                    <div id="sua-khung-bo-sung" class="border rounded p-2 mb-3 bg-light">
-                        <p class="small font-weight-bold mb-1">Bổ sung / chỉnh trên MANHLINH</p>
-                        <p class="small text-muted mb-2">HKTT, Đã có GPLX, Ngày TT — luôn lưu bảng <code>CapNhatGPLXHocVienBoSung</code>, không sửa PMGPLX. Ô trống = xóa giá trị MANHLINH (hiển thị lại PM nếu có).</p>
-                        <div class="form-group mb-2">
-                            <label for="sua-noi-hk" class="small mb-1">HKTT</label>
-                            <input type="text" class="form-control form-control-sm" id="sua-noi-hk" name="noi_dk_ho_khau" maxlength="500">
-                        </div>
-                        <div class="form-group mb-2">
-                            <label for="sua-da-co-gplx" class="small mb-1">Đã có GPLX (hạng)</label>
+                    <p class="small text-muted mb-2">Các ô dưới trùng cột Excel. Trống HKTT / Đã có / Ngày TT = bỏ ghi MANHLINH, hiển thị lại PMGPLX.</p>
+                    <div class="form-group mb-2">
+                        <label for="sua-noi-hk" class="small mb-1">Nơi đăng ký hộ khẩu</label>
+                        <input type="text" class="form-control form-control-sm" id="sua-noi-hk" name="noi_dk_ho_khau" maxlength="500">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6 mb-2">
+                            <label for="sua-da-co-gplx" class="small mb-1">Đã có GPLX</label>
                             <input type="text" class="form-control form-control-sm" id="sua-da-co-gplx" name="da_co_gplx" maxlength="30">
                         </div>
-                        <div class="form-group mb-0">
+                        <div class="form-group col-md-6 mb-2">
                             <label for="sua-ngay-tt" class="small mb-1">Ngày trúng tuyển</label>
                             <input type="date" class="form-control form-control-sm" id="sua-ngay-tt" name="ngay_trung_tuyen">
                         </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group col-md-6">
-                            <label for="sua-so-gplx" class="small mb-1">Số GPLX (cập nhật / cấp mới)</label>
+                        <div class="form-group col-md-6 mb-0">
+                            <label for="sua-so-gplx" class="small mb-1">Số GPLX</label>
                             <input type="text" class="form-control form-control-sm" id="sua-so-gplx" name="so_gplx" maxlength="30">
                         </div>
-                        <div class="form-group col-md-6">
-                            <label for="sua-hang-gplx" class="small mb-1">Hạng GPLX</label>
-                            <input type="text" class="form-control form-control-sm" id="sua-hang-gplx" name="hang_gplx" maxlength="20">
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label for="sua-ngay-cap" class="small mb-1">Ngày cấp</label>
+                        <div class="form-group col-md-6 mb-0">
+                            <label for="sua-ngay-cap" class="small mb-1">Ngày cấp GPLX</label>
                             <input type="date" class="form-control form-control-sm" id="sua-ngay-cap" name="ngay_cap_gplx">
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label for="sua-ngay-hh" class="small mb-1">Ngày hết hạn</label>
-                            <input type="date" class="form-control form-control-sm" id="sua-ngay-hh" name="ngay_hh_gplx">
-                        </div>
-                        <div class="form-group col-12">
-                            <label for="sua-noi-cap" class="small mb-1">Nơi cấp</label>
-                            <input type="text" class="form-control form-control-sm" id="sua-noi-cap" name="noi_cap_gplx" maxlength="255">
                         </div>
                     </div>
                 </div>
@@ -541,25 +498,25 @@
             var form = document.getElementById('form-sua-gplx');
             form.action = d.url;
             document.getElementById('sua-ten').textContent = d.ten;
-            document.getElementById('sua-da-xu-ly').checked = d.daXuLy === '1';
             document.getElementById('sua-cap-nhat').checked = d.capNhat === '1';
             document.getElementById('sua-so-gplx').value = d.soGplx || '';
-            document.getElementById('sua-hang-gplx').value = d.hangGplx || '';
             document.getElementById('sua-ngay-cap').value = d.ngayCap || '';
-            document.getElementById('sua-ngay-hh').value = d.ngayHh || '';
-            document.getElementById('sua-noi-cap').value = d.noiCap || '';
             document.getElementById('sua-noi-hk').value = d.noiHk || '';
             document.getElementById('sua-da-co-gplx').value = d.daCoGplx || '';
             document.getElementById('sua-ngay-tt').value = d.ngayTt || '';
+            var coBan = [];
+            if (d.ngaySinh) { coBan.push('Ngày sinh: ' + d.ngaySinh); }
+            if (d.soCmnd) { coBan.push('CMND: ' + d.soCmnd); }
+            document.getElementById('sua-pm-co-ban').textContent = coBan.join(' · ');
             var pm = [];
-            if (d.pmSo) { pm.push('Số GPLX đã có: ' + d.pmSo); }
-            if (d.pmHang) { pm.push('Hạng: ' + d.pmHang); }
-            if (d.pmNgayCap) { pm.push('Cấp: ' + d.pmNgayCap); }
-            if (d.pmNgayHh) { pm.push('HH: ' + d.pmNgayHh); }
-            if (d.pmNoi) { pm.push('Nơi cấp: ' + d.pmNoi); }
+            if (d.pmHk) { pm.push('HKTT: ' + d.pmHk); }
+            if (d.pmDaCo) { pm.push('Đã có GPLX: ' + d.pmDaCo); }
+            if (d.pmSo) { pm.push('Số GPLX: ' + d.pmSo); }
+            if (d.pmNgayCap) { pm.push('Ngày cấp: ' + d.pmNgayCap); }
+            if (d.pmNgayTt) { pm.push('Ngày TT: ' + d.pmNgayTt); }
             document.getElementById('sua-pm-gplx').textContent = pm.length
-                ? ('PMGPLX — ' + pm.join(' · '))
-                : 'PMGPLX — chưa có GPLX đã có trên hồ sơ.';
+                ? ('PMGPLX (tham chiếu) — ' + pm.join(' · '))
+                : 'PMGPLX — chưa có dữ liệu tương ứng cột Excel.';
             $('#modalSuaGplx').modal('show');
         });
     })();

@@ -60,9 +60,6 @@ class CapNhatGPLXHocVien extends Model
         if (array_key_exists('DaCapNhatGPLX', $thayDoi) && (bool) $thayDoi['DaCapNhatGPLX'] !== $daCapCu) {
             $this->DaCapNhatGPLX = (bool) $thayDoi['DaCapNhatGPLX'];
             $this->NgayCapNhatGPLX = $this->DaCapNhatGPLX ? $now : null;
-            if ($this->DaCapNhatGPLX && ! array_key_exists('DaXuLy', $thayDoi)) {
-                $this->DaXuLy = true;
-            }
         }
 
         $this->fill(array_diff_key($thayDoi, array_flip(['DaCapNhatGPLX'])));

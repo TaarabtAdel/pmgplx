@@ -63,6 +63,8 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function () {
 
     Route::get('/danh-muc/hoc-vien', [DanhSachHocVienController::class, 'index'])
         ->name('dm.hoc-vien.index');
+    Route::get('/danh-muc/hoc-vien/xuat-excel', [DanhSachHocVienController::class, 'export'])
+        ->name('dm.hoc-vien.export');
     Route::get('/danh-muc/hoc-vien/dong-bo', [DanhSachHocVienController::class, 'dongBoForm'])
         ->name('dm.hoc-vien.dong-bo.form');
     Route::post('/danh-muc/hoc-vien/dong-bo', [DanhSachHocVienController::class, 'dongBoStore'])

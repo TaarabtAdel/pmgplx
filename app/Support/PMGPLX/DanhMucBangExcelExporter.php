@@ -24,7 +24,13 @@ final class DanhMucBangExcelExporter
     public static function download(string $title, string $filePrefix, array $columns, iterable $rows): StreamedResponse
     {
         $rowList = $rows instanceof \Traversable ? iterator_to_array($rows, false) : (array) $rows;
-        $spreadsheet = self::build($title, $columns, $rowList);
+        $spreadsheet = self::build($title, $columns, $rowList, static function (mixed $row, string $name): mixed {
+            if ($row instanceof Model) {
+                return $row->getAttributes()[$name] ?? null;
+            }
+
+            return null;
+        });
         $filename = $filePrefix.'-'.now()->format('Ymd-His').'.xlsx';
 
         return response()->streamDownload(function () use ($spreadsheet): void {
@@ -37,9 +43,30 @@ final class DanhMucBangExcelExporter
 
     /**
      * @param  list<string>  $columns
-     * @param  list<Model>  $rows
+     * @param  iterable<int, array<string, mixed>>  $rows
      */
-    private static function build(string $title, array $columns, array $rows): Spreadsheet
+    public static function downloadFromArrays(string $title, string $filePrefix, array $columns, iterable $rows): StreamedResponse
+    {
+        $rowList = $rows instanceof \Traversable ? iterator_to_array($rows, false) : (array) $rows;
+        $spreadsheet = self::build($title, $columns, $rowList, static function (mixed $row, string $name): mixed {
+            return is_array($row) ? ($row[$name] ?? null) : null;
+        });
+        $filename = $filePrefix.'-'.now()->format('Ymd-His').'.xlsx';
+
+        return response()->streamDownload(function () use ($spreadsheet): void {
+            (new Xlsx($spreadsheet))->save('php://output');
+            $spreadsheet->disconnectWorksheets();
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    /**
+     * @param  list<string>  $columns
+     * @param  list<mixed>  $rows
+     * @param  callable(mixed, string): mixed  $valueAt
+     */
+    private static function build(string $title, array $columns, array $rows, callable $valueAt): Spreadsheet
     {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -70,12 +97,11 @@ final class DanhMucBangExcelExporter
         $sheet->getRowDimension($headerRow)->setRowHeight(22);
 
         $dataRow = $headerRow + 1;
-        foreach ($rows as $model) {
-            $attrs = $model->getAttributes();
+        foreach ($rows as $row) {
             foreach ($columns as $i => $name) {
                 $col = self::columnLetter($i + 1);
                 $cell = $col.$dataRow;
-                $value = self::cellValue($attrs[$name] ?? null);
+                $value = self::cellValue($valueAt($row, $name));
                 if (is_string($value) && $value !== '' && ! is_numeric($value)) {
                     $sheet->setCellValueExplicit($cell, $value, DataType::TYPE_STRING);
                 } else {

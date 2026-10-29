@@ -23,9 +23,12 @@ final class CapNhatGPLXHocVienExcelExporter
      * @param  Collection<string, object>  $hocVien
      * @param  list<string>  $moTaBoLoc
      */
-    public static function download(Collection $rows, Collection $hocVien, array $moTaBoLoc, string $tenFile): StreamedResponse
+    /**
+     * @param  array<string, string>  $dvhcMap
+     */
+    public static function download(Collection $rows, Collection $hocVien, array $moTaBoLoc, string $tenFile, array $dvhcMap = []): StreamedResponse
     {
-        $spreadsheet = self::build($rows, $hocVien, $moTaBoLoc);
+        $spreadsheet = self::build($rows, $hocVien, $moTaBoLoc, $dvhcMap);
 
         return response()->streamDownload(function () use ($spreadsheet): void {
             (new Xlsx($spreadsheet))->save('php://output');
@@ -40,16 +43,25 @@ final class CapNhatGPLXHocVienExcelExporter
      * @param  Collection<string, object>  $hocVien
      * @param  list<string>  $moTaBoLoc
      */
-    private static function build(Collection $rows, Collection $hocVien, array $moTaBoLoc): Spreadsheet
+    /**
+     * @param  array<string, string>  $dvhcMap
+     */
+    private static function build(Collection $rows, Collection $hocVien, array $moTaBoLoc, array $dvhcMap = []): Spreadsheet
     {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Cap nhat GPLX');
 
         $cot = [
-            ['STT', 5], ['Họ tên', 28], ['Ngày sinh', 11], ['CMND', 16],
-            ['HKTT', 36], ['Đã có GPLX', 11], ['Số GPLX', 16],
-            ['Ngày cấp', 11], ['Ngày TT', 11], ['Mã ĐK', 18],
+            ['STT', 5],
+            ['Họ và tên', 28],
+            ['Ngày tháng năm sinh', 12],
+            ['Số CMND', 16],
+            ['Nơi đăng ký hộ khẩu', 36],
+            ['Đã có GPLX', 11],
+            ['Số GPLX', 16],
+            ['Ngày cấp GPLX', 12],
+            ['Ngày trúng tuyển', 12],
         ];
         $soCot = count($cot);
         $cotCuoi = self::chuCot($soCot);
@@ -78,10 +90,13 @@ final class CapNhatGPLXHocVienExcelExporter
         $r = $dongTieuDe + 1;
         foreach ($rows->values() as $i => $row) {
             $hv = $hocVien[(string) $row->MaDK] ?? null;
-            $ht = CapNhatGPLXHienThi::dong($row, $hv, $row->boSung);
+            $ht = CapNhatGPLXHienThi::dong($row, $hv, $row->boSung, $dvhcMap);
+            $tenCell = $ht['ho_ten'] !== ''
+                ? $ht['ho_ten_xuat']
+                : '(không tìm thấy bên PMGPLX)';
             $sheet->fromArray([
                 $i + 1,
-                $ht['ho_ten'] !== '' ? $ht['ho_ten'] : '(không tìm thấy bên PMGPLX)',
+                $tenCell,
                 $ht['ngay_sinh'],
                 $ht['so_cmnd'],
                 $ht['noi_dk_ho_khau'],
@@ -89,7 +104,6 @@ final class CapNhatGPLXHocVienExcelExporter
                 $ht['so_gplx'],
                 $ht['ngay_cap_gplx'],
                 $ht['ngay_trung_tuyen'],
-                (string) $row->MaDK,
             ], null, 'A'.$r, true);
             $sheet->setCellValueExplicit('D'.$r, $ht['so_cmnd'], DataType::TYPE_STRING);
             $sheet->setCellValueExplicit('G'.$r, $ht['so_gplx'], DataType::TYPE_STRING);
