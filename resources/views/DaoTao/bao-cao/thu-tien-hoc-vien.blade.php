@@ -171,7 +171,7 @@
                 <input type="hidden" name="tab" value="{{ $tab }}">
                 <div class="form-group col-md-2 mb-0">
                     <label>Mã ĐK|Họ tên|CMT|Số hồ sơ</label>
-                    <input type="text" class="form-control form-control-sm" name="tu_khoa" value="{{ $filters['tu_khoa'] }}" placeholder="Nhập từ khoá">
+                    <input type="text" class="form-control form-control-sm" name="tu_khoa" value="{{ $filters['tu_khoa'] }}" placeholder="Tên, mã ĐK, CMT, số hồ sơ, SĐT">
                 </div>
                 <div class="form-group col-md-2 mb-0">
                     <label for="loc_ma_kh">Khoá</label>
@@ -277,6 +277,7 @@
                             <th>STT</th>
                             <th>Họ và tên / Mã ĐK</th>
                             <th>Số CMT / Ngày sinh</th>
+                            <th>Số điện thoại</th>
                             <th>Tên khoá học / Hạng ĐT</th>
                             <th>Tốt nghiệp</th>
                             <th>Thu tiền</th>
@@ -312,6 +313,7 @@
                                         <small class="text-muted">{{ NgayVn::format($hv->NgaySinh, 'yyyymmdd') }}</small>
                                     @endif
                                 </td>
+                                <td class="text-nowrap">{{ $row->SoDienThoai }}</td>
                                 <td>
                                     @php
                                         $maKhHien = (string) ($row->MaKhoaHoc ?: ($hv->MaKhoaHoc ?? ''));
@@ -375,13 +377,14 @@
                                             data-tot-nghiep="{{ (int) ThuTienHocVien::daTotNghiepHienThi($hv, (bool) $row->DaTotNghiep) }}"
                                             data-da-xu-ly="{{ (int) $row->DaXuLy }}"
                                             data-thu-tien="{{ (int) $row->DaThuTien }}"
+                                            data-so-dien-thoai="{{ $row->SoDienThoai }}"
                                             data-ghi-chu="{{ $row->GhiChu }}"
                                             title="Sửa">✎</button>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="14" class="text-center py-4">
+                                <td colspan="15" class="text-center py-4">
                                     @if (collect($filters)->except('per_page')->filter(fn ($v) => $v !== '')->isNotEmpty())
                                         Không có học viên khớp bộ lọc.
                                     @else
@@ -394,7 +397,7 @@
                     @if ($items->total() > 0)
                         <tfoot>
                             <tr>
-                                <td colspan="7" class="text-right">Tổng theo bộ lọc ({{ number_format($items->total()) }} học viên)</td>
+                                <td colspan="8" class="text-right">Tổng theo bộ lọc ({{ number_format($items->total()) }} học viên)</td>
                                 @foreach ($khoan as $k)
                                     <td class="so-tien {{ $tong[$k] < 0 ? 'am' : '' }}">{{ $tien($tong[$k]) }}</td>
                                 @endforeach
@@ -402,7 +405,7 @@
                                 <td colspan="2"></td>
                             </tr>
                             <tr>
-                                <td colspan="7" class="text-right text-danger">Phải thu (rớt chưa nộp lại phí thi lại)</td>
+                                <td colspan="8" class="text-right text-danger">Phải thu (rớt chưa nộp lại phí thi lại)</td>
                                 @foreach ($khoan as $k)
                                     <td class="so-tien {{ $tongPhaiThu[$k] > 0 ? 'am' : 'khong' }}">{{ $tongPhaiThu[$k] > 0 ? $tien(-$tongPhaiThu[$k]) : '0' }}</td>
                                 @endforeach
@@ -462,13 +465,18 @@
                             Ghi nhầm thì bấm ↶ để huỷ lần cuối (hoàn phí).
                         </p>
                     </div>
+                    <div class="form-group mb-2">
+                        <label for="sua-so-dien-thoai" class="small mb-1">Số điện thoại</label>
+                        <input type="text" class="form-control form-control-sm" id="sua-so-dien-thoai" name="so_dien_thoai"
+                               maxlength="30" inputmode="tel" placeholder="vd. 0905 123 456">
+                    </div>
                     <div class="form-group mb-0">
                         <label for="sua-ghi-chu" class="small mb-1">Ghi chú</label>
                         <input type="text" class="form-control form-control-sm" id="sua-ghi-chu" name="ghi_chu" maxlength="500">
                     </div>
                 </div>
                 <div class="modal-footer py-2">
-                    <span class="small text-muted mr-auto">Lưu: tốt nghiệp (tay), thu tiền, ghi chú. Kết quả thi ghi ngay khi bấm.</span>
+                    <span class="small text-muted mr-auto">Lưu: tốt nghiệp (tay), thu tiền, số điện thoại, ghi chú. Kết quả thi ghi ngay khi bấm.</span>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
                     <button type="submit" class="btn btn-navy">Lưu</button>
                 </div>
@@ -883,6 +891,7 @@
             document.getElementById('sua-tot-nghiep').checked = d.totNghiep === '1';
             document.getElementById('sua-da-xu-ly').checked = d.daXuLy === '1';
             document.getElementById('sua-thu-tien').checked = d.thuTien === '1';
+            document.getElementById('sua-so-dien-thoai').value = d.soDienThoai || '';
             document.getElementById('sua-ghi-chu').value = d.ghiChu || '';
             document.getElementById('sua-ngay-thi').value = new Date().toISOString().slice(0, 10);
             goiApi('GET', sua.urlGd).then(function (gd) {

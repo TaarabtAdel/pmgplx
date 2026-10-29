@@ -59,6 +59,7 @@ class ThuTienHocVien extends Model
     protected $fillable = [
         'MaDK',
         'MaKhoaHoc',
+        'SoDienThoai',
         'DaTotNghiep',
         'DaThuTien',
         'DaXuLy',

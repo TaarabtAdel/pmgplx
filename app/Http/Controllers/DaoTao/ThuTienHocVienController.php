@@ -307,7 +307,10 @@ class ThuTienHocVienController extends Controller
             'da_tot_nghiep' => ['boolean'],
             'da_thu_tien' => ['boolean'],
             'da_xu_ly' => ['boolean'],
+            'so_dien_thoai' => ['nullable', 'string', 'max:30', 'regex:/^[0-9+().\s\-\/,;]*$/'],
             'ghi_chu' => ['nullable', 'string', 'max:500'],
+        ], [
+            'so_dien_thoai.regex' => 'Số điện thoại chỉ gồm chữ số (có thể ngăn cách bằng dấu cách, chấm, gạch, phẩy).',
         ]);
 
         DB::connection('sqlsrv_manhlinh')->transaction(function () use ($thuTien, $data): void {
@@ -315,6 +318,7 @@ class ThuTienHocVienController extends Controller
                 'DaTotNghiep' => (bool) ($data['da_tot_nghiep'] ?? false),
                 'DaThuTien' => (bool) ($data['da_thu_tien'] ?? false),
                 'DaXuLy' => (bool) ($data['da_xu_ly'] ?? false),
+                'SoDienThoai' => trim((string) ($data['so_dien_thoai'] ?? '')) ?: null,
                 'GhiChu' => trim((string) ($data['ghi_chu'] ?? '')) ?: null,
             ], auth()->id());
         });
@@ -504,7 +508,9 @@ class ThuTienHocVienController extends Controller
                 ->pluck('n.MaDK')
                 ->map(fn ($m) => (string) $m)
                 ->all();
-            $q->where(fn ($w) => $w->where('MaDK', 'like', '%'.$tk.'%')->orWhereIn('MaDK', $maTheoTen ?: ['']));
+            $q->where(fn ($w) => $w->where('MaDK', 'like', '%'.$tk.'%')
+                ->orWhere('SoDienThoai', 'like', '%'.$tk.'%')
+                ->orWhereIn('MaDK', $maTheoTen ?: ['']));
         }
 
         return $q;

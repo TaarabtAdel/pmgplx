@@ -51,7 +51,7 @@ final class ThuTienHocVienExcelExporter
         $sheet->setTitle('Thu tien HV');
 
         $cot = [
-            ['STT', 5], ['Mã ĐK', 22], ['Họ và tên', 26], ['Ngày sinh', 11], ['Số CMT', 15], ['Mã khoá học', 15],
+            ['STT', 5], ['Mã ĐK', 22], ['Họ và tên', 26], ['Ngày sinh', 11], ['Số CMT', 15], ['Số điện thoại', 14], ['Mã khoá học', 15],
             ['Hạng ĐT', 10], ['Tốt nghiệp', 11], ['Thu tiền', 13],
             ['Tiền LT', 12], ['KQ LT', 15], ['Tiền Sa hình', 12], ['KQ Sa hình', 15], ['Tiền Đường', 12], ['KQ Đường', 15],
             ['Bìa', 11], ['Tổng', 13], ['Phải thu', 13], ['Ghi chú', 28],
@@ -94,6 +94,7 @@ final class ThuTienHocVienExcelExporter
                 $hoTen,
                 $hv ? NgayVn::format($hv->NgaySinh, 'yyyymmdd') : '',
                 (string) ($hv->SoCMT ?? ''),
+                (string) $row->SoDienThoai,
                 (string) $row->MaKhoaHoc,
                 ThuTienHocVien::hangDaoTaoTuHoSo($hv),
                 ThuTienHocVien::daTotNghiepHienThi($hv, (bool) $row->DaTotNghiep) ? 'Đã tốt nghiệp' : 'Chưa',
@@ -109,17 +110,18 @@ final class ThuTienHocVienExcelExporter
                 $row->tongPhaiThu() > 0 ? -$row->tongPhaiThu() : 0,
                 (string) $row->GhiChu,
             ], null, 'A'.$r, true);
-            // Mã ĐK / CMT dạng chữ để Excel không làm mất số 0 đầu.
+            // Mã ĐK / CMT / SĐT dạng chữ để Excel không làm mất số 0 đầu.
             $sheet->setCellValueExplicit('B'.$r, (string) $row->MaDK, DataType::TYPE_STRING);
             $sheet->setCellValueExplicit('E'.$r, (string) ($hv->SoCMT ?? ''), DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit('F'.$r, (string) $row->SoDienThoai, DataType::TYPE_STRING);
             $r++;
         }
 
         $dauDuLieu = $dongTieuDe + 1;
         $cuoiDuLieu = $r - 1;
         $sheet->setCellValue('A'.$r, 'Tổng');
-        $sheet->mergeCells('A'.$r.':I'.$r);
-        foreach (['J', 'L', 'N', 'P', 'Q', 'R'] as $c) {
+        $sheet->mergeCells('A'.$r.':J'.$r);
+        foreach (['K', 'M', 'O', 'Q', 'R', 'S'] as $c) {
             $sheet->setCellValue($c.$r, $cuoiDuLieu >= $dauDuLieu ? "=SUM({$c}{$dauDuLieu}:{$c}{$cuoiDuLieu})" : 0);
         }
         $sheet->getStyle('A'.$r.':'.$cotCuoi.$r)->applyFromArray([
@@ -128,11 +130,11 @@ final class ThuTienHocVienExcelExporter
         ]);
         $sheet->getStyle('A'.$r)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
-        foreach (['J', 'L', 'N', 'P', 'Q', 'R'] as $c) {
+        foreach (['K', 'M', 'O', 'Q', 'R', 'S'] as $c) {
             $sheet->getStyle($c.$dauDuLieu.':'.$c.$r)->getNumberFormat()->setFormatCode(self::DINH_DANG_TIEN);
         }
-        $sheet->getStyle('Q'.$dauDuLieu.':Q'.$r)->getFont()->setBold(true);
-        foreach (['K', 'M', 'O'] as $c) {
+        $sheet->getStyle('R'.$dauDuLieu.':R'.$r)->getFont()->setBold(true);
+        foreach (['L', 'N', 'P'] as $c) {
             $sheet->getStyle($c.$dauDuLieu.':'.$c.$cuoiDuLieu)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         }
         $sheet->getStyle('A'.$dongTieuDe.':'.$cotCuoi.$r)->applyFromArray([
