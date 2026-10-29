@@ -227,6 +227,10 @@ class QuyetDinhDieuDongXeController extends Controller
 
         return view('QldtOto.quyet-dinh-dieu-dong-xe.preview', [
             'preview' => $preview,
+            'trungLichXe' => QuyetDinhDieuDongXeSupport::canhBaoTrungLichXe(
+                (string) ($preview['ma_kh'] ?? ''),
+                $preview['xe_blocks']
+            ),
         ]);
     }
 

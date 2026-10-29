@@ -5,6 +5,7 @@ namespace App\Support\QldtOto;
 use App\Models\DaoTao\KhoaDaoTao;
 use App\Models\DaoTao\PhanCongDaoTao;
 use App\Models\PMGPLX\KhoaHoc;
+use App\Models\PMGPLX\KhoaHocXeTap;
 use App\Models\PMGPLX\XeTap;
 use Carbon\Carbon;
 
@@ -62,6 +63,118 @@ final class QuyetDinhDieuDongXeSupport
         }
 
         return $out;
+    }
+
+    /**
+     * Đối chiếu lịch xe tập PMGPLX (/pmgplx/lich/xe-tap): cùng xe, khoá khác, trùng khoảng thời gian.
+     *
+     * @param  list<array<string, mixed>>  $xeBlocks
+     * @return array<int, list<array{ma_kh: string, ten_kh: string, tu: string, den: string, so_buoi: int, giao_vien: string}>>
+     */
+    public static function canhBaoTrungLichXe(string $maKh, array $xeBlocks): array
+    {
+        $maKhKey = mb_strtoupper(trim($maKh));
+        $out = [];
+
+        foreach ($xeBlocks as $xi => $block) {
+            $bien = trim((string) ($block['bien_so'] ?? ''));
+            [$tu, $den] = self::khoangThoiGianXe($block['giao_vien'] ?? []);
+            if ($bien === '' || $tu === null || $den === null) {
+                continue;
+            }
+
+            $compact = mb_strtoupper(preg_replace('/[\s.\-]/u', '', $bien) ?? $bien);
+            $rows = KhoaHocXeTap::query()
+                ->where('IsKhoaHocXeTap', 0)
+                ->whereNotNull('NgayBD')
+                ->whereRaw("UPPER(REPLACE(REPLACE(REPLACE(BienSoXe, '-', ''), '.', ''), ' ', '')) = ?", [$compact])
+                ->where('NgayBD', '<=', $den->format('Y-m-d').' 23:59:59')
+                ->where(function ($q) use ($tu): void {
+                    $q->where('NgayKT', '>=', $tu->format('Y-m-d'))
+                        ->orWhere(function ($q2) use ($tu): void {
+                            $q2->whereNull('NgayKT')->where('NgayBD', '>=', $tu->format('Y-m-d'));
+                        });
+                })
+                ->get(['MaKH', 'NgayBD', 'NgayKT', 'TenGV']);
+
+            $byKhoa = [];
+            foreach ($rows as $row) {
+                $ma = trim((string) $row->MaKH);
+                if ($ma === '' || mb_strtoupper($ma) === $maKhKey) {
+                    continue;
+                }
+                $key = mb_strtoupper($ma);
+                $bd = $row->NgayBD;
+                $kt = $row->NgayKT ?? $row->NgayBD;
+                if (! isset($byKhoa[$key])) {
+                    $byKhoa[$key] = ['ma_kh' => $ma, 'min' => $bd, 'max' => $kt, 'so_buoi' => 0, 'gv' => []];
+                }
+                $byKhoa[$key]['so_buoi']++;
+                if ($bd < $byKhoa[$key]['min']) {
+                    $byKhoa[$key]['min'] = $bd;
+                }
+                if ($kt > $byKhoa[$key]['max']) {
+                    $byKhoa[$key]['max'] = $kt;
+                }
+                $tenGv = trim((string) ($row->TenGV ?? ''));
+                if ($tenGv !== '') {
+                    $byKhoa[$key]['gv'][$tenGv] = true;
+                }
+            }
+
+            if ($byKhoa === []) {
+                continue;
+            }
+
+            $tenKh = KhoaHoc::query()
+                ->whereIn('MaKH', array_column($byKhoa, 'ma_kh'))
+                ->pluck('TenKH', 'MaKH')
+                ->mapWithKeys(fn ($ten, $ma) => [mb_strtoupper(trim((string) $ma)) => trim((string) $ten)]);
+
+            foreach ($byKhoa as $key => $info) {
+                $out[$xi][] = [
+                    'ma_kh' => $info['ma_kh'],
+                    'ten_kh' => (string) ($tenKh[$key] ?? ''),
+                    'tu' => $info['min']->format('d/m/Y'),
+                    'den' => $info['max']->format('d/m/Y'),
+                    'so_buoi' => $info['so_buoi'],
+                    'giao_vien' => implode(', ', array_keys($info['gv'])),
+                ];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $gvRows
+     * @return array{0: ?Carbon, 1: ?Carbon}
+     */
+    private static function khoangThoiGianXe(array $gvRows): array
+    {
+        $min = null;
+        $max = null;
+        foreach ($gvRows as $gv) {
+            foreach (['tu_ngay' => 'min', 'den_ngay' => 'max'] as $field => $kind) {
+                $v = trim((string) ($gv[$field] ?? ''));
+                if ($v === '') {
+                    continue;
+                }
+                try {
+                    $d = Carbon::parse($v)->startOfDay();
+                } catch (\Throwable) {
+                    continue;
+                }
+                if ($kind === 'min' && ($min === null || $d < $min)) {
+                    $min = $d;
+                }
+                if ($kind === 'max' && ($max === null || $d > $max)) {
+                    $max = $d;
+                }
+            }
+        }
+
+        return [$min, $max ?? $min];
     }
 
     public static function loaiXeHienThi(string $loaiXe): string
