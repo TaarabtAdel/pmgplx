@@ -195,6 +195,8 @@ return [
                                 [
                                     'title' => 'Xuất file "Quyết định đổi giáo viên"',
                                     'trang' => '2-quyet-dinh-doi-giao-vien',
+                                    'route' => 'qldtoto.quyet-dinh-doi-giao-vien.index',
+                                    'active' => 'qldtoto.quyet-dinh-doi-giao-vien.*',
                                 ],
                                 [
                                     'title' => 'Xuất file "Quyết đinh bảo lưu"',
@@ -303,6 +305,8 @@ return [
                                 [
                                     'title' => 'Xuất file "Báo cáo đề nghị tổ chức sát hạch" + Danh sách',
                                     'trang' => '3-bao-cao-de-nghi-to-chuc-sat-hach-danh-sach',
+                                    'route' => 'qldtoto.bao-cao-de-nghi-sat-hach.index',
+                                    'active' => 'qldtoto.bao-cao-de-nghi-sat-hach.*',
                                 ],
                                 [
                                     'title' => 'Xuất file "Danh sách thí sinh dự sát hạch"',
