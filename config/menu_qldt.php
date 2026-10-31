@@ -165,6 +165,8 @@ return [
                                 [
                                     'title' => 'Xuất file "Thông báo thời gian tập trung học thực hành lái xe"',
                                     'trang' => '2-thong-bao-thoi-gian-tap-trung-hoc-thuc-hanh-lai-xe',
+                                    'route' => 'qldtoto.thong-bao-tap-trung-thuc-hanh.index',
+                                    'active' => 'qldtoto.thong-bao-tap-trung-thuc-hanh.*',
                                 ],
                                 [
                                     'title' => 'Xuất file "Bảng tên" để in',
@@ -186,7 +188,7 @@ return [
                         ],
                         [
                             'title' => 'Làm các quyết định (Nếu có)',
-                            'mo_ta' => 'Đổi xe, đổi thầy, điều chỉnh loại phiên, bảo lưu, đình chỉ học',
+                            'mo_ta' => 'Đổi xe, đổi thầy, điều chỉnh loại phiên, bảo lưu, cho thôi học, đình chỉ học',
                             'children' => [
                                 [
                                     'title' => 'Xuất file "Quyết định đổi xe"',
@@ -201,6 +203,14 @@ return [
                                 [
                                     'title' => 'Xuất file "Quyết đinh bảo lưu"',
                                     'trang' => '2-quyet-dinh-bao-luu',
+                                    'route' => 'qldtoto.quyet-dinh-bao-luu.index',
+                                    'active' => 'qldtoto.quyet-dinh-bao-luu.*',
+                                ],
+                                [
+                                    'title' => 'Xuất file "Quyết định cho thôi học"',
+                                    'trang' => '2-quyet-dinh-cho-thoi-hoc',
+                                    'route' => 'qldtoto.quyet-dinh-cho-thoi-hoc.index',
+                                    'active' => 'qldtoto.quyet-dinh-cho-thoi-hoc.*',
                                 ],
                                 [
                                     'title' => 'Xuất file "Quyết định đình chỉ học"',

@@ -4,12 +4,15 @@ use App\Http\Controllers\QldtOto\BaoCaoDangKyController;
 use App\Http\Controllers\QldtOto\BaoCaoDeNghiSatHachController;
 use App\Http\Controllers\QldtOto\DanhSachHocSinhLaiXeController;
 use App\Http\Controllers\QldtOto\QuyetDinhThanhLapLopHocController;
+use App\Http\Controllers\QldtOto\QuyetDinhThoiHocController;
 use App\Http\Controllers\QldtOto\SoPhanCongGvXeTapLaiController;
+use App\Http\Controllers\QldtOto\QuyetDinhBaoLuuController;
 use App\Http\Controllers\QldtOto\QuyetDinhDieuDongXeController;
 use App\Http\Controllers\QldtOto\QuyetDinhDoiGiaoVienController;
 use App\Http\Controllers\QldtOto\SoTheoDoiKetQuaHocTapController;
 use App\Http\Controllers\QldtOto\CauHinhBaiDayController;
 use App\Http\Controllers\QldtOto\LichDuKien\ThucHanhController;
+use App\Http\Controllers\QldtOto\ThongBaoTapTrungThucHanhController;
 use App\Http\Controllers\QldtOto\TrangController;
 use App\Models\QldtOto\BaiDay;
 use App\Support\MenuQldt;
@@ -69,6 +72,18 @@ Route::prefix('qldt-oto')->name('qldtoto.')->group(function () {
     $slugBcSatHach = '3-bao-cao-de-nghi-to-chuc-sat-hach-danh-sach';
     Route::get('/'.$slugBcSatHach, [BaoCaoDeNghiSatHachController::class, 'index'])->name('bao-cao-de-nghi-sat-hach.index');
     Route::post('/'.$slugBcSatHach.'/xuat', [BaoCaoDeNghiSatHachController::class, 'export'])->name('bao-cao-de-nghi-sat-hach.export');
+
+    $slugTbTapTrung = '2-thong-bao-thoi-gian-tap-trung-hoc-thuc-hanh-lai-xe';
+    Route::get('/'.$slugTbTapTrung, [ThongBaoTapTrungThucHanhController::class, 'index'])->name('thong-bao-tap-trung-thuc-hanh.index');
+    Route::post('/'.$slugTbTapTrung.'/xuat', [ThongBaoTapTrungThucHanhController::class, 'export'])->name('thong-bao-tap-trung-thuc-hanh.export');
+
+    $slugBaoLuu = '2-quyet-dinh-bao-luu';
+    Route::get('/'.$slugBaoLuu, [QuyetDinhBaoLuuController::class, 'index'])->name('quyet-dinh-bao-luu.index');
+    Route::post('/'.$slugBaoLuu.'/xuat', [QuyetDinhBaoLuuController::class, 'export'])->name('quyet-dinh-bao-luu.export');
+
+    $slugThoiHoc = '2-quyet-dinh-cho-thoi-hoc';
+    Route::get('/'.$slugThoiHoc, [QuyetDinhThoiHocController::class, 'index'])->name('quyet-dinh-cho-thoi-hoc.index');
+    Route::post('/'.$slugThoiHoc.'/xuat', [QuyetDinhThoiHocController::class, 'export'])->name('quyet-dinh-cho-thoi-hoc.export');
 
     $slugDoiGv = '2-quyet-dinh-doi-giao-vien';
     Route::get('/'.$slugDoiGv, [QuyetDinhDoiGiaoVienController::class, 'index'])->name('quyet-dinh-doi-giao-vien.index');

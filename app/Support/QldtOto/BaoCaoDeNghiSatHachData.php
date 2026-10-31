@@ -21,7 +21,7 @@ final class BaoCaoDeNghiSatHachData
      *
      * @return list<array{
      *     ma_dk: string, thu_tu: int, ho_ten: string, ngay_sinh: string, so_cmnd: string,
-     *     noi_dk_ho_khau: string, giay_cnsk: bool, da_co_gplx: string, so_nam_lx: string,
+     *     noi_dk_ho_khau: string, noi_cu_tru: string, giay_cnsk: bool, da_co_gplx: string, so_nam_lx: string,
      *     so_km: string, so_ccn: string, ghi_chu: string, dat: bool,
      * }>
      */
@@ -51,6 +51,7 @@ final class BaoCaoDeNghiSatHachData
                 $hoTen = trim(($n->HoDemNLX ?? '').' '.($n->TenNLX ?? ''));
             }
             $lanSh = (int) ($n->LanSH ?? 1);
+            $diaChi = DmDvhcTenDayDu::diaChiTuNguoiLx($n, $dvhcMap);
 
             $out[] = [
                 'ma_dk' => (string) $n->MaDK,
@@ -58,7 +59,8 @@ final class BaoCaoDeNghiSatHachData
                 'ho_ten' => mb_strtoupper($hoTen),
                 'ngay_sinh' => NgayVn::format($n->NgaySinh ?? null, 'yyyymmdd'),
                 'so_cmnd' => trim((string) ($n->SoCMT ?? '')),
-                'noi_dk_ho_khau' => DmDvhcTenDayDu::diaChiTuNguoiLx($n, $dvhcMap)['thuong_tru'],
+                'noi_dk_ho_khau' => $diaChi['thuong_tru'],
+                'noi_cu_tru' => $diaChi['cu_tru'] !== '' ? $diaChi['cu_tru'] : $diaChi['thuong_tru'],
                 'giay_cnsk' => (string) ($n->GiayCNSK ?? '') === '1',
                 'da_co_gplx' => trim((string) ($n->HangGPLXDaCo ?? '')),
                 'so_nam_lx' => (string) (int) ($n->SoNamLX ?? 0),
