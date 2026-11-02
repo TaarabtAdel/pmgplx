@@ -30,6 +30,7 @@ use App\Http\Controllers\DaoTao\NhapKetQuaSatHachController;
 use App\Http\Controllers\DaoTao\NhapXmlBienBanTongHopController;
 use App\Http\Controllers\HeThong\NguoiDungController;
 use App\Http\Controllers\HeThong\PhanQuyenController;
+use App\Http\Controllers\HeThong\VaiTroController;
 use App\Http\Controllers\PMGPLX\DanhSachGiaoVienController;
 use App\Http\Controllers\PMGPLX\DanhSachKhoaHocController;
 use App\Http\Controllers\PMGPLX\DanhSachHocVienController;
@@ -498,6 +499,17 @@ Route::prefix('he-thong')->name('hethong.')->group(function () {
     Route::delete('/nguoi-dung/{id}', [NguoiDungController::class, 'destroy'])
         ->whereNumber('id')
         ->name('nguoi-dung.destroy');
+
+    Route::get('/vai-tro', [VaiTroController::class, 'index'])
+        ->name('vai-tro.index');
+    Route::post('/vai-tro', [VaiTroController::class, 'store'])
+        ->name('vai-tro.store');
+    Route::put('/vai-tro/{id}', [VaiTroController::class, 'update'])
+        ->whereNumber('id')
+        ->name('vai-tro.update');
+    Route::delete('/vai-tro/{id}', [VaiTroController::class, 'destroy'])
+        ->whereNumber('id')
+        ->name('vai-tro.destroy');
 
     Route::get('/vai-tro/phan-quyen', [PhanQuyenController::class, 'index'])
         ->name('phan-quyen.index');

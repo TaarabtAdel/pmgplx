@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\HeThong;
 
 use App\Http\Controllers\Controller;
-use App\Models\HeThong\NguoiDung;
 use App\Models\HeThong\PhanQuyen;
+use App\Models\HeThong\VaiTro;
 use App\Support\HeThong\CayChucNang;
 use App\Support\HeThong\PhanQuyenNguoiDung;
 use Illuminate\Http\RedirectResponse;
@@ -63,6 +63,6 @@ class PhanQuyenController extends Controller
     /** @return array<string, string> vai trò sửa được (Admin luôn đủ quyền, không sửa) */
     private function vaiTroSua(): array
     {
-        return array_diff_key(NguoiDung::VAI_TRO, ['admin' => true]);
+        return array_diff_key(VaiTro::options(), [VaiTro::ADMIN => true]);
     }
 }

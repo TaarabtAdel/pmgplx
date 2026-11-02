@@ -20,7 +20,8 @@ class NguoiDung extends Authenticatable
 
     public $timestamps = false;
 
-    public const VAI_TRO = [
+    /** Vai trò ban đầu — danh mục thật ở bảng VaiTro (VaiTro::options()); dùng khi bảng chưa tạo. */
+    public const VAI_TRO_MAC_DINH = [
         'admin' => 'Admin',
         'dao_tao' => 'Đào Tạo',
         'tuyen_sinh' => 'Tuyển Sinh',
@@ -58,7 +59,7 @@ class NguoiDung extends Authenticatable
     /** @return list<string> */
     public function maVaiTroList(): array
     {
-        $order = array_flip(array_keys(self::VAI_TRO));
+        $order = array_flip(array_keys(VaiTro::options()));
 
         return $this->vaiTros
             ->pluck('MaVaiTro')
@@ -72,7 +73,7 @@ class NguoiDung extends Authenticatable
     public function tenVaiTroList(): array
     {
         return array_map(
-            static fn (string $ma): string => self::VAI_TRO[$ma] ?? $ma,
+            static fn (string $ma): string => VaiTro::options()[$ma] ?? $ma,
             $this->maVaiTroList()
         );
     }

@@ -276,6 +276,7 @@ final class CayChucNang
                 'khoa' => 'he-thong', 'title' => 'Hệ Thống', 'children' => [
                     ['khoa' => 'nguoi-dung', 'title' => 'Người dùng', 'route' => 'hethong.nguoi-dung.index', 'active' => ['hethong.nguoi-dung.*']],
                     ['khoa' => 'vai-tro', 'title' => 'Vai trò', 'children' => [
+                        ['khoa' => 'danh-sach', 'title' => 'Danh sách vai trò', 'route' => 'hethong.vai-tro.index', 'active' => ['hethong.vai-tro.*']],
                         ['khoa' => 'phan-quyen', 'title' => 'Phân quyền', 'route' => 'hethong.phan-quyen.index', 'active' => ['hethong.phan-quyen.*']],
                     ]],
                     ['khoa' => 'cau-hinh-bai-day', 'title' => 'Cấu hình bài dạy theo hạng', 'route' => 'qldtoto.cau-hinh-bai-day.index', 'active' => ['qldtoto.cau-hinh-bai-day.*']],

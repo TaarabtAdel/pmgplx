@@ -4,6 +4,7 @@ namespace App\Http\Controllers\HeThong;
 
 use App\Http\Controllers\Controller;
 use App\Models\HeThong\NguoiDung;
+use App\Models\HeThong\VaiTro;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -36,7 +37,7 @@ class NguoiDungController extends Controller
 
         return view('HeThong.nguoi-dung', [
             'items' => $items,
-            'vaiTroOptions' => NguoiDung::VAI_TRO,
+            'vaiTroOptions' => VaiTro::options(),
             'filters' => [
                 'tu_khoa' => $request->input('tu_khoa', ''),
                 'vai_tro' => $request->input('vai_tro', ''),
@@ -129,7 +130,7 @@ class NguoiDungController extends Controller
             ],
             'mat_khau' => [$ignoreId === null ? 'required' : 'nullable', 'string', 'min:6', 'max:100'],
             'vai_tro' => ['required', 'array', 'min:1'],
-            'vai_tro.*' => ['string', Rule::in(array_keys(NguoiDung::VAI_TRO))],
+            'vai_tro.*' => ['string', Rule::in(array_keys(VaiTro::options()))],
         ], [
             'ten.required' => 'Nhập tên người dùng.',
             'so_dien_thoai.required' => 'Nhập số điện thoại.',

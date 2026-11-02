@@ -20,6 +20,6 @@ class NguoiDungSeeder extends Seeder
         ]);
         $nguoiDung->save();
 
-        $nguoiDung->ganVaiTro(array_keys(NguoiDung::VAI_TRO));
+        $nguoiDung->ganVaiTro(array_keys(NguoiDung::VAI_TRO_MAC_DINH));
     }
 }

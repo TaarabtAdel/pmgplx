@@ -38,7 +38,7 @@ return new class extends Migration
 
         $now = now();
         $rows = [];
-        foreach (array_keys(NguoiDung::VAI_TRO) as $vaiTro) {
+        foreach (array_keys(NguoiDung::VAI_TRO_MAC_DINH) as $vaiTro) {
             if ($vaiTro === 'admin') {
                 continue;
             }
