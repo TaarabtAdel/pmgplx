@@ -8,7 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Kết quả «Dò thông tin» CCCD / GPLX của một học viên (MaDK bên PMGPLX), lưu trên MANHLINH.
- * Hiện chỉ lưu đối chiếu từng trường với PMGPLX (cột Khop*: 1 khớp / 0 không khớp / NULL chưa dò);
+ * Hiện chỉ lưu đối chiếu từng trường với PMGPLX (cột Khop*: 1 khớp / 0 không khớp / NULL chưa dò)
+ * và kết luận người dò chọn (KetLuan: ok / can_chinh — có khi chỉ cần khớp vài trường là chấp nhận);
  * các cột giá trị (HoTen, SoCCCD…) để dành, chưa ghi. NguoiLX / NguoiLX_HoSo (PMGPLX) giữ nguyên.
  */
 class HocVienDoThongTin extends Model
@@ -35,9 +36,16 @@ class HocVienDoThongTin extends Model
         'ngay_trung_tuyen' => 'KhopNgayTrungTuyen',
     ];
 
+    public const OK = 'ok';
+
+    public const CAN_CHINH = 'can_chinh';
+
+    public const NHAN_KET_LUAN = [self::OK => 'OK', self::CAN_CHINH => 'Cần chỉnh'];
+
     protected $fillable = [
         'MaDK',
         'MaKhoaHoc',
+        'KetLuan',
         'KhopHoTen',
         'KhopSoCCCD',
         'KhopNgaySinh',

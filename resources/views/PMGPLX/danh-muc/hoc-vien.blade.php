@@ -167,11 +167,16 @@
                                                 ->map(fn ($khop, $k) => (\App\Support\OCR\DoThongTinGiayTo::TRUONG[$k][0] ?? $k).': '.($khop ? 'Khớp' : 'Không khớp'))
                                                 ->implode("\n");
                                             $soLech = $doRoi->soTruongLech();
+                                            $canChinh = $doRoi->KetLuan === \App\Models\DaoTao\HocVienDoThongTin::CAN_CHINH;
                                         @endphp
                                         <span class="dtt-da-do mr-1" style="cursor: help;"
-                                              title="Đã dò {{ $doRoi->NgayCapNhat?->copy()->setTimezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i') }}&#10;{{ $nhanDo }}"><span
-                                                class="text-success font-weight-bold" style="font-size: 1.1rem;">✓</span>@if ($soLech > 0)<small
-                                                class="text-danger font-weight-bold ml-1">{{ $soLech }} lệch</small>@endif</span>
+                                              title="Đã dò {{ $doRoi->NgayCapNhat?->copy()->setTimezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i') }} — {{ $canChinh ? 'Cần chỉnh' : 'OK' }}{{ $soLech > 0 ? ' ('.$soLech.' trường không khớp)' : '' }}&#10;{{ $nhanDo }}">
+                                            @if ($canChinh)
+                                                <span class="badge badge-warning">Cần chỉnh</span>
+                                            @else
+                                                <span class="text-success font-weight-bold" style="font-size: 1.1rem;">✓</span>
+                                            @endif
+                                        </span>
                                     @endif
                                     <button type="button" class="btn btn-sm btn-outline-primary py-0 btn-do-hv"
                                             data-ma-dk="{{ $row->MaDK }}" data-ten="{{ $hoTenHv }}" title="Dò CCCD / GPLX cho học viên này">Dò</button>
@@ -334,10 +339,24 @@
             });
             html += '</tr>';
         });
-        html += '<tr><td colspan="2" class="small text-muted align-middle">Lưu Khớp / Không khớp của các trường đã dò (chưa lưu giá trị).</td>';
+        html += '<tr><td colspan="2" class="small text-muted align-middle">' +
+            'Chọn kết luận rồi lưu — có khi chỉ cần khớp vài thông tin là chấp nhận được (OK). ' +
+            'Lưu kèm Khớp / Không khớp từng trường đã dò.</td>';
         ds.forEach(function (hv, i) {
-            html += '<td><button type="button" class="btn btn-sm btn-success dtt-luu" data-hv="' + i + '">Lưu đối chiếu</button>' +
-                (hv.luu_luc ? '<div class="small text-muted mt-1">Đã lưu: ' + DTT.esc(hv.luu_luc) + '</div>' : '') + '</td>';
+            const coLech = Object.keys(DTT.TRUONG).some(function (k) { return kq[k] && !DTT.khop(k, kq[k], hv.hien_tai[k] || ''); });
+            const chon = hv.ket_luan || (coLech ? 'can_chinh' : 'ok');
+            const radio = function (val, nhan, lop) {
+                return '<div class="custom-control custom-radio custom-control-inline">' +
+                    '<input type="radio" class="custom-control-input" id="dtt-kl-' + i + '-' + val + '" name="dtt-kl-' + i + '" value="' + val + '"' +
+                    (chon === val ? ' checked' : '') + '>' +
+                    '<label class="custom-control-label ' + lop + '" for="dtt-kl-' + i + '-' + val + '">' + nhan + '</label></div>';
+            };
+            html += '<td>' +
+                '<div class="mb-1">' + radio('ok', 'OK', 'text-success font-weight-bold') + radio('can_chinh', 'Cần chỉnh', 'text-warning font-weight-bold') + '</div>' +
+                '<button type="button" class="btn btn-sm btn-success dtt-luu" data-hv="' + i + '">Lưu đối chiếu</button>' +
+                (hv.luu_luc ? '<div class="small text-muted mt-1">Đã lưu: ' + (hv.ket_luan === 'ok' ? 'OK' : (hv.ket_luan ? 'Cần chỉnh' : '')) +
+                    ' — ' + DTT.esc(hv.luu_luc) + '</div>' : '') +
+                '</td>';
         });
         html += '</tr></tbody></table><div class="small text-muted mt-1">So kết quả dò với PMGPLX — lưu bên MANHLINH, không sửa PMGPLX.</div>';
         $('#dtt-so-sanh').html(html);
@@ -378,7 +397,11 @@
         $.ajax({
             url: urls.luu, method: 'POST', headers: { 'X-CSRF-TOKEN': csrf },
             contentType: 'application/json', dataType: 'json',
-            data: JSON.stringify({ ma_dk: hv.ma_dk, ket_qua: ketQua }),
+            data: JSON.stringify({
+                ma_dk: hv.ma_dk,
+                ket_qua: ketQua,
+                ket_luan: (document.querySelector('input[name="dtt-kl-' + i + '"]:checked') || {}).value || '',
+            }),
         }).done(function (d) {
             daLuuGi = true;
             $('#dtt-phien-trang-thai').text(d.message);

@@ -153,6 +153,7 @@ final class DoThongTinGiayTo
             'ma_dk' => (string) $n->MaDK,
             'ma_kh' => (string) ($n->MaKhoaHoc ?? ''),
             'da_luu' => isset($daLuu[(string) $n->MaDK]) ? $daLuu[(string) $n->MaDK]->trangThai() : [],
+            'ket_luan' => (string) ($daLuu[(string) $n->MaDK]->KetLuan ?? ''),
             'luu_luc' => isset($daLuu[(string) $n->MaDK])
                 ? trim($daLuu[(string) $n->MaDK]->NgayCapNhat?->copy()->setTimezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i')
                     .' '.($daLuu[(string) $n->MaDK]->nguoiCapNhat?->Ten ?? ''))
@@ -175,9 +176,13 @@ final class DoThongTinGiayTo
      * Chỉ ghi trạng thái các trường có kết quả dò; trường không dò lần này giữ trạng thái cũ.
      *
      * @param  array<string, string>  $ketQuaDo  khoá modal => giá trị dò được
+     * @param  string  $ketLuan  HocVienDoThongTin::OK | CAN_CHINH — người dò chọn
      */
-    public static function luu(string $maDk, array $ketQuaDo, ?int $nguoiId): HocVienDoThongTin
+    public static function luu(string $maDk, array $ketQuaDo, string $ketLuan, ?int $nguoiId): HocVienDoThongTin
     {
+        if (! isset(HocVienDoThongTin::NHAN_KET_LUAN[$ketLuan])) {
+            throw new \InvalidArgumentException('Chọn kết luận OK hoặc Cần chỉnh.');
+        }
         $hv = self::timHocVien('', '', '', $maDk)[0] ?? null;
         if ($hv === null) {
             throw new \InvalidArgumentException('Không tìm thấy học viên '.$maDk.' trên PMGPLX.');
@@ -200,6 +205,7 @@ final class DoThongTinGiayTo
             $ban->NgayTao = $now;
         }
         $ban->fill($data + [
+            'KetLuan' => $ketLuan,
             'MaKhoaHoc' => $hv['ma_kh'] !== '' ? $hv['ma_kh'] : null,
             'NguoiCapNhatId' => $nguoiId,
             'NgayCapNhat' => $now,

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\PMGPLX;
 
 use App\Http\Controllers\Controller;
+use App\Models\DaoTao\HocVienDoThongTin;
 use App\Support\OCR\DoThongTinGiayTo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -91,14 +92,17 @@ class DoThongTinHocVienController extends Controller
     {
         $data = $request->validate([
             'ma_dk' => ['required', 'string', 'max:50'],
+            'ket_luan' => ['required', Rule::in(array_keys(HocVienDoThongTin::NHAN_KET_LUAN))],
             'ket_qua' => ['required', 'array', 'min:1'],
             'ket_qua.*' => ['nullable', 'string', 'max:300'],
         ], [
+            'ket_luan.required' => 'Chọn kết luận OK hoặc Cần chỉnh.',
+            'ket_luan.in' => 'Chọn kết luận OK hoặc Cần chỉnh.',
             'ket_qua.required' => 'Chưa có kết quả dò để đối chiếu.',
         ]);
 
         try {
-            $ban = DoThongTinGiayTo::luu($data['ma_dk'], $data['ket_qua'], auth()->id());
+            $ban = DoThongTinGiayTo::luu($data['ma_dk'], $data['ket_qua'], $data['ket_luan'], auth()->id());
         } catch (\InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
@@ -107,8 +111,10 @@ class DoThongTinHocVienController extends Controller
         $lech = count(array_filter($trangThai, fn (bool $k) => ! $k));
 
         return response()->json([
-            'message' => 'Đã lưu đối chiếu '.$data['ma_dk'].': '.(count($trangThai) - $lech).' khớp, '.$lech.' không khớp.',
+            'message' => 'Đã lưu '.$data['ma_dk'].': '.HocVienDoThongTin::NHAN_KET_LUAN[$ban->KetLuan]
+                .' ('.(count($trangThai) - $lech).' khớp, '.$lech.' không khớp).',
             'da_luu' => $trangThai,
+            'ket_luan' => $ban->KetLuan,
         ]);
     }
 
