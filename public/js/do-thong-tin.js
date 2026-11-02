@@ -28,6 +28,9 @@
 
     var coTheQuet = !!(global.isSecureContext && navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
 
+    /** Điện thoại / máy tính bảng (màn cảm ứng): không gợi ý kéo thả, dán ảnh. */
+    var coCamCam = !!(global.matchMedia && global.matchMedia('(pointer: coarse)').matches);
+
     function esc(s) {
         return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -228,7 +231,7 @@
         container.innerHTML = Object.keys(MAT).map(function (mat) {
             return '<div class="dtt-o" data-mat="' + mat + '">' +
                 '<div class="dtt-o-head"><strong>' + MAT[mat].nhan + '</strong><span class="dtt-trang-thai"></span></div>' +
-                '<div class="dtt-anh"><span>Chưa có ảnh</span><img alt="" hidden></div>' +
+                '<div class="dtt-anh"><span>' + (coCamCam ? 'Chưa có ảnh' : 'Kéo thả / dán (Ctrl+V) ảnh vào đây') + '</span><img alt="" hidden></div>' +
                 // HTTP không quét liên tục được: «Quét camera» mở thẳng camera điện thoại để chụp một ảnh.
                 '<div class="dtt-nut">' +
                 '<button type="button" class="btn btn-sm btn-primary dtt-quet">Quét camera</button>' +
@@ -282,6 +285,68 @@
             if (!file) return;
             docAnh(file).then(function (d) { return guiAnh(mat, d); })
                 .catch(function (err) { trangThai(mat, err.message, 'err'); });
+        });
+
+        // Kéo thả ảnh vào ô nào thì dò theo mặt giấy tờ của ô đó.
+        function oDangKeo(e) {
+            var ob = e.target.closest && e.target.closest('.dtt-o');
+            return ob && container.contains(ob) ? ob : null;
+        }
+        ['dragenter', 'dragover'].forEach(function (ev) {
+            container.addEventListener(ev, function (e) {
+                var ob = oDangKeo(e);
+                if (!ob) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+                ob.classList.add('dtt-keo');
+            });
+        });
+        container.addEventListener('dragleave', function (e) {
+            var ob = oDangKeo(e);
+            if (ob && !ob.contains(e.relatedTarget)) ob.classList.remove('dtt-keo');
+        });
+        function nhanFile(mat, files) {
+            var file = Array.prototype.find.call(files || [], function (f) { return /^image\//.test(f.type); });
+            if (!file) {
+                trangThai(mat, 'Chỉ nhận file ảnh', 'err');
+                return;
+            }
+            docAnh(file).then(function (d) { return guiAnh(mat, d); })
+                .catch(function (err) { trangThai(mat, err.message, 'err'); });
+        }
+
+        container.addEventListener('drop', function (e) {
+            var ob = oDangKeo(e);
+            if (!ob) return;
+            e.preventDefault();
+            ob.classList.remove('dtt-keo');
+            nhanFile(ob.dataset.mat, e.dataTransfer.files);
+        });
+
+        function dangHien() { return container.offsetParent !== null; }
+
+        // Thả trượt ra ngoài ô khi modal đang mở: chặn trình duyệt mở ảnh đè lên trang.
+        ['dragover', 'drop'].forEach(function (ev) {
+            document.addEventListener(ev, function (e) {
+                if (dangHien() && !oDangKeo(e)) e.preventDefault();
+            });
+        });
+
+        // Dán ảnh (Ctrl+V — ảnh chụp màn hình, copy từ Zalo…): vào ô đang rê chuột, không thì ô đầu tiên còn trống.
+        var oDangRe = null;
+        container.addEventListener('mouseover', function (e) { oDangRe = oDangKeo(e) || oDangRe; });
+        container.addEventListener('mouseleave', function () { oDangRe = null; });
+        document.addEventListener('paste', function (e) {
+            if (!dangHien() || /^(INPUT|TEXTAREA)$/.test((e.target && e.target.tagName) || '')) return;
+            var files = Array.prototype.map.call(e.clipboardData ? e.clipboardData.items : [], function (it) {
+                return it.kind === 'file' ? it.getAsFile() : null;
+            }).filter(Boolean);
+            if (!files.length) return;
+            var ob = oDangRe || Array.prototype.find.call(container.querySelectorAll('.dtt-o'), function (x) {
+                return x.querySelector('.dtt-anh img').hidden;
+            }) || container.querySelector('.dtt-o');
+            e.preventDefault();
+            nhanFile(ob.dataset.mat, files);
         });
 
         container.addEventListener('click', function (e) {

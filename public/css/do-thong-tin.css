@@ -1,7 +1,9 @@
 /* Dò thông tin CCCD / GPLX — dùng chung modal máy tính và trang điện thoại. */
 .dtt-luoi { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
 @media (max-width: 767px) { .dtt-luoi { grid-template-columns: 1fr; } }
-.dtt-o { border: 1px solid #dee2e6; border-radius: .4rem; padding: .6rem; background: #fff; }
+.dtt-o { border: 1px solid #dee2e6; border-radius: .4rem; padding: .6rem; background: #fff; transition: border-color .15s, background .15s; }
+.dtt-o.dtt-keo { border: 2px dashed #0d6efd; background: #eef4ff; }
+.dtt-o.dtt-keo .dtt-anh { border-color: #0d6efd; color: #0d6efd; }
 .dtt-o-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .4rem; gap: .5rem; }
 .dtt-trang-thai { font-size: .8rem; color: #6c757d; text-align: right; }
 .dtt-trang-thai.ok { color: #198754; font-weight: 600; }
