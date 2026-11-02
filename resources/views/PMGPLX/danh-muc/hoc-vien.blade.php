@@ -10,7 +10,7 @@
                 <div class="form-row align-items-end">
                     <div class="form-group col-md-3">
                         <label>Mã ĐK|Họ tên|CMT|Số hồ sơ</label>
-                        <input type="text" class="form-control form-control-sm" name="tu_khoa" value="{{ $filters['tu_khoa'] }}" placeholder="Nhập từ khóa">
+                        <input type="text" class="form-control form-control-sm" name="tu_khoa" value="{{ $filters['tu_khoa'] }}" placeholder="Có dấu hay không đều được">
                     </div>
                     <div class="form-group col-md-3">
                         <label for="filter_ma_kh">Khóa học</label>
@@ -163,12 +163,15 @@
                                     @php $doRoi = $daDo[(string) $row->MaDK] ?? null; @endphp
                                     @if ($doRoi)
                                         @php
-                                            $nhanDo = collect($doRoi->giaTri())
-                                                ->map(fn ($v, $k) => (\App\Support\OCR\DoThongTinGiayTo::TRUONG[$k][0] ?? $k).': '.$v)
+                                            $nhanDo = collect($doRoi->trangThai())
+                                                ->map(fn ($khop, $k) => (\App\Support\OCR\DoThongTinGiayTo::TRUONG[$k][0] ?? $k).': '.($khop ? 'Khớp' : 'Không khớp'))
                                                 ->implode("\n");
+                                            $soLech = $doRoi->soTruongLech();
                                         @endphp
-                                        <span class="text-success font-weight-bold dtt-da-do mr-1" style="font-size: 1.1rem;"
-                                              title="Đã dò {{ $doRoi->NgayCapNhat?->copy()->setTimezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i') }}&#10;{{ $nhanDo }}">✓</span>
+                                        <span class="dtt-da-do mr-1" style="cursor: help;"
+                                              title="Đã dò {{ $doRoi->NgayCapNhat?->copy()->setTimezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i') }}&#10;{{ $nhanDo }}"><span
+                                                class="text-success font-weight-bold" style="font-size: 1.1rem;">✓</span>@if ($soLech > 0)<small
+                                                class="text-danger font-weight-bold ml-1">{{ $soLech }} lệch</small>@endif</span>
                                     @endif
                                     <button type="button" class="btn btn-sm btn-outline-primary py-0 btn-do-hv"
                                             data-ma-dk="{{ $row->MaDK }}" data-ten="{{ $hoTenHv }}" title="Dò CCCD / GPLX cho học viên này">Dò</button>
@@ -297,15 +300,13 @@
 
     /* ---------- Tìm học viên + so sánh ---------- */
 
-    function chuan(s) { return String(s || '').toLowerCase().normalize('NFC').replace(/\s+/g, ' ').replace(/[.,]/g, '').trim(); }
-
     let dsHocVien = [];
     let daLuuGi = false;
 
     function veSoSanh(kq) {
         const ds = dsHocVien;
         let html = '';
-        if (maDkCoDinh && ds[0] && kq.so_cccd && chuan(kq.so_cccd) !== chuan(ds[0].hien_tai.so_cccd)) {
+        if (maDkCoDinh && ds[0] && kq.so_cccd && !DTT.khop('so_cccd', kq.so_cccd, ds[0].hien_tai.so_cccd)) {
             html += '<div class="alert alert-danger py-2 small mb-2">Số căn cước dò được <strong>' + DTT.esc(kq.so_cccd) +
                 '</strong> khác học viên đang chọn (<strong>' + DTT.esc(ds[0].hien_tai.so_cccd || '—') +
                 '</strong>) — kiểm tra lại có đúng giấy tờ của học viên này không.</div>';
@@ -315,33 +316,30 @@
             html += '<th>PMGPLX — ' + DTT.esc(hv.ma_dk) + (hv.ma_kh ? ' <small class="text-muted">(' + DTT.esc(hv.ma_kh) + ')</small>' : '') + '</th>';
         });
         html += '</tr></thead><tbody>';
+        const nhanKhop = function (khop) {
+            return khop ? '<span class="badge badge-success">Khớp</span>' : '<span class="badge badge-danger">Không khớp</span>';
+        };
         Object.keys(DTT.TRUONG).forEach(function (k) {
             html += '<tr><td>' + DTT.esc(DTT.TRUONG[k]) + '</td><td>' + DTT.esc(kq[k]) + '</td>';
-            ds.forEach(function (hv, i) {
+            ds.forEach(function (hv) {
                 const v = hv.hien_tai[k] || '';
-                const luu = (hv.da_luu || {})[k] || '';
-                const khop = chuan(v) === chuan(kq[k]);
-                const daLuuDung = luu && chuan(luu) === chuan(kq[k]);
-                const lop = !kq[k] ? '' : (khop ? 'khop' : 'khac');
-                html += '<td class="' + lop + '"><div class="d-flex align-items-start">';
-                if (kq[k]) {
-                    html += '<input type="checkbox" class="mr-2 mt-1 dtt-chon" data-hv="' + i + '" data-k="' + k + '"' +
-                        (!khop && !daLuuDung ? ' checked' : '') + ' title="Lưu kết quả dò của trường này">';
-                }
-                html += '<div>' + (v ? DTT.esc(v) : '<span class="text-muted">—</span>');
-                if (luu) {
-                    html += '<div class="small ' + (daLuuDung ? 'text-success' : 'text-muted') + '">MANHLINH: ' + DTT.esc(luu) + '</div>';
-                }
-                html += '</div></div></td>';
+                const daLuu = (hv.da_luu || {})[k];
+                const khop = kq[k] ? DTT.khop(k, kq[k], v) : null;
+                html += '<td class="' + (khop === null ? '' : (khop ? 'khop' : 'khac')) + '">' +
+                    '<div class="d-flex justify-content-between align-items-start">' +
+                    '<span>' + (v ? DTT.esc(v) : '<span class="text-muted">—</span>') + '</span>' +
+                    (khop === null ? '' : '<span class="ml-2">' + nhanKhop(khop) + '</span>') + '</div>' +
+                    (daLuu === undefined ? '' : '<div class="small text-muted">Đã lưu: ' + (daLuu ? 'Khớp' : 'Không khớp') + '</div>') +
+                    '</td>';
             });
             html += '</tr>';
         });
-        html += '<tr><td colspan="2" class="small text-muted align-middle">Tích các trường cần lưu (mặc định tích sẵn trường đang lệch) rồi bấm lưu.</td>';
+        html += '<tr><td colspan="2" class="small text-muted align-middle">Lưu Khớp / Không khớp của các trường đã dò (chưa lưu giá trị).</td>';
         ds.forEach(function (hv, i) {
-            html += '<td><button type="button" class="btn btn-sm btn-success dtt-luu" data-hv="' + i + '">Lưu vào MANHLINH</button>' +
+            html += '<td><button type="button" class="btn btn-sm btn-success dtt-luu" data-hv="' + i + '">Lưu đối chiếu</button>' +
                 (hv.luu_luc ? '<div class="small text-muted mt-1">Đã lưu: ' + DTT.esc(hv.luu_luc) + '</div>' : '') + '</td>';
         });
-        html += '</tr></tbody></table><div class="small text-muted mt-1">Xanh: khớp PMGPLX · Vàng: khác với kết quả dò. Lưu bên MANHLINH, không sửa PMGPLX.</div>';
+        html += '</tr></tbody></table><div class="small text-muted mt-1">So kết quả dò với PMGPLX — lưu bên MANHLINH, không sửa PMGPLX.</div>';
         $('#dtt-so-sanh').html(html);
     }
 
@@ -369,12 +367,10 @@
         const i = Number(this.dataset.hv);
         const hv = dsHocVien[i];
         const kq = layKetQua();
-        const truong = {};
-        document.querySelectorAll('.dtt-chon[data-hv="' + i + '"]:checked').forEach(function (el) {
-            truong[el.dataset.k] = kq[el.dataset.k] || '';
-        });
-        if (!Object.keys(truong).length) {
-            alert('Chưa tích trường nào để lưu.');
+        const ketQua = {};
+        Object.keys(kq).forEach(function (k) { if (kq[k]) ketQua[k] = kq[k]; });
+        if (!Object.keys(ketQua).length) {
+            alert('Chưa có kết quả dò để đối chiếu.');
             return;
         }
         const btn = this;
@@ -382,7 +378,7 @@
         $.ajax({
             url: urls.luu, method: 'POST', headers: { 'X-CSRF-TOKEN': csrf },
             contentType: 'application/json', dataType: 'json',
-            data: JSON.stringify({ ma_dk: hv.ma_dk, truong: truong }),
+            data: JSON.stringify({ ma_dk: hv.ma_dk, ket_qua: ketQua }),
         }).done(function (d) {
             daLuuGi = true;
             $('#dtt-phien-trang-thai').text(d.message);
@@ -414,7 +410,7 @@
         if (maDkCoDinh) timHocVien();
     });
 
-    // Sửa tay ô kết quả → vẽ lại bảng so sánh (ô tích mặc định theo giá trị mới).
+    // Sửa tay ô kết quả → vẽ lại bảng so sánh.
     $('#dtt-kq').on('change', '.dtt-truong', function () {
         if (dsHocVien.length) veSoSanh(layKetQua());
     });

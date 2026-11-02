@@ -86,26 +86,29 @@ class DoThongTinHocVienController extends Controller
         ]);
     }
 
-    /** Lưu các trường đã tích chọn của một học viên vào MANHLINH. */
+    /** Lưu kết quả đối chiếu (Khớp / Không khớp từng trường) của một học viên vào MANHLINH. */
     public function luu(Request $request): JsonResponse
     {
         $data = $request->validate([
             'ma_dk' => ['required', 'string', 'max:50'],
-            'truong' => ['required', 'array', 'min:1'],
-            'truong.*' => ['nullable', 'string', 'max:300'],
+            'ket_qua' => ['required', 'array', 'min:1'],
+            'ket_qua.*' => ['nullable', 'string', 'max:300'],
         ], [
-            'truong.required' => 'Chưa chọn trường nào để lưu.',
+            'ket_qua.required' => 'Chưa có kết quả dò để đối chiếu.',
         ]);
 
         try {
-            $ban = DoThongTinGiayTo::luu($data['ma_dk'], $data['truong'], auth()->id());
+            $ban = DoThongTinGiayTo::luu($data['ma_dk'], $data['ket_qua'], auth()->id());
         } catch (\InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
+        $trangThai = $ban->trangThai();
+        $lech = count(array_filter($trangThai, fn (bool $k) => ! $k));
+
         return response()->json([
-            'message' => 'Đã lưu '.count($data['truong']).' trường của '.$data['ma_dk'].' vào MANHLINH.',
-            'da_luu' => $ban->giaTri(),
+            'message' => 'Đã lưu đối chiếu '.$data['ma_dk'].': '.(count($trangThai) - $lech).' khớp, '.$lech.' không khớp.',
+            'da_luu' => $trangThai,
         ]);
     }
 

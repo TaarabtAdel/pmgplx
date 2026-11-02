@@ -67,6 +67,22 @@
         });
     }
 
+    /** Cùng quy tắc với DoThongTinGiayTo::chuanSoSanh (server lưu Khớp / Không khớp theo quy tắc này). */
+    function chuanSoSanh(key, v) {
+        v = String(v == null ? '' : v).normalize('NFC').trim();
+        if (key === 'so_cccd' || key === 'so_gplx') return v.replace(/\D/g, '');
+        if (key.indexOf('ngay_') === 0) {
+            var m = v.match(/^(\d{1,2})\D(\d{1,2})\D(\d{4})$/);
+            return m ? m[3] + ('0' + m[2]).slice(-2) + ('0' + m[1]).slice(-2) : v;
+        }
+        return v.toLowerCase().replace(/[.,;]/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    function khop(key, giaTriDo, giaTriPm) {
+        var a = chuanSoSanh(key, giaTriDo);
+        return a !== '' && a === chuanSoSanh(key, giaTriPm);
+    }
+
     function duThongTin(mat, ketQua) {
         return MAT[mat].can.every(function (k) { return ketQua && ketQua[k]; });
     }
@@ -213,10 +229,10 @@
             return '<div class="dtt-o" data-mat="' + mat + '">' +
                 '<div class="dtt-o-head"><strong>' + MAT[mat].nhan + '</strong><span class="dtt-trang-thai"></span></div>' +
                 '<div class="dtt-anh"><span>Chưa có ảnh</span><img alt="" hidden></div>' +
+                // HTTP không quét liên tục được: «Quét camera» mở thẳng camera điện thoại để chụp một ảnh.
                 '<div class="dtt-nut">' +
-                (coTheQuet ? '<button type="button" class="btn btn-sm btn-primary dtt-quet">Quét camera</button>' : '') +
-                '<label class="btn btn-sm ' + (coTheQuet ? 'btn-outline-primary' : 'btn-primary') + ' mb-0">Chụp ảnh' +
-                '<input type="file" accept="image/*" capture="environment" hidden class="dtt-chup"></label>' +
+                '<button type="button" class="btn btn-sm btn-primary dtt-quet">Quét camera</button>' +
+                '<input type="file" accept="image/*" capture="environment" hidden class="dtt-chup">' +
                 '<label class="btn btn-sm btn-outline-secondary mb-0">Chọn ảnh<input type="file" accept="image/*" hidden class="dtt-chon"></label>' +
                 '</div>' +
                 '<dl class="dtt-ket-qua"></dl>' +
@@ -271,13 +287,19 @@
         container.addEventListener('click', function (e) {
             var btn = e.target.closest('.dtt-quet');
             if (!btn) return;
-            var mat = btn.closest('.dtt-o').dataset.mat;
+            var ob = btn.closest('.dtt-o');
+            var mat = ob.dataset.mat;
             trangThai(mat, '', '');
+            if (!coTheQuet) {
+                ob.querySelector('.dtt-chup').click();
+                return;
+            }
             batDauQuet(cfg, mat, function (err, kq, anh) {
                 if (anh) hienAnh(mat, anh);
                 hienKetQua(mat, kq);
             }).catch(function (err) {
                 trangThai(mat, 'Không mở được camera: ' + (err.name === 'NotAllowedError' ? 'chưa cho phép truy cập camera' : err.message), 'err');
+                ob.querySelector('.dtt-chup').click();
             });
         });
 
@@ -295,5 +317,5 @@
         return { hienKetQua: hienKetQua, trangThai: trangThai, hienAnh: hienAnh, datLai: datLai };
     }
 
-    global.DoThongTin = { MAT: MAT, TRUONG: TRUONG, coTheQuet: coTheQuet, ganO: ganO, esc: esc };
+    global.DoThongTin = { MAT: MAT, TRUONG: TRUONG, coTheQuet: coTheQuet, ganO: ganO, esc: esc, khop: khop };
 })(window);

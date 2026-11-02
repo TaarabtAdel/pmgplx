@@ -152,7 +152,7 @@ final class DoThongTinGiayTo
         return $rows->map(fn ($n): array => [
             'ma_dk' => (string) $n->MaDK,
             'ma_kh' => (string) ($n->MaKhoaHoc ?? ''),
-            'da_luu' => isset($daLuu[(string) $n->MaDK]) ? $daLuu[(string) $n->MaDK]->giaTri() : [],
+            'da_luu' => isset($daLuu[(string) $n->MaDK]) ? $daLuu[(string) $n->MaDK]->trangThai() : [],
             'luu_luc' => isset($daLuu[(string) $n->MaDK])
                 ? trim($daLuu[(string) $n->MaDK]->NgayCapNhat?->copy()->setTimezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i')
                     .' '.($daLuu[(string) $n->MaDK]->nguoiCapNhat?->Ten ?? ''))
@@ -171,45 +171,27 @@ final class DoThongTinGiayTo
     }
 
     /**
-     * Lưu các trường đã tích chọn vào MANHLINH (HocVienDoThongTin) — trường không gửi lên giữ nguyên giá trị cũ.
+     * Đối chiếu kết quả dò với PMGPLX và lưu Khớp / Không khớp từng trường vào MANHLINH (HocVienDoThongTin).
+     * Chỉ ghi trạng thái các trường có kết quả dò; trường không dò lần này giữ trạng thái cũ.
      *
-     * @param  array<string, string>  $truong  khoá modal => giá trị (ngày dạng dd/mm/yyyy)
+     * @param  array<string, string>  $ketQuaDo  khoá modal => giá trị dò được
      */
-    public static function luu(string $maDk, array $truong, ?int $nguoiId): HocVienDoThongTin
+    public static function luu(string $maDk, array $ketQuaDo, ?int $nguoiId): HocVienDoThongTin
     {
-        $hv = NguoiLX::query()
-            ->from('NguoiLX as n')
-            ->leftJoin('NguoiLX_HoSo as h', 'h.MaDK', '=', 'n.MaDK')
-            ->where('n.MaDK', $maDk)
-            ->first(['n.MaDK', 'h.MaKhoaHoc']);
+        $hv = self::timHocVien('', '', '', $maDk)[0] ?? null;
         if ($hv === null) {
             throw new \InvalidArgumentException('Không tìm thấy học viên '.$maDk.' trên PMGPLX.');
         }
 
         $data = [];
-        foreach ($truong as $key => $value) {
-            if (! isset(HocVienDoThongTin::COT[$key])) {
-                continue;
-            }
-            [$cot, $laNgay] = HocVienDoThongTin::COT[$key];
-            $value = trim((string) $value);
-            if ($value === '') {
-                $data[$cot] = null;
-
-                continue;
-            }
-            if ($laNgay) {
-                // Không dùng createFromFormat: nó tự tràn ngày (31/02 → 03/03).
-                if (! preg_match('#^(\d{1,2})/(\d{1,2})/(\d{4})$#', $value, $m) || ! checkdate((int) $m[2], (int) $m[1], (int) $m[3])) {
-                    throw new \InvalidArgumentException(self::TRUONG[$key][0].': ngày không hợp lệ «'.$value.'» (cần dd/mm/yyyy).');
-                }
-                $data[$cot] = sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
-            } else {
-                $data[$cot] = $key === 'so_cccd' || $key === 'so_gplx' ? preg_replace('/\s+/', '', $value) : $value;
+        foreach (HocVienDoThongTin::COT_KHOP as $key => $cot) {
+            $do = trim((string) ($ketQuaDo[$key] ?? ''));
+            if ($do !== '') {
+                $data[$cot] = self::khop($key, $do, (string) ($hv['hien_tai'][$key] ?? ''));
             }
         }
         if ($data === []) {
-            throw new \InvalidArgumentException('Chưa chọn trường nào để lưu.');
+            throw new \InvalidArgumentException('Chưa có kết quả dò để đối chiếu.');
         }
 
         $now = now();
@@ -218,13 +200,37 @@ final class DoThongTinGiayTo
             $ban->NgayTao = $now;
         }
         $ban->fill($data + [
-            'MaKhoaHoc' => $hv->MaKhoaHoc,
+            'MaKhoaHoc' => $hv['ma_kh'] !== '' ? $hv['ma_kh'] : null,
             'NguoiCapNhatId' => $nguoiId,
             'NgayCapNhat' => $now,
         ]);
         $ban->save();
 
         return $ban;
+    }
+
+    /**
+     * Kết quả dò có khớp giá trị PMGPLX không — cùng quy tắc với modal (public/js/do-thong-tin.js → chuanSoSanh):
+     * số CCCD / GPLX chỉ so chữ số; ngày so theo ngày; chữ bỏ hoa thường, khoảng trắng thừa, dấu chấm phẩy.
+     */
+    public static function khop(string $key, string $do, string $pmgplx): bool
+    {
+        return self::chuanSoSanh($key, $do) !== '' && self::chuanSoSanh($key, $do) === self::chuanSoSanh($key, $pmgplx);
+    }
+
+    public static function chuanSoSanh(string $key, string $v): string
+    {
+        $v = trim((string) \Normalizer::normalize($v, \Normalizer::FORM_C));
+        if ($key === 'so_cccd' || $key === 'so_gplx') {
+            return preg_replace('/\D/', '', $v) ?? '';
+        }
+        if (str_starts_with($key, 'ngay_')) {
+            return preg_match('#^(\d{1,2})\D(\d{1,2})\D(\d{4})$#', $v, $m) ? sprintf('%04d%02d%02d', $m[3], $m[2], $m[1]) : $v;
+        }
+        $v = mb_strtolower($v);
+        $v = preg_replace('/[.,;]/u', ' ', $v) ?? $v;
+
+        return trim(preg_replace('/\s+/u', ' ', $v) ?? $v);
     }
 
     /** Cột datetime (vd. NguoiLX.NgayCapCMT) → dd/mm/yyyy. */

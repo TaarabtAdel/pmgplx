@@ -440,13 +440,12 @@ class DanhSachHocVienController extends Controller
     private function applyListFilters(Builder $query, Request $request): void
     {
         if ($keyword = trim((string) $request->input('tu_khoa'))) {
-            $query->where(function ($q) use ($keyword) {
-                $q->where('n.MaDK', 'like', '%'.$keyword.'%')
-                    ->orWhere('n.HoVaTen', 'like', '%'.$keyword.'%')
-                    ->orWhere('n.HoDemNLX', 'like', '%'.$keyword.'%')
-                    ->orWhere('n.TenNLX', 'like', '%'.$keyword.'%')
-                    ->orWhere('n.SoCMT', 'like', '%'.$keyword.'%')
-                    ->orWhere('h.SoHoSo', 'like', '%'.$keyword.'%');
+            // Không phân biệt hoa thường và dấu: «nguyen van duc» tìm ra «NGUYỄN VĂN ĐỨC» (Latin1_General_CI_AI coi Đ như D).
+            $like = '%'.$keyword.'%';
+            $query->where(function ($q) use ($like) {
+                foreach (['n.MaDK', 'n.HoVaTen', 'n.HoDemNLX', 'n.TenNLX', 'n.SoCMT', 'h.SoHoSo'] as $cot) {
+                    $q->orWhereRaw($cot.' COLLATE Latin1_General_CI_AI LIKE ?', [$like]);
+                }
             });
         }
 
