@@ -29,6 +29,7 @@ use App\Http\Controllers\DaoTao\NhapKetQuaDaoTaoController;
 use App\Http\Controllers\DaoTao\NhapKetQuaSatHachController;
 use App\Http\Controllers\DaoTao\NhapXmlBienBanTongHopController;
 use App\Http\Controllers\HeThong\NguoiDungController;
+use App\Http\Controllers\HeThong\PhanQuyenController;
 use App\Http\Controllers\PMGPLX\DanhSachGiaoVienController;
 use App\Http\Controllers\PMGPLX\DanhSachKhoaHocController;
 use App\Http\Controllers\PMGPLX\DanhSachHocVienController;
@@ -497,6 +498,11 @@ Route::prefix('he-thong')->name('hethong.')->group(function () {
     Route::delete('/nguoi-dung/{id}', [NguoiDungController::class, 'destroy'])
         ->whereNumber('id')
         ->name('nguoi-dung.destroy');
+
+    Route::get('/vai-tro/phan-quyen', [PhanQuyenController::class, 'index'])
+        ->name('phan-quyen.index');
+    Route::put('/vai-tro/phan-quyen', [PhanQuyenController::class, 'update'])
+        ->name('phan-quyen.update');
 });
 
 Route::prefix('pmgplxold')->name('pmgplxold.')->group(function () {
