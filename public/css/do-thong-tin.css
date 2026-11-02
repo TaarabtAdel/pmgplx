@@ -1,0 +1,29 @@
+/* Dò thông tin CCCD / GPLX — dùng chung modal máy tính và trang điện thoại. */
+.dtt-luoi { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+@media (max-width: 767px) { .dtt-luoi { grid-template-columns: 1fr; } }
+.dtt-o { border: 1px solid #dee2e6; border-radius: .4rem; padding: .6rem; background: #fff; }
+.dtt-o-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .4rem; gap: .5rem; }
+.dtt-trang-thai { font-size: .8rem; color: #6c757d; text-align: right; }
+.dtt-trang-thai.ok { color: #198754; font-weight: 600; }
+.dtt-trang-thai.warn { color: #b45309; }
+.dtt-trang-thai.err { color: #dc3545; }
+.dtt-trang-thai.busy { color: #0d6efd; }
+.dtt-anh { height: 8.5rem; border: 1px dashed #ced4da; border-radius: .3rem; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #f8f9fa; color: #adb5bd; font-size: .85rem; }
+.dtt-anh img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.dtt-nut { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .5rem; }
+.dtt-ket-qua { margin: .5rem 0 0; font-size: .85rem; display: grid; grid-template-columns: auto 1fr; column-gap: .5rem; row-gap: .15rem; }
+.dtt-ket-qua dt { font-weight: normal; color: #6c757d; }
+.dtt-ket-qua dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.dtt-ket-qua .dtt-canh-bao { grid-column: 1 / -1; color: #b45309; font-weight: normal; }
+
+#dtt-scanner { position: fixed; inset: 0; background: #000; z-index: 2000; display: none; }
+#dtt-scanner.show { display: block; }
+#dtt-scanner video { width: 100%; height: 100%; object-fit: cover; }
+#dtt-scanner .dtt-frame { position: absolute; left: 6%; right: 6%; top: 50%; transform: translateY(-50%); aspect-ratio: 1.58; border: 3px solid rgba(255, 255, 255, .7); border-radius: .8rem; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, .35); }
+#dtt-scanner .dtt-frame.ready { border-color: #22c55e; }
+#dtt-scanner .dtt-frame.busy { border-color: #3b82f6; }
+#dtt-scanner .dtt-bar { position: absolute; left: 0; right: 0; bottom: 0; padding: 1rem; display: flex; justify-content: space-between; align-items: center; gap: .5rem; color: #fff; background: linear-gradient(transparent, rgba(0, 0, 0, .7)); }
+#dtt-scanner .dtt-hint { font-size: .95rem; }
+
+.dtt-so-sanh td.khac { background: #fff3cd; }
+.dtt-so-sanh td.khop { background: #e8f5e9; }

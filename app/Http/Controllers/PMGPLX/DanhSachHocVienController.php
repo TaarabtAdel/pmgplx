@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\PMGPLX;
 
 use App\Http\Controllers\Controller;
+use App\Models\DaoTao\HocVienDoThongTin;
 use App\Models\PMGPLX\KhoaHoc;
 use App\Models\PMGPLX\NguoiLX;
 use App\Models\PMGPLX\NguoiLXHoSo;
 use App\Models\PMGPLXOLD\KhoaHoc as KhoaHocOld;
 use App\Services\PMGPLX\DongBoHocVienBanCuService;
 use App\Support\PMGPLX\DanhMucBangExcelExporter;
+use App\Support\PMGPLX\DmDvhcTenDayDu;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -37,8 +39,21 @@ class DanhSachHocVienController extends Controller
             ->orderBy('TenKH')
             ->get(['MaKH', 'TenKH']);
 
+        $dvhcMap = DmDvhcTenDayDu::mapForHocVien($items->getCollection());
+        $noiThuongTru = $items->getCollection()->mapWithKeys(fn ($n) => [
+            (string) $n->MaDK => DmDvhcTenDayDu::diaChiTuNguoiLx($n, $dvhcMap)['thuong_tru'],
+        ]);
+
+        $maDks = $items->getCollection()->pluck('MaDK')->map(fn ($m) => (string) $m)->all();
+        $daDo = HocVienDoThongTin::query()
+            ->whereIn('MaDK', $maDks ?: [''])
+            ->get()
+            ->keyBy(fn (HocVienDoThongTin $r) => (string) $r->MaDK);
+
         return view('PMGPLX.danh-muc.hoc-vien', [
             'items' => $items,
+            'noiThuongTru' => $noiThuongTru,
+            'daDo' => $daDo,
             'khoaHocs' => $khoaHocs,
             'filters' => [
                 'tu_khoa' => $request->input('tu_khoa', ''),
@@ -404,6 +419,11 @@ class DanhSachHocVienController extends Controller
                 'n.NgaySinh',
                 'n.GioiTinh',
                 'n.SoCMT',
+                'n.NgayCapCMT',
+                'n.NoiTT',
+                'n.NoiTT_MaDVHC',
+                'n.NoiCT',
+                'n.NoiCT_MaDVHC',
                 'n.TrangThai',
                 'h.SoHoSo',
                 'h.MaKhoaHoc',

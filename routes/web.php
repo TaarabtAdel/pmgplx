@@ -32,6 +32,7 @@ use App\Http\Controllers\HeThong\NguoiDungController;
 use App\Http\Controllers\PMGPLX\DanhSachGiaoVienController;
 use App\Http\Controllers\PMGPLX\DanhSachKhoaHocController;
 use App\Http\Controllers\PMGPLX\DanhSachHocVienController;
+use App\Http\Controllers\PMGPLX\DoThongTinHocVienController;
 use App\Http\Controllers\PMGPLX\DanhSachLichGiaoVienController;
 use App\Http\Controllers\PMGPLX\DoTrongLichGiaoVienController;
 use App\Http\Controllers\PMGPLX\DoTrungLichGiaoVienController;
@@ -65,6 +66,18 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function () {
         ->name('dm.hoc-vien.index');
     Route::get('/danh-muc/hoc-vien/xuat-excel', [DanhSachHocVienController::class, 'export'])
         ->name('dm.hoc-vien.export');
+
+    Route::prefix('/danh-muc/hoc-vien/do-thong-tin')->name('dm.hoc-vien.do-thong-tin.')->group(function () {
+        Route::post('/ocr', [DoThongTinHocVienController::class, 'ocr'])
+            ->middleware('throttle:30,1')
+            ->name('ocr');
+        Route::post('/phien', [DoThongTinHocVienController::class, 'taoPhien'])->name('phien.tao');
+        Route::get('/phien/{token}', [DoThongTinHocVienController::class, 'xemPhien'])
+            ->where('token', '[A-Za-z0-9]{32}')
+            ->name('phien.xem');
+        Route::get('/tim-hoc-vien', [DoThongTinHocVienController::class, 'timHocVien'])->name('tim-hoc-vien');
+        Route::post('/luu', [DoThongTinHocVienController::class, 'luu'])->name('luu');
+    });
     Route::get('/danh-muc/hoc-vien/dong-bo', [DanhSachHocVienController::class, 'dongBoForm'])
         ->name('dm.hoc-vien.dong-bo.form');
     Route::post('/danh-muc/hoc-vien/dong-bo', [DanhSachHocVienController::class, 'dongBoStore'])

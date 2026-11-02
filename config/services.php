@@ -81,6 +81,16 @@ return [
         'timeout' => (int) env('XEONLINE_API_TIMEOUT', 30),
     ],
 
+    /*
+    | Dò thông tin CCCD / GPLX từ ảnh (danh mục học viên). Key chỉ ở server.
+    | DO_THONG_TIN_PUBLIC_URL: địa chỉ điện thoại mở được (vd. http://192.168.1.10:8080) — dùng cho mã QR
+    | khi máy tính đang mở bằng localhost.
+    */
+    'google_vision' => [
+        'key' => env('GOOGLE_VISION_API_KEY'),
+        'public_url' => env('DO_THONG_TIN_PUBLIC_URL'),
+    ],
+
     'nominatim' => [
         'base_url' => env('NOMINATIM_BASE_URL', 'https://nominatim.openstreetmap.org'),
         'user_agent' => env('NOMINATIM_USER_AGENT', 'khgplx-dat/1.0'),
