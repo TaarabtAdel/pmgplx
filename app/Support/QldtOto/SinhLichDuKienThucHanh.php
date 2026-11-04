@@ -21,8 +21,10 @@ use Illuminate\Support\Facades\DB;
  * liền trước ít nhất 1 ngày (rơi vào ngày nghỉ thì sang ngày làm việc kế tiếp).
  *   - Cabin (tên chứa "cabin"): cặp đầu tiên sau "Cabin của cặp trước" ít nhất 1 ngày.
  *   - Tự động (tên bắt đầu "tự động", dùng xe tự động): cặp đầu tiên giữ vị trí tự nhiên.
- * Khối của một cặp chung ngày cho cả sáng và chiều. Khi khối phải lùi: rút khối ra, các bài sau dồn lên, rồi chèn
- * khối vào ngày đã tính, các bài từ ngày đó trở đi lùi theo. Cabin được chen vào giữa các ngày Tự động nếu tới mốc.
+ * Khối của một cặp giữ đúng độ lệch giữa sáng và chiều như trong cấu hình bài dạy: B có Cabin cùng ngày ở cả hai ca
+ * (lệch 0); C có Cabin (S) ở ngày N, Cabin (C) ở bài kế tiếp của danh sách chiều nên rơi vào ngày làm việc N+1.
+ * Khi khối phải lùi: rút khối ra, các bài sau dồn lên, rồi chèn khối vào ngày đã tính, các bài từ ngày đó trở đi
+ * lùi theo. Cabin được chen vào giữa các ngày Tự động nếu tới mốc.
  *
  * Sinh lại là xoá các buổi cũ rồi ghi mới.
  */
@@ -90,27 +92,34 @@ final class SinhLichDuKienThucHanh
                 fn (string $ca): bool => self::maGv($cap, $ca) !== null && $baiTheoCa[$ca]->isNotEmpty()
             ));
 
+            $lech = self::lechKhoiGiuaCa($baiTheoCa, $caCoDay);
             $min = [];
-            foreach (self::KHOI as $khoi => $_) {
-                $min[$khoi] = $cuoiKhoiTruoc[$khoi] ? $this->slotTuNgay($cuoiKhoiTruoc[$khoi]->addDay()) : 0;
+            foreach ($caCoDay as $ca) {
+                foreach (self::KHOI as $khoi => $_) {
+                    $moc = $cuoiKhoiTruoc[$khoi] ? $this->slotTuNgay($cuoiKhoiTruoc[$khoi]->addDay()) : 0;
+                    $min[$ca][$khoi] = $moc + ($lech[$ca][$khoi] ?? 0);
+                }
             }
 
-            // Xếp từng ca; khối lệch ngày giữa sáng/chiều thì nâng mốc lên ngày muộn hơn rồi xếp lại cho khớp.
+            // Xếp từng ca; khối sai độ lệch giữa sáng/chiều thì nâng mốc ca sớm hơn theo ca muộn nhất rồi xếp lại.
             $xep = [];
             for ($lan = 0; $lan < 5; $lan++) {
                 $xep = [];
-                $batDauKhoi = [];
+                $goc = [];
                 foreach ($caCoDay as $ca) {
-                    $xep[$ca] = $this->xepSlot($baiTheoCa[$ca], $min);
+                    $xep[$ca] = $this->xepSlot($baiTheoCa[$ca], $min[$ca]);
                     foreach ($xep[$ca]['khoi'] as $khoi => [$dau]) {
-                        $batDauKhoi[$khoi][] = $dau;
+                        $goc[$khoi][$ca] = $dau - ($lech[$ca][$khoi] ?? 0);
                     }
                 }
                 $doi = false;
-                foreach ($batDauKhoi as $khoi => $ds) {
-                    if (count(array_unique($ds)) > 1) {
-                        $min[$khoi] = max($ds);
-                        $doi = true;
+                foreach ($goc as $khoi => $theoCa) {
+                    $muonNhat = max($theoCa);
+                    foreach ($theoCa as $ca => $g) {
+                        if ($g !== $muonNhat) {
+                            $min[$ca][$khoi] = $muonNhat + ($lech[$ca][$khoi] ?? 0);
+                            $doi = true;
+                        }
                     }
                 }
                 if (! $doi) {
@@ -254,6 +263,37 @@ final class SinhLichDuKienThucHanh
         }
 
         return ['slot' => $slot, 'khoi' => $khoiDaXep];
+    }
+
+    /**
+     * Độ lệch (số buổi) của mỗi khối giữa các ca, lấy theo vị trí bài đầu tiên của khối trong danh sách bài từng ca:
+     * ca có khối đứng sớm nhất lệch 0. Vd. hạng C: Cabin (S) bài thứ 9, Cabin (C) bài thứ 10 → chiều lệch 1.
+     *
+     * @param  array<string, Collection<int, BaiDay>>  $baiTheoCa
+     * @param  list<string>  $caCoDay
+     * @return array<string, array<string, int>>
+     */
+    private static function lechKhoiGiuaCa(array $baiTheoCa, array $caCoDay): array
+    {
+        $viTri = [];
+        foreach ($caCoDay as $ca) {
+            foreach ($baiTheoCa[$ca] as $i => $bai) {
+                $khoi = self::khoiCua($bai);
+                if ($khoi !== null && ! isset($viTri[$khoi][$ca])) {
+                    $viTri[$khoi][$ca] = $i;
+                }
+            }
+        }
+
+        $lech = [];
+        foreach ($viTri as $khoi => $theoCa) {
+            $som = min($theoCa);
+            foreach ($theoCa as $ca => $i) {
+                $lech[$ca][$khoi] = $i - $som;
+            }
+        }
+
+        return $lech;
     }
 
     private static function khoiCua(BaiDay $bai): ?string

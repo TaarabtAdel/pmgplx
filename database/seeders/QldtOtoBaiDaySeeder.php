@@ -206,11 +206,17 @@ class QldtOtoBaiDaySeeder extends Seeder
 
     public function run(): void
     {
+        $this->ghi(self::DU_LIEU);
+    }
+
+    /** @param  array<string, list<array{0: int, 1: float|int|null, 2: string, 3: ?string, 4: ?string}>>  $duLieu */
+    protected function ghi(array $duLieu): void
+    {
         $now = Carbon::now();
 
-        DB::connection('sqlsrv_manhlinh')->transaction(function () use ($now): void {
+        DB::connection('sqlsrv_manhlinh')->transaction(function () use ($now, $duLieu): void {
             $baiHocId = [];
-            foreach (self::DU_LIEU as $nhom => $dongs) {
+            foreach ($duLieu as $nhom => $dongs) {
                 [$hang, $ca] = explode('|', $nhom);
 
                 $payload = [];
