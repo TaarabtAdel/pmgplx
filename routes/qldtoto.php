@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\QldtOto\BaoCaoDangKyController;
 use App\Http\Controllers\QldtOto\BaoCaoDeNghiSatHachController;
+use App\Http\Controllers\QldtOto\BienBanPhanCongToChamController;
 use App\Http\Controllers\QldtOto\DanhSachHocSinhLaiXeController;
 use App\Http\Controllers\QldtOto\QuyetDinhThanhLapLopHocController;
 use App\Http\Controllers\QldtOto\QuyetDinhThoiHocController;
@@ -9,9 +10,11 @@ use App\Http\Controllers\QldtOto\SoPhanCongGvXeTapLaiController;
 use App\Http\Controllers\QldtOto\QuyetDinhBaoLuuController;
 use App\Http\Controllers\QldtOto\QuyetDinhDieuDongXeController;
 use App\Http\Controllers\QldtOto\QuyetDinhDoiGiaoVienController;
+use App\Http\Controllers\QldtOto\QuyetDinhHoanThanhKhoaHocController;
 use App\Http\Controllers\QldtOto\SoTheoDoiKetQuaHocTapController;
 use App\Http\Controllers\QldtOto\CauHinhBaiDayController;
 use App\Http\Controllers\QldtOto\LichDuKien\ThucHanhController;
+use App\Http\Controllers\QldtOto\ThongBaoKiemTraKetThucMonController;
 use App\Http\Controllers\QldtOto\ThongBaoTapTrungThucHanhController;
 use App\Http\Controllers\QldtOto\TrangController;
 use App\Models\QldtOto\BaiDay;
@@ -76,6 +79,19 @@ Route::prefix('qldt-oto')->name('qldtoto.')->group(function () {
     $slugTbTapTrung = '2-thong-bao-thoi-gian-tap-trung-hoc-thuc-hanh-lai-xe';
     Route::get('/'.$slugTbTapTrung, [ThongBaoTapTrungThucHanhController::class, 'index'])->name('thong-bao-tap-trung-thuc-hanh.index');
     Route::post('/'.$slugTbTapTrung.'/xuat', [ThongBaoTapTrungThucHanhController::class, 'export'])->name('thong-bao-tap-trung-thuc-hanh.export');
+
+    $slugHoanThanh = '2-quyet-dinh-hoan-thanh-cua-khoa-hoc-danh-sach-hoc-vien-duoc';
+    Route::get('/'.$slugHoanThanh, [QuyetDinhHoanThanhKhoaHocController::class, 'index'])->name('quyet-dinh-hoan-thanh-khoa-hoc.index');
+    Route::post('/'.$slugHoanThanh.'/xuat', [QuyetDinhHoanThanhKhoaHocController::class, 'export'])->name('quyet-dinh-hoan-thanh-khoa-hoc.export');
+
+    $slugTbKtm = '2-thong-bao-thoi-gian-kiem-tra-ket-thuc-mon';
+    Route::get('/'.$slugTbKtm, [ThongBaoKiemTraKetThucMonController::class, 'index'])->name('thong-bao-kiem-tra-ket-thuc-mon.index');
+    Route::get('/'.$slugTbKtm.'/tim-hoc-vien', [ThongBaoKiemTraKetThucMonController::class, 'timHocVien'])->name('thong-bao-kiem-tra-ket-thuc-mon.tim-hoc-vien');
+    Route::post('/'.$slugTbKtm.'/xuat', [ThongBaoKiemTraKetThucMonController::class, 'export'])->name('thong-bao-kiem-tra-ket-thuc-mon.export');
+
+    $slugToCham = '2-bien-ban-phan-cong-nhiem-vu-to-cham-kiem-tra';
+    Route::get('/'.$slugToCham, [BienBanPhanCongToChamController::class, 'index'])->name('bien-ban-phan-cong-to-cham.index');
+    Route::post('/'.$slugToCham.'/xuat', [BienBanPhanCongToChamController::class, 'export'])->name('bien-ban-phan-cong-to-cham.export');
 
     $slugBaoLuu = '2-quyet-dinh-bao-luu';
     Route::get('/'.$slugBaoLuu, [QuyetDinhBaoLuuController::class, 'index'])->name('quyet-dinh-bao-luu.index');

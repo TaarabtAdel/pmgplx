@@ -19,6 +19,9 @@ final class MenuQldt
 
             return false;
         }
+        if (! empty($item['lien_ket'])) {
+            return false;
+        }
 
         $request = request();
         if (! empty($item['active']) && $request->routeIs($item['active'])) {

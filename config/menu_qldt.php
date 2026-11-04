@@ -7,6 +7,8 @@
 |   'trang' => slug  — trang trắng /qldt-oto/{slug}, route 'qldtoto.{slug}' (routes/qldtoto.php);
 |   'route' => tên route có sẵn; 'url' => URL / '#'.
 | 'active' (tuỳ chọn): mẫu tên route để tô sáng mục + nhóm cha khi ở trang con.
+| 'lien_ket' => true: mục chỉ trỏ sang màn của mục khác (vd. "4. Lập lưu hồ sơ") — không tô sáng,
+|   để menu chỉ sáng ở mục gốc.
 | 'mo_ta': ghi chú từ mindnote, hiển thị trên trang.
 */
 
@@ -238,10 +240,18 @@ return [
                                 [
                                     'title' => 'Xuất file "Thông báo thời gian kiểm tra kết thúc môn"',
                                     'trang' => '2-thong-bao-thoi-gian-kiem-tra-ket-thuc-mon',
+                                    'route' => 'qldtoto.thong-bao-kiem-tra-ket-thuc-mon.index',
+                                    'active' => 'qldtoto.thong-bao-kiem-tra-ket-thuc-mon.*',
                                 ],
                                 [
                                     'title' => 'Xuất file "Quyết định tổ chức kiểm tra kết thúc môn + biên bản phân công kiểm tra kỳ thi"',
                                     'trang' => '2-quyet-dinh-to-chuc-kiem-tra-ket-thuc-mon-bien-ban-phan-cong',
+                                ],
+                                [
+                                    'title' => 'Xuất file "Biên bản phân công nhiệm vụ của tổ chấm kiểm tra"',
+                                    'trang' => '2-bien-ban-phan-cong-nhiem-vu-to-cham-kiem-tra',
+                                    'route' => 'qldtoto.bien-ban-phan-cong-to-cham.index',
+                                    'active' => 'qldtoto.bien-ban-phan-cong-to-cham.*',
                                 ],
                                 [
                                     'title' => 'Xuất file "Làm quyết định thành lập hội đồng xét kiểm tra kết thúc môn + danh sách hội đồng kèm theo"',
@@ -283,6 +293,8 @@ return [
                                         [
                                             'title' => 'Xuất file "Quyết định hoàn thành của khoá học" + danh sách học viên được tốt nghiệp',
                                             'trang' => '2-quyet-dinh-hoan-thanh-cua-khoa-hoc-danh-sach-hoc-vien-duoc',
+                                            'route' => 'qldtoto.quyet-dinh-hoan-thanh-khoa-hoc.index',
+                                            'active' => 'qldtoto.quyet-dinh-hoan-thanh-khoa-hoc.*',
                                         ],
                                         [
                                             'title' => 'Gửi cho DAT',
@@ -419,10 +431,14 @@ return [
                                 [
                                     'title' => 'Báo cáo 1 + danh sách + kế hoạch',
                                     'trang' => '4-bao-cao-1-danh-sach-ke-hoach',
+                                    'route' => 'qldtoto.bao-cao-dang-ky.index',
+                                    'lien_ket' => true,
                                 ],
                                 [
                                     'title' => 'Quyết định thành lập khoá học + danh sách',
                                     'trang' => '4-quyet-dinh-thanh-lap-khoa-hoc-danh-sach',
+                                    'route' => 'qldtoto.quyet-dinh-thanh-lap-lop-hoc.index',
+                                    'lien_ket' => true,
                                 ],
                                 [
                                     'title' => 'Lịch giảng dạy',
@@ -431,10 +447,14 @@ return [
                                 [
                                     'title' => 'Quyết định điều động xe',
                                     'trang' => '4-quyet-dinh-dieu-dong-xe',
+                                    'route' => 'qldtoto.quyet-dinh-dieu-dong-xe.index',
+                                    'lien_ket' => true,
                                 ],
                                 [
                                     'title' => 'Thông báo tập trung học thực hành',
                                     'trang' => '4-thong-bao-tap-trung-hoc-thuc-hanh',
+                                    'route' => 'qldtoto.thong-bao-tap-trung-thuc-hanh.index',
+                                    'lien_ket' => true,
                                 ],
                                 [
                                     'title' => 'Quyết định tạm thời',
@@ -444,6 +464,8 @@ return [
                                 [
                                     'title' => 'Thông báo tổ chức kiểm tra kết thúc môn',
                                     'trang' => '4-thong-bao-to-chuc-kiem-tra-ket-thuc-mon',
+                                    'route' => 'qldtoto.thong-bao-kiem-tra-ket-thuc-mon.index',
+                                    'lien_ket' => true,
                                 ],
                                 [
                                     'title' => 'Quyết định tổ chức kiểm tra + danh sách + biên bản phân công',
@@ -460,6 +482,8 @@ return [
                                 [
                                     'title' => 'Quyết định hoàn thành + danh sách',
                                     'trang' => '4-quyet-dinh-hoan-thanh-danh-sach',
+                                    'route' => 'qldtoto.quyet-dinh-hoan-thanh-khoa-hoc.index',
+                                    'lien_ket' => true,
                                 ],
                             ],
                         ],
@@ -475,6 +499,8 @@ return [
                                                 [
                                                     'title' => 'Sổ phân công giáo viên giảng dạy',
                                                     'trang' => '4-so-phan-cong-giao-vien-giang-day',
+                                                    'route' => 'qldtoto.so-phan-cong-gv-xe-tap-lai.index',
+                                                    'lien_ket' => true,
                                                 ],
                                                 [
                                                     'title' => 'Sổ kết quả hoàn thành',
