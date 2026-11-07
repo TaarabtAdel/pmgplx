@@ -87,8 +87,10 @@
                             </div>
                         </div>
                         <div class="col-auto">
-                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-them-thu-5"
-                                    title="Thêm các thứ 5 trong 30 ngày kể từ Ngày bắt đầu thực hành">＋ Thứ 5 (30 ngày)</button>
+                            @foreach ([30, 60, 90] as $soNgay)
+                                <button type="button" class="btn btn-sm btn-outline-secondary btn-them-thu-5 mr-1" data-so-ngay="{{ $soNgay }}"
+                                        title="Thêm các thứ 5 trong {{ $soNgay }} ngày kể từ Ngày bắt đầu thực hành">＋ Thứ 5 ({{ $soNgay }} ngày)</button>
+                            @endforeach
                         </div>
                         <div class="col-auto ml-auto">
                             <button type="button" class="btn btn-sm btn-link text-danger px-0" id="btn-xoa-het-nghi">Xoá hết</button>
@@ -252,8 +254,9 @@
             sapXep();
         });
 
-        // 30 ngày kể từ Ngày bắt đầu thực hành, tính cả ngày bắt đầu.
-        document.getElementById('btn-them-thu-5').addEventListener('click', function () {
+        // N ngày (data-so-ngay) kể từ Ngày bắt đầu thực hành, tính cả ngày bắt đầu.
+        document.querySelectorAll('.btn-them-thu-5').forEach(function (nut) { nut.addEventListener('click', function () {
+            var soNgay = parseInt(nut.dataset.soNgay, 10);
             var oBatDau = document.getElementById('ngay_bat_dau');
             if (! oBatDau.value) {
                 bao('Nhập Ngày bắt đầu thực hành trước.');
@@ -263,7 +266,7 @@
             var d = taoDate(oBatDau.value);
             var tu = new Date(d);
             var den = new Date(d);
-            den.setDate(den.getDate() + 29);
+            den.setDate(den.getDate() + soNgay - 1);
             var ghiChu = document.getElementById('nghi-ghi-chu').value.trim();
             var them = 0, co = 0;
             for (; d <= den; d.setDate(d.getDate() + 1)) {
@@ -274,7 +277,7 @@
             var fmt = function (x) { return String(x.getDate()).padStart(2, '0') + '/' + String(x.getMonth() + 1).padStart(2, '0'); };
             bao('Thứ 5 từ ' + fmt(tu) + ' đến ' + fmt(den) + ': thêm ' + them + ' ngày' + (co ? ', ' + co + ' ngày đã có' : '') + '.');
             sapXep();
-        });
+        }); });
 
         document.getElementById('btn-xoa-het-nghi').addEventListener('click', function () {
             if (chips().length && confirm('Bỏ tất cả ngày nghỉ?')) {

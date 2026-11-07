@@ -217,6 +217,7 @@ final class CayChucNang
                     [
                         'khoa' => 'bao-cao', 'title' => 'Báo cáo', 'children' => [
                             ['khoa' => 'luu-luong', 'title' => 'Báo cáo Lưu lượng đào tạo', 'route' => 'daotao.pdt.bc.luu-luong-dao-tao', 'active' => ['daotao.pdt.bc.luu-luong-dao-tao*']],
+                            ['khoa' => 'tien-do', 'title' => 'Báo cáo Tiến độ đào tạo', 'route' => 'daotao.pdt.bc.tien-do-dao-tao', 'active' => ['daotao.pdt.bc.tien-do-dao-tao*']],
                             ['khoa' => 'thu-tien', 'title' => 'Quản lý thu tiền học viên', 'route' => 'daotao.pdt.bc.thu-tien-hoc-vien', 'active' => ['daotao.pdt.bc.thu-tien-hoc-vien*']],
                             ['khoa' => 'cap-nhat-gplx', 'title' => 'Quản lý cập nhật GPLX học viên', 'route' => 'daotao.pdt.bc.cap-nhat-gplx', 'active' => ['daotao.pdt.bc.cap-nhat-gplx*']],
                         ],

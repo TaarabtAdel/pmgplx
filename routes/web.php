@@ -17,6 +17,7 @@ use App\Http\Controllers\DaoTao\Dat\PhanLoaiPhienController;
 use App\Http\Controllers\DaoTao\Dat\TheoDoiDatController;
 use App\Http\Controllers\DaoTao\Dat\TongHopDatHocVienController;
 use App\Http\Controllers\DaoTao\BaoCaoLuuLuongDaoTaoController as DaoTaoBaoCaoLuuLuongDaoTaoController;
+use App\Http\Controllers\DaoTao\BaoCaoTienDoDaoTaoController;
 use App\Http\Controllers\DaoTao\ThuTienHocVienController;
 use App\Http\Controllers\DaoTao\CapNhatGPLXHocVienController;
 use App\Http\Controllers\DaoTao\DanhSachPhanCongDaoTaoController;
@@ -202,6 +203,24 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function () {
 Route::prefix('daotao')->name('daotao.')->group(function () {
     Route::get('/phong-dao-tao/bao-cao/luu-luong-dao-tao', [DaoTaoBaoCaoLuuLuongDaoTaoController::class, 'index'])
         ->name('pdt.bc.luu-luong-dao-tao');
+    Route::get('/phong-dao-tao/bao-cao/tien-do-dao-tao', [BaoCaoTienDoDaoTaoController::class, 'index'])
+        ->name('pdt.bc.tien-do-dao-tao');
+    Route::post('/phong-dao-tao/bao-cao/tien-do-dao-tao/loai-khoa', [BaoCaoTienDoDaoTaoController::class, 'storeLoaiKhoa'])
+        ->name('pdt.bc.tien-do-dao-tao.loai-khoa.store');
+    Route::put('/phong-dao-tao/bao-cao/tien-do-dao-tao/loai-khoa/{id}', [BaoCaoTienDoDaoTaoController::class, 'updateLoaiKhoa'])
+        ->name('pdt.bc.tien-do-dao-tao.loai-khoa.update');
+    Route::delete('/phong-dao-tao/bao-cao/tien-do-dao-tao/loai-khoa/{id}', [BaoCaoTienDoDaoTaoController::class, 'destroyLoaiKhoa'])
+        ->name('pdt.bc.tien-do-dao-tao.loai-khoa.destroy');
+    Route::post('/phong-dao-tao/bao-cao/tien-do-dao-tao/loai-khoa-thuc-te', [BaoCaoTienDoDaoTaoController::class, 'storeLoaiKhoaThucTe'])
+        ->name('pdt.bc.tien-do-dao-tao.loai-khoa-thuc-te.store');
+    Route::post('/phong-dao-tao/bao-cao/tien-do-dao-tao/tang-xe', [BaoCaoTienDoDaoTaoController::class, 'storeTangXe'])
+        ->name('pdt.bc.tien-do-dao-tao.tang-xe.store');
+    Route::delete('/phong-dao-tao/bao-cao/tien-do-dao-tao/tang-xe/{id}', [BaoCaoTienDoDaoTaoController::class, 'destroyTangXe'])
+        ->name('pdt.bc.tien-do-dao-tao.tang-xe.destroy');
+    Route::post('/phong-dao-tao/bao-cao/tien-do-dao-tao/ngay-nghi', [BaoCaoTienDoDaoTaoController::class, 'storeNgayNghi'])
+        ->name('pdt.bc.tien-do-dao-tao.ngay-nghi.store');
+    Route::delete('/phong-dao-tao/bao-cao/tien-do-dao-tao/ngay-nghi/{id}', [BaoCaoTienDoDaoTaoController::class, 'destroyNgayNghi'])
+        ->name('pdt.bc.tien-do-dao-tao.ngay-nghi.destroy');
     Route::get('/phong-dao-tao/bao-cao/thu-tien-hoc-vien', [ThuTienHocVienController::class, 'index'])
         ->name('pdt.bc.thu-tien-hoc-vien');
     Route::get('/phong-dao-tao/bao-cao/thu-tien-hoc-vien/tim-hoc-vien', [ThuTienHocVienController::class, 'timHocVienOptions'])
