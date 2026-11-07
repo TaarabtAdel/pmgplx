@@ -16,8 +16,9 @@ use Illuminate\Support\Facades\DB;
  *
  * Khoá thực tế: các mã cùng hạng, cùng khai giảng và bế giảng (vd. B01K33 + B01K34) gộp thành một đợt.
  *
- * Khoá dự kiến: thực hành = tốt nghiệp khoá trước + SoNgayCach; khai giảng = thực hành − SoNgayLyThuyet;
- * tốt nghiệp = thực hành + SoNgayThucHanh. Ngày nghỉ lễ, Tết không tính vào số ngày nên khoá kéo dài thêm.
+ * Khoá dự kiến: thực hành = tốt nghiệp khoá trước + SoNgayCach; khai giảng = thực hành − SoNgayLyThuyet (lý thuyết online,
+ * dương lịch; mỗi đợt Tết Nguyên Đán trong khoảng cộng thêm 3 ngày); tốt nghiệp = thực hành + SoNgayThucHanh
+ * (ngày học, bỏ ngày nghỉ lễ cấu hình).
  */
 final class TienDoDaoTaoNam
 {
@@ -163,7 +164,7 @@ final class TienDoDaoTaoNam
         return $d;
     }
 
-    /** Lùi n ngày học, bỏ qua ngày nghỉ. */
+    /** Lùi n ngày học, bỏ qua ngày nghỉ (dùng cho thực hành → tốt nghiệp). */
     private function truNgayHoc(Carbon $tu, int $soNgay): Carbon
     {
         $d = $tu->copy();
@@ -175,6 +176,51 @@ final class TienDoDaoTaoNam
         }
 
         return $d;
+    }
+
+    /** Lý thuyết online: thực hành − n ngày dương lịch; mỗi đợt Tết âm lịch giao khoảng thêm 3 ngày. */
+    private function khaiGiangTuThucHanh(Carbon $thucHanh, int $soNgayLyThuyet): Carbon
+    {
+        $d = $thucHanh->copy()->subDays($soNgayLyThuyet);
+        $d->subDays($this->soNgayThemLyThuyetViTetAmLich($d->copy(), $thucHanh));
+
+        return $d->startOfDay();
+    }
+
+    /** Có ngày khai giảng cố định → ngày thực hành (cùng quy tắc lý thuyết online). */
+    private function thucHanhTuKhaiGiang(Carbon $khaiGiang, int $soNgayLyThuyet): Carbon
+    {
+        $d = $khaiGiang->copy()->addDays($soNgayLyThuyet);
+        $d->addDays($this->soNgayThemLyThuyetViTetAmLich($khaiGiang, $d->copy()));
+
+        return $d->startOfDay();
+    }
+
+    private function laDotTetAmLich(string $tenDot): bool
+    {
+        $t = mb_strtoupper(trim($tenDot));
+
+        return str_contains($t, 'TẾT NGUYÊN ĐÁN');
+    }
+
+    /** Số ngày dương lịch thêm vào giai đoạn lý thuyết khi giao với Tết Nguyên Đán (mỗi đợt +3). */
+    private function soNgayThemLyThuyetViTetAmLich(Carbon $tu, Carbon $den): int
+    {
+        if ($tu->gt($den)) {
+            [$tu, $den] = [$den, $tu];
+        }
+
+        $them = 0;
+        foreach ($this->dotNghi as $dot) {
+            if (! $this->laDotTetAmLich($dot['ten'])) {
+                continue;
+            }
+            if ($dot['tu']->lte($den) && $dot['den']->gte($tu)) {
+                $them += 3;
+            }
+        }
+
+        return $them;
     }
 
     /** Tốt nghiệp khoá trước + SoNgayCach (ngày dương lịch; ngày nghỉ lễ không đẩy lùi khoảng cách). */
@@ -421,10 +467,10 @@ final class TienDoDaoTaoNam
             }
             if ($loai->NgayKhaiGiang !== null) {
                 $khaiGiang = $loai->NgayKhaiGiang->copy()->startOfDay();
-                $thucHanh = $this->congNgayHoc($khaiGiang, $loai->SoNgayLyThuyet);
+                $thucHanh = $this->thucHanhTuKhaiGiang($khaiGiang, $loai->SoNgayLyThuyet);
             } elseif ($noiTiep !== null) {
                 $thucHanh = $this->thucHanhSau($noiTiep, $loai->SoNgayCach);
-                $khaiGiang = $this->truNgayHoc($thucHanh, $loai->SoNgayLyThuyet);
+                $khaiGiang = $this->khaiGiangTuThucHanh($thucHanh, $loai->SoNgayLyThuyet);
             } else {
                 $canhBao[] = "«{$loai->TenLoai}»: chưa có khoá thực tế ".self::NHAN_HANG[$hang].' để nối tiếp — hãy nhập ngày khai giảng cho loại khoá này.';
 
@@ -457,7 +503,7 @@ final class TienDoDaoTaoNam
                 ];
 
                 $thucHanh = $this->thucHanhSau($totNghiep, $loai->SoNgayCach);
-                $khaiGiang = $this->truNgayHoc($thucHanh, $loai->SoNgayLyThuyet);
+                $khaiGiang = $this->khaiGiangTuThucHanh($thucHanh, $loai->SoNgayLyThuyet);
             }
         }
 

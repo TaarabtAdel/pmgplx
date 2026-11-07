@@ -157,8 +157,9 @@
         <p class="mb-0">
             <strong>Thực tế</strong>: các khoá trên <strong>PMGPLX → Quản lý khoá học</strong>
             (ngày thực hành in nghiêng là ước tính vì khoá chưa có lịch xe). <strong>Dự kiến</strong>: mỗi loại khoá là một chuỗi khoá nối tiếp — khoá sau
-            <strong>thực hành</strong> sau ngày tốt nghiệp khoá trước, <strong>khai giảng</strong> = thực hành − số ngày lý thuyết,
-            <strong>tốt nghiệp</strong> = thực hành + số ngày thực hành. Ngày nghỉ lễ, Tết không tính vào số ngày học.
+            <strong>thực hành</strong> sau ngày tốt nghiệp khoá trước (+ cách ngày), <strong>khai giảng</strong> = thực hành − lý thuyết
+            (học online, đếm ngày dương lịch; mỗi đợt <strong>Tết Nguyên Đán</strong> trong khoảng thêm 3 ngày),
+            <strong>tốt nghiệp</strong> = thực hành + số ngày thực hành (ngày học, trừ ngày nghỉ lễ trong cấu hình).
         </p>
     </div>
 
@@ -612,7 +613,9 @@
                 </div>
                 <div class="modal-body">
                     <p class="text-muted small mb-3">
-                        Ngày nghỉ không tính vào số ngày lý thuyết / thực hành của khoá dự kiến, nên khoá trùng ngày nghỉ kéo dài thêm.
+                        Ngày nghỉ trong danh sách chỉ làm <strong>dài thêm giai đoạn thực hành → tốt nghiệp</strong> (dự kiến).
+                        Giai đoạn <strong>lý thuyết online</strong> (khai giảng → thực hành) không trừ các ngày lễ khác; riêng đợt tên
+                        có <strong>Tết Nguyên Đán</strong> được cộng thêm <strong>3 ngày</strong> dương lịch.
                         <strong>Số ngày</strong> = khoảng từ <strong>Từ ngày</strong> đến <strong>Đến ngày</strong> (cả hai đầu, tính tự động).
                         Để trống <strong>Đến ngày</strong> khi thêm mới = nghỉ một ngày.
                     </p>
