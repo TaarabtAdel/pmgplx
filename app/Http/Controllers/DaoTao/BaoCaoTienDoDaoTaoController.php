@@ -119,6 +119,24 @@ class BaoCaoTienDoDaoTaoController extends Controller
 
     public function storeNgayNghi(Request $request): RedirectResponse
     {
+        $payload = $this->ngayNghiTuRequest($request);
+
+        TienDoDuKienNgayNghi::query()->create([...$payload, 'NgayTao' => now()]);
+
+        return back()->with('success', 'Đã thêm ngày nghỉ.');
+    }
+
+    public function updateNgayNghi(Request $request, int $id): RedirectResponse
+    {
+        $dot = TienDoDuKienNgayNghi::query()->findOrFail($id);
+        $dot->update($this->ngayNghiTuRequest($request));
+
+        return back()->with('success', 'Đã cập nhật ngày nghỉ.');
+    }
+
+    /** @return array{TenNgayNghi: string, TuNgay: string, DenNgay: string} */
+    private function ngayNghiTuRequest(Request $request): array
+    {
         $validated = $request->validate([
             'ten_ngay_nghi' => ['required', 'string', 'max:150'],
             'tu_ngay' => ['required', 'date'],
@@ -129,14 +147,14 @@ class BaoCaoTienDoDaoTaoController extends Controller
             'den_ngay.after_or_equal' => 'Ngày kết thúc nghỉ phải từ ngày bắt đầu trở đi.',
         ]);
 
-        TienDoDuKienNgayNghi::query()->create([
-            'TenNgayNghi' => trim((string) $validated['ten_ngay_nghi']),
-            'TuNgay' => $validated['tu_ngay'],
-            'DenNgay' => $validated['den_ngay'] ?? $validated['tu_ngay'],
-            'NgayTao' => now(),
-        ]);
+        $tu = $validated['tu_ngay'];
+        $den = $validated['den_ngay'] ?? null;
 
-        return back()->with('success', 'Đã thêm ngày nghỉ.');
+        return [
+            'TenNgayNghi' => trim((string) $validated['ten_ngay_nghi']),
+            'TuNgay' => $tu,
+            'DenNgay' => $den ?: $tu,
+        ];
     }
 
     public function destroyNgayNghi(int $id): RedirectResponse

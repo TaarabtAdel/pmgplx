@@ -219,6 +219,8 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
         ->name('pdt.bc.tien-do-dao-tao.tang-xe.destroy');
     Route::post('/phong-dao-tao/bao-cao/tien-do-dao-tao/ngay-nghi', [BaoCaoTienDoDaoTaoController::class, 'storeNgayNghi'])
         ->name('pdt.bc.tien-do-dao-tao.ngay-nghi.store');
+    Route::put('/phong-dao-tao/bao-cao/tien-do-dao-tao/ngay-nghi/{id}', [BaoCaoTienDoDaoTaoController::class, 'updateNgayNghi'])
+        ->name('pdt.bc.tien-do-dao-tao.ngay-nghi.update');
     Route::delete('/phong-dao-tao/bao-cao/tien-do-dao-tao/ngay-nghi/{id}', [BaoCaoTienDoDaoTaoController::class, 'destroyNgayNghi'])
         ->name('pdt.bc.tien-do-dao-tao.ngay-nghi.destroy');
     Route::get('/phong-dao-tao/bao-cao/thu-tien-hoc-vien', [ThuTienHocVienController::class, 'index'])

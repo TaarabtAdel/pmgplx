@@ -613,6 +613,8 @@
                 <div class="modal-body">
                     <p class="text-muted small mb-3">
                         Ngày nghỉ không tính vào số ngày lý thuyết / thực hành của khoá dự kiến, nên khoá trùng ngày nghỉ kéo dài thêm.
+                        <strong>Số ngày</strong> = khoảng từ <strong>Từ ngày</strong> đến <strong>Đến ngày</strong> (cả hai đầu, tính tự động).
+                        Để trống <strong>Đến ngày</strong> khi thêm mới = nghỉ một ngày.
                     </p>
                     <form method="POST" action="{{ route('daotao.pdt.bc.tien-do-dao-tao.ngay-nghi.store') }}" class="mb-3 border rounded p-3 bg-light">
                         @csrf
@@ -640,18 +642,36 @@
                                 <th>Tên ngày nghỉ</th>
                                 <th>Từ ngày</th>
                                 <th>Đến ngày</th>
-                                <th class="text-center">Số ngày</th>
-                                <th></th>
+                                <th class="text-center" title="Tự tính từ Từ ngày → Đến ngày">Số ngày</th>
+                                <th>Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse ($ngayNghi as $item)
+                                @php
+                                    $formNghi = 'frm-ngay-nghi-'.$item->Id;
+                                    $soNgay = $item->TuNgay->diffInDays($item->DenNgay) + 1;
+                                @endphp
                                 <tr>
-                                    <td>{{ $item->TenNgayNghi }}</td>
-                                    <td>{{ $item->TuNgay->format('d/m/Y') }}</td>
-                                    <td>{{ $item->DenNgay->format('d/m/Y') }}</td>
-                                    <td class="text-center">{{ $item->TuNgay->diffInDays($item->DenNgay) + 1 }}</td>
-                                    <td class="text-right">
+                                    <td>
+                                        <form method="POST" action="{{ route('daotao.pdt.bc.tien-do-dao-tao.ngay-nghi.update', $item->Id) }}" id="{{ $formNghi }}">
+                                            @csrf
+                                            @method('PUT')
+                                        </form>
+                                        <input type="text" name="ten_ngay_nghi" class="form-control form-control-sm" maxlength="150"
+                                               value="{{ $item->TenNgayNghi }}" required form="{{ $formNghi }}">
+                                    </td>
+                                    <td>
+                                        <input type="date" name="tu_ngay" class="form-control form-control-sm ngay-nghi-tu"
+                                               value="{{ $item->TuNgay->format('Y-m-d') }}" required form="{{ $formNghi }}">
+                                    </td>
+                                    <td>
+                                        <input type="date" name="den_ngay" class="form-control form-control-sm ngay-nghi-den"
+                                               value="{{ $item->DenNgay->format('Y-m-d') }}" form="{{ $formNghi }}">
+                                    </td>
+                                    <td class="text-center font-weight-bold so-ngay-nghi" data-so-ngay="{{ $soNgay }}">{{ $soNgay }}</td>
+                                    <td class="text-nowrap text-right">
+                                        <button type="submit" class="btn btn-sm btn-outline-primary" form="{{ $formNghi }}">Lưu</button>
                                         <form method="POST" action="{{ route('daotao.pdt.bc.tien-do-dao-tao.ngay-nghi.destroy', $item->Id) }}" class="d-inline"
                                               onsubmit="return confirm('Xoá ngày nghỉ «{{ $item->TenNgayNghi }}»?');">
                                             @csrf
@@ -781,5 +801,30 @@
     @if ($errors->has('so_gv'))
         $(function () { $('#modal-cau-hinh-tang-xe').modal('show'); });
     @endif
+
+    (function () {
+        const demNgay = (tu, den) => {
+            if (! tu) {
+                return '—';
+            }
+            const a = new Date(tu + 'T12:00:00');
+            const b = new Date((den || tu) + 'T12:00:00');
+            if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime()) || b < a) {
+                return '—';
+            }
+            return String(Math.round((b - a) / 86400000) + 1);
+        };
+        document.querySelectorAll('#modal-cau-hinh-ngay-nghi tbody tr').forEach((row) => {
+            const tu = row.querySelector('.ngay-nghi-tu');
+            const den = row.querySelector('.ngay-nghi-den');
+            const o = row.querySelector('.so-ngay-nghi');
+            if (! tu || ! o) {
+                return;
+            }
+            const capNhat = () => { o.textContent = demNgay(tu.value, den?.value); };
+            tu.addEventListener('change', capNhat);
+            den?.addEventListener('change', capNhat);
+        });
+    })();
 </script>
 @endpush
