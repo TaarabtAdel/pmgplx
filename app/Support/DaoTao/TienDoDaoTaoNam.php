@@ -229,6 +229,17 @@ final class TienDoDaoTaoNam
         return $totNghiepTruoc->copy()->addDays($soNgayCach);
     }
 
+    /** Ngày bắt đầu thực hành không được rơi vào ngày nghỉ (lễ, Tết, …). */
+    private function sangNgayHocDuoc(Carbon $ngay): Carbon
+    {
+        $d = $ngay->copy()->startOfDay();
+        while ($this->laNgayNghi($d)) {
+            $d->addDay();
+        }
+
+        return $d;
+    }
+
     /**
      * Gom tên loại khoá tương đương để nối tiếp đúng chuỗi (thực tế vs cấu hình dự kiến).
      */
@@ -467,9 +478,9 @@ final class TienDoDaoTaoNam
             }
             if ($loai->NgayKhaiGiang !== null) {
                 $khaiGiang = $loai->NgayKhaiGiang->copy()->startOfDay();
-                $thucHanh = $this->thucHanhTuKhaiGiang($khaiGiang, $loai->SoNgayLyThuyet);
+                $thucHanh = $this->sangNgayHocDuoc($this->thucHanhTuKhaiGiang($khaiGiang, $loai->SoNgayLyThuyet));
             } elseif ($noiTiep !== null) {
-                $thucHanh = $this->thucHanhSau($noiTiep, $loai->SoNgayCach);
+                $thucHanh = $this->sangNgayHocDuoc($this->thucHanhSau($noiTiep, $loai->SoNgayCach));
                 $khaiGiang = $this->khaiGiangTuThucHanh($thucHanh, $loai->SoNgayLyThuyet);
             } else {
                 $canhBao[] = "«{$loai->TenLoai}»: chưa có khoá thực tế ".self::NHAN_HANG[$hang].' để nối tiếp — hãy nhập ngày khai giảng cho loại khoá này.';
@@ -502,7 +513,7 @@ final class TienDoDaoTaoNam
                     'tot_nghiep' => $totNghiep,
                 ];
 
-                $thucHanh = $this->thucHanhSau($totNghiep, $loai->SoNgayCach);
+                $thucHanh = $this->sangNgayHocDuoc($this->thucHanhSau($totNghiep, $loai->SoNgayCach));
                 $khaiGiang = $this->khaiGiangTuThucHanh($thucHanh, $loai->SoNgayLyThuyet);
             }
         }
