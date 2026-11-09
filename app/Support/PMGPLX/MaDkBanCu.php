@@ -13,8 +13,8 @@ class MaDkBanCu
     }
 
     /**
-     * Lấy mã ĐK bản cũ từ mã ĐK phần mềm mới — thay tiền tố (vd. 44007 → 45003),
-     * phần số sau gộp liền không dấu - (vd. 44007-20260622-090221 → 45003-20260622090221).
+     * Lấy mã ĐK bản cũ từ mã ĐK phần mềm mới — chỉ thay tiền tố mã khóa (vd. 44007 → 45003),
+     * giữ nguyên phần sau dấu - đầu (vd. 44007-20260831-000002 → 45003-20260831-000002).
      */
     public static function mapFromSource(string $sourceMaDk, string $maKhoaHocDich): string
     {
@@ -25,7 +25,7 @@ class MaDkBanCu
             return $targetPrefix;
         }
 
-        $suffix = str_replace('-', '', substr($sourceMaDk, $dashPos + 1));
+        $suffix = substr($sourceMaDk, $dashPos + 1);
 
         return $targetPrefix.'-'.$suffix;
     }

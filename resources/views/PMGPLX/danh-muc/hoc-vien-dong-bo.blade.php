@@ -4,27 +4,110 @@
 
 @push('styles')
 <style>
-    .hoc-vien-dong-bo-planned-scroll {
+    .hoc-vien-dong-bo-planned-scroll,
+    .hoc-vien-dong-bo-source-scroll {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+        max-width: 100%;
     }
-    .hoc-vien-dong-bo-planned-scroll .col-ma-dk-du-kien {
-        min-width: 220px;
+    .hoc-vien-dong-bo-source-scroll.table-responsive,
+    .hoc-vien-dong-bo-planned-scroll.table-responsive {
+        display: block;
+    }
+    .hoc-vien-dong-bo-source-scroll.table-responsive > table,
+    .hoc-vien-dong-bo-planned-scroll.table-responsive > table {
+        width: 1300px;
+        min-width: 1300px;
+        max-width: none;
+        table-layout: fixed;
+    }
+    .hoc-vien-dong-bo-preview .col-stt {
+        width: 4.5rem;
+    }
+    .hoc-vien-dong-bo-preview colgroup col.col-ma-dk {
         width: 220px;
+    }
+    .hoc-vien-dong-bo-preview colgroup col.col-ho-ten {
+        width: 220px;
+    }
+    .hoc-vien-dong-bo-preview colgroup col.col-stt {
+        width: 4.5rem;
+    }
+    .hoc-vien-dong-bo-preview colgroup col.col-so-gplx {
+        width: 11rem;
+    }
+    .hoc-vien-dong-bo-preview colgroup col.col-ngay-tt-gplx {
+        width: 10rem;
+    }
+    .hoc-vien-dong-bo-preview .col-so-gplx {
         white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .hoc-vien-dong-bo-preview .col-ngay-tt-gplx {
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+    .hoc-vien-dong-bo-preview colgroup col.col-tu-so-gplx {
+        width: 5.5rem;
+    }
+    .hoc-vien-dong-bo-preview colgroup col.col-dvc-hien-tai {
+        width: 7rem;
+    }
+    .hoc-vien-dong-bo-preview colgroup col.col-dvc-ban-cu {
+        width: 11rem;
+    }
+    .hoc-vien-dong-bo-preview .col-tu-so-gplx,
+    .hoc-vien-dong-bo-preview .col-dvc-hien-tai,
+    .hoc-vien-dong-bo-preview .col-dvc-ban-cu {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: middle;
+    }
+    .hoc-vien-dong-bo-preview .col-dvc-ban-cu:hover {
+        overflow: visible;
+        white-space: normal;
+        word-break: break-word;
+        position: relative;
+        z-index: 2;
+        background: #fff;
+        box-shadow: 0 0 0 1px #dee2e6;
+    }
+    .hoc-vien-dong-bo-preview .col-ma-dk,
+    .hoc-vien-dong-bo-preview .col-ma-dk-du-kien {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: middle;
+    }
+    .hoc-vien-dong-bo-preview .col-ma-dk code {
+        display: inline-block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: bottom;
     }
     .hoc-vien-dong-bo-preview .col-ho-ten {
-        min-width: 160px;
-        width: 160px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: middle;
+    }
+    .hoc-vien-dong-bo-preview .col-ho-ten:hover {
+        overflow: visible;
+        white-space: normal;
+        word-break: break-word;
+        position: relative;
+        z-index: 2;
+        background: #fff;
+        box-shadow: 0 0 0 1px #dee2e6;
     }
     .hoc-vien-dong-bo-row-dvc-doi {
         background-color: #e8f4fd;
     }
     .hoc-vien-dong-bo-row-dvc-doi.hoc-vien-dong-bo-row-conflict {
         background-color: #ffe8a1;
-    }
-    .hoc-vien-dong-bo-planned-scroll .table {
-        min-width: 1050px;
     }
     .hoc-vien-dong-bo-row-conflict {
         background-color: #fff3cd;
@@ -207,14 +290,22 @@
                         @endif
                     </div>
                     <div class="card-body p-0">
-                        <div class="table-responsive hoc-vien-dong-bo-preview">
-                            <table class="table table-sm table-bordered table-striped table-hover table-data mb-0">
+                        <div class="table-responsive hoc-vien-dong-bo-preview hoc-vien-dong-bo-source-scroll">
+                            <table class="table table-sm table-bordered table-striped table-hover table-data mb-0 hoc-vien-dong-bo-table-nguon">
+                                <colgroup>
+                                    <col class="col-stt">
+                                    <col class="col-ma-dk">
+                                    <col class="col-ho-ten">
+                                    <col class="col-so-gplx">
+                                    <col>
+                                    <col>
+                                </colgroup>
                                 <thead>
                                     <tr>
-                                        <th>STT</th>
-                                        <th>Mã ĐK</th>
+                                        <th class="col-stt">STT</th>
+                                        <th class="col-ma-dk">Mã ĐK</th>
                                         <th class="col-ho-ten">Họ và tên</th>
-                                        <th>Số GPLX</th>
+                                        <th class="col-so-gplx">Số GPLX</th>
                                         <th>Đơn vị cấp</th>
                                         <th>Hạng</th>
                                     </tr>
@@ -222,10 +313,10 @@
                                 <tbody>
                                     @forelse ($sourceRows as $index => $row)
                                         <tr>
-                                            <td>{{ $index + 1 }}</td>
-                                            <td><code>{{ $row['ma_dk'] }}</code></td>
-                                            <td class="col-ho-ten">{{ $row['ho_ten'] }}</td>
-                                            <td>{{ $row['so_gplx_da_co'] ?: '—' }}</td>
+                                            <td class="col-stt">{{ $index + 1 }}</td>
+                                            <td class="col-ma-dk"><code>{{ $row['ma_dk'] }}</code></td>
+                                            <td class="col-ho-ten" title="{{ $row['ho_ten'] }}">{{ $row['ho_ten'] }}</td>
+                                            <td class="col-so-gplx" title="{{ $row['so_gplx_da_co'] ?? '' }}">{{ $row['so_gplx_da_co'] ?: '—' }}</td>
                                             <td>{{ $row['don_vi_cap_gplx_da_co'] ?: '—' }}</td>
                                             <td>{{ $row['hang_gplx'] }}</td>
                                         </tr>
@@ -254,17 +345,28 @@
                             <div class="p-3 text-muted">Chọn <strong>mã khóa học đích</strong> và bấm <strong>Xem trước</strong> để hiện mã ĐK dự kiến (thay tiền tố mã khóa).</div>
                         @else
                             <div class="table-responsive hoc-vien-dong-bo-planned-scroll hoc-vien-dong-bo-preview">
-                                <table class="table table-sm table-bordered table-striped table-hover table-data mb-0">
+                                <table class="table table-sm table-bordered table-striped table-hover table-data mb-0 hoc-vien-dong-bo-table-dich">
+                                    <colgroup>
+                                        <col class="col-stt">
+                                        <col class="col-ma-dk">
+                                        <col class="col-ho-ten">
+                                        <col class="col-so-gplx">
+                                        <col class="col-ngay-tt-gplx">
+                                        <col class="col-tu-so-gplx">
+                                        <col class="col-dvc-hien-tai">
+                                        <col class="col-dvc-ban-cu">
+                                        <col>
+                                    </colgroup>
                                     <thead>
                                         <tr>
-                                            <th>STT</th>
-                                            <th class="col-ma-dk-du-kien">Mã ĐK dự kiến</th>
+                                            <th class="col-stt">STT</th>
+                                            <th class="col-ma-dk col-ma-dk-du-kien">Mã ĐK dự kiến</th>
                                             <th class="col-ho-ten">Họ và tên</th>
-                                            <th>Số GPLX</th>
-                                            <th>Ngày TT GPLX</th>
-                                            <th>Từ Số GPLX</th>
-                                            <th>ĐVC hiện tại</th>
-                                            <th>ĐVC bản cũ</th>
+                                            <th class="col-so-gplx">Số GPLX</th>
+                                            <th class="col-ngay-tt-gplx">Ngày TT GPLX</th>
+                                            <th class="col-tu-so-gplx">Từ Số GPLX</th>
+                                            <th class="col-dvc-hien-tai">ĐVC hiện tại</th>
+                                            <th class="col-dvc-ban-cu">ĐVC bản cũ</th>
                                             <th>Hạng</th>
                                         </tr>
                                     </thead>
@@ -274,7 +376,7 @@
                                                 'hoc-vien-dong-bo-row-conflict' => ! empty($row['ton_tai']),
                                                 'hoc-vien-dong-bo-row-dvc-doi' => ! empty($row['don_vi_cap_doi']),
                                             ])>
-                                                <td>
+                                                <td class="col-stt">
                                                     @if (empty($row['ton_tai']))
                                                         <span class="text-success font-weight-bold" title="Chưa tồn tại trên bản cũ — sẽ thêm mới">+</span>
                                                     @else
@@ -282,23 +384,23 @@
                                                     @endif
                                                     {{ $index + 1 }}
                                                 </td>
-                                                <td class="col-ma-dk-du-kien">
+                                                <td class="col-ma-dk col-ma-dk-du-kien">
                                                     <code @class(['text-primary' => empty($row['ton_tai']), 'text-warning' => ! empty($row['ton_tai'])])>{{ $row['ma_dk'] ?? '—' }}</code>
                                                     @if (! empty($row['ton_tai']))
                                                         <span class="badge badge-warning ml-1">Sẽ cập nhật</span>
                                                     @endif
                                                 </td>
-                                                <td class="col-ho-ten">{{ $row['ho_ten'] }}</td>
-                                                <td>{{ $row['so_gplx_da_co'] }}</td>
-                                                <td>
+                                                <td class="col-ho-ten" title="{{ $row['ho_ten'] }}">{{ $row['ho_ten'] }}</td>
+                                                <td class="col-so-gplx" title="{{ $row['so_gplx_da_co'] ?? '' }}">{{ $row['so_gplx_da_co'] }}</td>
+                                                <td class="col-ngay-tt-gplx">
                                                     {{ $row['ngay_tt_gplx_da_co'] ?: '—' }}
                                                     @if (! empty($row['ngay_tt_sau_moc']))
                                                         <span class="badge badge-info ml-1" title="Sau 01/03/2025 → ĐVC bản cũ = 00">Sau mốc</span>
                                                     @endif
                                                 </td>
-                                                <td title="{{ $row['so_gplx_da_co'] ?? '' }}">{{ $row['dvc_tu_so_gplx'] ?: '—' }}</td>
-                                                <td>{{ $row['don_vi_cap_gplx_da_co_goc'] ?: '—' }}</td>
-                                                <td>
+                                                <td class="col-tu-so-gplx" title="{{ $row['dvc_tu_so_gplx'] ?? '' }}">{{ $row['dvc_tu_so_gplx'] ?: '—' }}</td>
+                                                <td class="col-dvc-hien-tai" title="{{ $row['don_vi_cap_gplx_da_co_goc'] ?? '' }}">{{ $row['don_vi_cap_gplx_da_co_goc'] ?: '—' }}</td>
+                                                <td class="col-dvc-ban-cu">
                                                     @if (! empty($row['don_vi_cap_doi']))
                                                         <span class="text-muted">{{ $row['don_vi_cap_gplx_da_co_goc'] ?: ($row['dvc_tu_so_gplx'] ?: '—') }}</span>
                                                         <span class="mx-1">→</span>
@@ -375,7 +477,7 @@
                         </div>
                     @elseif ($canSync)
                         <div class="small text-muted mt-1">
-                            Mã ĐK: thay tiền tố khóa, phần số sau gộp liền (vd. <code>45003-20260622090221</code>).
+                            Mã ĐK: thay tiền tố khóa, giữ phần ngày-thứ tự (vd. <code>45003-20260831-000002</code>).
                             @if ($updateCount > 0)
                                 Dòng vàng = đã có trên bản cũ, sẽ cập nhật kèm giấy tờ.
                             @endif

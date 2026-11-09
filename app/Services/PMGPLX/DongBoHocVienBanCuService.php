@@ -7,7 +7,9 @@ use App\Models\PMGPLX\NguoiLX;
 use App\Models\PMGPLX\NguoiLXHoSo;
 use App\Models\PMGPLXOLD\KhoaHoc as KhoaHocOld;
 use App\Support\PMGPLX\DonViCapGPLXBanCu;
+use App\Support\PMGPLX\DonViGtvtBanCu;
 use App\Support\PMGPLX\MaDkBanCu;
+use App\Support\PMGPLX\SoGiayCntnBanCu;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -217,7 +219,11 @@ class DongBoHocVienBanCuService
             return ['inserted' => 0, 'updated' => 0, 'failed' => 0, 'total' => 0, 'skipped' => 0, 'inserted_ma_dks' => []];
         }
 
-        if (! KhoaHocOld::query()->where('MaKH', $maKhoaHocDich)->exists()) {
+        $khoaHocBanCu = KhoaHocOld::query()
+            ->where('MaKH', $maKhoaHocDich)
+            ->first(['MaKH', 'MaCSDT', 'MaSoGTVT']);
+
+        if ($khoaHocBanCu === null) {
             throw new \InvalidArgumentException('Mã khóa học đích không tồn tại trên bản cũ.');
         }
 
@@ -267,15 +273,32 @@ class DongBoHocVienBanCuService
 
                 $payloadNguoi = $this->onlyColumns($nguoi->getAttributes(), $colsNguoi);
                 $payloadNguoi['MaDK'] = $targetMaDk;
-                $oldDb->table('NguoiLX')->updateOrInsert(['MaDK' => $targetMaDk], $payloadNguoi);
 
+                $payloadHoSo = null;
                 $hoSo = $hoSoRows->get($sourceMaDk);
                 if ($hoSo) {
-                    $payloadHoSo = $this->mapHoSoPayloadForBanCu(
-                        $this->onlyColumns($hoSo->getAttributes(), $colsHoSo)
-                    );
+                    $payloadHoSo = $this->onlyColumns($hoSo->getAttributes(), $colsHoSo);
                     $payloadHoSo['MaDK'] = $targetMaDk;
                     $payloadHoSo['MaKhoaHoc'] = $maKhoaHocDich;
+                    $payloadHoSo = $this->mapHoSoPayloadForBanCu($payloadHoSo);
+                    $payloadHoSo = $this->mapHoSoEmbeddedCodes(
+                        $payloadHoSo,
+                        (string) $sourceMaDk,
+                        $targetMaDk,
+                        $maKhoaHocNguon,
+                        $maKhoaHocDich
+                    );
+                }
+
+                [$payloadNguoi, $payloadHoSo] = DonViGtvtBanCu::applyFromKhoaHocDich(
+                    $payloadNguoi,
+                    $payloadHoSo,
+                    $khoaHocBanCu
+                );
+
+                $oldDb->table('NguoiLX')->updateOrInsert(['MaDK' => $targetMaDk], $payloadNguoi);
+
+                if ($payloadHoSo !== null) {
                     $oldDb->table('NguoiLX_HoSo')->updateOrInsert(['MaDK' => $targetMaDk], $payloadHoSo);
                 }
 
@@ -414,6 +437,44 @@ class DongBoHocVienBanCuService
             $payload['DonViCapGPLXDaCo'] = DonViCapGPLXBanCu::mapForOldSoftware(
                 isset($payload['SoGPLXDaCo']) ? (string) $payload['SoGPLXDaCo'] : null,
                 $payload['NgayTTGPLXDaCo'] ?? null
+            );
+        }
+
+        if (array_key_exists('SoGiayCNTN', $payload)) {
+            $maDk = (string) ($payload['MaDK'] ?? '');
+            if ($maDk !== '') {
+                $mapped = SoGiayCntnBanCu::mapForOldSoftware(
+                    isset($payload['SoGiayCNTN']) ? (string) $payload['SoGiayCNTN'] : null,
+                    $maDk
+                );
+                if ($mapped !== null) {
+                    $payload['SoGiayCNTN'] = $mapped;
+                }
+            }
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function mapHoSoEmbeddedCodes(
+        array $payload,
+        string $sourceMaDk,
+        string $targetMaDk,
+        string $maKhoaHocNguon,
+        string $maKhoaHocDich
+    ): array {
+        foreach (['DuongDanAnh', 'GhiChu'] as $col) {
+            if (! array_key_exists($col, $payload) || $payload[$col] === null || $payload[$col] === '') {
+                continue;
+            }
+            $payload[$col] = str_replace(
+                [$sourceMaDk, $maKhoaHocNguon],
+                [$targetMaDk, $maKhoaHocDich],
+                (string) $payload[$col]
             );
         }
 
