@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\QldtOto\BaoCaoDangKyController;
+use App\Http\Controllers\QldtOto\BienBanXacNhanPhoBienNoiQuyController;
 use App\Http\Controllers\QldtOto\BaoCaoDeNghiSatHachController;
 use App\Http\Controllers\QldtOto\BienBanPhanCongToChamController;
 use App\Http\Controllers\QldtOto\DanhSachHocSinhLaiXeController;
@@ -123,6 +124,10 @@ Route::prefix('qldt-oto')->name('qldtoto.')->group(function () {
     Route::post('/'.$slugSoPhanCong.'/nhap-phan-cong', [SoPhanCongGvXeTapLaiController::class, 'import'])->name('so-phan-cong-gv-xe-tap-lai.import');
     Route::get('/'.$slugSoPhanCong.'/huy', [SoPhanCongGvXeTapLaiController::class, 'cancel'])->name('so-phan-cong-gv-xe-tap-lai.cancel');
     Route::get('/'.$slugSoPhanCong.'/khoa/{maKh}', [SoPhanCongGvXeTapLaiController::class, 'khoaJson'])->name('so-phan-cong-gv-xe-tap-lai.khoa');
+
+    $slugPhoBien = '1-bien-ban-xac-nhan-pho-bien-noi-quy-quy-che-chuong-trinh-dao';
+    Route::get('/'.$slugPhoBien, [BienBanXacNhanPhoBienNoiQuyController::class, 'index'])->name('bien-ban-pho-bien-noi-quy.index');
+    Route::post('/'.$slugPhoBien.'/xuat', [BienBanXacNhanPhoBienNoiQuyController::class, 'export'])->name('bien-ban-pho-bien-noi-quy.export');
 
     $slugQuyetDinh = '1-quyet-dinh-thanh-lap-lop-hoc-danh-sach-hoc-vien';
     Route::get('/'.$slugQuyetDinh, [QuyetDinhThanhLapLopHocController::class, 'index'])->name('quyet-dinh-thanh-lap-lop-hoc.index');

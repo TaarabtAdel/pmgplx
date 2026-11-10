@@ -79,6 +79,8 @@ return [
                                 [
                                     'title' => 'Xuất file "Biên bản xác nhận phổ biến nội quy quy chế chương trình đào tạo"',
                                     'trang' => '1-bien-ban-xac-nhan-pho-bien-noi-quy-quy-che-chuong-trinh-dao',
+                                    'route' => 'qldtoto.bien-ban-pho-bien-noi-quy.index',
+                                    'active' => 'qldtoto.bien-ban-pho-bien-noi-quy.*',
                                 ],
                                 [
                                     'title' => 'Xuất file "Danh sách học viên học tập trung lớp lý thuyết"',
