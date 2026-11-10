@@ -103,7 +103,7 @@
                             <tr>
                                 <td>{{ $items->firstItem() + $index }}</td>
                                 <td>
-                                    @include('PMGPLXOLD.danh-muc._trang-thai-icon', ['active' => (string) $row->TrangThai === '1'])
+                                    @include('PMGPLXMOTOOLD.danh-muc._trang-thai-icon', ['active' => (string) $row->TrangThai === '1'])
                                     {{ $row->MaDK }}
                                 </td>
                                 <td>{{ $row->HoVaTen ?: trim(($row->HoDemNLX ?? '').' '.($row->TenNLX ?? '')) }}</td>

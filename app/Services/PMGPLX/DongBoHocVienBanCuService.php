@@ -467,16 +467,14 @@ class DongBoHocVienBanCuService
         string $maKhoaHocNguon,
         string $maKhoaHocDich
     ): array {
-        foreach (['DuongDanAnh', 'GhiChu'] as $col) {
-            if (! array_key_exists($col, $payload) || $payload[$col] === null || $payload[$col] === '') {
-                continue;
-            }
-            $payload[$col] = str_replace(
+        if (array_key_exists('GhiChu', $payload) && $payload['GhiChu'] !== null && $payload['GhiChu'] !== '') {
+            $payload['GhiChu'] = str_replace(
                 [$sourceMaDk, $maKhoaHocNguon],
                 [$targetMaDk, $maKhoaHocDich],
-                (string) $payload[$col]
+                (string) $payload['GhiChu']
             );
         }
+        // DuongDanAnh: giữ nguyên đường dẫn ảnh trên bản mới (không thay MaDK / mã khóa trong path).
 
         return $payload;
     }

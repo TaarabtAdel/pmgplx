@@ -105,4 +105,15 @@ class DatDieuKienDat extends Model
 
         return $min > 0 && ($value + 0.0001) >= $min;
     }
+
+    /** Ngưỡng = 0 hoặc trống → không bắt buộc (luôn coi là đạt). */
+    public static function datNguongHoacKhongYeuCau(float $value, mixed $min): bool
+    {
+        $min = (float) $min;
+        if ($min <= 0) {
+            return true;
+        }
+
+        return self::datNguong($value, $min);
+    }
 }

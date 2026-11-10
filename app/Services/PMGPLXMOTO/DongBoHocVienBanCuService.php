@@ -296,6 +296,10 @@ class DongBoHocVienBanCuService
                     $khoaHocBanCu
                 );
 
+                if ($payloadHoSo !== null) {
+                    $this->applySourceDuongDanAnh($payloadHoSo, (string) $sourceMaDk);
+                }
+
                 $oldDb->table('NguoiLX')->updateOrInsert(['MaDK' => $targetMaDk], $payloadNguoi);
 
                 if ($payloadHoSo !== null) {
@@ -467,18 +471,48 @@ class DongBoHocVienBanCuService
         string $maKhoaHocNguon,
         string $maKhoaHocDich
     ): array {
-        foreach (['DuongDanAnh', 'GhiChu'] as $col) {
-            if (! array_key_exists($col, $payload) || $payload[$col] === null || $payload[$col] === '') {
-                continue;
+        if (array_key_exists('GhiChu', $payload) && $payload['GhiChu'] !== null && $payload['GhiChu'] !== '') {
+            $ghiChu = (string) $payload['GhiChu'];
+            if (! self::coVeDuongDanAnh($ghiChu)) {
+                $payload['GhiChu'] = str_replace(
+                    [$sourceMaDk, $maKhoaHocNguon],
+                    [$targetMaDk, $maKhoaHocDich],
+                    $ghiChu
+                );
             }
-            $payload[$col] = str_replace(
-                [$sourceMaDk, $maKhoaHocNguon],
-                [$targetMaDk, $maKhoaHocDich],
-                (string) $payload[$col]
-            );
         }
 
         return $payload;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payloadHoSo
+     */
+    private function applySourceDuongDanAnh(array &$payloadHoSo, string $sourceMaDk): void
+    {
+        if (! Schema::connection('sqlsrv_moto_old')->hasColumn('NguoiLX_HoSo', 'DuongDanAnh')) {
+            return;
+        }
+
+        $path = DB::connection('sqlsrv_moto')
+            ->table('NguoiLX_HoSo')
+            ->where('MaDK', $sourceMaDk)
+            ->value('DuongDanAnh');
+
+        if ($path === null || $path === '') {
+            return;
+        }
+
+        $payloadHoSo['DuongDanAnh'] = $path;
+    }
+
+    private static function coVeDuongDanAnh(string $value): bool
+    {
+        if (preg_match('/\.(jp2|jpe?g|png|bmp|gif|tif{1,2})$/i', $value)) {
+            return true;
+        }
+
+        return str_contains($value, 'ANH GPLX') || str_contains($value, 'ANH_GPLX');
     }
 
     /**

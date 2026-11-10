@@ -340,7 +340,8 @@ class DatTheoDoiDat
                     $stt,
                     false,
                     $scheduleRows,
-                    $dieuKien
+                    $dieuKien,
+                    $maKhoaHoc
                 );
             }
 
@@ -369,7 +370,8 @@ class DatTheoDoiDat
                     $stt,
                     true,
                     $scheduleRows,
-                    $dieuKien
+                    $dieuKien,
+                    $maKhoaHoc
                 );
             }
 
@@ -686,7 +688,8 @@ class DatTheoDoiDat
         int $stt,
         bool $ngoaiPhanCong,
         Collection $scheduleRows,
-        ?DatDieuKienDat $dieuKien
+        ?DatDieuKienDat $dieuKien,
+        string $maKhoaHoc = ''
     ): array {
         $dayTotals = $studentDayTotals[$maHocVien] ?? ['gio' => 0.0, 'km' => 0.0];
         $gioTuDong = self::sumThucHanhGio($studentSessions, 'LaTuDong');
@@ -721,9 +724,48 @@ class DatTheoDoiDat
             'dat_gio_tu_dong' => DatDieuKienDat::datNguong($gioTuDong, $dieuKien?->XeSoTuDongGio),
             'dat_gio_dem' => DatDieuKienDat::datNguong($chayDem, $dieuKien?->TapLaiBanDemGio),
             'dat_cao_toc' => DatDieuKienDat::datNguong($gioCaoToc, $dieuKien?->GioCaoTocGio),
-            'dat_gio_may_chu' => DatDieuKienDat::datNguong($gioMayChu, $dieuKien?->SoGioHoc),
+            'dat_gio_may_chu' => self::datTongGioMayChuTheoHang(
+                $gioMayChu,
+                $gioTuDong,
+                $chayDem,
+                $gioCaoToc,
+                $dieuKien,
+                $maKhoaHoc
+            ),
             'dat_tong_km_may_chu' => DatDieuKienDat::datNguong($tongKmMayChu, $dieuKien?->TongQuangDuongKm),
         ];
+    }
+
+    /**
+     * Cột Tổng giờ máy chủ: đủ SoGioHoc và các ngưỡng giờ tự động / đêm / cao tốc (nếu hạng có quy định).
+     */
+    private static function datTongGioMayChuTheoHang(
+        float $gioMayChu,
+        float $gioTuDong,
+        float $chayDem,
+        float $gioCaoToc,
+        ?DatDieuKienDat $dieuKien,
+        string $maKhoaHoc
+    ): bool {
+        if (! DatDieuKienDat::datNguong($gioMayChu, $dieuKien?->SoGioHoc)) {
+            return false;
+        }
+
+        if ($maKhoaHoc === '' || ! self::anCotTuDong($maKhoaHoc)) {
+            if (! DatDieuKienDat::datNguongHoacKhongYeuCau($gioTuDong, $dieuKien?->XeSoTuDongGio)) {
+                return false;
+            }
+        }
+
+        if (! DatDieuKienDat::datNguongHoacKhongYeuCau($chayDem, $dieuKien?->TapLaiBanDemGio)) {
+            return false;
+        }
+
+        if (! DatDieuKienDat::datNguongHoacKhongYeuCau($gioCaoToc, $dieuKien?->GioCaoTocGio)) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
