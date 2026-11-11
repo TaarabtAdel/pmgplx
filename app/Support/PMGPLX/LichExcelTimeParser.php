@@ -113,35 +113,69 @@ class LichExcelTimeParser
     }
 
     /**
-     * Parse ngày Excel: 8/18/2026, 18/08/2026, 2026-08-18
+     * Parse cột ngày lịch — chỉ chấp nhận <strong>dd/mm/yyyy</strong> (dấu / - hoặc .).
+     *
+     * @return string|null Y-m-d
      */
     public static function parseDate(string $value): ?string
     {
+        $parsed = self::parseDateDmY($value);
+
+        return $parsed['ok'] ? $parsed['iso'] : null;
+    }
+
+    /**
+     * @return array{ok: true, iso: string, display: string}|array{ok: false, error: string}
+     */
+    public static function parseDateDmY(string $value): array
+    {
         $value = trim($value);
         if ($value === '') {
-            return null;
+            return ['ok' => false, 'error' => 'Ngày trống.'];
+        }
+
+        if (preg_match('/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/', $value, $m)) {
+            $day = (int) $m[1];
+            $month = (int) $m[2];
+            $year = (int) $m[3];
+
+            if ($month < 1 || $month > 12) {
+                return [
+                    'ok' => false,
+                    'error' => 'Tháng không hợp lệ (phải từ 1 đến 12, đang là '.$month.'). Dùng định dạng dd/mm/yyyy.',
+                ];
+            }
+
+            if ($day < 1 || $day > 31) {
+                return [
+                    'ok' => false,
+                    'error' => 'Ngày không hợp lệ (đang là '.$day.'). Dùng định dạng dd/mm/yyyy.',
+                ];
+            }
+
+            if (! checkdate($month, $day, $year)) {
+                return [
+                    'ok' => false,
+                    'error' => sprintf('Ngày %02d/%02d/%04d không tồn tại trong lịch.', $day, $month, $year),
+                ];
+            }
+
+            $iso = sprintf('%04d-%02d-%02d', $year, $month, $day);
+            $display = sprintf('%02d/%02d/%04d', $day, $month, $year);
+
+            return ['ok' => true, 'iso' => $iso, 'display' => $display];
         }
 
         if (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})$/', $value, $m)) {
-            return sprintf('%04d-%02d-%02d', (int) $m[1], (int) $m[2], (int) $m[3]);
+            return [
+                'ok' => false,
+                'error' => 'Không dùng yyyy-mm-dd. Vui lòng ghi ngày theo định dạng dd/mm/yyyy (ví dụ 18/08/2026).',
+            ];
         }
 
-        if (preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/', $value, $m)) {
-            $a = (int) $m[1];
-            $b = (int) $m[2];
-            $y = (int) $m[3];
-            // Ưu tiên M/D/Y (Excel US), nếu a > 12 thì là D/M/Y
-            if ($a > 12) {
-                return sprintf('%04d-%02d-%02d', $y, $b, $a);
-            }
-
-            return sprintf('%04d-%02d-%02d', $y, $a, $b);
-        }
-
-        try {
-            return \Carbon\Carbon::parse($value)->format('Y-m-d');
-        } catch (\Throwable) {
-            return null;
-        }
+        return [
+            'ok' => false,
+            'error' => 'Ngày «'.$value.'» không đúng định dạng dd/mm/yyyy (ví dụ 18/08/2026).',
+        ];
     }
 }

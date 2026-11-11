@@ -1,0 +1,118 @@
+/* Danh mục học viên — bảng gọn, gộp cột 2 dòng; cuộn theo trang (không khung scroll riêng) */
+.hv-danh-muc-wrap {
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+}
+
+.hv-danh-muc-table {
+    margin-bottom: 0;
+    font-size: 0.8125rem;
+}
+
+.hv-danh-muc-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: #e9ecef;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.hv-danh-muc-table .col-sticky {
+    position: sticky;
+    z-index: 2;
+    background: #fff;
+}
+
+.hv-danh-muc-table thead .col-sticky {
+    z-index: 4;
+    background: #e9ecef;
+}
+
+.hv-danh-muc-table .sticky-1 {
+    left: 2.25rem;
+    min-width: 2.5rem;
+}
+
+.hv-danh-muc-table .sticky-2 {
+    left: 4.75rem;
+    min-width: 10.5rem;
+    max-width: 15rem;
+}
+
+.hv-danh-muc-table tbody tr:nth-child(even) .col-sticky {
+    background: #f8f9fa;
+}
+
+.hv-danh-muc-table tbody tr.table-active .col-sticky,
+.hv-danh-muc-table tbody tr.table-active {
+    background: #e2e6ea;
+}
+
+.hv-cell-stack {
+    line-height: 1.3;
+    vertical-align: middle !important;
+}
+
+.hv-stack-line {
+    font-weight: 500;
+}
+
+.hv-stack-sub {
+    font-size: 0.75rem;
+    line-height: 1.25;
+    margin-top: 0.15rem;
+}
+
+.hv-danh-muc-table .hv-ma-dk {
+    font-family: ui-monospace, monospace;
+}
+
+.hv-danh-muc-table .hv-ten {
+    font-weight: 600;
+}
+
+.hv-danh-muc-detail td {
+    background: #f1f3f5;
+    padding: 0.5rem 0.75rem;
+    border-top: none;
+}
+
+.hv-danh-muc-detail dl {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    gap: 0.35rem 1rem;
+    margin: 0;
+}
+
+.hv-danh-muc-detail dt {
+    font-size: 0.7rem;
+    color: #6c757d;
+    margin: 0;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.hv-danh-muc-detail dd {
+    margin: 0 0 0.25rem;
+    font-size: 0.8125rem;
+    word-break: break-word;
+}
+
+.hv-expand-btn {
+    padding: 0.1rem 0.35rem;
+    line-height: 1;
+}
+
+.hv-open-phu-cell {
+    cursor: pointer;
+}
+
+.hv-open-phu-cell:hover {
+    background-color: #f8f9fa;
+}
+
+.hv-danh-muc-table .min-width-0 {
+    min-width: 0;
+}

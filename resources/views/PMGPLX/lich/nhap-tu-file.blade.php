@@ -17,6 +17,10 @@
                     Dòng header cột <strong>Nội dung</strong> có tên GV + biển số xe; cột <strong>Chi tiết</strong> có mã GV + mã khóa học.
                 </li>
                 <li class="mb-2">
+                    Cột <strong>Thời Gian</strong> (ngày) ghi theo <strong>dd/mm/yyyy</strong> (ví dụ <code>18/08/2026</code>).
+                    Nếu tháng &gt; 12 hoặc sai định dạng, hệ thống báo lỗi ngay khi đọc file.
+                </li>
+                <li class="mb-2">
                     Chọn file (<code>.xls</code>, <code>.xlsx</code>, <code>.csv</code>) và bấm <strong>Xem trước kết quả</strong>.
                 </li>
                 <li class="mb-2">

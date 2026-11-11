@@ -234,6 +234,7 @@ final class CayChucNang
                     [
                         'khoa' => 'cong-cu-nhap', 'title' => 'Công cụ nhập', 'children' => [
                             $nhap('nhap-file-tien-do-dao-tao', 'tien-do', 'Nhập file tiến độ đào tạo'),
+                            $nhap('nhap-file-sdt-sale-hoc-vien', 'sdt-sale-hv', 'Nhập file SDT / Sale học viên'),
                             $nhap('nhap-file-so-phan-cong-giao-vien', 'so-phan-cong', 'Nhập file sổ phân công giáo viên'),
                             $nhap('nhap-file-in-bang-ten', 'in-bang-ten', 'Nhập file in bảng tên'),
                             $nhap('nhap-ket-qua-dao-tao', 'ket-qua-dao-tao', 'Nhập kết quả đào tạo'),

@@ -136,6 +136,8 @@ return [
                                 [
                                     'title' => 'Xuất file "Hợp đồng đào tạo lái xe" của từng học viên',
                                     'trang' => '1-hop-dong-dao-tao-lai-xe-cua-tung-hoc-vien',
+                                    'route' => 'qldtoto.hop-dong-dao-tao.index',
+                                    'active' => 'qldtoto.hop-dong-dao-tao.*',
                                 ],
                             ],
                         ],
@@ -197,6 +199,8 @@ return [
                                 [
                                     'title' => 'Xuất file "Quyết định đổi xe"',
                                     'trang' => '2-quyet-dinh-doi-xe',
+                                    'route' => 'qldtoto.quyet-dinh-doi-xe.index',
+                                    'active' => 'qldtoto.quyet-dinh-doi-xe.*',
                                 ],
                                 [
                                     'title' => 'Xuất file "Quyết định đổi giáo viên"',
@@ -231,6 +235,8 @@ return [
                                         [
                                             'title' => 'Xuất file "Quyết định huỷ phiên kèm danh sách huỷ phiên"',
                                             'trang' => '2-quyet-dinh-huy-phien-kem-danh-sach-huy-phien',
+                                            'route' => 'qldtoto.quyet-dinh-huy-phien.index',
+                                            'active' => 'qldtoto.quyet-dinh-huy-phien.*',
                                         ],
                                     ],
                                 ],
@@ -248,6 +254,8 @@ return [
                                 [
                                     'title' => 'Xuất file "Quyết định tổ chức kiểm tra kết thúc môn + biên bản phân công kiểm tra kỳ thi"',
                                     'trang' => '2-quyet-dinh-to-chuc-kiem-tra-ket-thuc-mon-bien-ban-phan-cong',
+                                    'route' => 'qldtoto.quyet-dinh-to-chuc-ktm-bb.index',
+                                    'active' => 'qldtoto.quyet-dinh-to-chuc-ktm-bb.*',
                                 ],
                                 [
                                     'title' => 'Xuất file "Biên bản phân công nhiệm vụ của tổ chấm kiểm tra"',
@@ -258,6 +266,8 @@ return [
                                 [
                                     'title' => 'Xuất file "Làm quyết định thành lập hội đồng xét kiểm tra kết thúc môn + danh sách hội đồng kèm theo"',
                                     'trang' => '2-lam-quyet-dinh-thanh-lap-hoi-dong-xet-kiem-tra-ket-thuc-mon',
+                                    'route' => 'qldtoto.thanh-lap-hoi-dong-xet-ktm.index',
+                                    'active' => 'qldtoto.thanh-lap-hoi-dong-xet-ktm.*',
                                 ],
                             ],
                         ],

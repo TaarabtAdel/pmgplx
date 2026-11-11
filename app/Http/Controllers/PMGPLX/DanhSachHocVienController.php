@@ -4,14 +4,18 @@ namespace App\Http\Controllers\PMGPLX;
 
 use App\Http\Controllers\Controller;
 use App\Models\DaoTao\HocVienDoThongTin;
+use App\Models\DaoTao\HocVienThongTinPhu;
 use App\Models\PMGPLX\KhoaHoc;
 use App\Models\PMGPLX\NguoiLX;
 use App\Models\PMGPLX\NguoiLXHoSo;
 use App\Models\PMGPLXOLD\KhoaHoc as KhoaHocOld;
 use App\Services\PMGPLX\DongBoHocVienBanCuService;
 use App\Support\PMGPLX\DanhMucBangExcelExporter;
+use App\Support\PMGPLX\DanhSachHocVienExcelRows;
+use App\Support\PMGPLX\DanhSachHocVienExportColumns;
 use App\Support\PMGPLX\DmDvhcTenDayDu;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -39,6 +43,16 @@ class DanhSachHocVienController extends Controller
             ->orderBy('TenKH')
             ->get(['MaKH', 'TenKH']);
 
+        $saleGoiY = HocVienThongTinPhu::query()
+            ->whereNotNull('Sale')
+            ->where('Sale', '!=', '')
+            ->distinct()
+            ->orderBy('Sale')
+            ->pluck('Sale')
+            ->map(fn ($s) => trim((string) $s))
+            ->filter()
+            ->values();
+
         $dvhcMap = DmDvhcTenDayDu::mapForHocVien($items->getCollection());
         $noiThuongTru = $items->getCollection()->mapWithKeys(fn ($n) => [
             (string) $n->MaDK => DmDvhcTenDayDu::diaChiTuNguoiLx($n, $dvhcMap)['thuong_tru'],
@@ -50,14 +64,23 @@ class DanhSachHocVienController extends Controller
             ->get()
             ->keyBy(fn (HocVienDoThongTin $r) => (string) $r->MaDK);
 
+        $thongTinPhu = HocVienThongTinPhu::query()
+            ->whereIn('MaDK', $maDks ?: [''])
+            ->get()
+            ->keyBy(fn (HocVienThongTinPhu $r) => (string) $r->MaDK);
+
         return view('PMGPLX.danh-muc.hoc-vien', [
             'items' => $items,
             'noiThuongTru' => $noiThuongTru,
             'daDo' => $daDo,
+            'thongTinPhu' => $thongTinPhu,
             'khoaHocs' => $khoaHocs,
+            'saleGoiY' => $saleGoiY,
+            'exportColumns' => DanhSachHocVienExportColumns::forModal(),
             'filters' => [
                 'tu_khoa' => $request->input('tu_khoa', ''),
                 'ma_kh' => $request->input('ma_kh', ''),
+                'sale' => $request->input('sale', ''),
                 'hang_gplx' => $request->input('hang_gplx', ''),
                 'trang_thai' => $request->input('trang_thai', ''),
                 'per_page' => $perPage,
@@ -65,25 +88,69 @@ class DanhSachHocVienController extends Controller
         ]);
     }
 
+    public function capNhatThongTinPhu(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ma_dk' => ['required', 'string', 'max:50'],
+            'so_dien_thoai' => ['nullable', 'string', 'max:30'],
+            'sale' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $maDk = trim((string) $validated['ma_dk']);
+        if (! NguoiLX::query()->where('MaDK', $maDk)->exists()) {
+            return response()->json(['message' => 'Mã ĐK không tồn tại.'], 422);
+        }
+
+        $now = now();
+        $sdt = trim((string) ($validated['so_dien_thoai'] ?? ''));
+        $sale = trim((string) ($validated['sale'] ?? ''));
+
+        $row = HocVienThongTinPhu::query()->firstOrNew(['MaDK' => $maDk]);
+        if (! $row->exists) {
+            $row->NgayTao = $now;
+        }
+        $row->SoDienThoai = $sdt !== '' ? $sdt : null;
+        $row->Sale = $sale !== '' ? $sale : null;
+        $row->NguoiCapNhatId = auth()->id();
+        $row->NgayCapNhat = $now;
+        $row->save();
+
+        return response()->json([
+            'message' => 'Đã lưu.',
+            'so_dien_thoai' => $row->SoDienThoai,
+            'sale' => $row->Sale,
+        ]);
+    }
+
     public function export(Request $request): StreamedResponse
     {
-        [$columns, $selects] = $this->exportColumnSelects();
-        $rawRows = $this->filteredQuery($request, $selects)
+        $keys = DanhSachHocVienExportColumns::sanitize($request->input('cols'));
+        $hasRaw = (bool) array_filter($keys, fn (string $k) => str_contains($k, '.'));
+
+        $query = $this->filteredQuery($request);
+        if ($hasRaw) {
+            [, $selects] = $this->exportColumnSelects();
+            $query = $this->filteredQuery($request, $selects);
+        }
+
+        $rawRows = $query
             ->orderByRaw('n.TenNLX COLLATE Vietnamese_CI_AS ASC')
             ->orderByRaw('n.HoDemNLX COLLATE Vietnamese_CI_AS ASC')
             ->orderBy('n.MaDK')
             ->get();
 
-        $rows = $rawRows->map(function ($row) use ($columns): array {
+        $labels = DanhSachHocVienExportColumns::labelsFor($keys);
+        $built = DanhSachHocVienExcelRows::build($keys, $rawRows);
+        $rows = array_map(function (array $row) use ($keys, $labels): array {
             $out = [];
-            foreach ($columns as $col) {
-                $out[$col] = $row->{$col} ?? null;
+            foreach ($keys as $i => $key) {
+                $out[$labels[$i]] = $row[$key] ?? null;
             }
 
             return $out;
-        })->all();
+        }, $built);
 
-        $title = 'Danh mục học viên (NguoiLX + NguoiLX_HoSo)';
+        $title = 'Danh mục học viên';
         if ($maKh = trim((string) $request->input('ma_kh'))) {
             $title .= ' · khóa '.$maKh;
         }
@@ -91,7 +158,7 @@ class DanhSachHocVienController extends Controller
         return DanhMucBangExcelExporter::downloadFromArrays(
             $title,
             'danh-muc-hoc-vien',
-            $columns,
+            $labels,
             $rows,
         );
     }
@@ -446,11 +513,31 @@ class DanhSachHocVienController extends Controller
                 foreach (['n.MaDK', 'n.HoVaTen', 'n.HoDemNLX', 'n.TenNLX', 'n.SoCMT', 'h.SoHoSo'] as $cot) {
                     $q->orWhereRaw($cot.' COLLATE Latin1_General_CI_AI LIKE ?', [$like]);
                 }
+                $maDkTuPhu = HocVienThongTinPhu::query()
+                    ->where(function ($pq) use ($like) {
+                        $pq->where('SoDienThoai', 'like', $like)
+                            ->orWhereRaw('Sale COLLATE Latin1_General_CI_AI LIKE ?', [$like]);
+                    })
+                    ->pluck('MaDK');
+                if ($maDkTuPhu->isNotEmpty()) {
+                    $q->orWhereIn('n.MaDK', $maDkTuPhu->all());
+                }
             });
         }
 
         if ($maKH = trim((string) $request->input('ma_kh'))) {
             $query->where('h.MaKhoaHoc', $maKH);
+        }
+
+        if ($sale = trim((string) $request->input('sale'))) {
+            $maDkTheoSale = HocVienThongTinPhu::query()
+                ->whereRaw('Sale COLLATE Latin1_General_CI_AI = ?', [$sale])
+                ->pluck('MaDK');
+            if ($maDkTheoSale->isEmpty()) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $query->whereIn('n.MaDK', $maDkTheoSale->all());
+            }
         }
 
         if ($hang = trim((string) $request->input('hang_gplx'))) {

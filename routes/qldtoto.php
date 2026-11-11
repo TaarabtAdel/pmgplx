@@ -5,14 +5,19 @@ use App\Http\Controllers\QldtOto\BienBanXacNhanPhoBienNoiQuyController;
 use App\Http\Controllers\QldtOto\BaoCaoDeNghiSatHachController;
 use App\Http\Controllers\QldtOto\BienBanPhanCongToChamController;
 use App\Http\Controllers\QldtOto\DanhSachHocSinhLaiXeController;
+use App\Http\Controllers\QldtOto\HopDongDaoTaoLaiXeController;
 use App\Http\Controllers\QldtOto\QuyetDinhThanhLapLopHocController;
 use App\Http\Controllers\QldtOto\QuyetDinhThoiHocController;
+use App\Http\Controllers\QldtOto\QuyetDinhToChucKiemTraBbPhanCongController;
 use App\Http\Controllers\QldtOto\SoPhanCongGvXeTapLaiController;
 use App\Http\Controllers\QldtOto\QuyetDinhBaoLuuController;
 use App\Http\Controllers\QldtOto\QuyetDinhDieuDongXeController;
 use App\Http\Controllers\QldtOto\QuyetDinhDoiGiaoVienController;
+use App\Http\Controllers\QldtOto\QuyetDinhDoiXeController;
 use App\Http\Controllers\QldtOto\QuyetDinhHoanThanhKhoaHocController;
+use App\Http\Controllers\QldtOto\QuyetDinhHuyPhienController;
 use App\Http\Controllers\QldtOto\SoTheoDoiKetQuaHocTapController;
+use App\Http\Controllers\QldtOto\ThanhLapHoiDongXetKtmController;
 use App\Http\Controllers\QldtOto\CauHinhBaiDayController;
 use App\Http\Controllers\QldtOto\LichDuKien\ThucHanhController;
 use App\Http\Controllers\QldtOto\ThongBaoKiemTraKetThucMonController;
@@ -61,6 +66,10 @@ Route::prefix('qldt-oto')->name('qldtoto.')->group(function () {
     Route::post('/1-bao-cao-dang-ky/xuat', [BaoCaoDangKyController::class, 'export'])->name('bao-cao-dang-ky.export');
     Route::get('/1-bao-cao-dang-ky/khoa/{maKh}', [BaoCaoDangKyController::class, 'khoaJson'])->name('bao-cao-dang-ky.khoa');
 
+    $slugHopDong = '1-hop-dong-dao-tao-lai-xe-cua-tung-hoc-vien';
+    Route::get('/'.$slugHopDong, [HopDongDaoTaoLaiXeController::class, 'index'])->name('hop-dong-dao-tao.index');
+    Route::post('/'.$slugHopDong.'/xuat', [HopDongDaoTaoLaiXeController::class, 'export'])->name('hop-dong-dao-tao.export');
+
     $slugDanhSachHv = '1-danh-sach-hoc-sinh-lai-xe';
     Route::get('/'.$slugDanhSachHv, [DanhSachHocSinhLaiXeController::class, 'index'])->name('danh-sach-hoc-sinh-lai-xe.index');
     Route::post('/'.$slugDanhSachHv.'/xuat', [DanhSachHocSinhLaiXeController::class, 'export'])->name('danh-sach-hoc-sinh-lai-xe.export');
@@ -90,6 +99,18 @@ Route::prefix('qldt-oto')->name('qldtoto.')->group(function () {
     Route::get('/'.$slugTbKtm.'/tim-hoc-vien', [ThongBaoKiemTraKetThucMonController::class, 'timHocVien'])->name('thong-bao-kiem-tra-ket-thuc-mon.tim-hoc-vien');
     Route::post('/'.$slugTbKtm.'/xuat', [ThongBaoKiemTraKetThucMonController::class, 'export'])->name('thong-bao-kiem-tra-ket-thuc-mon.export');
 
+    $slugHoiDong = '2-lam-quyet-dinh-thanh-lap-hoi-dong-xet-kiem-tra-ket-thuc-mon';
+    Route::get('/'.$slugHoiDong, [ThanhLapHoiDongXetKtmController::class, 'index'])->name('thanh-lap-hoi-dong-xet-ktm.index');
+    Route::post('/'.$slugHoiDong.'/xuat-quyet-dinh', [ThanhLapHoiDongXetKtmController::class, 'exportQuyetDinh'])->name('thanh-lap-hoi-dong-xet-ktm.export-quyet-dinh');
+    Route::post('/'.$slugHoiDong.'/xuat-danh-sach', [ThanhLapHoiDongXetKtmController::class, 'exportDanhSach'])->name('thanh-lap-hoi-dong-xet-ktm.export-danh-sach');
+    Route::post('/'.$slugHoiDong.'/xuat-ca-hai', [ThanhLapHoiDongXetKtmController::class, 'exportCaHai'])->name('thanh-lap-hoi-dong-xet-ktm.export-ca-hai');
+
+    $slugQdBbKtm = '2-quyet-dinh-to-chuc-kiem-tra-ket-thuc-mon-bien-ban-phan-cong';
+    Route::get('/'.$slugQdBbKtm, [QuyetDinhToChucKiemTraBbPhanCongController::class, 'index'])->name('quyet-dinh-to-chuc-ktm-bb.index');
+    Route::post('/'.$slugQdBbKtm.'/xuat-quyet-dinh', [QuyetDinhToChucKiemTraBbPhanCongController::class, 'exportQuyetDinh'])->name('quyet-dinh-to-chuc-ktm-bb.export-quyet-dinh');
+    Route::post('/'.$slugQdBbKtm.'/xuat-bien-ban', [QuyetDinhToChucKiemTraBbPhanCongController::class, 'exportBienBan'])->name('quyet-dinh-to-chuc-ktm-bb.export-bien-ban');
+    Route::post('/'.$slugQdBbKtm.'/xuat-ca-hai', [QuyetDinhToChucKiemTraBbPhanCongController::class, 'exportCaHai'])->name('quyet-dinh-to-chuc-ktm-bb.export-ca-hai');
+
     $slugToCham = '2-bien-ban-phan-cong-nhiem-vu-to-cham-kiem-tra';
     Route::get('/'.$slugToCham, [BienBanPhanCongToChamController::class, 'index'])->name('bien-ban-phan-cong-to-cham.index');
     Route::post('/'.$slugToCham.'/xuat', [BienBanPhanCongToChamController::class, 'export'])->name('bien-ban-phan-cong-to-cham.export');
@@ -101,6 +122,22 @@ Route::prefix('qldt-oto')->name('qldtoto.')->group(function () {
     $slugThoiHoc = '2-quyet-dinh-cho-thoi-hoc';
     Route::get('/'.$slugThoiHoc, [QuyetDinhThoiHocController::class, 'index'])->name('quyet-dinh-cho-thoi-hoc.index');
     Route::post('/'.$slugThoiHoc.'/xuat', [QuyetDinhThoiHocController::class, 'export'])->name('quyet-dinh-cho-thoi-hoc.export');
+
+    $slugHuyPhien = '2-quyet-dinh-huy-phien-kem-danh-sach-huy-phien';
+    Route::get('/'.$slugHuyPhien, [QuyetDinhHuyPhienController::class, 'index'])->name('quyet-dinh-huy-phien.index');
+    Route::get('/'.$slugHuyPhien.'/khoa/{maKh}', [QuyetDinhHuyPhienController::class, 'khoaJson'])->name('quyet-dinh-huy-phien.khoa');
+    Route::post('/'.$slugHuyPhien.'/xuat-word', [QuyetDinhHuyPhienController::class, 'exportWord'])->name('quyet-dinh-huy-phien.export-word');
+    Route::post('/'.$slugHuyPhien.'/xuat-danh-sach', [QuyetDinhHuyPhienController::class, 'exportDanhSach'])->name('quyet-dinh-huy-phien.export-danh-sach');
+    Route::post('/'.$slugHuyPhien.'/xuat-ca-hai', [QuyetDinhHuyPhienController::class, 'exportCaHai'])->name('quyet-dinh-huy-phien.export-ca-hai');
+
+    $slugDoiXe = '2-quyet-dinh-doi-xe';
+    Route::get('/'.$slugDoiXe, [QuyetDinhDoiXeController::class, 'index'])->name('quyet-dinh-doi-xe.index');
+    Route::get('/'.$slugDoiXe.'/khoa/{maKh}', [QuyetDinhDoiXeController::class, 'khoaJson'])->name('quyet-dinh-doi-xe.khoa');
+    Route::post('/'.$slugDoiXe.'/xem-truoc', [QuyetDinhDoiXeController::class, 'previewStore'])->name('quyet-dinh-doi-xe.preview.store');
+    Route::get('/'.$slugDoiXe.'/xem-truoc', [QuyetDinhDoiXeController::class, 'preview'])->name('quyet-dinh-doi-xe.preview');
+    Route::get('/'.$slugDoiXe.'/xuat-word', [QuyetDinhDoiXeController::class, 'export'])->name('quyet-dinh-doi-xe.export');
+    Route::get('/'.$slugDoiXe.'/huy', [QuyetDinhDoiXeController::class, 'cancel'])->name('quyet-dinh-doi-xe.cancel');
+    Route::get('/'.$slugDoiXe.'/lam-moi', [QuyetDinhDoiXeController::class, 'reset'])->name('quyet-dinh-doi-xe.reset');
 
     $slugDoiGv = '2-quyet-dinh-doi-giao-vien';
     Route::get('/'.$slugDoiGv, [QuyetDinhDoiGiaoVienController::class, 'index'])->name('quyet-dinh-doi-giao-vien.index');

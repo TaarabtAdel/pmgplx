@@ -121,7 +121,8 @@ class NhapLichTuFileController extends Controller
         try {
             $spreadsheet = IOFactory::load($file->getRealPath());
             $sheet = $spreadsheet->getActiveSheet();
-            $rawRows = $sheet->toArray(null, true, true, false);
+            // formatData = false: lấy serial/DateTime gốc — tránh chuỗi M/D/Y từ định dạng ô Excel (vd. hiển thị 06/10 nhưng đọc thành 10/13).
+            $rawRows = $sheet->toArray(null, true, false, false);
 
             $data = [];
             foreach ($rawRows as $row) {
@@ -145,6 +146,17 @@ class NhapLichTuFileController extends Controller
             $preview = $this->buildExcelPreview($data, $file->getClientOriginalName());
             if ($preview['teachers'] === []) {
                 return back()->with('error', 'Không tìm thấy khối giáo viên (mỗi giáo viên cần '.self::COLS_PER_TEACHER.' cột).');
+            }
+
+            $dateErrors = $this->collectNgayImportErrors($preview);
+            if ($dateErrors !== []) {
+                $shown = array_slice($dateErrors, 0, 8);
+                $msg = "Lỗi cột ngày (định dạng dd/mm/yyyy):\n".implode("\n", $shown);
+                if (count($dateErrors) > count($shown)) {
+                    $msg .= "\n… và ".(count($dateErrors) - count($shown)).' lỗi khác.';
+                }
+
+                return back()->with('error', $msg);
             }
 
             $request->session()->forget($this->sessionSaveKey());
@@ -1165,10 +1177,15 @@ class NhapLichTuFileController extends Controller
                     continue;
                 }
 
-                $date = LichExcelTimeParser::parseDate((string) ($row['ngay'] ?? ''));
-                if ($date === null) {
+                $ngayRaw = trim((string) ($row['ngay'] ?? ''));
+                if ($ngayRaw === '') {
                     continue;
                 }
+                $parsed = LichExcelTimeParser::parseDateDmY($ngayRaw);
+                if (! $parsed['ok']) {
+                    throw new \InvalidArgumentException($parsed['error'].' (ngày «'.$ngayRaw.'»).');
+                }
+                $date = $parsed['iso'];
 
                 $slots = LichExcelTimeParser::expandSlots(
                     (string) ($row['bat_dau'] ?? ''),
@@ -1252,6 +1269,58 @@ class NhapLichTuFileController extends Controller
     }
 
     /**
+     * @param  array{teachers: list<array<string, mixed>>}  $preview
+     * @return list<string>
+     */
+    private function collectNgayImportErrors(array $preview): array
+    {
+        $errors = [];
+        foreach ($preview['teachers'] as $teacher) {
+            $gvLabel = 'Giáo viên '.($teacher['index'] ?? '?');
+            if (($teacher['ten_gv'] ?? '') !== '') {
+                $gvLabel .= ' («'.$teacher['ten_gv'].'»)';
+            }
+            $line = 0;
+            foreach ($teacher['rows'] ?? [] as $row) {
+                $line++;
+                $raw = trim((string) ($row['ngay'] ?? ''));
+                if ($raw === '') {
+                    continue;
+                }
+                $parsed = LichExcelTimeParser::parseDateDmY($raw);
+                if (! $parsed['ok']) {
+                    $errors[] = $gvLabel.', dòng '.$line.': '.$parsed['error'].' (ô: «'.$raw.'»).';
+                }
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Chuẩn hóa cột ngày hiển thị dd/mm/yyyy khi dữ liệu hợp lệ.
+     *
+     * @param  array{teachers: list<array<string, mixed>>}  $preview
+     */
+    private function normalizeNgayInPreview(array &$preview): void
+    {
+        foreach ($preview['teachers'] as &$teacher) {
+            foreach ($teacher['rows'] as &$row) {
+                $raw = trim((string) ($row['ngay'] ?? ''));
+                if ($raw === '') {
+                    continue;
+                }
+                $parsed = LichExcelTimeParser::parseDateDmY($raw);
+                if ($parsed['ok']) {
+                    $row['ngay'] = $parsed['display'];
+                }
+            }
+            unset($row);
+        }
+        unset($teacher);
+    }
+
+    /**
      * @param  list<list<mixed>>  $data
      * @return array{file_name: string, teachers: list<array<string, mixed>>, meta: array<string, int>}
      */
@@ -1329,7 +1398,7 @@ class NhapLichTuFileController extends Controller
             ];
         }
 
-        return [
+        $preview = [
             'file_name' => $fileName,
             'teachers' => $teachers,
             'meta' => [
@@ -1338,6 +1407,10 @@ class NhapLichTuFileController extends Controller
                 'off_count' => $offCount,
             ],
         ];
+
+        $this->normalizeNgayInPreview($preview);
+
+        return $preview;
     }
 
     /** @return array<string, string> */
@@ -1969,8 +2042,25 @@ class NhapLichTuFileController extends Controller
             return null;
         }
 
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('d/m/Y');
+        }
+
         if (is_string($value)) {
             return trim($value);
+        }
+
+        if (is_int($value) || is_float($value)) {
+            $serial = (float) $value;
+            if ($serial >= 1 && $serial < 1000000) {
+                try {
+                    $dt = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($serial);
+
+                    return $dt->format('d/m/Y');
+                } catch (\Throwable) {
+                    // giữ nguyên số nếu không phải serial ngày Excel
+                }
+            }
         }
 
         return $value;

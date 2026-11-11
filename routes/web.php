@@ -25,6 +25,7 @@ use App\Http\Controllers\DaoTao\DanhSachPhanCongTuLichController;
 use App\Http\Controllers\DaoTao\DanhSachPhanCongTuLichTongHopController;
 use App\Http\Controllers\DaoTao\NhapFileInBangTenController;
 use App\Http\Controllers\DaoTao\NhapFileSoPhanCongGiaoVienController;
+use App\Http\Controllers\DaoTao\NhapFileSdtSaleHocVienController;
 use App\Http\Controllers\DaoTao\NhapFileTienDoDaoTaoController;
 use App\Http\Controllers\DaoTao\NhapKetQuaDaoTaoController;
 use App\Http\Controllers\DaoTao\NhapKetQuaSatHachController;
@@ -225,6 +226,17 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
         ->name('pdt.cong-cu-nhap.nhap-file-tien-do-dao-tao.confirm');
     Route::get('/phong-dao-tao/cong-cu-nhap/nhap-file-tien-do-dao-tao/huy', [NhapFileTienDoDaoTaoController::class, 'cancel'])
         ->name('pdt.cong-cu-nhap.nhap-file-tien-do-dao-tao.cancel');
+
+    Route::get('/phong-dao-tao/cong-cu-nhap/nhap-file-sdt-sale-hoc-vien', [NhapFileSdtSaleHocVienController::class, 'create'])
+        ->name('pdt.cong-cu-nhap.nhap-file-sdt-sale-hoc-vien');
+    Route::post('/phong-dao-tao/cong-cu-nhap/nhap-file-sdt-sale-hoc-vien', [NhapFileSdtSaleHocVienController::class, 'store'])
+        ->name('pdt.cong-cu-nhap.nhap-file-sdt-sale-hoc-vien.store');
+    Route::get('/phong-dao-tao/cong-cu-nhap/nhap-file-sdt-sale-hoc-vien/xem-truoc', [NhapFileSdtSaleHocVienController::class, 'preview'])
+        ->name('pdt.cong-cu-nhap.nhap-file-sdt-sale-hoc-vien.preview');
+    Route::post('/phong-dao-tao/cong-cu-nhap/nhap-file-sdt-sale-hoc-vien/xac-nhan', [NhapFileSdtSaleHocVienController::class, 'confirm'])
+        ->name('pdt.cong-cu-nhap.nhap-file-sdt-sale-hoc-vien.confirm');
+    Route::get('/phong-dao-tao/cong-cu-nhap/nhap-file-sdt-sale-hoc-vien/huy', [NhapFileSdtSaleHocVienController::class, 'cancel'])
+        ->name('pdt.cong-cu-nhap.nhap-file-sdt-sale-hoc-vien.cancel');
 
     Route::get('/phong-dao-tao/cong-cu-nhap/nhap-file-so-phan-cong-giao-vien', [NhapFileSoPhanCongGiaoVienController::class, 'create'])
         ->name('pdt.cong-cu-nhap.nhap-file-so-phan-cong-giao-vien');

@@ -8,8 +8,8 @@
         <div class="card-body">
             <form method="GET" action="{{ route('pmgplx.dm.hoc-vien.index') }}">
                 <div class="form-row align-items-end">
-                    <div class="form-group col-md-3">
-                        <label>Mã ĐK|Họ tên|CMT|Số hồ sơ</label>
+                    <div class="form-group col-md-2">
+                        <label>Mã ĐK|Họ tên|CMT|Số HS|SDT</label>
                         <input type="text" class="form-control form-control-sm" name="tu_khoa" value="{{ $filters['tu_khoa'] }}" placeholder="Có dấu hay không đều được">
                     </div>
                     <div class="form-group col-md-3">
@@ -24,6 +24,18 @@
                         </select>
                     </div>
                     <div class="form-group col-md-2">
+                        <label for="filter_sale">Sale</label>
+                        <select name="sale" id="filter_sale" class="form-control form-control-sm">
+                            <option value="">—Tất cả—</option>
+                            @foreach ($saleGoiY as $s)
+                                <option value="{{ $s }}" @selected($filters['sale'] === $s)>{{ $s }}</option>
+                            @endforeach
+                            @if ($filters['sale'] !== '' && ! $saleGoiY->contains($filters['sale']))
+                                <option value="{{ $filters['sale'] }}" selected>{{ $filters['sale'] }}</option>
+                            @endif
+                        </select>
+                    </div>
+                    <div class="form-group col-md-2">
                         <label>Hạng GPLX</label>
                         <input type="text" class="form-control form-control-sm" name="hang_gplx" value="{{ $filters['hang_gplx'] }}" placeholder="VD: B1, B2">
                     </div>
@@ -35,7 +47,7 @@
                             <option value="0" @selected($filters['trang_thai'] === '0')>Không hiệu lực</option>
                         </select>
                     </div>
-                    <div class="form-group col-md-2">
+                    <div class="form-group col-md-1">
                         <button type="submit" class="btn btn-sm btn-primary btn-block">Tìm kiếm</button>
                         <a href="{{ route('pmgplx.dm.hoc-vien.index') }}" class="btn btn-sm btn-outline-secondary btn-block mt-1" title="Làm mới">↻</a>
                     </div>
@@ -62,6 +74,11 @@
                        class="btn btn-sm btn-success">
                         Nhập học viên mới từ file
                     </a>
+                    <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-file-sdt-sale-hoc-vien') }}"
+                       class="btn btn-sm btn-outline-success ml-1"
+                       title="File Excel: F=CCCD, G=SDT, H=Sale — lưu bảng phụ MANHLINH">
+                        Nhập SDT / Sale từ file
+                    </a>
                     <a href="{{ route('pmgplx.dm.hoc-vien.dong-bo.form', array_filter(['ma_kh_nguon' => $filters['ma_kh']])) }}"
                        class="btn btn-sm btn-info ml-1">
                         Đồng Bộ Qua Bản Cũ
@@ -71,16 +88,10 @@
                     </a>
                 </div>
 
-                <a href="{{ route('pmgplx.dm.hoc-vien.export', array_filter([
-                    'tu_khoa' => $filters['tu_khoa'],
-                    'ma_kh' => $filters['ma_kh'],
-                    'hang_gplx' => $filters['hang_gplx'],
-                    'trang_thai' => $filters['trang_thai'],
-                ])) }}"
-                   class="btn btn-sm btn-success mb-2 mr-2"
-                   title="Xuất Excel theo bộ lọc hiện tại — đủ cột NguoiLX và NguoiLX_HoSo">
+                <button type="button" class="btn btn-sm btn-success mb-2 mr-2" data-toggle="modal" data-target="#modalXuatExcelHv"
+                        title="Chọn cột trước khi xuất">
                     ⬇ Xuất Excel ({{ number_format($items->total()) }})
-                </a>
+                </button>
 
                 <div class="ml-auto d-flex flex-wrap align-items-center mb-2">
                     <span class="mr-3">Tổng số bản ghi: <strong>{{ number_format($items->total()) }}</strong></span>
@@ -117,50 +128,81 @@
                 </div>
             </div>
 
-            <div class="table-responsive">
-                <table class="table table-sm table-bordered table-striped table-hover table-data mb-0">
+            <div class="d-flex align-items-center mb-2">
+                <span class="small text-muted mr-2">Bấm <strong>+</strong> xem thêm hồ sơ · bấm cột <strong>SDT · Sale</strong> (hoặc ✎) để sửa thông tin phụ.</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="hv-toggle-all-details">Mở/đóng tất cả</button>
+            </div>
+            <div class="hv-danh-muc-wrap">
+                <table class="table table-sm table-bordered table-hover hv-danh-muc-table mb-0">
                     <thead>
                         <tr>
-                            <th>STT</th>
-                            <th>Mã ĐK</th>
-                            <th>Họ và tên</th>
-                            <th>Ngày sinh</th>
-                            <th>Giới tính</th>
-                            <th>Số CMT</th>
-                            <th>Ngày cấp</th>
-                            <th>Nơi TT</th>
-                            <th>Mã khóa học</th>
+                            <th class="text-center" style="width:2.25rem" title="Chi tiết"></th>
+                            <th class="col-sticky sticky-1 text-center">STT</th>
+                            <th class="col-sticky sticky-2">Học viên</th>
+                            <th>NS · Giới tính</th>
+                            <th>CCCD · Ngày cấp</th>
+                            <th>SDT · Sale</th>
+                            <th>Khóa · Hạng</th>
                             <th class="text-center">Đã dò</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($items as $index => $row)
                             @php
+                                $maDk = (string) $row->MaDK;
                                 $hoTenHv = $row->HoVaTen ?: trim(($row->HoDemNLX ?? '').' '.($row->TenNLX ?? ''));
+                                $phu = $thongTinPhu[$maDk] ?? null;
+                                $gioiTinh = match (true) {
+                                    $row->GioiTinh === '1', strtoupper((string) $row->GioiTinh) === 'M' => 'Nam',
+                                    $row->GioiTinh === '0', strtoupper((string) $row->GioiTinh) === 'F' => 'Nữ',
+                                    default => (string) $row->GioiTinh,
+                                };
                             @endphp
-                            <tr>
-                                <td>{{ $items->firstItem() + $index }}</td>
-                                <td>
-                                    @include('PMGPLX.danh-muc._trang-thai-icon', ['active' => (string) $row->TrangThai === '1'])
-                                    {{ $row->MaDK }}
+                            <tr class="hv-row-main" data-ma-dk="{{ $maDk }}">
+                                <td class="text-center align-middle">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm hv-expand-btn hv-detail-toggle" title="Xem thêm thông tin" aria-expanded="false">+</button>
                                 </td>
-                                <td>{{ $hoTenHv }}</td>
-                                <td>{{ \App\Support\PMGPLX\NgayVn::format($row->NgaySinh, 'yyyymmdd') }}</td>
-                                <td>
-                                    @if ($row->GioiTinh === '1' || strtoupper((string) $row->GioiTinh) === 'M')
-                                        Nam
-                                    @elseif ($row->GioiTinh === '0' || strtoupper((string) $row->GioiTinh) === 'F')
-                                        Nữ
-                                    @else
-                                        {{ $row->GioiTinh }}
-                                    @endif
+                                <td class="col-sticky sticky-1 text-center text-muted">{{ $items->firstItem() + $index }}</td>
+                                <td class="col-sticky sticky-2 hv-cell-stack" title="{{ $hoTenHv }} — {{ $maDk }}">
+                                    <div class="hv-stack-line hv-ten">{{ $hoTenHv }}</div>
+                                    <div class="hv-stack-sub text-muted">
+                                        @include('PMGPLX.danh-muc._trang-thai-icon', ['active' => (string) $row->TrangThai === '1'])
+                                        <span class="hv-ma-dk">{{ $row->MaDK }}</span>
+                                    </div>
                                 </td>
-                                <td>{{ $row->SoCMT }}</td>
-                                <td>{{ \App\Support\OCR\DoThongTinGiayTo::ngayDatetime($row->NgayCapCMT) }}</td>
-                                <td>{{ $noiThuongTru[(string) $row->MaDK] ?? '' }}</td>
-                                <td>{{ $row->MaKhoaHoc }}</td>
+                                <td class="hv-cell-stack">
+                                    <div class="hv-stack-line">{{ \App\Support\PMGPLX\NgayVn::format($row->NgaySinh, 'yyyymmdd') ?: '—' }}</div>
+                                    <div class="hv-stack-sub text-muted">{{ $gioiTinh ?: '—' }}</div>
+                                </td>
+                                <td class="hv-cell-stack">
+                                    <div class="hv-stack-line">{{ $row->SoCMT ?: '—' }}</div>
+                                    <div class="hv-stack-sub text-muted">{{ \App\Support\OCR\DoThongTinGiayTo::ngayDatetime($row->NgayCapCMT) ?: '—' }}</div>
+                                </td>
+                                <td class="hv-cell-stack hv-open-phu-cell" role="button" tabindex="0"
+                                    title="Bấm để sửa SDT / Sale"
+                                    data-ma-dk="{{ $maDk }}"
+                                    data-ten="{{ $hoTenHv }}"
+                                    data-sdt="{{ $phu?->SoDienThoai ?? '' }}"
+                                    data-sale="{{ $phu?->Sale ?? '' }}">
+                                    <div class="d-flex align-items-start">
+                                        <div class="flex-grow-1 min-width-0">
+                                            <div class="hv-stack-line hv-text-sdt text-truncate">{{ $phu?->SoDienThoai ?: '—' }}</div>
+                                            <div class="hv-stack-sub text-muted hv-text-sale text-truncate">{{ $phu?->Sale ?: '—' }}</div>
+                                        </div>
+                                        <button type="button" class="btn btn-link btn-sm p-0 ml-1 text-secondary hv-open-phu flex-shrink-0"
+                                                title="Sửa thông tin phụ"
+                                                data-ma-dk="{{ $maDk }}"
+                                                data-ten="{{ $hoTenHv }}"
+                                                data-sdt="{{ $phu?->SoDienThoai ?? '' }}"
+                                                data-sale="{{ $phu?->Sale ?? '' }}">✎</button>
+                                    </div>
+                                </td>
+                                <td class="hv-cell-stack">
+                                    <div class="hv-stack-line">{{ $row->MaKhoaHoc ?: '—' }}</div>
+                                    <div class="hv-stack-sub text-muted">{{ $row->HangGPLX ?: ($row->HangDaoTao ?: '—') }}</div>
+                                </td>
                                 <td class="text-center text-nowrap">
-                                    @php $doRoi = $daDo[(string) $row->MaDK] ?? null; @endphp
+                                    @php $doRoi = $daDo[$maDk] ?? null; @endphp
                                     @if ($doRoi)
                                         @php
                                             $nhanDo = collect($doRoi->trangThai())
@@ -182,13 +224,129 @@
                                             data-ma-dk="{{ $row->MaDK }}" data-ten="{{ $hoTenHv }}" title="Dò CCCD / GPLX cho học viên này">Dò</button>
                                 </td>
                             </tr>
+                            <tr class="hv-danh-muc-detail d-none" data-detail-for="{{ $maDk }}">
+                                <td colspan="8">
+                                    <dl>
+                                        <div>
+                                            <dt>Nơi thường trú</dt>
+                                            <dd>{{ $noiThuongTru[$maDk] ?? '' }}</dd>
+                                        </div>
+                                        <div>
+                                            <dt>Số hồ sơ</dt>
+                                            <dd>{{ $row->SoHoSo }}</dd>
+                                        </div>
+                                        <div>
+                                            <dt>Hạng đào tạo</dt>
+                                            <dd>{{ $row->HangDaoTao }}</dd>
+                                        </div>
+                                        <div>
+                                            <dt>Trạng thái</dt>
+                                            <dd>{{ (string) $row->TrangThai === '1' ? 'Hiệu lực' : 'Không hiệu lực' }}</dd>
+                                        </div>
+                                    </dl>
+                                </td>
+                            </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="text-center py-4">Không có dữ liệu</td>
+                                <td colspan="8" class="text-center py-4">Không có dữ liệu</td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalXuatExcelHv" tabindex="-1" role="dialog" aria-labelledby="modalXuatExcelHvLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <form method="POST" action="{{ route('pmgplx.dm.hoc-vien.export') }}" target="_blank" id="formXuatExcelHv">
+                    @csrf
+                    <input type="hidden" name="tu_khoa" value="{{ $filters['tu_khoa'] }}">
+                    <input type="hidden" name="ma_kh" value="{{ $filters['ma_kh'] }}">
+                    <input type="hidden" name="sale" value="{{ $filters['sale'] }}">
+                    <input type="hidden" name="hang_gplx" value="{{ $filters['hang_gplx'] }}">
+                    <input type="hidden" name="trang_thai" value="{{ $filters['trang_thai'] }}">
+                    <div class="modal-header py-2">
+                        <h5 class="modal-title" id="modalXuatExcelHvLabel">Xuất Excel — chọn cột</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Đóng"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="small text-muted mb-2">
+                            Xuất theo bộ lọc hiện tại ({{ number_format($items->total()) }} học viên). Tick các cột cần có trong file.
+                        </p>
+                        <div class="d-flex flex-wrap mb-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary mr-1 mb-1" id="hv-export-chon-uu-tien">Chỉ cột ưu tiên mặc định</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary mr-1 mb-1" id="hv-export-chon-tat">Chọn tất cả</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary mb-1" id="hv-export-bo-chon">Bỏ chọn</button>
+                        </div>
+                        @php
+                            $cotUuTien = array_filter($exportColumns, fn ($c) => $c['uu_tien']);
+                            $cotKhac = array_filter($exportColumns, fn ($c) => ! $c['uu_tien']);
+                        @endphp
+                        <h6 class="font-weight-bold text-primary mb-2">Cột ưu tiên</h6>
+                        <div class="row">
+                            @foreach ($cotUuTien as $col)
+                                <div class="col-md-4 col-sm-6 mb-2">
+                                    <div class="custom-control custom-checkbox">
+                                        <input type="checkbox" class="custom-control-input hv-export-col hv-export-col-uu-tien"
+                                               name="cols[]" value="{{ $col['key'] }}" id="hv-export-col-{{ $col['key'] }}"
+                                               data-mac-dinh="{{ $col['mac_dinh'] ? '1' : '0' }}"
+                                               @checked($col['mac_dinh'])>
+                                        <label class="custom-control-label" for="hv-export-col-{{ $col['key'] }}">{{ $col['label'] }}</label>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                        @if ($cotKhac !== [])
+                            <h6 class="font-weight-bold text-secondary mt-3 mb-2">Cột PMGPLX khác</h6>
+                            <div class="border rounded p-2" style="max-height: 220px; overflow-y: auto;">
+                                <div class="row">
+                                    @foreach ($cotKhac as $col)
+                                        <div class="col-md-6 mb-1">
+                                            <div class="custom-control custom-checkbox">
+                                                <input type="checkbox" class="custom-control-input hv-export-col"
+                                                       name="cols[]" value="{{ $col['key'] }}" id="hv-export-col-{{ $col['key'] }}">
+                                                <label class="custom-control-label small" for="hv-export-col-{{ $col['key'] }}">{{ $col['label'] }}</label>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                    <div class="modal-footer py-2">
+                        <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-sm btn-success">⬇ Tải Excel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalThongTinPhu" tabindex="-1" role="dialog" aria-labelledby="modalThongTinPhuLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title" id="modalThongTinPhuLabel">Thông tin phụ (MANHLINH)</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Đóng"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-3" id="hv-phu-subtitle"></p>
+                    <input type="hidden" id="hv-phu-ma-dk" value="">
+                    <div class="form-group">
+                        <label class="small mb-0" for="hv-phu-sdt">SDT</label>
+                        <input type="text" class="form-control form-control-sm" id="hv-phu-sdt" autocomplete="off" placeholder="Số điện thoại">
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="small mb-0" for="hv-phu-sale">Sale</label>
+                        <input type="text" class="form-control form-control-sm" id="hv-phu-sale" autocomplete="off" placeholder="Tên / mã sale">
+                    </div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-sm btn-primary" id="hv-phu-luu">Lưu</button>
+                </div>
             </div>
         </div>
     </div>
@@ -243,6 +401,7 @@
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/do-thong-tin.css') }}?v={{ filemtime(public_path('css/do-thong-tin.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/hoc-vien-danh-muc.css') }}?v={{ filemtime(public_path('css/hoc-vien-danh-muc.css')) }}">
 @endpush
 
 @push('scripts')
@@ -531,10 +690,128 @@
         }
     });
 
+    $('#formXuatExcelHv').on('submit', function () {
+        if ($('#formXuatExcelHv input.hv-export-col:checked').length === 0) {
+            alert('Chọn ít nhất một cột để xuất.');
+            return false;
+        }
+    });
+    $('#hv-export-chon-uu-tien').on('click', function () {
+        $('#formXuatExcelHv .hv-export-col').prop('checked', false);
+        $('#formXuatExcelHv .hv-export-col[data-mac-dinh="1"]').prop('checked', true);
+    });
+    $('#hv-export-chon-tat').on('click', function () {
+        $('#formXuatExcelHv .hv-export-col').prop('checked', true);
+    });
+    $('#hv-export-bo-chon').on('click', function () {
+        $('#formXuatExcelHv .hv-export-col').prop('checked', false);
+    });
+
+    $('#filter_sale').select2({
+        theme: 'bootstrap4',
+        placeholder: 'Chọn Sale...',
+        allowClear: true,
+        width: '100%',
+        dropdownParent: $('#filter_sale').closest('.form-group'),
+        language: {
+            noResults: function () { return 'Không tìm thấy Sale'; }
+        }
+    });
+
     @if (session('success'))
         alert(@json(session('success')));
     @elseif (session('error'))
         alert(@json(session('error')));
     @endif
+</script>
+<script>
+(function ($) {
+    const urlLuu = @json(route('pmgplx.dm.hoc-vien.thong-tin-phu'));
+    const csrf = @json(csrf_token());
+    function toggleDetail($main, open) {
+        const maDk = $main.data('ma-dk');
+        const $detail = $('tr[data-detail-for="' + maDk + '"]');
+        const $btn = $main.find('.hv-detail-toggle');
+        const show = open !== undefined ? open : $detail.hasClass('d-none');
+        $detail.toggleClass('d-none', !show);
+        $main.toggleClass('table-active', show);
+        $btn.text(show ? '−' : '+').attr('aria-expanded', show ? 'true' : 'false');
+    }
+
+    $(document).on('click', '.hv-detail-toggle', function () {
+        toggleDetail($(this).closest('tr.hv-row-main'));
+    });
+
+    let allOpen = false;
+    $('#hv-toggle-all-details').on('click', function () {
+        allOpen = !allOpen;
+        $('tr.hv-row-main').each(function () {
+            toggleDetail($(this), allOpen);
+        });
+    });
+
+    function syncPhuCellData($main, sdt, sale) {
+        const $cell = $main.find('.hv-open-phu-cell');
+        $cell.attr('data-sdt', sdt || '').attr('data-sale', sale || '');
+        $cell.find('.hv-open-phu').attr('data-sdt', sdt || '').attr('data-sale', sale || '');
+    }
+
+    function moModalThongTinPhu($src) {
+        const maDk = $src.data('ma-dk');
+        const ten = $src.data('ten') || '';
+        $('#hv-phu-ma-dk').val(maDk);
+        $('#hv-phu-sdt').val($src.data('sdt') || '');
+        $('#hv-phu-sale').val($src.data('sale') || '');
+        $('#hv-phu-subtitle').text(ten ? ten + ' · ' + maDk : maDk);
+        $('#modalThongTinPhu').modal('show');
+        setTimeout(function () { $('#hv-phu-sdt').trigger('focus'); }, 300);
+    }
+
+    $(document).on('click', '.hv-open-phu', function (e) {
+        e.stopPropagation();
+        moModalThongTinPhu($(this));
+    });
+
+    $(document).on('click', '.hv-open-phu-cell', function (e) {
+        if ($(e.target).closest('.hv-open-phu').length) {
+            return;
+        }
+        moModalThongTinPhu($(this));
+    });
+
+    $(document).on('keydown', '.hv-open-phu-cell', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            moModalThongTinPhu($(this));
+        }
+    });
+
+    $('#hv-phu-luu').on('click', function () {
+        const maDk = $('#hv-phu-ma-dk').val();
+        const sdt = $('#hv-phu-sdt').val();
+        const sale = $('#hv-phu-sale').val();
+        const $btn = $(this);
+        $btn.prop('disabled', true);
+        $.ajax({
+            url: urlLuu,
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrf },
+            dataType: 'json',
+            data: { ma_dk: maDk, so_dien_thoai: sdt, sale: sale },
+        }).done(function (data) {
+            const $main = $('tr.hv-row-main[data-ma-dk="' + maDk + '"]');
+            const sdtShow = (data.so_dien_thoai && String(data.so_dien_thoai).trim()) || '—';
+            const saleShow = (data.sale && String(data.sale).trim()) || '—';
+            $main.find('.hv-text-sdt').text(sdtShow);
+            $main.find('.hv-text-sale').text(saleShow);
+            syncPhuCellData($main, data.so_dien_thoai || '', data.sale || '');
+            $('#modalThongTinPhu').modal('hide');
+        }).fail(function (xhr) {
+            alert((xhr.responseJSON && xhr.responseJSON.message) || 'Không lưu được.');
+        }).always(function () {
+            $btn.prop('disabled', false);
+        });
+    });
+})(jQuery);
 </script>
 @endpush

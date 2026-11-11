@@ -20,8 +20,10 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function (): void {
 
     Route::get('/danh-muc/hoc-vien', [DanhSachHocVienController::class, 'index'])
         ->name('dm.hoc-vien.index');
-    Route::get('/danh-muc/hoc-vien/xuat-excel', [DanhSachHocVienController::class, 'export'])
+    Route::match(['get', 'post'], '/danh-muc/hoc-vien/xuat-excel', [DanhSachHocVienController::class, 'export'])
         ->name('dm.hoc-vien.export');
+    Route::post('/danh-muc/hoc-vien/thong-tin-phu', [DanhSachHocVienController::class, 'capNhatThongTinPhu'])
+        ->name('dm.hoc-vien.thong-tin-phu');
 
     Route::prefix('/danh-muc/hoc-vien/do-thong-tin')->name('dm.hoc-vien.do-thong-tin.')->group(function (): void {
         Route::post('/ocr', [DoThongTinHocVienController::class, 'ocr'])
