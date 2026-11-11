@@ -18,6 +18,7 @@ use App\Http\Controllers\QldtOto\QuyetDinhDoiXeController;
 use App\Http\Controllers\QldtOto\QuyetDinhHoanThanhKhoaHocController;
 use App\Http\Controllers\QldtOto\QuyetDinhHuyPhienController;
 use App\Http\Controllers\QldtOto\SoTheoDoiKetQuaHocTapController;
+use App\Http\Controllers\QldtOto\SoTayGiaoVienThucHanhController;
 use App\Http\Controllers\QldtOto\ThanhLapHoiDongXetKtmController;
 use App\Http\Controllers\QldtOto\CauHinhBaiDayController;
 use App\Http\Controllers\QldtOto\LichDuKien\ThucHanhController;
@@ -159,6 +160,11 @@ Route::prefix('qldt-oto')->name('qldtoto.')->group(function () {
     Route::get('/'.$slugSoTheoDoiKq, [SoTheoDoiKetQuaHocTapController::class, 'index'])->name('so-theo-doi-ket-qua-hoc-tap.index');
     Route::post('/'.$slugSoTheoDoiKq.'/xuat', [SoTheoDoiKetQuaHocTapController::class, 'export'])->name('so-theo-doi-ket-qua-hoc-tap.export');
     Route::get('/'.$slugSoTheoDoiKq.'/khoa/{maKh}', [SoTheoDoiKetQuaHocTapController::class, 'khoaJson'])->name('so-theo-doi-ket-qua-hoc-tap.khoa');
+
+    $slugSoTayGvTh = '1-so-tay-cac-giao-vien-thuc-hanh';
+    Route::get('/'.$slugSoTayGvTh, [SoTayGiaoVienThucHanhController::class, 'index'])->name('so-tay-giao-vien-thuc-hanh.index');
+    Route::post('/'.$slugSoTayGvTh.'/xuat', [SoTayGiaoVienThucHanhController::class, 'export'])->name('so-tay-giao-vien-thuc-hanh.export');
+    Route::get('/'.$slugSoTayGvTh.'/khoa/{maKh}', [SoTayGiaoVienThucHanhController::class, 'khoaJson'])->name('so-tay-giao-vien-thuc-hanh.khoa');
 
     $slugSoPhanCong = '1-so-phan-cong-giao-vien-xe-tham-gia-giang-day-cua-khoa';
     Route::get('/'.$slugSoPhanCong, [SoPhanCongGvXeTapLaiController::class, 'index'])->name('so-phan-cong-gv-xe-tap-lai.index');

@@ -40,14 +40,12 @@
                         @endforeach
                     </select>
                 </div>
-                @if ($maKh !== '' && $hangOptions !== [])
+                @if ($maKh !== '' && $hang !== '')
                     <div class="form-group col-md-3 mb-0">
-                        <label for="hang">Hạng đào tạo</label>
-                        <select class="form-control form-control-sm" id="hang" name="hang">
-                            @foreach ($hangOptions as $h)
-                                <option value="{{ $h }}" @selected($hang === $h)>{{ $nhanHang[$h] ?? $h }}</option>
-                            @endforeach
-                        </select>
+                        <label class="d-block">Hạng đào tạo</label>
+                        <p class="form-control-plaintext small py-1 mb-0 font-weight-bold">
+                            {{ $nhanHang[$hang] ?? $hang }}
+                        </p>
                     </div>
                 @endif
                 <div class="form-group col-md-2 mb-0">
@@ -67,11 +65,9 @@
                         Lịch GV trống hoặc thưa — đang gợi ý chủ yếu từ <a href="{{ $linkLichXeTap }}" target="_blank">lịch xe tập</a> ({{ $goiY['so_buoi_lich_xe'] }} buổi).
                     </div>
                 @endif
-
                 <form method="POST" action="{{ route('qldtoto.lich-hoc-ly-thuyet-thuc-hanh.export') }}">
                     @csrf
                     <input type="hidden" name="ma_kh" value="{{ $maKh }}">
-                    <input type="hidden" name="hang" value="{{ $hang }}">
 
                     <div class="form-row mb-3">
                         <div class="form-group col-md-6">
@@ -81,7 +77,8 @@
                         </div>
                     </div>
 
-                    <div class="table-responsive mb-3">
+                    <h6 class="small font-weight-bold mb-2">Điều chỉnh mốc ngày (trước khi xuất)</h6>
+                    <div class="table-responsive mb-4">
                         <table class="table table-sm table-bordered mb-0" style="font-size: 0.8125rem;">
                             <thead class="thead-light">
                                 <tr>
@@ -104,6 +101,12 @@
                             </tbody>
                         </table>
                     </div>
+
+                    @include('QldtOto.lich-hoc-ly-thuyet-thuc-hanh.partials.preview-bang', [
+                        'previewDong' => $previewDong,
+                        'hang' => $hang,
+                        'tenKhoaDoc' => $tenKhoaDoc,
+                    ])
 
                     @php
                         $duocXuat = in_array($hang, [

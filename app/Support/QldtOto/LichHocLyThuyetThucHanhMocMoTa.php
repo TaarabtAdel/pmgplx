@@ -39,7 +39,7 @@ final class LichHocLyThuyetThucHanhMocMoTa
                 'ngay_kt_cabin' => 'KT cabin (BD cabin + 6 ngày → hàng 18 E)',
                 'ngay_bd_dat' => 'BD DAT (BD TH + 6 ngày → hàng 19 D)',
                 'ngay_kt_dat' => 'KT DAT (BD DAT + 24 ngày → hàng 19 E)',
-                'ngay_bo_sung_dat' => 'Bổ sung DAT (KT DAT + 1 ngày → hàng 25 D–E)',
+                'ngay_bo_sung_dat' => 'Dự phòng DAT, cabin (KT DAT + 1 ngày → hàng 24 D–E)',
                 'ngay_bd_hinh_duoi' => 'BD HÌNH dưới / chữ chi (KT DAT + 2 ngày → hàng 26 D–E)',
                 'ngay_kt_hinh_duoi' => 'KT HÌNH dưới / tổng hợp (BD HÌNH dưới + 8 ngày → hàng 27 E)',
                 'ngay_bd_on_luyen' => 'BD ôn luyện (KT HÌNH dưới + 1 ngày → hàng 28 D)',

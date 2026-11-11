@@ -43,9 +43,6 @@ class RouteServiceProvider extends ServiceProvider
                 ->group(base_path('routes/web.php'));
 
             Route::middleware(['web', 'auth', 'phan.quyen'])
-                ->group(base_path('routes/pmgplxmoto.php'));
-
-            Route::middleware(['web', 'auth', 'phan.quyen'])
                 ->group(base_path('routes/qldtoto.php'));
         });
     }

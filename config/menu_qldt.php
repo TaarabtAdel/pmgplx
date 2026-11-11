@@ -124,6 +124,8 @@ return [
                                     'title' => 'Xuất file "Sổ tay các giáo viên thực hành"',
                                     'mo_ta' => 'Có quyết định lập lưu trước',
                                     'trang' => '1-so-tay-cac-giao-vien-thuc-hanh',
+                                    'route' => 'qldtoto.so-tay-giao-vien-thuc-hanh.index',
+                                    'active' => 'qldtoto.so-tay-giao-vien-thuc-hanh.*',
                                 ],
                             ],
                         ],

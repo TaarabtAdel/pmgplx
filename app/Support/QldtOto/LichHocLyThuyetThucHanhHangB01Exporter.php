@@ -11,7 +11,7 @@ final class LichHocLyThuyetThucHanhHangB01Exporter
 {
     private const TEMPLATE = 'resources/templates/oto/lich-hoc-ly-thuyet-thuc-hanh-hang-b01.xlsx';
 
-    private const SHEET_HINT = 'TỰ ĐỘNG';
+    private const SHEET_HINT = 'TỰU ĐỘNG';
 
     /**
      * @param  array<string, \Carbon\Carbon|null>  $moc
@@ -24,18 +24,16 @@ final class LichHocLyThuyetThucHanhHangB01Exporter
         }
 
         $ss = IOFactory::load($path);
-        $sheet = null;
-        foreach ($ss->getWorksheetIterator() as $ws) {
-            if (mb_stripos($ws->getTitle(), self::SHEET_HINT) !== false) {
-                $sheet = $ws;
-                break;
-            }
-        }
-        $sheet ??= $ss->getActiveSheet();
+        $sheet = LichHocLyThuyetThucHanhSheet::chonSheet($ss, self::SHEET_HINT);
         $ss->setActiveSheetIndex($ss->getIndex($sheet));
 
         $sheet->setCellValue('A3', 'LỊCH HỌC LÝ THUYẾT, THỰC HÀNH KHÓA '.mb_strtoupper($tenKhoaTrenFile));
-        LichHocLyThuyetThucHanhFillSheet::dienMoc($sheet, $moc, rowKiemTra: 28);
+        LichHocLyThuyetThucHanhFillSheet::dienMoc(
+            $sheet,
+            $moc,
+            rowKiemTra: 28,
+            hang: LichHocLyThuyetThucHanhLichNgay::HANG_B_TU_DONG
+        );
 
         $filename = $filePrefix.'-'.now()->format('Ymd-His').'.xlsx';
 

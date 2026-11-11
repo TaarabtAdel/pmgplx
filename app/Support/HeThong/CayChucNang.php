@@ -213,15 +213,6 @@ final class CayChucNang
                 ],
             ],
             [
-                'khoa' => 'pmgplxmoto', 'title' => 'PMGPLX-MOTO', 'children' => [
-                    ['khoa' => 'giao-vien', 'title' => 'Quản lý giáo viên', 'route' => 'pmgplxmoto.dm.giao-vien.index', 'active' => ['pmgplxmoto.dm.giao-vien.*']],
-                    ['khoa' => 'hoc-vien', 'title' => 'Quản lý học viên', 'route' => 'pmgplxmoto.dm.hoc-vien.index', 'active' => ['pmgplxmoto.dm.hoc-vien.*']],
-                    ['khoa' => 'hoc-vien-ban-cu', 'title' => 'Học viên (bản cũ)', 'route' => 'pmgplxmotoold.dm.hoc-vien.index', 'active' => ['pmgplxmotoold.*']],
-                    ['khoa' => 'xe', 'title' => 'Quản lý xe', 'route' => 'pmgplxmoto.dm.xe.index', 'active' => ['pmgplxmoto.dm.xe.*']],
-                    ['khoa' => 'khoa-hoc', 'title' => 'Quản lý khoá học', 'route' => 'pmgplxmoto.dm.khoa-hoc.index', 'active' => ['pmgplxmoto.dm.khoa-hoc.*']],
-                ],
-            ],
-            [
                 'khoa' => 'phong-dao-tao', 'title' => 'Phòng Đào Tạo', 'children' => [
                     [
                         'khoa' => 'bao-cao', 'title' => 'Báo cáo', 'children' => [

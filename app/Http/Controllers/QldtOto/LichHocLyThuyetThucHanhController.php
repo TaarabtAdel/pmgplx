@@ -10,6 +10,7 @@ use App\Support\QldtOto\LichHocLyThuyetThucHanhHangBSanExporter;
 use App\Support\QldtOto\LichHocLyThuyetThucHanhHangCExporter;
 use App\Support\QldtOto\LichHocLyThuyetThucHanhLichNgay;
 use App\Support\QldtOto\LichHocLyThuyetThucHanhMocMoTa;
+use App\Support\QldtOto\LichHocLyThuyetThucHanhPreview;
 use App\Support\QldtOto\PhanCongGvXeTapLaiFormSupport;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -38,19 +39,18 @@ class LichHocLyThuyetThucHanhController extends Controller
         abort_if($trang === null, 404);
 
         $maKh = trim((string) $request->query('ma_kh', ''));
-        $hang = trim((string) $request->query('hang', ''));
+        $hang = '';
         $khoa = $maKh !== '' ? KhoaHoc::query()->find($maKh) : null;
 
-        $hangOptions = [];
         $formNgay = [];
         $goiY = [];
+        $goiYHienThi = [];
+        $previewDong = [];
         $tenKhoaDoc = '';
 
         if ($khoa instanceof KhoaHoc) {
-            $hangOptions = LichHocLyThuyetThucHanhLichNgay::hangGoiYTuKhoa($khoa);
-            if ($hang === '' || ! in_array($hang, $hangOptions, true)) {
-                $hang = $hangOptions[0];
-            }
+            $hang = LichHocLyThuyetThucHanhLichNgay::hangGoiYTuKhoa($khoa)[0]
+                ?? LichHocLyThuyetThucHanhLichNgay::HANG_C;
             $tenKhoaDoc = PhanCongGvXeTapLaiFormSupport::tenKhoaDaoTaoTuPm($khoa);
             $kg = $khoa->NgayKG ? Carbon::parse($khoa->NgayKG) : null;
             $goiY = LichHocLyThuyetThucHanhLichNgay::goiYTuLichGiaoVien($maKh, $kg, $hang);
@@ -60,6 +60,8 @@ class LichHocLyThuyetThucHanhController extends Controller
             foreach (self::FORM_NGAY as $k) {
                 $formNgay[$k] = old($k, $request->query($k, $goiY[$k] ?? ''));
             }
+            $goiYHienThi = LichHocLyThuyetThucHanhMocMoTa::hienThiGoiY($goiY, $hang);
+            $previewDong = LichHocLyThuyetThucHanhPreview::dongXemTruoc($hang, $goiY, $formNgay, $goiYHienThi);
         }
 
         $khoaOptions = KhoaHoc::query()
@@ -75,7 +77,6 @@ class LichHocLyThuyetThucHanhController extends Controller
             'khoaOptions' => $khoaOptions,
             'maKh' => $maKh,
             'hang' => $hang,
-            'hangOptions' => $hangOptions,
             'tenKhoaDoc' => $tenKhoaDoc,
             'goiY' => $goiY,
             'formNgay' => $formNgay,
@@ -86,7 +87,8 @@ class LichHocLyThuyetThucHanhController extends Controller
                 ? route('pmgplx.dm.khoa-hoc.index', ['tu_khoa' => $maKh])
                 : route('pmgplx.dm.khoa-hoc.index'),
             'nhanMocTrenFile' => LichHocLyThuyetThucHanhMocMoTa::nhanMocTrenFile($maKh !== '' ? $hang : null),
-            'goiYHienThi' => $maKh !== '' ? LichHocLyThuyetThucHanhMocMoTa::hienThiGoiY($goiY, $hang) : [],
+            'goiYHienThi' => $goiYHienThi,
+            'previewDong' => $previewDong,
         ]);
     }
 
@@ -97,18 +99,19 @@ class LichHocLyThuyetThucHanhController extends Controller
 
         $validated = $request->validate([
             'ma_kh' => ['required', 'string'],
-            'hang' => ['required', 'string'],
             'ten_khoa_doc' => ['nullable', 'string', 'max:200'],
         ] + collect(self::FORM_NGAY)->mapWithKeys(fn (string $k) => [
             $k => ['nullable', 'date'],
         ])->all());
 
         $maKh = trim($validated['ma_kh']);
-        $hang = trim($validated['hang']);
         $khoa = KhoaHoc::query()->find($maKh);
         if (! $khoa) {
             return back()->with('error', 'Không tìm thấy khoá.');
         }
+
+        $hangOptions = LichHocLyThuyetThucHanhLichNgay::hangGoiYTuKhoa($khoa);
+        $hang = $hangOptions[0] ?? LichHocLyThuyetThucHanhLichNgay::HANG_C;
 
         if (! in_array($hang, [
             LichHocLyThuyetThucHanhLichNgay::HANG_C,

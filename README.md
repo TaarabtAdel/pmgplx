@@ -26,8 +26,6 @@ DB_PASSWORD=YourPassword123!
 DB_DATABASE=GPLX_BAN_MOI          # PMGPLX (mặc định sqlsrv): lịch, danh mục, KhoaHoc, …
 DB_DATABASE_2=GPLX_BAN_CU         # (tùy chọn) DB cũ để so sánh
 DB_DATABASE_3=MANHLINH            # sqlsrv_manhlinh: DAT, phân công, tiến độ, …
-DB_DATABASE_4=GPLX_MOTO_BAN_MOI   # sqlsrv_moto
-DB_DATABASE_5=GPLX_MOTO_BAN_CU    # sqlsrv_moto_old
 ```
 
 Tạo database (lần đầu):
@@ -116,30 +114,6 @@ END
 RESTORE DATABASE MANHLINH FROM DISK = N'/var/opt/mssql/dumps/MANHLINH.bak' WITH REPLACE,
   MOVE N'MANHLINH'     TO N'/var/opt/mssql/data/MANHLINH.mdf',
   MOVE N'MANHLINH_log' TO N'/var/opt/mssql/data/MANHLINH_log.ldf';"
-```
-
-### Restore GPLX MOTO → `DB_DATABASE_4` / `DB_DATABASE_5`
-
-File backup (không đuôi `.bak`): `sqlserver-backup/MOTO-CU`, `sqlserver-backup/MOTO-MOI`.
-
-| DB đích | File | Logical data / log |
-|---------|------|---------------------|
-| `GPLX_MOTO_BAN_CU` | `MOTO-CU` | `GPLX_CSDT`, `GPLX_CSDT_log` |
-| `GPLX_MOTO_BAN_MOI` | `MOTO-MOI` | `GPLX_CDB_CSDT_25122025`, `GPLX_CDB_CSDT_25122025_log` |
-
-Laravel: `sqlsrv_moto` → `GPLX_MOTO_BAN_MOI`, `sqlsrv_moto_old` → `GPLX_MOTO_BAN_CU`.
-
-```bash
-docker compose exec db /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P "YourPassword123!" -C -Q "
-IF DB_ID(N'GPLX_MOTO_BAN_CU') IS NOT NULL BEGIN ALTER DATABASE GPLX_MOTO_BAN_CU SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE GPLX_MOTO_BAN_CU; END
-RESTORE DATABASE GPLX_MOTO_BAN_CU FROM DISK = N'/var/opt/mssql/backup/MOTO-CU' WITH REPLACE,
-  MOVE N'GPLX_CSDT' TO N'/var/opt/mssql/data/GPLX_MOTO_BAN_CU.mdf',
-  MOVE N'GPLX_CSDT_log' TO N'/var/opt/mssql/data/GPLX_MOTO_BAN_CU_log.ldf';
-IF DB_ID(N'GPLX_MOTO_BAN_MOI') IS NOT NULL BEGIN ALTER DATABASE GPLX_MOTO_BAN_MOI SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE GPLX_MOTO_BAN_MOI; END
-RESTORE DATABASE GPLX_MOTO_BAN_MOI FROM DISK = N'/var/opt/mssql/backup/MOTO-MOI' WITH REPLACE,
-  MOVE N'GPLX_CDB_CSDT_25122025' TO N'/var/opt/mssql/data/GPLX_MOTO_BAN_MOI.mdf',
-  MOVE N'GPLX_CDB_CSDT_25122025_log' TO N'/var/opt/mssql/data/GPLX_MOTO_BAN_MOI_log.ldf';"
 ```
 
 ### Restore GPLX_BAN_MOI → `DB_DATABASE`

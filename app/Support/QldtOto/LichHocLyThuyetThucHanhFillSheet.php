@@ -12,8 +12,12 @@ final class LichHocLyThuyetThucHanhFillSheet
     /**
      * @param  array<string, Carbon|null>  $moc
      */
-    public static function dienMoc(Worksheet $sheet, array $moc, int $rowKiemTra = 29): void
-    {
+    public static function dienMoc(
+        Worksheet $sheet,
+        array $moc,
+        int $rowKiemTra = 29,
+        ?string $hang = null
+    ): void {
         $kg = $moc['ngay_khai_giang'];
         $bdTh = $moc['ngay_bd_thuc_hanh'];
 
@@ -35,19 +39,28 @@ final class LichHocLyThuyetThucHanhFillSheet
         self::ghiNgay($sheet, 'E18', $moc['ngay_kt_cabin']);
         self::ghiNgay($sheet, 'D19', $moc['ngay_bd_dat']);
         self::ghiNgay($sheet, 'E19', $moc['ngay_kt_dat']);
-        self::ghiNgay($sheet, 'D25', $moc['ngay_bo_sung_dat']);
-        self::ghiNgay($sheet, 'E25', $moc['ngay_kt_bo_sung_dat'] ?? $moc['ngay_bo_sung_dat']);
+
+        $b01 = $hang === LichHocLyThuyetThucHanhLichNgay::HANG_B_TU_DONG;
+        $rDuPhong = $b01 ? 24 : 25;
+        $rChuChi = $b01 ? 25 : 26;
+        $rTongHop = $b01 ? 26 : 27;
+        $rOn = $b01 ? 27 : 28;
+        $rKiemTra = $b01 ? 28 : $rowKiemTra;
+
+        self::ghiNgay($sheet, 'D'.$rDuPhong, $moc['ngay_bo_sung_dat']);
+        $ktDuPhong = $moc['ngay_kt_bo_sung_dat'] ?? $moc['ngay_bo_sung_dat'];
+        self::ghiNgay($sheet, 'E'.$rDuPhong, $ktDuPhong);
 
         $bdHd = $moc['ngay_bd_hinh_duoi'];
-        self::ghiNgay($sheet, 'D26', $bdHd);
-        self::ghiNgay($sheet, 'E26', $bdHd);
-        self::ghiNgay($sheet, 'D27', $bdHd?->copy()->addDay());
-        self::ghiNgay($sheet, 'E27', $moc['ngay_kt_hinh_duoi']);
+        self::ghiNgay($sheet, 'D'.$rChuChi, $bdHd);
+        self::ghiNgay($sheet, 'E'.$rChuChi, $bdHd);
+        self::ghiNgay($sheet, 'D'.$rTongHop, $bdHd?->copy()->addDay());
+        self::ghiNgay($sheet, 'E'.$rTongHop, $moc['ngay_kt_hinh_duoi']);
 
-        self::ghiNgay($sheet, 'D28', $moc['ngay_bd_on_luyen']);
-        self::ghiNgay($sheet, 'E28', $moc['ngay_kt_on_luyen']);
-        self::ghiNgay($sheet, 'D'.$rowKiemTra, $moc['ngay_kiem_tra']);
-        self::ghiNgay($sheet, 'E'.$rowKiemTra, $moc['ngay_kiem_tra']);
+        self::ghiNgay($sheet, 'D'.$rOn, $moc['ngay_bd_on_luyen']);
+        self::ghiNgay($sheet, 'E'.$rOn, $moc['ngay_kt_on_luyen']);
+        self::ghiNgay($sheet, 'D'.$rKiemTra, $moc['ngay_kiem_tra']);
+        self::ghiNgay($sheet, 'E'.$rKiemTra, $moc['ngay_kiem_tra']);
     }
 
     private static function ghiNgay(Worksheet $sheet, string $cell, ?Carbon $ngay): void
