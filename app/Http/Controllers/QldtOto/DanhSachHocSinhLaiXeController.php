@@ -8,6 +8,7 @@ use App\Support\MenuQldt;
 use App\Support\QldtOto\BaoCaoDangKyKhoaHoc;
 use App\Support\QldtOto\DanhSachHocSinhLaiXeExcelExporter;
 use App\Support\QldtOto\DanhSachHocSinhLaiXeHocVien;
+use App\Support\QldtOto\SoTayQuyetDinhThanhLap;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -81,7 +82,7 @@ class DanhSachHocSinhLaiXeController extends Controller
         }
 
         $ngay = Carbon::parse($validated['ngay_quyet_dinh']);
-        $soQdFull = trim($validated['so_quyet_dinh']).'/QĐ-TTML';
+        $soQdFull = SoTayQuyetDinhThanhLap::soVaHauTo($validated['so_quyet_dinh']);
         $hangTieuDe = DanhSachHocSinhLaiXeHocVien::hangTieuDe($khoa->HangGPLX ?? null, $khoa->HangDT ?? null);
 
         $meta = [

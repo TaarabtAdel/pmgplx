@@ -20,10 +20,6 @@ final class SoTayGiaoVienThucHanhDocxExporter
             );
         }
 
-        if ($hocVien === []) {
-            throw new \InvalidArgumentException('Khoá không có học viên để in bảng nghỉ học.');
-        }
-
         @mkdir(dirname($outputPath), 0755, true);
 
         $processor = new TemplateProcessor($template);
@@ -34,12 +30,8 @@ final class SoTayGiaoVienThucHanhDocxExporter
             $processor->setValue($key, $this->esc((string) ($fields[$key] ?? '')));
         }
 
-        $processor->cloneRow('stt', count($hocVien));
-        foreach ($hocVien as $i => $row) {
-            $n = $i + 1;
-            $processor->setValue('stt#'.$n, $this->esc((string) $row['stt']));
-            $processor->setValue('ho_ten#'.$n, $this->esc($row['ho_ten']));
-        }
+        $esc = fn (string $v): string => $this->esc($v);
+        SoTayGiaoVienBangDocx::dienBang($processor, $hocVien, false, $esc);
 
         $processor->saveAs($outputPath);
 

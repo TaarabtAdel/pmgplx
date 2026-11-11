@@ -136,7 +136,7 @@
                     <div class="form-row">
                         <div class="form-group col-md-6">
                             <label for="tru">Trừ học viên của khoá (nếu có)</label>
-                            <select class="form-control form-control-sm" id="tru" name="tru[]" multiple>
+                            <select class="form-control form-control-sm select2-multi-tru" id="tru" name="tru[]" multiple data-placeholder="Chọn học viên không được kiểm tra">
                                 @foreach ($hocVien as $hv)
                                     <option value="{{ $hv['ho_ten'] }}" @selected(in_array($hv['ho_ten'], $truDaChon, true))>{{ $hv['ho_ten'] }}</option>
                                 @endforeach
@@ -162,11 +162,11 @@
                             <thead class="thead-light">
                                 <tr>
                                     <th style="width:3rem">STT</th>
-                                    <th>Họ và tên</th>
+                                    <th style="width:10rem; max-width:10rem">Họ và tên</th>
                                     <th style="width:10rem">Số định danh</th>
                                     <th style="width:8rem">Ngày sinh</th>
                                     <th style="width:5rem">Hạng</th>
-                                    <th style="width:9rem">Nội dung KT</th>
+                                    <th style="width:11rem">Nội dung KT</th>
                                     <th style="width:2.5rem"></th>
                                 </tr>
                             </thead>
@@ -227,9 +227,18 @@
         coLan2.addEventListener('change', batLan2);
         xem(1); xem(2); batLan2();
 
-        $('#tru').select2({
-            theme: 'bootstrap4', width: '100%', placeholder: 'Chọn học viên không được kiểm tra',
-            language: { noResults: function () { return 'Không có học viên'; } },
+        const $tru = $('#tru');
+        $tru.select2({
+            theme: 'default',
+            width: '100%',
+            placeholder: $tru.data('placeholder') || 'Chọn học viên không được kiểm tra',
+            allowClear: true,
+            closeOnSelect: false,
+            dropdownParent: $tru.closest('.form-group'),
+            language: {
+                noResults: function () { return 'Không có học viên'; },
+                searching: function () { return 'Đang tìm…'; },
+            },
         });
 
         const esc = function (s) { return $('<div>').text(s == null ? '' : s).html(); };
@@ -239,18 +248,28 @@
         function render() {
             tbody.innerHTML = thiLai.map(function (r, i) {
                 const o = function (f, attrs) {
-                    return '<td><input type="text" class="form-control form-control-sm js-o" data-f="' + f + '" name="thi_lai[' + i + '][' + f + ']" value="' + esc(r[f]) + '"' + (attrs || '') + '></td>';
+                    const tdStyle = f === 'ho_ten' ? ' style="max-width:10rem"' : '';
+                    return '<td' + tdStyle + '><input type="text" class="form-control form-control-sm js-o" data-f="' + f + '" name="thi_lai[' + i + '][' + f + ']" value="' + esc(r[f]) + '"' + (attrs || '') + '></td>';
                 };
                 return '<tr data-i="' + i + '"><td class="text-center align-middle">' + (i + 1) + '</td>'
                     + o('ho_ten', ' maxlength="100" required') + o('dinh_danh', ' maxlength="20"') + o('ngay_sinh', ' maxlength="20" placeholder="dd/mm/yyyy"')
-                    + o('hang', ' maxlength="10"') + o('noi_dung', ' maxlength="40" list="dl-noi-dung"')
+                    + o('hang', ' maxlength="10"') + o('noi_dung', ' maxlength="40" placeholder="Nhập LT, MP, H…" list="dl-noi-dung" required')
                     + '<td class="text-center"><button type="button" class="btn btn-sm btn-link text-danger p-0 js-bo" title="Bỏ">&times;</button></td></tr>';
             }).join('');
             document.getElementById('thi-lai-trong').classList.toggle('d-none', thiLai.length > 0);
         }
+        function syncField(el) {
+            const tr = el.closest('tr');
+            if (!tr) return;
+            thiLai[+tr.dataset.i][el.dataset.f] = el.value;
+        }
         tbody.addEventListener('input', function (e) {
             if (!e.target.classList.contains('js-o')) return;
-            thiLai[+e.target.closest('tr').dataset.i][e.target.dataset.f] = e.target.value;
+            syncField(e.target);
+        });
+        tbody.addEventListener('change', function (e) {
+            if (!e.target.classList.contains('js-o')) return;
+            syncField(e.target);
         });
         tbody.addEventListener('click', function (e) {
             if (!e.target.closest('.js-bo')) return;

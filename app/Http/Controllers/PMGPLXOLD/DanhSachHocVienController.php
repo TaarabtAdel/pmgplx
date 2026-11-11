@@ -4,12 +4,18 @@ namespace App\Http\Controllers\PMGPLXOLD;
 
 use App\Http\Controllers\Controller;
 use App\Models\PMGPLXOLD\KhoaHoc;
-use App\Models\PMGPLXOLD\NguoiLX;
+use App\Support\PMGPLX\DanhMucBangExcelExporter;
+use App\Support\PMGPLX\DanhSachHocVienExcelRows;
+use App\Support\PMGPLX\DanhSachHocVienExportColumns;
+use App\Support\PMGPLX\DanhSachHocVienFilter;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DanhSachHocVienController extends Controller
 {
+    private const DB_CONNECTION = DanhSachHocVienFilter::CONNECTION_CU;
+
     public function index(Request $request): View
     {
         $perPage = (int) $request->input('per_page', 20);
@@ -17,49 +23,9 @@ class DanhSachHocVienController extends Controller
             $perPage = 20;
         }
 
-        $query = NguoiLX::query()
-            ->from('NguoiLX as n')
-            ->leftJoin('NguoiLX_HoSo as h', 'h.MaDK', '=', 'n.MaDK')
-            ->select([
-                'n.MaDK',
-                'n.HoDemNLX',
-                'n.TenNLX',
-                'n.HoVaTen',
-                'n.NgaySinh',
-                'n.GioiTinh',
-                'n.SoCMT',
-                'n.TrangThai',
-                'h.SoHoSo',
-                'h.MaKhoaHoc',
-                'h.HangGPLX',
-                'h.HangDaoTao',
-            ]);
-
-        if ($keyword = trim((string) $request->input('tu_khoa'))) {
-            $query->where(function ($q) use ($keyword) {
-                $q->where('n.MaDK', 'like', '%'.$keyword.'%')
-                    ->orWhere('n.HoVaTen', 'like', '%'.$keyword.'%')
-                    ->orWhere('n.HoDemNLX', 'like', '%'.$keyword.'%')
-                    ->orWhere('n.TenNLX', 'like', '%'.$keyword.'%')
-                    ->orWhere('n.SoCMT', 'like', '%'.$keyword.'%')
-                    ->orWhere('h.SoHoSo', 'like', '%'.$keyword.'%');
-            });
-        }
-
-        if ($maKH = trim((string) $request->input('ma_kh'))) {
-            $query->where('h.MaKhoaHoc', $maKH);
-        }
-
-        if ($hang = trim((string) $request->input('hang_gplx'))) {
-            $query->where('h.HangGPLX', 'like', '%'.$hang.'%');
-        }
-
-        if ($request->filled('trang_thai') && $request->input('trang_thai') !== '') {
-            $query->where('n.TrangThai', (string) (int) $request->input('trang_thai'));
-        }
-
-        $items = $query
-            ->orderByDesc('n.NgayTao')
+        $items = DanhSachHocVienFilter::query($request, banCu: true)
+            ->orderByRaw('n.TenNLX COLLATE Vietnamese_CI_AS ASC')
+            ->orderByRaw('n.HoDemNLX COLLATE Vietnamese_CI_AS ASC')
             ->orderBy('n.MaDK')
             ->paginate($perPage)
             ->withQueryString();
@@ -71,6 +37,7 @@ class DanhSachHocVienController extends Controller
         return view('PMGPLXOLD.danh-muc.hoc-vien', [
             'items' => $items,
             'khoaHocs' => $khoaHocs,
+            'exportColumns' => DanhSachHocVienExportColumns::forModal(self::DB_CONNECTION),
             'filters' => [
                 'tu_khoa' => $request->input('tu_khoa', ''),
                 'ma_kh' => $request->input('ma_kh', ''),
@@ -79,5 +46,46 @@ class DanhSachHocVienController extends Controller
                 'per_page' => $perPage,
             ],
         ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $keys = DanhSachHocVienExportColumns::sanitize($request->input('cols'), self::DB_CONNECTION);
+        $hasRaw = (bool) array_filter($keys, fn (string $k) => str_contains($k, '.'));
+
+        $query = DanhSachHocVienFilter::query($request, banCu: true);
+        if ($hasRaw) {
+            [, $selects] = DanhSachHocVienFilter::exportColumnSelects(self::DB_CONNECTION);
+            $query = DanhSachHocVienFilter::query($request, banCu: true, select: $selects);
+        }
+
+        $rawRows = $query
+            ->orderByRaw('n.TenNLX COLLATE Vietnamese_CI_AS ASC')
+            ->orderByRaw('n.HoDemNLX COLLATE Vietnamese_CI_AS ASC')
+            ->orderBy('n.MaDK')
+            ->get();
+
+        $labels = DanhSachHocVienExportColumns::labelsFor($keys, self::DB_CONNECTION);
+        $built = DanhSachHocVienExcelRows::build($keys, $rawRows);
+        $rows = array_map(function (array $row) use ($keys, $labels): array {
+            $out = [];
+            foreach ($keys as $i => $key) {
+                $out[$labels[$i]] = $row[$key] ?? null;
+            }
+
+            return $out;
+        }, $built);
+
+        $title = 'Danh mục học viên (bản cũ)';
+        if ($maKh = trim((string) $request->input('ma_kh'))) {
+            $title .= ' · khóa '.$maKh;
+        }
+
+        return DanhMucBangExcelExporter::downloadFromArrays(
+            $title,
+            'danh-muc-hoc-vien-ban-cu',
+            $labels,
+            $rows,
+        );
     }
 }

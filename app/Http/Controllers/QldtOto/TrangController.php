@@ -27,6 +27,7 @@ class TrangController extends Controller
         abort_if($trang === null, 404);
 
         return view('QldtOto.trang', [
+            'slug' => $slug,
             'item' => $trang['item'],
             'duongDan' => $trang['duong_dan'],
         ]);

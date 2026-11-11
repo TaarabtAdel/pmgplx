@@ -9,8 +9,8 @@
             <form method="GET" action="{{ route('pmgplxold.dm.hoc-vien.index') }}">
                 <div class="form-row align-items-end">
                     <div class="form-group col-md-3">
-                        <label>Mã ĐK|Họ tên|CMT|Số hồ sơ</label>
-                        <input type="text" class="form-control form-control-sm" name="tu_khoa" value="{{ $filters['tu_khoa'] }}" placeholder="Nhập từ khóa">
+                        <label>Mã ĐK|Họ tên|CMT|Số HS</label>
+                        <input type="text" class="form-control form-control-sm" name="tu_khoa" value="{{ $filters['tu_khoa'] }}" placeholder="Có dấu hay không đều được">
                     </div>
                     <div class="form-group col-md-3">
                         <label for="filter_ma_kh">Khóa học</label>
@@ -35,7 +35,7 @@
                             <option value="0" @selected($filters['trang_thai'] === '0')>Không hiệu lực</option>
                         </select>
                     </div>
-                    <div class="form-group col-md-2">
+                    <div class="form-group col-md-1">
                         <button type="submit" class="btn btn-sm btn-primary btn-block">Tìm kiếm</button>
                         <a href="{{ route('pmgplxold.dm.hoc-vien.index') }}" class="btn btn-sm btn-outline-secondary btn-block mt-1" title="Làm mới">↻</a>
                     </div>
@@ -48,6 +48,14 @@
         <div class="card-header">Danh sách học viên (bản cũ)</div>
         <div class="card-body">
             <div class="d-flex flex-wrap align-items-center mb-3">
+                <a href="{{ route('pmgplx.dm.hoc-vien.index') }}" class="btn btn-sm btn-outline-primary mb-2 mr-2" target="_blank">
+                    Xem bản mới (PMGPLX)
+                </a>
+                <button type="button" class="btn btn-sm btn-success mb-2 mr-2" data-toggle="modal" data-target="#modalXuatExcelHv"
+                        title="Chọn cột trước khi xuất">
+                    ⬇ Xuất Excel ({{ number_format($items->total()) }})
+                </button>
+
                 <div class="ml-auto d-flex flex-wrap align-items-center mb-2">
                     <span class="mr-3">Tổng số bản ghi: <strong>{{ number_format($items->total()) }}</strong></span>
                     <form method="GET" action="{{ route('pmgplxold.dm.hoc-vien.index') }}" class="form-inline mr-3">
@@ -132,6 +140,14 @@
             </div>
         </div>
     </div>
+
+    @include('PMGPLX.danh-muc.partials.hoc-vien-xuat-excel-modal', [
+        'exportRoute' => route('pmgplxold.dm.hoc-vien.export'),
+        'filters' => $filters,
+        'exportColumns' => $exportColumns,
+        'total' => $items->total(),
+        'cotKhacTieuDe' => 'Cột DB bản cũ khác',
+    ])
 @endsection
 
 @push('scripts')
@@ -147,4 +163,5 @@
         }
     });
 </script>
+@include('PMGPLX.danh-muc.partials.hoc-vien-xuat-excel-scripts')
 @endpush

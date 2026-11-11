@@ -21,8 +21,8 @@
             @endif
 
             <p class="text-muted small mb-3">
-                Xuất Word theo mẫu <strong>Sổ tay giáo viên</strong> (mỗi giáo viên thực hành trên lịch khoá một file;
-                nhiều GV → file ZIP). Học viên (phần II) lấy từ PMGPLX; ô nghỉ học để trống trên mẫu.
+                Chọn <strong>khoá</strong> và <strong>GVCN</strong> → xuất <strong>một</strong> file Word cho giáo viên chủ nhiệm đó.
+                Bảng phần II: 100 dòng (HV từ PMGPLX + dòng trống).
             </p>
 
             <form method="POST" action="{{ route('qldtoto.so-tay-giao-vien-thuc-hanh.export') }}">
@@ -62,14 +62,12 @@
                     </div>
                 </div>
 
+                @include('QldtOto.partials.so-tay-chon-gvcn')
+
+                @include('QldtOto.partials.qd-thanh-lap-lop-so-ngay')
+
                 <div class="form-row">
                     <div class="form-group col-md-8">
-                        <label for="qd_thanh_lap">Quyết định thành lập lớp (mục I)</label>
-                        <textarea class="form-control form-control-sm @error('qd_thanh_lap') is-invalid @enderror"
-                                  id="qd_thanh_lap" name="qd_thanh_lap" rows="2" maxlength="500"
-                                  placeholder="Số / ngày QĐ — dòng 2 nếu cần xuống dòng">{{ old('qd_thanh_lap', $form['qd_thanh_lap']) }}</textarea>
-                    </div>
-                    <div class="form-group col-md-4">
                         <label for="phuong_thuc">Phương thức tổ chức đào tạo</label>
                         <input type="text" class="form-control form-control-sm" id="phuong_thuc" name="phuong_thuc"
                                maxlength="200" value="{{ old('phuong_thuc', $form['phuong_thuc']) }}">
@@ -77,21 +75,17 @@
                 </div>
 
                 <div class="form-row mb-2">
-                    <div class="form-group col-md-3 mb-0">
+                    <div class="form-group col-md-4 mb-0">
                         <label>Hạng GPLX (đọc từ khoá)</label>
                         <input type="text" class="form-control form-control-sm" id="hang_gplx" readonly placeholder="Chọn khoá">
                     </div>
                     <div class="form-group col-md-2 mb-0">
-                        <label>Sĩ số</label>
+                        <label>Học viên PMGPLX</label>
                         <input type="text" class="form-control form-control-sm" id="so_luong_hv" readonly placeholder="—">
-                    </div>
-                    <div class="form-group col-md-7 mb-0">
-                        <label>Giáo viên thực hành (sẽ xuất)</label>
-                        <input type="text" class="form-control form-control-sm" id="danh_sach_gv" readonly placeholder="Chọn khoá">
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-sm btn-success">⬇ Xuất sổ tay (.docx / .zip)</button>
+                <button type="submit" class="btn btn-sm btn-success">⬇ Xuất sổ tay (.docx)</button>
             </form>
         </div>
     </div>
@@ -103,9 +97,16 @@
     const $maKh = $('#ma_kh');
     const urlTpl = @json(route('qldtoto.so-tay-giao-vien-thuc-hanh.khoa', ['maKh' => '__MA__']));
 
+  $('select[name="ma_gv"].chon-s2').select2({
+      width: '100%',
+      allowClear: true,
+      placeholder: '— Chọn GVCN —',
+      dropdownParent: $('select[name="ma_gv"]').closest('.form-group'),
+  });
+
     function loadKhoa(ma) {
         if (!ma) {
-            $('#ten_lop, #hang_gplx, #so_luong_hv, #danh_sach_gv').val('');
+            $('#ten_lop, #hang_gplx, #so_luong_hv').val('');
             return;
         }
         const url = urlTpl.replace('__MA__', encodeURIComponent(ma));
@@ -118,7 +119,6 @@
                 }
                 $('#hang_gplx').val(data.hang_gplx || '');
                 $('#so_luong_hv').val(data.so_luong_hv ?? '');
-                $('#danh_sach_gv').val((data.giao_vien || []).join(', '));
             })
             .catch(() => {});
     }

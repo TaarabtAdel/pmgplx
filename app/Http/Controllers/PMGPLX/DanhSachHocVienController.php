@@ -13,6 +13,7 @@ use App\Services\PMGPLX\DongBoHocVienBanCuService;
 use App\Support\PMGPLX\DanhMucBangExcelExporter;
 use App\Support\PMGPLX\DanhSachHocVienExcelRows;
 use App\Support\PMGPLX\DanhSachHocVienExportColumns;
+use App\Support\PMGPLX\DanhSachHocVienFilter;
 use App\Support\PMGPLX\DmDvhcTenDayDu;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -32,7 +33,7 @@ class DanhSachHocVienController extends Controller
             $perPage = 20;
         }
 
-        $items = $this->filteredQuery($request)
+        $items = DanhSachHocVienFilter::query($request, banCu: false)
             ->orderByRaw('n.TenNLX COLLATE Vietnamese_CI_AS ASC')
             ->orderByRaw('n.HoDemNLX COLLATE Vietnamese_CI_AS ASC')
             ->orderBy('n.MaDK')
@@ -127,10 +128,10 @@ class DanhSachHocVienController extends Controller
         $keys = DanhSachHocVienExportColumns::sanitize($request->input('cols'));
         $hasRaw = (bool) array_filter($keys, fn (string $k) => str_contains($k, '.'));
 
-        $query = $this->filteredQuery($request);
+        $query = DanhSachHocVienFilter::query($request, banCu: false);
         if ($hasRaw) {
-            [, $selects] = $this->exportColumnSelects();
-            $query = $this->filteredQuery($request, $selects);
+            [, $selects] = DanhSachHocVienFilter::exportColumnSelects(DanhSachHocVienFilter::CONNECTION_MOI);
+            $query = DanhSachHocVienFilter::query($request, banCu: false, select: $selects);
         }
 
         $rawRows = $query
@@ -440,113 +441,6 @@ class DanhSachHocVienController extends Controller
             "Đã đồng bộ {$total} học viên sang bản cũ (thêm mới: {$inserted}, cập nhật: {$updated}".
             ($failed > 0 ? ", lỗi: {$failed}" : '').').'
         );
-    }
-
-    /**
-     * @return array{0: list<string>, 1: list<\Illuminate\Contracts\Database\Query\Expression|string>}
-     */
-    private function exportColumnSelects(): array
-    {
-        $colsN = Schema::connection('sqlsrv')->getColumnListing('NguoiLX');
-        $colsH = Schema::connection('sqlsrv')->getColumnListing('NguoiLX_HoSo');
-
-        $columns = [];
-        $selects = [];
-        foreach ($colsN as $col) {
-            $alias = 'NguoiLX.'.$col;
-            $columns[] = $alias;
-            $selects[] = DB::raw('n.['.$col.'] as ['.$alias.']');
-        }
-        foreach ($colsH as $col) {
-            $alias = 'NguoiLX_HoSo.'.$col;
-            $columns[] = $alias;
-            $selects[] = DB::raw('h.['.$col.'] as ['.$alias.']');
-        }
-
-        return [$columns, $selects];
-    }
-
-    /**
-     * @param  list<\Illuminate\Contracts\Database\Query\Expression|string>|null  $select
-     */
-    private function filteredQuery(Request $request, ?array $select = null): Builder
-    {
-        $query = NguoiLX::query()
-            ->from('NguoiLX as n')
-            ->leftJoin('NguoiLX_HoSo as h', 'h.MaDK', '=', 'n.MaDK');
-
-        if ($select !== null) {
-            $query->select($select);
-        } else {
-            $query->select([
-                'n.MaDK',
-                'n.HoDemNLX',
-                'n.TenNLX',
-                'n.HoVaTen',
-                'n.NgaySinh',
-                'n.GioiTinh',
-                'n.SoCMT',
-                'n.NgayCapCMT',
-                'n.NoiTT',
-                'n.NoiTT_MaDVHC',
-                'n.NoiCT',
-                'n.NoiCT_MaDVHC',
-                'n.TrangThai',
-                'h.SoHoSo',
-                'h.MaKhoaHoc',
-                'h.HangGPLX',
-                'h.HangDaoTao',
-            ]);
-        }
-
-        $this->applyListFilters($query, $request);
-
-        return $query;
-    }
-
-    private function applyListFilters(Builder $query, Request $request): void
-    {
-        if ($keyword = trim((string) $request->input('tu_khoa'))) {
-            // Không phân biệt hoa thường và dấu: «nguyen van duc» tìm ra «NGUYỄN VĂN ĐỨC» (Latin1_General_CI_AI coi Đ như D).
-            $like = '%'.$keyword.'%';
-            $query->where(function ($q) use ($like) {
-                foreach (['n.MaDK', 'n.HoVaTen', 'n.HoDemNLX', 'n.TenNLX', 'n.SoCMT', 'h.SoHoSo'] as $cot) {
-                    $q->orWhereRaw($cot.' COLLATE Latin1_General_CI_AI LIKE ?', [$like]);
-                }
-                $maDkTuPhu = HocVienThongTinPhu::query()
-                    ->where(function ($pq) use ($like) {
-                        $pq->where('SoDienThoai', 'like', $like)
-                            ->orWhereRaw('Sale COLLATE Latin1_General_CI_AI LIKE ?', [$like]);
-                    })
-                    ->pluck('MaDK');
-                if ($maDkTuPhu->isNotEmpty()) {
-                    $q->orWhereIn('n.MaDK', $maDkTuPhu->all());
-                }
-            });
-        }
-
-        if ($maKH = trim((string) $request->input('ma_kh'))) {
-            $query->where('h.MaKhoaHoc', $maKH);
-        }
-
-        if ($sale = trim((string) $request->input('sale'))) {
-            $maDkTheoSale = HocVienThongTinPhu::query()
-                ->whereRaw('Sale COLLATE Latin1_General_CI_AI = ?', [$sale])
-                ->pluck('MaDK');
-            if ($maDkTheoSale->isEmpty()) {
-                $query->whereRaw('1 = 0');
-            } else {
-                $query->whereIn('n.MaDK', $maDkTheoSale->all());
-            }
-        }
-
-        if ($hang = trim((string) $request->input('hang_gplx'))) {
-            $query->where('h.HangGPLX', 'like', '%'.$hang.'%');
-        }
-
-        if ($request->filled('trang_thai') && $request->input('trang_thai') !== '') {
-            $query->where('n.TrangThai', (string) (int) $request->input('trang_thai'));
-        }
     }
 
     /**

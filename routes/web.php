@@ -507,4 +507,6 @@ Route::prefix('pmgplxold')->name('pmgplxold.')->group(function () {
 
     Route::get('/danh-muc/hoc-vien', [OldDanhSachHocVienController::class, 'index'])
         ->name('dm.hoc-vien.index');
+    Route::match(['get', 'post'], '/danh-muc/hoc-vien/xuat-excel', [OldDanhSachHocVienController::class, 'export'])
+        ->name('dm.hoc-vien.export');
 });

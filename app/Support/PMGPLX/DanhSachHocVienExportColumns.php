@@ -25,7 +25,7 @@ final class DanhSachHocVienExportColumns
   /**
    * @return list<array{key: string, label: string, uu_tien: bool, mac_dinh: bool}>
    */
-  public static function forModal(): array
+  public static function forModal(string $connection = 'sqlsrv'): array
   {
     $uuTien = [
       ['key' => 'stt', 'label' => 'STT', 'uu_tien' => true, 'mac_dinh' => true],
@@ -50,14 +50,14 @@ final class DanhSachHocVienExportColumns
     $skipH = ['MaDK', 'MaKhoaHoc', 'SoHoSo', 'HangGPLX', 'HangDaoTao'];
 
     $extras = [];
-    foreach (Schema::connection('sqlsrv')->getColumnListing('NguoiLX') as $col) {
+    foreach (Schema::connection($connection)->getColumnListing('NguoiLX') as $col) {
       if (in_array($col, $skipN, true)) {
         continue;
       }
       $key = 'NguoiLX.'.$col;
       $extras[$key] = ['key' => $key, 'label' => $key, 'uu_tien' => false, 'mac_dinh' => false];
     }
-    foreach (Schema::connection('sqlsrv')->getColumnListing('NguoiLX_HoSo') as $col) {
+    foreach (Schema::connection($connection)->getColumnListing('NguoiLX_HoSo') as $col) {
       if (in_array($col, $skipH, true)) {
         continue;
       }
@@ -73,14 +73,14 @@ final class DanhSachHocVienExportColumns
    * @param  list<string>|null  $keys
    * @return list<string>
    */
-  public static function sanitize(?array $keys): array
+  public static function sanitize(?array $keys, string $connection = 'sqlsrv'): array
   {
     if ($keys === null || $keys === []) {
       return self::MAC_DINH;
     }
 
     $allowed = [];
-    foreach (self::forModal() as $c) {
+    foreach (self::forModal($connection) as $c) {
       $allowed[$c['key']] = true;
     }
 
@@ -99,10 +99,10 @@ final class DanhSachHocVienExportColumns
    * @param  list<string>  $keys
    * @return list<string> nhãn cột theo thứ tự keys
    */
-  public static function labelsFor(array $keys): array
+  public static function labelsFor(array $keys, string $connection = 'sqlsrv'): array
   {
     $map = [];
-    foreach (self::forModal() as $c) {
+    foreach (self::forModal($connection) as $c) {
       $map[$c['key']] = $c['label'];
     }
 

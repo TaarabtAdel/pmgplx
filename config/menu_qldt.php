@@ -119,6 +119,8 @@ return [
                                     'title' => 'Xuất file "Sổ tay các giáo viên lý thuyết"',
                                     'mo_ta' => 'Có quyết định lập lưu trước',
                                     'trang' => '1-so-tay-cac-giao-vien-ly-thuyet',
+                                    'route' => 'qldtoto.so-tay-giao-vien-ly-thuyet.index',
+                                    'active' => 'qldtoto.so-tay-giao-vien-ly-thuyet.*',
                                 ],
                                 [
                                     'title' => 'Xuất file "Sổ tay các giáo viên thực hành"',

@@ -7,9 +7,9 @@ use App\Models\PMGPLX\KhoaHoc;
 use App\Support\MenuQldt;
 use App\Support\QldtOto\BaoCaoDangKyKhoaHoc;
 use App\Support\QldtOto\PhanCongGvXeTapLaiFormSupport;
+use App\Support\QldtOto\SoTayGiaoVienHocVien;
 use App\Support\QldtOto\SoTayGiaoVienThucHanhDocxExporter;
-use App\Support\QldtOto\SoTayGiaoVienThucHanhGiaoVien;
-use App\Support\QldtOto\SoTheoDoiKetQuaHocTapHocVien;
+use App\Support\QldtOto\SoTayQuyetDinhThanhLap;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,11 +36,14 @@ class SoTayGiaoVienThucHanhController extends Controller
             'item' => $trang['item'],
             'duongDan' => $trang['duong_dan'],
             'khoaOptions' => $khoaOptions,
+            'giaoVienOptions' => PhanCongGvXeTapLaiFormSupport::giaoVienSelectOptions(),
             'form' => [
                 'ma_kh' => trim((string) $request->query('ma_kh', '')),
+                'ma_gv' => '',
                 'ten_lop' => '',
                 'mon' => 'Thực hành lái xe',
-                'qd_thanh_lap' => '',
+                'so_quyet_dinh' => '',
+                'ngay_quyet_dinh' => '',
                 'phuong_thuc' => 'Tập trung',
             ],
         ]);
@@ -51,9 +54,14 @@ class SoTayGiaoVienThucHanhController extends Controller
         $validated = $request->validate([
             'ma_kh' => ['required', 'string', 'max:50'],
             'ten_lop' => ['required', 'string', 'max:80'],
+            'ma_gv' => ['required', 'string', 'max:20'],
             'mon' => ['nullable', 'string', 'max:120'],
-            'qd_thanh_lap' => ['nullable', 'string', 'max:500'],
+            'so_quyet_dinh' => ['nullable', 'regex:/^\d+$/', 'max:10'],
+            'ngay_quyet_dinh' => ['nullable', 'date', 'required_with:so_quyet_dinh'],
             'phuong_thuc' => ['nullable', 'string', 'max:200'],
+        ], [
+            'so_quyet_dinh.regex' => 'Số quyết định chỉ gồm chữ số.',
+            'ma_gv.required' => 'Chọn giáo viên chủ nhiệm (GVCN).',
         ]);
 
         $khoa = KhoaHoc::query()->find($validated['ma_kh']);
@@ -61,70 +69,49 @@ class SoTayGiaoVienThucHanhController extends Controller
             return back()->withErrors(['ma_kh' => 'Không tìm thấy khoá trên PMGPLX.'])->withInput();
         }
 
-        $giaoVien = SoTayGiaoVienThucHanhGiaoVien::danhSach($validated['ma_kh']);
-        if ($giaoVien === []) {
-            return back()->withErrors(['ma_kh' => 'Khoá chưa có giáo viên thực hành trên lịch PMGPLX.'])->withInput();
+        $tenGvcn = SoTayGiaoVienHocVien::hoTenTuMa($validated['ma_gv']);
+        if ($tenGvcn === null) {
+            return back()->withErrors(['ma_gv' => 'Không tìm thấy giáo viên trên danh mục PMGPLX.'])->withInput();
         }
 
         $tenLop = trim($validated['ten_lop']);
         $tuKhoa = BaoCaoDangKyKhoaHoc::tuKhoaHoc($khoa);
         $hangGplx = $tuKhoa['hang_gplx'] !== '—' ? $tuKhoa['hang_gplx'] : trim((string) ($khoa->HangDT ?? ''));
 
-        $hocVienRaw = SoTheoDoiKetQuaHocTapHocVien::dongXuat($validated['ma_kh'], $tenLop);
-        $hocVien = array_map(static fn (array $r): array => [
-            'stt' => $r['stt'],
-            'ho_ten' => $r['ho_ten'],
-        ], $hocVienRaw);
+        $hocVien = SoTayGiaoVienHocVien::bangNghi($validated['ma_kh']);
+        if (count($hocVien) > SoTayGiaoVienHocVien::SO_DONG_BANG) {
+            return back()->withErrors([
+                'ma_kh' => 'Khoá có '.count($hocVien).' học viên; bảng sổ tay tối đa '.SoTayGiaoVienHocVien::SO_DONG_BANG.'.',
+            ])->withInput();
+        }
 
-        $qdLines = preg_split('/\r\n|\r|\n/', trim((string) ($validated['qd_thanh_lap'] ?? ''))) ?: [];
-        $qd1 = trim($qdLines[0] ?? '');
-        $qd2 = trim(implode(' ', array_slice($qdLines, 1)));
+        $qdDong = SoTayQuyetDinhThanhLap::chuoiMucI(
+            $validated['so_quyet_dinh'] ?? null,
+            $validated['ngay_quyet_dinh'] ?? null,
+        );
 
-        $tenGvLop = implode(', ', array_map(static fn (array $g) => $g['ho_ten'], $giaoVien));
         $mon = trim((string) ($validated['mon'] ?? '')) !== '' ? trim((string) $validated['mon']) : 'Thực hành lái xe';
         $phuongThuc = trim((string) ($validated['phuong_thuc'] ?? '')) !== '' ? trim((string) $validated['phuong_thuc']) : 'Tập trung';
 
-        $chung = [
+        $fields = [
             'MON' => $mon,
             'LOP' => $tenLop,
             'HANG_GPLX' => $hangGplx,
             'KHOA' => $tenLop,
-            'QD_THANH_LAP' => $qd1,
-            'QD_THANH_LAP_2' => $qd2,
-            'SI_SO' => (string) $tuKhoa['so_luong_hv'],
-            'GIAO_VIEN_LOP' => $tenGvLop,
+            'TEN_GV' => $tenGvcn,
+            'QD_THANH_LAP' => $qdDong,
+            'QD_THANH_LAP_2' => '',
+            'SI_SO' => (string) count($hocVien),
+            'GIAO_VIEN_LOP' => $tenGvcn,
             'PHUONG_THUC' => $phuongThuc,
         ];
 
-        $tmpdir = storage_path('app/tmp/so-tay-gv-th-'.uniqid('', true));
-        @mkdir($tmpdir, 0755, true);
+        $safeMa = preg_replace('/[^A-Za-z0-9_-]+/', '-', $validated['ma_gv']) ?: 'gvcn';
+        $path = storage_path('app/tmp/so-tay-gv-th-'.uniqid('', true).'.docx');
+        $exporter->generate($fields, $hocVien, $path);
+        $downloadName = 'so-tay-'.$validated['ma_kh'].'-'.$safeMa.'.docx';
 
-        $files = [];
-        foreach ($giaoVien as $gv) {
-            $fields = $chung + ['TEN_GV' => $gv['ho_ten']];
-            $safeMa = preg_replace('/[^A-Za-z0-9_-]+/', '-', $gv['ma_gv']) ?: 'gv';
-            $path = $tmpdir.'/so-tay-'.$safeMa.'.docx';
-            $exporter->generate($fields, $hocVien, $path);
-            $files[] = ['path' => $path, 'name' => 'so-tay-'.$validated['ma_kh'].'-'.$safeMa.'.docx'];
-        }
-
-        if (count($files) === 1) {
-            return response()->download($files[0]['path'], $files[0]['name'])->deleteFileAfterSend(true);
-        }
-
-        $zipPath = $tmpdir.'.zip';
-        $zip = new \ZipArchive();
-        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-            return back()->with('error', 'Không tạo được file nén.')->withInput();
-        }
-        foreach ($files as $f) {
-            $zip->addFile($f['path'], $f['name']);
-        }
-        $zip->close();
-
-        $safeKh = preg_replace('/[^A-Za-z0-9_-]+/', '-', $validated['ma_kh']) ?: 'khoa';
-
-        return response()->download($zipPath, 'so-tay-giao-vien-thuc-hanh-'.$safeKh.'.zip')->deleteFileAfterSend(true);
+        return response()->download($path, $downloadName)->deleteFileAfterSend(true);
     }
 
     public function khoaJson(string $maKh): JsonResponse
@@ -135,16 +122,13 @@ class SoTayGiaoVienThucHanhController extends Controller
         }
 
         $tuKhoa = BaoCaoDangKyKhoaHoc::tuKhoaHoc($khoa);
-        $giaoVien = SoTayGiaoVienThucHanhGiaoVien::danhSach($maKh);
 
         return response()->json([
             'ma_kh' => $khoa->MaKH,
             'ten_kh' => $khoa->TenKH,
             'ten_lop' => PhanCongGvXeTapLaiFormSupport::tenKhoaDaoTaoTuPm($khoa),
             'hang_gplx' => $tuKhoa['hang_gplx'],
-            'so_luong_hv' => $tuKhoa['so_luong_hv'],
-            'so_giao_vien' => count($giaoVien),
-            'giao_vien' => array_column($giaoVien, 'ho_ten'),
+            'so_luong_hv' => SoTayGiaoVienHocVien::soLuong($maKh),
         ]);
     }
 }

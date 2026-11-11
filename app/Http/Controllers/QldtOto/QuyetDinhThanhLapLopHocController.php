@@ -7,6 +7,7 @@ use App\Models\PMGPLX\KhoaHoc;
 use App\Support\MenuQldt;
 use App\Support\QldtOto\BaoCaoDangKyKhoaHoc;
 use App\Support\QldtOto\QuyetDinhThanhLapLopHocDocxExporter;
+use App\Support\QldtOto\SoTayQuyetDinhThanhLap;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -83,7 +84,7 @@ class QuyetDinhThanhLapLopHocController extends Controller
         }
 
         $ngay = Carbon::parse($validated['ngay_quyet_dinh']);
-        $soQdFull = trim($validated['so_quyet_dinh']).'/QĐ-TTML';
+        $soQdFull = SoTayQuyetDinhThanhLap::soVaHauTo($validated['so_quyet_dinh']);
         $ngayDong = BaoCaoDangKyKhoaHoc::dongNgayThangNam($ngay);
 
         $tmp = storage_path('app/tmp/quyet-dinh-thanh-lap-'.uniqid('', true).'.docx');
