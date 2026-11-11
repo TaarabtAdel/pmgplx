@@ -89,6 +89,8 @@ return [
                                 [
                                     'title' => 'Xuất file "Lịch học lý thuyết và lịch học thực hành" của từng giáo viên',
                                     'trang' => '1-lich-hoc-ly-thuyet-va-lich-hoc-thuc-hanh-cua-tung-giao-vien',
+                                    'route' => 'qldtoto.lich-hoc-ly-thuyet-thuc-hanh.index',
+                                    'active' => 'qldtoto.lich-hoc-ly-thuyet-thuc-hanh.*',
                                 ],
                                 [
                                     'title' => 'Xuất file "Quyết định điều động xe" của từng giáo viên',

@@ -106,7 +106,6 @@
             <div class="d-flex flex-wrap align-items-center mb-3">
                 <div class="btn-group btn-group-sm mr-2 mb-2" role="group">
                     <a href="{{ route('pmgplx.lich.thuc-hanh.create') }}" class="btn btn-success">＋ Thêm mới</a>
-                    <button type="button" class="btn btn-warning" disabled>✎ Xem - Sửa</button>
                 </div>
                 @if ($khoaChon)
                     <form method="POST" action="{{ route('pmgplx.lich.xe.destroy-theo-khoa') }}" class="mr-2 mb-2"
@@ -215,6 +214,21 @@
                                             Thao tác
                                         </button>
                                         <div class="dropdown-menu dropdown-menu-right">
+                                            <button type="button"
+                                                    class="dropdown-item btn-sua-lich-xe"
+                                                    data-ma-lich="{{ $row->MaLichSD }}"
+                                                    data-ma-kh="{{ $row->MaKH }}"
+                                                    data-bien-so="{{ $row->BienSoXe }}"
+                                                    data-ma-gv="{{ $row->MaGV }}"
+                                                    data-ten-gv="{{ $row->TenGV }}"
+                                                    data-ngay-bd="{{ optional($row->NgayBD)->format('d/m/Y H:i') }}"
+                                                    data-ngay-kt="{{ optional($row->NgayKT)->format('d/m/Y H:i') }}"
+                                                    data-dia-diem="{{ $row->DiaDiem }}"
+                                                    data-ghi-chu="{{ $row->GhiChu }}"
+                                                    data-trang-thai="{{ (bool) $row->TrangThai ? '1' : '0' }}">
+                                                ✎ Sửa
+                                            </button>
+                                            <div class="dropdown-divider"></div>
                                             @if ($row->MaKH !== '' && $ngayLich !== '')
                                                 <a class="dropdown-item"
                                                    href="{{ route('daotao.pdt.dat.do-phien-lich-xe', array_filter([
@@ -248,6 +262,57 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-sua-lich-xe" tabindex="-1" role="dialog" aria-labelledby="modal-sua-lich-xe-title" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <form method="POST" id="form-sua-lich-xe" action="">
+                    @csrf
+                    @method('PATCH')
+                    <input type="hidden" name="return_query" value="{{ http_build_query(request()->query()) }}">
+                    <div class="modal-header py-2">
+                        <h5 class="modal-title" id="modal-sua-lich-xe-title">Sửa buổi lịch xe tập</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Đóng">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted small mb-3 mb-md-2">Thông tin buổi hiện tại (chỉ đổi biển số xe; lưu trực tiếp <code>KhoaHoc_XeTap</code> PMGPLX).</p>
+                        <dl class="row small mb-3" id="lich-xe-info-dl">
+                            <dt class="col-sm-3">Mã khóa</dt>
+                            <dd class="col-sm-9" data-field="ma_kh"></dd>
+                            <dt class="col-sm-3">Giáo viên</dt>
+                            <dd class="col-sm-9" data-field="ten_gv"></dd>
+                            <dt class="col-sm-3">Thời gian</dt>
+                            <dd class="col-sm-9" data-field="thoi_gian"></dd>
+                            <dt class="col-sm-3">Địa điểm</dt>
+                            <dd class="col-sm-9" data-field="dia_diem"></dd>
+                            <dt class="col-sm-3">Ghi chú</dt>
+                            <dd class="col-sm-9" data-field="ghi_chu"></dd>
+                            <dt class="col-sm-3">Trạng thái</dt>
+                            <dd class="col-sm-9" data-field="trang_thai"></dd>
+                            <dt class="col-sm-3">Biển số hiện tại</dt>
+                            <dd class="col-sm-9 font-weight-bold" data-field="bien_so"></dd>
+                        </dl>
+                        <div class="form-group mb-0">
+                            <label for="sua_bien_so_xe">Biển số xe <span class="text-danger">*</span></label>
+                            <select name="bien_so_xe" id="sua_bien_so_xe" class="form-control form-control-sm" required>
+                                <option value=""></option>
+                                @foreach ($xeTaps as $xe)
+                                    <option value="{{ $xe }}">{{ $xe }}</option>
+                                @endforeach
+                            </select>
+                            <small class="form-text text-muted">Danh mục xe tập PMGPLX.</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer py-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-sm btn-primary">Lưu biển số</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -291,6 +356,47 @@
         language: {
             noResults: function () { return 'Không tìm thấy biển số xe'; }
         }
+    });
+
+    const suaLichXeUrlTpl = @json(route('pmgplx.lich.xe.update', ['maLichSd' => '__ID__']));
+    const $modalSua = $('#modal-sua-lich-xe');
+    const $formSua = $('#form-sua-lich-xe');
+    const $selBien = $('#sua_bien_so_xe');
+
+    $selBien.select2({
+        theme: 'bootstrap4',
+        placeholder: 'Chọn biển số xe...',
+        allowClear: false,
+        width: '100%',
+        dropdownParent: $modalSua
+    });
+
+    function dlText(field, text) {
+        $modalSua.find('[data-field="' + field + '"]').text(text || '—');
+    }
+
+    $(document).on('click', '.btn-sua-lich-xe', function () {
+        const $btn = $(this);
+        const maLich = $btn.data('ma-lich');
+        $formSua.attr('action', suaLichXeUrlTpl.replace('__ID__', String(maLich)));
+
+        dlText('ma_kh', $btn.data('ma-kh'));
+        const maGv = $btn.data('ma-gv');
+        const tenGv = $btn.data('ten-gv');
+        dlText('ten_gv', (tenGv || '') + (maGv ? ' (' + maGv + ')' : ''));
+        dlText('thoi_gian', ($btn.data('ngay-bd') || '—') + ' → ' + ($btn.data('ngay-kt') || '—'));
+        dlText('dia_diem', $btn.data('dia-diem'));
+        dlText('ghi_chu', $btn.data('ghi-chu'));
+        dlText('trang_thai', String($btn.data('trang-thai')) === '1' ? 'Hiệu lực' : 'Không hiệu lực');
+        dlText('bien_so', $btn.data('bien-so'));
+
+        const bien = String($btn.data('bien-so') || '');
+        if (bien && !$selBien.find('option').filter(function () { return this.value === bien; }).length) {
+            $selBien.append(new Option(bien, bien, false, false));
+        }
+        $selBien.val(bien || null).trigger('change');
+
+        $modalSua.modal('show');
     });
 </script>
 @endpush

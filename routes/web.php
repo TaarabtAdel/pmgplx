@@ -77,6 +77,9 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function () {
         ->name('lich.xe.index');
     Route::delete('/lich/xe-tap/theo-khoa', [DanhSachLichXeTapController::class, 'destroyTheoKhoa'])
         ->name('lich.xe.destroy-theo-khoa');
+    Route::patch('/lich/xe-tap/{maLichSd}', [DanhSachLichXeTapController::class, 'update'])
+        ->whereNumber('maLichSd')
+        ->name('lich.xe.update');
     Route::delete('/lich/xe-tap/{maLichSd}', [DanhSachLichXeTapController::class, 'destroy'])
         ->whereNumber('maLichSd')
         ->name('lich.xe.destroy');

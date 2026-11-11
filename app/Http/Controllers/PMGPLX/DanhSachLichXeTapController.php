@@ -159,6 +159,48 @@ class DanhSachLichXeTapController extends Controller
         ]);
     }
 
+    public function update(Request $request, int $maLichSd): RedirectResponse
+    {
+        $validated = $request->validate([
+            'bien_so_xe' => ['required', 'string', 'max:50'],
+        ], [
+            'bien_so_xe.required' => 'Vui lòng chọn biển số xe.',
+        ]);
+
+        $row = KhoaHocXeTap::query()
+            ->where('MaLichSD', $maLichSd)
+            ->where('IsKhoaHocXeTap', 0)
+            ->first();
+
+        if ($row === null) {
+            return $this->backToList($request)->with('error', 'Không tìm thấy buổi lịch xe.');
+        }
+
+        $bienMoi = trim($validated['bien_so_xe']);
+        $bienCu = trim((string) $row->BienSoXe);
+
+        if ($bienMoi === $bienCu) {
+            return $this->backToList($request)->with('success', 'Biển số xe không thay đổi.');
+        }
+
+        if (! XeTap::query()->where('BienSoXe', $bienMoi)->exists()) {
+            return $this->backToList($request)->withInput()->with('error', 'Biển số xe không có trong danh mục xe tập (PMGPLX).');
+        }
+
+        $row->BienSoXe = $bienMoi;
+        $row->NgaySua = now();
+        $row->save();
+
+        return $this->backToList($request)->with('success', sprintf(
+            'Đã đổi biển số buổi %s – %s (%s): %s → %s.',
+            $row->MaKH,
+            trim((string) $row->TenGV),
+            optional($row->NgayBD)->format('d/m/Y H:i'),
+            $bienCu !== '' ? $bienCu : '—',
+            $bienMoi
+        ));
+    }
+
     public function destroy(Request $request, int $maLichSd): RedirectResponse
     {
         $row = KhoaHocXeTap::query()

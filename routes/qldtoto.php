@@ -6,6 +6,7 @@ use App\Http\Controllers\QldtOto\BaoCaoDeNghiSatHachController;
 use App\Http\Controllers\QldtOto\BienBanPhanCongToChamController;
 use App\Http\Controllers\QldtOto\DanhSachHocSinhLaiXeController;
 use App\Http\Controllers\QldtOto\HopDongDaoTaoLaiXeController;
+use App\Http\Controllers\QldtOto\LichHocLyThuyetThucHanhController;
 use App\Http\Controllers\QldtOto\QuyetDinhThanhLapLopHocController;
 use App\Http\Controllers\QldtOto\QuyetDinhThoiHocController;
 use App\Http\Controllers\QldtOto\QuyetDinhToChucKiemTraBbPhanCongController;
@@ -74,6 +75,12 @@ Route::prefix('qldt-oto')->name('qldtoto.')->group(function () {
     Route::get('/'.$slugDanhSachHv, [DanhSachHocSinhLaiXeController::class, 'index'])->name('danh-sach-hoc-sinh-lai-xe.index');
     Route::post('/'.$slugDanhSachHv.'/xuat', [DanhSachHocSinhLaiXeController::class, 'export'])->name('danh-sach-hoc-sinh-lai-xe.export');
     Route::get('/'.$slugDanhSachHv.'/khoa/{maKh}', [DanhSachHocSinhLaiXeController::class, 'khoaJson'])->name('danh-sach-hoc-sinh-lai-xe.khoa');
+
+    $slugLichLtTh = '1-lich-hoc-ly-thuyet-va-lich-hoc-thuc-hanh-cua-tung-giao-vien';
+    Route::get('/'.$slugLichLtTh, [LichHocLyThuyetThucHanhController::class, 'index'])
+        ->name('lich-hoc-ly-thuyet-thuc-hanh.index');
+    Route::post('/'.$slugLichLtTh.'/xuat-excel', [LichHocLyThuyetThucHanhController::class, 'export'])
+        ->name('lich-hoc-ly-thuyet-thuc-hanh.export');
 
     $slugDieuDongXe = '1-quyet-dinh-dieu-dong-xe-cua-tung-giao-vien';
     Route::get('/'.$slugDieuDongXe, [QuyetDinhDieuDongXeController::class, 'index'])->name('quyet-dinh-dieu-dong-xe.index');
