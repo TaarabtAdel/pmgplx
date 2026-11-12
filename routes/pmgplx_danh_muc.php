@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PMGPLX\AnhHocVienController;
 use App\Http\Controllers\PMGPLX\DanhSachGiaoVienController;
 use App\Http\Controllers\PMGPLX\DanhSachHocVienController;
 use App\Http\Controllers\PMGPLX\DanhSachKhoaHocController;
@@ -36,6 +37,8 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function (): void {
         Route::get('/tim-hoc-vien', [DoThongTinHocVienController::class, 'timHocVien'])->name('tim-hoc-vien');
         Route::post('/luu', [DoThongTinHocVienController::class, 'luu'])->name('luu');
     });
+    Route::get('/danh-muc/hoc-vien/anh', [AnhHocVienController::class, 'show'])
+        ->name('dm.hoc-vien.anh');
     Route::get('/danh-muc/hoc-vien/dong-bo', [DanhSachHocVienController::class, 'dongBoForm'])
         ->name('dm.hoc-vien.dong-bo.form');
     Route::post('/danh-muc/hoc-vien/dong-bo', [DanhSachHocVienController::class, 'dongBoStore'])

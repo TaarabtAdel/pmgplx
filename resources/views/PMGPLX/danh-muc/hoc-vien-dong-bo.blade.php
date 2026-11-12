@@ -16,8 +16,8 @@
     }
     .hoc-vien-dong-bo-source-scroll.table-responsive > table,
     .hoc-vien-dong-bo-planned-scroll.table-responsive > table {
-        width: 1300px;
-        min-width: 1300px;
+        width: 1390px;
+        min-width: 1390px;
         max-width: none;
         table-layout: fixed;
     }
@@ -48,16 +48,14 @@
         white-space: nowrap;
         vertical-align: middle;
     }
-    .hoc-vien-dong-bo-preview colgroup col.col-tu-so-gplx {
-        width: 5.5rem;
-    }
-    .hoc-vien-dong-bo-preview colgroup col.col-dvc-hien-tai {
-        width: 7rem;
-    }
+    .hoc-vien-dong-bo-preview colgroup col.col-don-vi-cap,
+    .hoc-vien-dong-bo-preview colgroup col.col-hang,
+    .hoc-vien-dong-bo-preview colgroup col.col-dvc-hien-tai,
     .hoc-vien-dong-bo-preview colgroup col.col-dvc-ban-cu {
-        width: 11rem;
+        width: 200px;
     }
-    .hoc-vien-dong-bo-preview .col-tu-so-gplx,
+    .hoc-vien-dong-bo-preview .col-don-vi-cap,
+    .hoc-vien-dong-bo-preview .col-hang,
     .hoc-vien-dong-bo-preview .col-dvc-hien-tai,
     .hoc-vien-dong-bo-preview .col-dvc-ban-cu {
         white-space: nowrap;
@@ -114,6 +112,35 @@
     }
     .hoc-vien-dong-bo-row-conflict code {
         color: #856404 !important;
+    }
+    .hoc-vien-dong-bo-preview colgroup col.col-anh {
+        width: 28px;
+    }
+    .hoc-vien-dong-bo-preview .col-anh {
+        width: 28px;
+        text-align: center;
+        vertical-align: middle;
+        padding: 2px !important;
+    }
+    .dong-bo-anh-thumb {
+        width: auto;
+        max-width: 36px;
+        height: 18px;
+        object-fit: cover;
+        border-radius: 2px;
+        border: 1px solid #ced4da;
+        cursor: pointer;
+        display: block;
+    }
+    .dong-bo-anh-thumb-btn:focus {
+        outline: 2px solid #005BAC;
+        outline-offset: 1px;
+    }
+    #dongBoAnhLonModal .modal-body img {
+        max-width: 100%;
+        max-height: 75vh;
+        margin: 0 auto;
+        display: block;
     }
 </style>
 @endpush
@@ -202,6 +229,7 @@
                 (mã ĐK và mã khóa được map sang khóa đích; giấy tờ upsert theo khóa <code>MaDK</code> + <code>MaGT</code>).
                 <strong>Đơn vị cấp GPLX</strong> (<code>DonViCapGPLXDaCo</code>) trên bản cũ: nếu <code>NgayTTGPLXDaCo</code> sau 01/03/2025 thì ghi <code>00</code>;
                 trước mốc đó lấy <strong>2 số đầu của <code>SoGPLXDaCo</code></strong> (vd. <code>450190001488</code> → <code>45</code>, <code>440155002955</code> → <code>44</code>).
+                Bảng xem trước có cột ảnh (cao 18px) — bấm để phóng to. Trên live cấu hình <code>GPLX_ANH_LOCAL_ROOT</code> (map từ UNC <code>ANH GPLX</code>).
                 <strong>Chưa</strong> đưa <code>NguoiLX_GPLX</code>
                 và các cột chỉ có trên bản mới (điểm thi, kết quả DAT…).
                 Đủ để hiện danh sách học viên và giấy tờ trên bản cũ; chưa đủ nếu cần xem/sửa GPLX cũ trong phần mềm cũ.
@@ -297,8 +325,9 @@
                                     <col class="col-ma-dk">
                                     <col class="col-ho-ten">
                                     <col class="col-so-gplx">
-                                    <col>
-                                    <col>
+                                    <col class="col-don-vi-cap">
+                                    <col class="col-hang">
+                                    <col class="col-anh">
                                 </colgroup>
                                 <thead>
                                     <tr>
@@ -306,8 +335,9 @@
                                         <th class="col-ma-dk">Mã ĐK</th>
                                         <th class="col-ho-ten">Họ và tên</th>
                                         <th class="col-so-gplx">Số GPLX</th>
-                                        <th>Đơn vị cấp</th>
-                                        <th>Hạng</th>
+                                        <th class="col-don-vi-cap">Đơn vị cấp</th>
+                                        <th class="col-hang">Hạng</th>
+                                        <th class="col-anh">Ảnh</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -317,12 +347,20 @@
                                             <td class="col-ma-dk"><code>{{ $row['ma_dk'] }}</code></td>
                                             <td class="col-ho-ten" title="{{ $row['ho_ten'] }}">{{ $row['ho_ten'] }}</td>
                                             <td class="col-so-gplx" title="{{ $row['so_gplx_da_co'] ?? '' }}">{{ $row['so_gplx_da_co'] ?: '—' }}</td>
-                                            <td>{{ $row['don_vi_cap_gplx_da_co'] ?: '—' }}</td>
-                                            <td>{{ $row['hang_gplx'] }}</td>
+                                            <td class="col-don-vi-cap" title="{{ $row['don_vi_cap_hien_thi'] ?? ($row['don_vi_cap_gplx_da_co'] ?? '') }}">{{ $row['don_vi_cap_hien_thi'] ?? ($row['don_vi_cap_gplx_da_co'] ?: '—') }}</td>
+                                            <td class="col-hang" title="{{ $row['hang_gplx_hien_thi'] ?? ($row['hang_gplx'] ?? '') }}">{{ $row['hang_gplx_hien_thi'] ?? ($row['hang_gplx'] ?: '—') }}</td>
+                                            <td class="col-anh">
+                                                @include('PMGPLX.danh-muc._dong-bo-anh-thumb', [
+                                                    'anhUrl' => $row['anh_url'] ?? null,
+                                                    'duongDanAnh' => $row['duong_danh_anh'] ?? '',
+                                                    'hoTen' => $row['ho_ten'] ?? '',
+                                                    'maDk' => $row['ma_dk'] ?? '',
+                                                ])
+                                            </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="6" class="text-center py-4">Không có học viên trong khóa nguồn</td>
+                                            <td colspan="7" class="text-center py-4">Không có học viên trong khóa nguồn</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
@@ -352,10 +390,10 @@
                                         <col class="col-ho-ten">
                                         <col class="col-so-gplx">
                                         <col class="col-ngay-tt-gplx">
-                                        <col class="col-tu-so-gplx">
                                         <col class="col-dvc-hien-tai">
                                         <col class="col-dvc-ban-cu">
-                                        <col>
+                                        <col class="col-hang">
+                                        <col class="col-anh">
                                     </colgroup>
                                     <thead>
                                         <tr>
@@ -364,10 +402,10 @@
                                             <th class="col-ho-ten">Họ và tên</th>
                                             <th class="col-so-gplx">Số GPLX</th>
                                             <th class="col-ngay-tt-gplx">Ngày TT GPLX</th>
-                                            <th class="col-tu-so-gplx">Từ Số GPLX</th>
                                             <th class="col-dvc-hien-tai">ĐVC hiện tại</th>
                                             <th class="col-dvc-ban-cu">ĐVC bản cũ</th>
-                                            <th>Hạng</th>
+                                            <th class="col-hang">Hạng</th>
+                                            <th class="col-anh">Ảnh</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -398,18 +436,25 @@
                                                         <span class="badge badge-info ml-1" title="Sau 01/03/2025 → ĐVC bản cũ = 00">Sau mốc</span>
                                                     @endif
                                                 </td>
-                                                <td class="col-tu-so-gplx" title="{{ $row['dvc_tu_so_gplx'] ?? '' }}">{{ $row['dvc_tu_so_gplx'] ?: '—' }}</td>
-                                                <td class="col-dvc-hien-tai" title="{{ $row['don_vi_cap_gplx_da_co_goc'] ?? '' }}">{{ $row['don_vi_cap_gplx_da_co_goc'] ?: '—' }}</td>
+                                                <td class="col-dvc-hien-tai" title="{{ $row['don_vi_cap_goc_hien_thi'] ?? ($row['don_vi_cap_gplx_da_co_goc'] ?? '') }}">{{ $row['don_vi_cap_goc_hien_thi'] ?? ($row['don_vi_cap_gplx_da_co_goc'] ?: '—') }}</td>
                                                 <td class="col-dvc-ban-cu">
                                                     @if (! empty($row['don_vi_cap_doi']))
-                                                        <span class="text-muted">{{ $row['don_vi_cap_gplx_da_co_goc'] ?: ($row['dvc_tu_so_gplx'] ?: '—') }}</span>
+                                                        <span class="text-muted" title="{{ $row['don_vi_cap_goc_hien_thi'] ?? '' }}">{{ $row['don_vi_cap_goc_hien_thi'] ?? ($row['don_vi_cap_gplx_da_co_goc'] ?: ($row['dvc_tu_so_hien_thi'] ?? ($row['dvc_tu_so_gplx'] ?: '—'))) }}</span>
                                                         <span class="mx-1">→</span>
-                                                        <strong class="text-primary">{{ $row['don_vi_cap_gplx_da_co'] ?: '—' }}</strong>
+                                                        <strong class="text-primary" title="{{ $row['don_vi_cap_ban_cu_hien_thi'] ?? '' }}">{{ $row['don_vi_cap_ban_cu_hien_thi'] ?? ($row['don_vi_cap_gplx_da_co'] ?: '—') }}</strong>
                                                     @else
-                                                        {{ $row['don_vi_cap_gplx_da_co'] ?: '—' }}
+                                                        <span title="{{ $row['don_vi_cap_ban_cu_hien_thi'] ?? '' }}">{{ $row['don_vi_cap_ban_cu_hien_thi'] ?? ($row['don_vi_cap_gplx_da_co'] ?: '—') }}</span>
                                                     @endif
                                                 </td>
-                                                <td>{{ $row['hang_gplx'] }}</td>
+                                                <td class="col-hang" title="{{ $row['hang_gplx_hien_thi'] ?? ($row['hang_gplx'] ?? '') }}">{{ $row['hang_gplx_hien_thi'] ?? ($row['hang_gplx'] ?: '—') }}</td>
+                                                <td class="col-anh">
+                                                    @include('PMGPLX.danh-muc._dong-bo-anh-thumb', [
+                                                        'anhUrl' => $row['anh_url'] ?? null,
+                                                        'duongDanAnh' => $row['duong_danh_anh'] ?? '',
+                                                        'hoTen' => $row['ho_ten'] ?? '',
+                                                        'maDk' => $row['ma_dk'] ?? ($row['ma_dk_nguon'] ?? ''),
+                                                    ])
+                                                </td>
                                             </tr>
                                         @empty
                                             <tr>
@@ -487,10 +532,45 @@
             </div>
         @endif
     @endif
+
+    <div class="modal fade" id="dongBoAnhLonModal" tabindex="-1" role="dialog" aria-labelledby="dongBoAnhLonLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title" id="dongBoAnhLonLabel">Ảnh chân dung</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Đóng">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="dongBoAnhLonImg" src="" alt="">
+                    <p class="small text-muted mt-2 mb-0 text-left">
+                        <span id="dongBoAnhLonHoTen"></span>
+                        <code id="dongBoAnhLonMaDk" class="d-block mt-1"></code>
+                        <span id="dongBoAnhLonPath" class="d-block mt-1 text-break"></span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
 <script>
+    function dongBoMoAnhLon(btn) {
+        var $btn = $(btn);
+        var url = $btn.data('anh-url') || '';
+        var title = $btn.data('anh-title') || 'Ảnh chân dung';
+        var maDk = $btn.data('anh-ma-dk') || '';
+        var path = $btn.data('anh-path') || '';
+        $('#dongBoAnhLonLabel').text(title);
+        $('#dongBoAnhLonHoTen').text(title !== '' ? title : '');
+        $('#dongBoAnhLonMaDk').text(maDk !== '' ? maDk : '');
+        $('#dongBoAnhLonPath').text(path !== '' ? path : '');
+        $('#dongBoAnhLonImg').attr('src', url);
+        $('#dongBoAnhLonModal').modal('show');
+    }
+
     function initKhoaHocSelect2(selector, placeholder) {
         var $el = $(selector);
         $el.select2({

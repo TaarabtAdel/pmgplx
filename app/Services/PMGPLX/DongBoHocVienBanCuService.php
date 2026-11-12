@@ -6,7 +6,9 @@ use App\Models\PMGPLX\KhoaHoc;
 use App\Models\PMGPLX\NguoiLX;
 use App\Models\PMGPLX\NguoiLXHoSo;
 use App\Models\PMGPLXOLD\KhoaHoc as KhoaHocOld;
+use App\Support\PMGPLX\DmDvhcTenDayDu;
 use App\Support\PMGPLX\DonViCapGPLXBanCu;
+use App\Support\PMGPLX\DuongDanAnhPmGplx;
 use App\Support\PMGPLX\DonViGtvtBanCu;
 use App\Support\PMGPLX\MaDkBanCu;
 use App\Support\PMGPLX\SoGiayCntnBanCu;
@@ -54,6 +56,7 @@ class DongBoHocVienBanCuService
                 'h.NgayTTGPLXDaCo',
                 'h.MaKhoaHoc',
                 'h.HangGPLX',
+                'h.DuongDanAnh',
             ]);
     }
 
@@ -83,6 +86,8 @@ class DongBoHocVienBanCuService
                 $row->NgayTTGPLXDaCo
             );
 
+            $duongDanAnh = trim((string) ($row->DuongDanAnh ?? ''));
+
             $source[] = [
                 'ma_dk' => $row->MaDK,
                 'ho_ten' => $hoTen,
@@ -92,6 +97,8 @@ class DongBoHocVienBanCuService
                 'don_vi_cap_gplx_da_co' => $donViCapGoc,
                 'ma_khoa_hoc' => $row->MaKhoaHoc,
                 'hang_gplx' => $row->HangGPLX,
+                'duong_danh_anh' => $duongDanAnh,
+                'anh_url' => DuongDanAnhPmGplx::previewUrl($duongDanAnh),
             ];
 
             $mappedMaDk = $maKhoaHocDich
@@ -101,6 +108,16 @@ class DongBoHocVienBanCuService
             if ($mappedMaDk) {
                 $plannedMaDks[] = $mappedMaDk;
             }
+
+            $duongDanAnhDich = ($maKhoaHocDich && $mappedMaDk && $duongDanAnh !== '')
+                ? DuongDanAnhPmGplx::remapForDich(
+                    $duongDanAnh,
+                    (string) $row->MaDK,
+                    $mappedMaDk,
+                    $maKhoaHocNguon,
+                    $maKhoaHocDich
+                )
+                : '';
 
             $planned[] = [
                 'ma_dk' => $mappedMaDk,
@@ -116,6 +133,8 @@ class DongBoHocVienBanCuService
                 'don_vi_cap_gplx_da_co' => $donViCapBanCu,
                 'don_vi_cap_doi' => $donViCapBanCu !== '' && $donViCapBanCu !== $donViCapGoc,
                 'hang_gplx' => $row->HangGPLX,
+                'duong_danh_anh' => $duongDanAnhDich,
+                'anh_url' => DuongDanAnhPmGplx::previewUrl($duongDanAnhDich !== '' ? $duongDanAnhDich : null),
                 'ton_tai' => false,
             ];
         }
@@ -147,6 +166,8 @@ class DongBoHocVienBanCuService
 
         $prefixNguon = MaDkBanCu::prefixFromMaKhoaHoc($maKhoaHocNguon);
         $prefixDich = $maKhoaHocDich ? MaDkBanCu::prefixFromMaKhoaHoc($maKhoaHocDich) : null;
+
+        $this->enrichPreviewDmLabels($source, $planned);
 
         return [
             'source' => $source,
@@ -467,16 +488,118 @@ class DongBoHocVienBanCuService
         string $maKhoaHocNguon,
         string $maKhoaHocDich
     ): array {
-        if (array_key_exists('GhiChu', $payload) && $payload['GhiChu'] !== null && $payload['GhiChu'] !== '') {
-            $payload['GhiChu'] = str_replace(
-                [$sourceMaDk, $maKhoaHocNguon],
-                [$targetMaDk, $maKhoaHocDich],
-                (string) $payload['GhiChu']
-            );
+        $from = [
+            $sourceMaDk,
+            $maKhoaHocNguon,
+            MaDkBanCu::prefixFromMaKhoaHoc($maKhoaHocNguon),
+        ];
+        $to = [
+            $targetMaDk,
+            $maKhoaHocDich,
+            MaDkBanCu::prefixFromMaKhoaHoc($maKhoaHocDich),
+        ];
+
+        foreach (['DuongDanAnh', 'GhiChu'] as $col) {
+            if (! array_key_exists($col, $payload) || $payload[$col] === null || $payload[$col] === '') {
+                continue;
+            }
+            $payload[$col] = str_replace($from, $to, (string) $payload[$col]);
         }
-        // DuongDanAnh: giữ nguyên đường dẫn ảnh trên bản mới (không thay MaDK / mã khóa trong path).
 
         return $payload;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $source
+     * @param  list<array<string, mixed>>  $planned
+     */
+    private function enrichPreviewDmLabels(array &$source, array &$planned): void
+    {
+        $dvhcCodesNguon = [];
+        $hangCodesNguon = [];
+        $dvhcCodesDich = [];
+        $hangCodesDich = [];
+
+        foreach ($source as $row) {
+            if (trim((string) ($row['don_vi_cap_gplx_da_co'] ?? '')) !== '') {
+                $dvhcCodesNguon[] = $row['don_vi_cap_gplx_da_co'];
+            }
+            if (trim((string) ($row['hang_gplx'] ?? '')) !== '') {
+                $hangCodesNguon[] = $row['hang_gplx'];
+            }
+        }
+
+        foreach ($planned as $row) {
+            foreach (['don_vi_cap_gplx_da_co_goc', 'don_vi_cap_gplx_da_co', 'dvc_tu_so_gplx'] as $key) {
+                if (trim((string) ($row[$key] ?? '')) !== '') {
+                    $dvhcCodesDich[] = $row[$key];
+                }
+            }
+            if (trim((string) ($row['hang_gplx'] ?? '')) !== '') {
+                $hangCodesDich[] = $row['hang_gplx'];
+            }
+        }
+
+        $dvhcMapNguon = DmDvhcTenDayDu::mapDonViCapGplx($dvhcCodesNguon, 'sqlsrv');
+        $dvhcMapDich = DmDvhcTenDayDu::mapDonViCapGplx($dvhcCodesDich, 'sqlsrv_old');
+        $hangMapNguon = $this->hangGplxLabelMap($hangCodesNguon, 'sqlsrv');
+        $hangMapDich = $this->hangGplxLabelMap($hangCodesDich, 'sqlsrv_old');
+
+        foreach ($source as &$row) {
+            $row['don_vi_cap_hien_thi'] = DmDvhcTenDayDu::formatMaDonVi($row['don_vi_cap_gplx_da_co'] ?? null, $dvhcMapNguon);
+            $row['hang_gplx_hien_thi'] = $this->formatHangGplxLabel($row['hang_gplx'] ?? null, $hangMapNguon);
+        }
+        unset($row);
+
+        foreach ($planned as &$row) {
+            $row['don_vi_cap_goc_hien_thi'] = DmDvhcTenDayDu::formatMaDonVi($row['don_vi_cap_gplx_da_co_goc'] ?? null, $dvhcMapDich);
+            $row['don_vi_cap_ban_cu_hien_thi'] = DmDvhcTenDayDu::formatMaDonVi($row['don_vi_cap_gplx_da_co'] ?? null, $dvhcMapDich);
+            $row['dvc_tu_so_hien_thi'] = DmDvhcTenDayDu::formatMaDonVi($row['dvc_tu_so_gplx'] ?? null, $dvhcMapDich);
+            $row['hang_gplx_hien_thi'] = $this->formatHangGplxLabel($row['hang_gplx'] ?? null, $hangMapDich);
+        }
+        unset($row);
+    }
+
+    /**
+     * @param  list<string>  $maHangs
+     * @return array<string, string>
+     */
+    private function hangGplxLabelMap(array $maHangs, string $connection = 'sqlsrv'): array
+    {
+        $maHangs = array_values(array_unique(array_filter(array_map('strval', $maHangs))));
+        if ($maHangs === []) {
+            return [];
+        }
+
+        if (! Schema::connection($connection)->hasTable('DM_HangGPLX')) {
+            return [];
+        }
+
+        return DB::connection($connection)
+            ->table('DM_HangGPLX')
+            ->whereIn('MaHang', $maHangs)
+            ->pluck('TenHang', 'MaHang')
+            ->map(fn ($t) => trim((string) $t))
+            ->filter()
+            ->all();
+    }
+
+    /**
+     * @param  array<string, string>  $map
+     */
+    private function formatHangGplxLabel(?string $maHang, array $map): string
+    {
+        $maHang = trim((string) $maHang);
+        if ($maHang === '') {
+            return '—';
+        }
+
+        $ten = $map[$maHang] ?? '';
+        if ($ten === '') {
+            return $maHang;
+        }
+
+        return $maHang.' — '.$ten;
     }
 
     /**

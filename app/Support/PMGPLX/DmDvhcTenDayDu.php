@@ -62,6 +62,65 @@ final class DmDvhcTenDayDu
     }
 
     /**
+     * Tra cứu tên đơn vị (mã 2 ký tự đơn vị cấp GPLX: 00, 44, 45…) — không lọc TrangThai (đủ cho preview đồng bộ).
+     *
+     * @param  iterable<string|null>  $codes
+     * @return array<string, string> MaDvhc => TenNganGon (fallback TenDayDu)
+     */
+    public static function mapDonViCapGplx(iterable $codes, ?string $connection = null): array
+    {
+        $mas = collect($codes)
+            ->map(fn ($m) => trim((string) $m))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($mas === []) {
+            return [];
+        }
+
+        $conn = $connection ?? (new NguoiLX)->getConnectionName();
+
+        $rows = DB::connection($conn)
+            ->table('DM_DVHC')
+            ->whereIn('MaDvhc', $mas)
+            ->get(['MaDvhc', 'TenNganGon', 'TenDayDu']);
+
+        $out = [];
+        foreach ($rows as $row) {
+            $ma = trim((string) ($row->MaDvhc ?? ''));
+            if ($ma === '') {
+                continue;
+            }
+            $ten = trim((string) ($row->TenNganGon ?? ''));
+            if ($ten === '') {
+                $ten = trim((string) ($row->TenDayDu ?? ''));
+            }
+            if ($ten !== '') {
+                $out[$ma] = $ten;
+            }
+        }
+
+        return $out;
+    }
+
+    public static function formatMaDonVi(?string $ma, array $map): string
+    {
+        $ma = trim((string) $ma);
+        if ($ma === '') {
+            return '—';
+        }
+
+        $ten = $map[$ma] ?? '';
+        if ($ten === '') {
+            return $ma;
+        }
+
+        return $ma.' — '.$ten;
+    }
+
+    /**
      * @param  array<string, string>  $dvhcMap
      * @return array{thuong_tru: string, cu_tru: string}
      */
