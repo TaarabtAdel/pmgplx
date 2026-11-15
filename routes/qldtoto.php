@@ -195,6 +195,7 @@ Route::prefix('qldt-oto')->name('qldtoto.')->group(function () {
         Route::get('/tao', [ThucHanhController::class, 'create'])->name('create');
         Route::post('/', [ThucHanhController::class, 'store'])->name('store');
         Route::get('/{lich}', [ThucHanhController::class, 'edit'])->whereNumber('lich')->name('edit');
+        Route::get('/{lich}/xuat-excel', [ThucHanhController::class, 'exportExcel'])->whereNumber('lich')->name('export-excel');
         Route::put('/{lich}', [ThucHanhController::class, 'update'])->whereNumber('lich')->name('update');
         Route::delete('/{lich}', [ThucHanhController::class, 'destroy'])->whereNumber('lich')->name('destroy');
     });

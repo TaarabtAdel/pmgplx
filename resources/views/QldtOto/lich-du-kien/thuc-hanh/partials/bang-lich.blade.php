@@ -33,12 +33,18 @@
 </style>
 
 <div class="card card-panel" id="lich-da-sinh">
-    <div class="card-header d-flex align-items-center">
+    <div class="card-header d-flex flex-wrap align-items-center gap-2">
         <span class="mr-auto">Lịch dự kiến</span>
         @if ($bangLich)
             <span class="small text-muted">
                 Sinh lúc {{ $lich->NgaySinhLich?->format('d/m/Y H:i') }} · {{ $bangLich['so_buoi'] }} buổi · {{ count($bangLich['dong']) }} ngày
             </span>
+            <a
+                href="{{ route('qldtoto.lich-du-kien.thuc-hanh.export-excel', $lich) }}"
+                class="btn btn-sm btn-outline-success"
+            >
+                Xuất Excel (mẫu nhập lịch)
+            </a>
         @endif
     </div>
     <div class="card-body">

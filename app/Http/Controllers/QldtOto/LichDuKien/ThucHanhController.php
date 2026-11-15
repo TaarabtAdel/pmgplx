@@ -9,10 +9,13 @@ use App\Models\QldtOto\LichDuKienThucHanhCapGv;
 use App\Models\QldtOto\LichDuKienThucHanhNgayNghi;
 use App\Models\PMGPLX\GiaoVien;
 use App\Models\PMGPLX\XeTap;
+use App\Support\QldtOto\LichDuKienThucHanhBangLich;
+use App\Support\QldtOto\LichDuKienThucHanhPmgplxExcelExporter;
 use App\Support\QldtOto\SinhLichDuKienThucHanh;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -83,6 +86,26 @@ class ThucHanhController extends Controller
             ->with('success', 'Đã xoá lịch dự kiến "'.$ten.'".');
     }
 
+    public function exportExcel(LichDuKienThucHanh $lich): StreamedResponse|RedirectResponse
+    {
+        $bangLich = LichDuKienThucHanhBangLich::build($lich);
+        if ($bangLich === null) {
+            return redirect()
+                ->route('qldtoto.lich-du-kien.thuc-hanh.edit', $lich)
+                ->with('error', 'Chưa có lịch đã sinh — bấm Sinh lịch trước khi xuất Excel.')
+                ->withFragment('lich-da-sinh');
+        }
+
+        try {
+            return LichDuKienThucHanhPmgplxExcelExporter::download($lich, $bangLich);
+        } catch (\Throwable $e) {
+            return redirect()
+                ->route('qldtoto.lich-du-kien.thuc-hanh.edit', $lich)
+                ->with('error', 'Không xuất được Excel: '.$e->getMessage())
+                ->withFragment('lich-da-sinh');
+        }
+    }
+
     /** Nút "Sinh lịch" gửi kèm hanh_dong=sinh_lich: lưu form rồi sinh lại toàn bộ buổi. */
     private function sauKhiLuu(Request $request, LichDuKienThucHanh $lich, string $thongBao): RedirectResponse
     {
@@ -106,60 +129,6 @@ class ThucHanhController extends Controller
             ->with('success', $thongBao)
             ->with('canh_bao_sinh_lich', $kq['canh_bao'])
             ->withFragment('lich-da-sinh');
-    }
-
-    /**
-     * Bảng lịch đã sinh: mỗi dòng một ngày (kể cả ngày nghỉ), mỗi cặp 2 cột Sáng / Chiều.
-     *
-     * @return array{cot: list<array<string, mixed>>, dong: list<array<string, mixed>>, so_buoi: int}|null
-     */
-    private static function bangLichDaSinh(LichDuKienThucHanh $lich): ?array
-    {
-        $buois = $lich->buois()->orderBy('Ngay')->orderBy('CapThuTu')->orderBy('Ca', 'desc')->get();
-        if ($buois->isEmpty()) {
-            return null;
-        }
-
-        $tenGv = GiaoVien::query()
-            ->whereIn('MaGV', $buois->pluck('MaGv')->filter()->unique()->values()->all())
-            ->get(['MaGV', 'HoTenDem', 'TenGV'])
-            ->mapWithKeys(fn (GiaoVien $g): array => [trim((string) $g->MaGV) => $g->HoTen])
-            ->all();
-
-        $caps = $buois->groupBy('CapThuTu')->sortKeys();
-        $cot = [];
-        foreach ($caps as $capThuTu => $dsBuoi) {
-            foreach (array_keys(BaiDay::CA) as $ca) {
-                $buoi = $dsBuoi->firstWhere('Ca', $ca);
-                $cot[] = [
-                    'key' => $capThuTu.'|'.$ca,
-                    'cap' => (int) $capThuTu,
-                    'ca' => $ca,
-                    'xe' => (string) $dsBuoi->first()->BienSoXe,
-                    'ma_gv' => (string) $buoi?->MaGv,
-                    'ten_gv' => $buoi ? ($tenGv[$buoi->MaGv] ?? $buoi->MaGv) : '',
-                ];
-            }
-        }
-
-        $theoNgay = $buois->groupBy(fn ($b) => $b->Ngay->format('Y-m-d'));
-        $nghi = $lich->ngayNghis->mapWithKeys(fn ($n) => [$n->Ngay->format('Y-m-d') => (string) $n->GhiChu])->all();
-        $thu = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-        $dong = [];
-        $ngay = Carbon::parse($buois->first()->Ngay)->startOfDay();
-        $cuoi = Carbon::parse($buois->max('Ngay'))->startOfDay();
-        for (; $ngay->lte($cuoi); $ngay->addDay()) {
-            $ymd = $ngay->format('Y-m-d');
-            $dong[] = [
-                'ngay' => $ngay->format('d/m/Y'),
-                'thu' => $thu[$ngay->dayOfWeek],
-                'nghi' => array_key_exists($ymd, $nghi),
-                'ly_do_nghi' => $nghi[$ymd] ?? '',
-                'o' => ($theoNgay[$ymd] ?? collect())->keyBy(fn ($b) => $b->CapThuTu.'|'.$b->Ca)->all(),
-            ];
-        }
-
-        return ['cot' => $cot, 'dong' => $dong, 'so_buoi' => $buois->count()];
     }
 
     private function form(LichDuKienThucHanh $lich): View
@@ -200,7 +169,7 @@ class ThucHanhController extends Controller
                 fn (array $x): bool => $x['hang'] === self::HANG_XE_TU_DONG || $x['bien_so'] === $xeTuDong
             ),
             'gvOptions' => self::giaoVienOptions($maGvDangChon, array_column($xeOptions, 'bien_so')),
-            'bangLich' => $lich->exists ? self::bangLichDaSinh($lich) : null,
+            'bangLich' => $lich->exists ? LichDuKienThucHanhBangLich::build($lich) : null,
         ]);
     }
 
