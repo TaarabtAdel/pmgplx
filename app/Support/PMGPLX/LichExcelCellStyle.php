@@ -15,23 +15,24 @@ class LichExcelCellStyle
         // Bỏ dấu để match ổn định hơn
         $plain = self::unaccent($t);
 
-        if (str_contains($plain, 'PHUC TAP')) {
-            return 'cell-phuc-tap';
-        }
+        // Ban đêm / Cao tốc ưu tiên (kể cả «Phức tạp - Ban đêm», «Cao Tốc - Có tải»).
         if (str_contains($plain, 'BAN DEM')) {
             return 'cell-ban-dem';
         }
+        if (str_contains($plain, 'CAO TOC')) {
+            return 'cell-cao-toc';
+        }
         if (str_contains($plain, 'CO TAI')) {
             return 'cell-co-tai';
+        }
+        if (str_contains($plain, 'PHUC TAP')) {
+            return 'cell-phuc-tap';
         }
         if (str_contains($plain, 'DOC') && str_contains($plain, 'QC')) {
             return 'cell-doc-qc';
         }
         if (str_contains($plain, 'TU DONG')) {
             return 'cell-tu-dong';
-        }
-        if (str_contains($plain, 'CAO TOC')) {
-            return 'cell-cao-toc';
         }
 
         return '';

@@ -1,7 +1,7 @@
 @php
     $nhanCa = \App\Models\QldtOto\BaiDay::CA;
     // Tên bài chứa từ khoá → màu ô; khớp nhiều từ thì lấy mục đứng trước.
-    $mauTheoTuKhoa = ['cabin' => 'o-cabin', 'cao tốc' => 'o-cao-toc', 'ban đêm' => 'o-ban-dem', 'có tải' => 'o-co-tai'];
+    $mauTheoTuKhoa = ['cabin' => 'o-cabin', 'ban đêm' => 'o-ban-dem', 'cao tốc' => 'o-cao-toc', 'có tải' => 'o-co-tai'];
 @endphp
 <style>
     #lich-da-sinh .bang-lich { font-size: .82rem; }
@@ -24,8 +24,8 @@
     #lich-da-sinh .bang-lich .so-bai { font-weight: 600; color: #1f3a60; margin-right: .2rem; }
     #lich-da-sinh .bang-lich .gio { color: #6c757d; font-size: .75rem; }
     #lich-da-sinh .bang-lich .o-buoi.o-cabin { background: #e3f2fd; }
-    #lich-da-sinh .bang-lich .o-buoi.o-cao-toc { background: #fff3bf; }
-    #lich-da-sinh .bang-lich .o-buoi.o-ban-dem { background: #f1e8fb; }
+    #lich-da-sinh .bang-lich .o-buoi.o-cao-toc { background: #ffe566; }
+    #lich-da-sinh .bang-lich .o-buoi.o-ban-dem { background: #c77dff; }
     #lich-da-sinh .bang-lich .o-buoi.o-co-tai { background: #fde4e4; }
     #lich-da-sinh .bang-lich .o-buoi.o-tu-dong { background: #c4c9cf; }
     #lich-da-sinh .bang-lich .o-buoi.o-tu-dong .gio { color: #495057; }
