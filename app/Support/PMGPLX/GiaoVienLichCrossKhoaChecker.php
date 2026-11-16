@@ -12,6 +12,7 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Giáo viên không thể dạy cùng khung giờ (NgayBD–NgayKT) ở hai khóa học (MaKH) khác nhau.
+ * Xe tập: cùng biển số + trùng khung giờ thì không cho hai GV khác nhau (ca sáng / ca chiều không trùng giờ thì được).
  */
 class GiaoVienLichCrossKhoaChecker
 {
@@ -305,6 +306,204 @@ class GiaoVienLichCrossKhoaChecker
         }
 
         return $errors;
+    }
+
+    /**
+     * Trùng lịch xe tập: cùng xe (biển số) và chồng khung giờ với bản ghi khác (GV khác hoặc cùng GV khóa khác).
+     *
+     * @param  list<string>  $excludeMaKh  Khóa sẽ bị xóa/ghi đè toàn bộ — bỏ qua lịch cũ của các khóa này.
+     */
+    public static function findOverlappingXeLich(
+        string $maGv,
+        string $bienSoXe,
+        string $ngayBD,
+        string $ngayKT,
+        array $excludeMaKh = [],
+        ?int $ignoreMaLichSd = null
+    ): ?KhoaHocXeTap {
+        $maGvNorm = DatPhanCongHocVienSaver::normalizeMaGiaoVien($maGv);
+        $plateNorm = LichExcelBienSo::normalize($bienSoXe);
+
+        try {
+            $bd = Carbon::parse($ngayBD);
+            $kt = Carbon::parse($ngayKT);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        $query = KhoaHocXeTap::query()
+            ->where('IsKhoaHocXeTap', 0)
+            ->where('NgayBD', '<', $kt)
+            ->where('NgayKT', '>', $bd);
+
+        if ($excludeMaKh !== []) {
+            $query->whereNotIn('MaKH', $excludeMaKh);
+        }
+        if ($ignoreMaLichSd !== null) {
+            $query->where('MaLichSD', '!=', $ignoreMaLichSd);
+        }
+
+        foreach ($query->orderBy('MaLichSD')->limit(200)->get() as $row) {
+            $sameGv = self::maGvMatches((string) $row->MaGV, $maGvNorm);
+            $samePlate = $plateNorm !== '' && LichExcelBienSo::normalize((string) $row->BienSoXe) === $plateNorm;
+
+            if ($sameGv || $samePlate) {
+                return $row;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Trong cùng file import: hai GV khác nhau, cùng xe, trùng khung giờ.
+     *
+     * @param  list<array<string, mixed>>  $rows
+     * @return int số dòng được đánh conflict mới
+     */
+    public static function markSharedXeConflictsAmongImportRows(array &$rows): int
+    {
+        $pending = [];
+        foreach ($rows as $index => $row) {
+            if (! empty($row['skip_save'])) {
+                continue;
+            }
+            $plate = self::bienSoTuDongImport($row);
+            if ($plate === '') {
+                continue;
+            }
+            $maGv = DatPhanCongHocVienSaver::normalizeMaGiaoVien((string) ($row['MaGV'] ?? ''));
+            if ($maGv === '') {
+                continue;
+            }
+            try {
+                $bd = Carbon::parse((string) ($row['NgayBD'] ?? ''));
+                $kt = Carbon::parse((string) ($row['NgayKT'] ?? ''));
+            } catch (\Throwable) {
+                continue;
+            }
+            $pending[] = [
+                'index' => $index,
+                'ma_gv' => $maGv,
+                'ma_kh' => trim((string) ($row['MaKH'] ?? '')),
+                'plate' => $plate,
+                'bd' => $bd,
+                'kt' => $kt,
+            ];
+        }
+
+        $marked = 0;
+        $count = count($pending);
+        for ($a = 0; $a < $count; $a++) {
+            for ($b = $a + 1; $b < $count; $b++) {
+                $left = $pending[$a];
+                $right = $pending[$b];
+                if ($left['plate'] !== $right['plate']) {
+                    continue;
+                }
+                if ($left['ma_gv'] === $right['ma_gv']) {
+                    continue;
+                }
+                if ($left['bd']->lt($right['kt']) && $left['kt']->gt($right['bd'])) {
+                    foreach ([$left, $right] as $slot) {
+                        $idx = $slot['index'];
+                        if (! empty($rows[$idx]['conflict'])) {
+                            continue;
+                        }
+                        $rows[$idx]['conflict'] = true;
+                        $other = $slot === $left ? $right : $left;
+                        $rows[$idx]['trung_chi_tiet'] = sprintf(
+                            'GV %s (khóa %s), %s',
+                            $other['ma_gv'],
+                            $other['ma_kh'] !== '' ? $other['ma_kh'] : '—',
+                            self::formatRangeLabel(
+                                $slot['bd']->format('Y-m-d H:i:s'),
+                                $slot['kt']->format('Y-m-d H:i:s')
+                            )
+                        );
+                        $rows[$idx]['ghi_chu'] = 'Trùng xe '.$slot['plate'].' (GV khác, cùng khung giờ)';
+                        $marked++;
+                    }
+                }
+            }
+        }
+
+        return $marked;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $xeRows  Hàng chuẩn bị lưu (sau buildDbPayload)
+     * @return list<string>
+     */
+    public static function validateImportXeRowsForSharedVehicle(array $xeRows): array
+    {
+        $errors = [];
+        $pending = [];
+
+        foreach ($xeRows as $index => $row) {
+            if (! empty($row['_skip_reason'])) {
+                continue;
+            }
+            if (! isset($row['NgayBD'], $row['NgayKT'])) {
+                continue;
+            }
+            $plate = LichExcelBienSo::normalize((string) ($row['BienSoXe'] ?? ''));
+            if ($plate === '') {
+                continue;
+            }
+            $maGv = DatPhanCongHocVienSaver::normalizeMaGiaoVien((string) ($row['MaGV'] ?? ''));
+            if ($maGv === '') {
+                continue;
+            }
+            try {
+                $bd = Carbon::parse((string) $row['NgayBD']);
+                $kt = Carbon::parse((string) $row['NgayKT']);
+            } catch (\Throwable) {
+                continue;
+            }
+            $pending[] = compact('index', 'maGv', 'plate', 'bd', 'kt') + [
+                'ma_kh' => trim((string) ($row['MaKH'] ?? '')),
+            ];
+        }
+
+        $count = count($pending);
+        for ($a = 0; $a < $count; $a++) {
+            for ($b = $a + 1; $b < $count; $b++) {
+                $left = $pending[$a];
+                $right = $pending[$b];
+                if ($left['plate'] !== $right['plate'] || $left['ma_gv'] === $right['ma_gv']) {
+                    continue;
+                }
+                if ($left['bd']->lt($right['kt']) && $left['kt']->gt($right['bd'])) {
+                    $errors[] = sprintf(
+                        'Xe %s: GV %s (dòng %d) trùng khung giờ với GV %s (dòng %d).',
+                        $left['plate'],
+                        $left['ma_gv'],
+                        $left['index'] + 1,
+                        $right['ma_gv'],
+                        $right['index'] + 1
+                    );
+                }
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    private static function bienSoTuDongImport(array $row): string
+    {
+        $plate = LichExcelBienSo::normalize((string) ($row['BienSoXe'] ?? $row['bien_so_xe'] ?? ''));
+        if ($plate !== '') {
+            return $plate;
+        }
+
+        return LichExcelBienSo::extractFromTuDong(
+            (string) ($row['noi_dung'] ?? ''),
+            (string) ($row['chi_tiet'] ?? '')
+        ) ?? '';
     }
 
     /**

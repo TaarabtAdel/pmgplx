@@ -14,6 +14,7 @@ use App\Support\PMGPLX\LichExcelBienSo;
 use App\Support\PMGPLX\LichExcelDiaDiem;
 use App\Support\PMGPLX\LichExcelNoiDungSkip;
 use App\Support\PMGPLX\LichExcelTimeParser;
+use App\Support\DaoTao\DatPhanCongHocVienSaver;
 use App\Support\PMGPLX\GiaoVienLichCrossKhoaChecker;
 use App\Support\PMGPLX\KiemTraGiaoVienNhapLich;
 use App\Support\PMGPLX\LichGvMonHoc;
@@ -224,6 +225,7 @@ class NhapLichTuFileController extends Controller
         }
 
         $rows = $save['gv_rows'];
+        $replaceMaKh = $this->maKhoaHocInImport($rows, []);
         $conflictCount = 0;
         $skipCount = 0;
         foreach ($rows as &$row) {
@@ -258,16 +260,39 @@ class NhapLichTuFileController extends Controller
                 $row['conflict'] = true;
                 $row['ghi_chu'] = 'Trùng lịch GV '.$row['trung_chi_tiet'];
                 $conflictCount++;
-            } elseif ($existingGv !== null) {
-                $row['conflict'] = false;
-                $row['will_update'] = true;
-                $row['ghi_chu'] = 'Thay GV theo khung giờ';
             } else {
-                $row['conflict'] = false;
-                $row['ghi_chu'] = $this->isSlotReplaceImport() ? 'Thêm buổi mới' : '';
+                $bienSo = $this->bienSoTuDongHangImport($row);
+                if ($bienSo !== '') {
+                    $xeHit = GiaoVienLichCrossKhoaChecker::findOverlappingXeLich(
+                        $row['MaGV'],
+                        $bienSo,
+                        $row['NgayBD'],
+                        $row['NgayKT'],
+                        $replaceMaKh
+                    );
+                    if ($xeHit !== null) {
+                        $row['trung_chi_tiet'] = $this->moTaTrungXeKhoaKhac($xeHit);
+                        $row['conflict'] = true;
+                        $row['ghi_chu'] = $this->moTaTrungXeChungKhungGio($row['MaGV'], $xeHit);
+                        $conflictCount++;
+                    }
+                }
+            }
+
+            if (empty($row['conflict'])) {
+                if ($existingGv !== null) {
+                    $row['conflict'] = false;
+                    $row['will_update'] = true;
+                    $row['ghi_chu'] = 'Thay GV theo khung giờ';
+                } else {
+                    $row['conflict'] = false;
+                    $row['ghi_chu'] = $this->isSlotReplaceImport() ? 'Thêm buổi mới' : '';
+                }
             }
         }
         unset($row);
+
+        $conflictCount += GiaoVienLichCrossKhoaChecker::markSharedXeConflictsAmongImportRows($rows);
 
         $save['gv_rows'] = $rows;
         $save['meta']['gv_conflict_count'] = $conflictCount;
@@ -399,12 +424,18 @@ class NhapLichTuFileController extends Controller
                 ? $this->findXeLichSlotOnKhoa($maKhXe, $row['NgayBD'], $row['NgayKT'])
                 : null;
             $xeHit = $existingXe === null
-                ? $this->findXeLichForUpdate($row['MaGV'], $bienSo, $row['NgayBD'], $row['NgayKT'], $replaceMaKh)
+                ? GiaoVienLichCrossKhoaChecker::findOverlappingXeLich(
+                    $row['MaGV'],
+                    $bienSo,
+                    $row['NgayBD'],
+                    $row['NgayKT'],
+                    $replaceMaKh
+                )
                 : null;
             $row['trung_chi_tiet'] = $xeHit !== null ? $this->moTaTrungXeKhoaKhac($xeHit) : '';
             if ($xeHit !== null) {
                 $row['conflict'] = true;
-                $row['ghi_chu'] = 'Trùng lịch xe/GV '.$row['trung_chi_tiet'];
+                $row['ghi_chu'] = $this->moTaTrungXeChungKhungGio($row['MaGV'], $xeHit);
                 $conflictCount++;
             } elseif ($existingXe !== null) {
                 $row['conflict'] = false;
@@ -417,6 +448,8 @@ class NhapLichTuFileController extends Controller
             }
         }
         unset($row);
+
+        $conflictCount += GiaoVienLichCrossKhoaChecker::markSharedXeConflictsAmongImportRows($rows);
 
         $save['xe_rows'] = $rows;
         $save['meta']['xe_conflict_count'] = $conflictCount;
@@ -566,6 +599,18 @@ class NhapLichTuFileController extends Controller
             return redirect()
                 ->route($this->nhapRouteName('preview-db'))
                 ->with('error', "Không lưu được: giáo viên trùng khung giờ giữa các khóa.\n".$detail);
+        }
+
+        $sharedXeErrors = GiaoVienLichCrossKhoaChecker::validateImportXeRowsForSharedVehicle($xeRows);
+        if ($sharedXeErrors !== []) {
+            $detail = implode("\n", array_slice($sharedXeErrors, 0, 8));
+            if (count($sharedXeErrors) > 8) {
+                $detail .= "\n… và ".(count($sharedXeErrors) - 8).' lỗi khác.';
+            }
+
+            return redirect()
+                ->route($this->nhapRouteName('preview-db'))
+                ->with('error', "Không lưu được: hai giáo viên khác nhau trùng khung giờ trên cùng một xe tập.\n".$detail);
         }
 
         $savedGv = 0;
@@ -1933,28 +1978,41 @@ class NhapLichTuFileController extends Controller
      */
     private function findXeLichForUpdate(string $maGv, string $bienSoXe, string $ngayBD, string $ngayKT, array $excludeMaKh = []): ?KhoaHocXeTap
     {
-        $bd = Carbon::parse($ngayBD);
-        $kt = Carbon::parse($ngayKT);
-        $bienSoXe = trim($bienSoXe);
+        return GiaoVienLichCrossKhoaChecker::findOverlappingXeLich(
+            $maGv,
+            $bienSoXe,
+            $ngayBD,
+            $ngayKT,
+            $excludeMaKh
+        );
+    }
 
-        $query = KhoaHocXeTap::query()
-            ->where('IsKhoaHocXeTap', 0)
-            ->where('NgayBD', '<', $kt)
-            ->where('NgayKT', '>', $bd);
-
-        if ($excludeMaKh !== []) {
-            $query->whereNotIn('MaKH', $excludeMaKh);
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    private function bienSoTuDongHangImport(array $row): string
+    {
+        $plate = LichExcelBienSo::normalize((string) ($row['bien_so_xe'] ?? $row['BienSoXe'] ?? ''));
+        if ($plate !== '') {
+            return $plate;
         }
 
-        if ($bienSoXe !== '') {
-            $query->where(function ($q) use ($maGv, $bienSoXe) {
-                $q->where('MaGV', $maGv)->orWhere('BienSoXe', $bienSoXe);
-            });
-        } else {
-            $query->where('MaGV', $maGv);
+        return LichExcelBienSo::extractFromTuDong(
+            (string) ($row['noi_dung'] ?? ''),
+            (string) ($row['chi_tiet'] ?? '')
+        ) ?? '';
+    }
+
+    private function moTaTrungXeChungKhungGio(string $maGvImport, KhoaHocXeTap $hit): string
+    {
+        $a = DatPhanCongHocVienSaver::normalizeMaGiaoVien($maGvImport);
+        $b = DatPhanCongHocVienSaver::normalizeMaGiaoVien((string) $hit->MaGV);
+        if ($a !== '' && $a === $b) {
+            return 'Trùng lịch GV/xe '.$this->moTaTrungXeKhoaKhac($hit);
         }
 
-        return $query->orderBy('MaLichSD')->first();
+        return 'Trùng xe '.LichExcelBienSo::normalize((string) $hit->BienSoXe)
+            .' (GV '.$this->moTaTrungXeKhoaKhac($hit).')';
     }
 
     /** @return array{0: string, 1: string} */
