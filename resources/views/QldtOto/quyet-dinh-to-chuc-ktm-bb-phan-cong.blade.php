@@ -21,18 +21,18 @@
                 <code>bien-ban-phan-cong-to-cham-kiem-tra.docx</code>. Một form dùng chung số QĐ, khoá, thời gian kiểm tra và phân công tổ chấm.
             </p>
 
-            <form method="GET" action="{{ route('qldtoto.quyet-dinh-to-chuc-ktm-bb.index') }}" class="form-row align-items-end mb-3">
-                <div class="form-group col-md-6 mb-0">
-                    <label for="ma_kh_loc">Khoá (PMGPLX)</label>
-                    <select class="form-control form-control-sm" id="ma_kh_loc" name="ma_kh">
-                        <option value=""></option>
+            <form method="GET" action="{{ route('qldtoto.quyet-dinh-to-chuc-ktm-bb.index') }}" class="form-row align-items-start mb-3" id="form-chon-khoa">
+                <div class="form-group col-md-8 mb-0">
+                    <label for="ma_kh_loc">Khoá (PMGPLX) — có thể chọn nhiều</label>
+                    <select class="select2-multi" id="ma_kh_loc" name="ma_kh[]" multiple data-placeholder="Chọn một hoặc nhiều khoá…">
                         @foreach ($khoaOptions as $kh)
-                            <option value="{{ $kh->MaKH }}" @selected($maKh === $kh->MaKH)>{{ $kh->TenKH }} ({{ $kh->MaKH }})</option>
+                            <option value="{{ $kh->MaKH }}" @selected(in_array($kh->MaKH, $maKhChon ?? [], true))>{{ $kh->TenKH }} ({{ $kh->MaKH }})</option>
                         @endforeach
                     </select>
+                    <small class="text-muted">Hạng, số khóa và tổng học viên được gộp từ các khoá chọn (có thể chỉnh trước khi xuất).</small>
                 </div>
                 <div class="form-group col-md-2 mb-0">
-                    <button type="submit" class="btn btn-sm btn-primary btn-block">Chọn khoá</button>
+                    <button type="submit" class="btn btn-sm btn-primary btn-block">Áp dụng</button>
                 </div>
             </form>
 
@@ -175,11 +175,17 @@
     $(function () {
         const $khoa = $('#ma_kh_loc');
         $khoa.select2({
-            theme: 'bootstrap4', width: '100%', allowClear: true, placeholder: '— Chọn khoá —',
+            theme: 'default',
+            width: '100%',
+            placeholder: $khoa.data('placeholder') || 'Chọn khoá…',
+            allowClear: true,
             dropdownParent: $khoa.closest('.form-group'),
-            language: { noResults: function () { return 'Không tìm thấy khoá học'; } },
+            closeOnSelect: false,
+            language: {
+                noResults: function () { return 'Không tìm thấy khoá học'; },
+                removeAllItems: function () { return 'Xóa tất cả'; },
+            },
         });
-        $khoa.on('select2:select', function () { this.form.submit(); });
 
         const form = document.getElementById('form-qd-bb');
         if (!form) return;

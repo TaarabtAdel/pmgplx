@@ -30,6 +30,14 @@
                 <a href="{{ route('pmgplxold.dm.hoc-vien.index') }}" class="btn btn-sm btn-success">
                     ⬇ Mở danh mục học viên (bản cũ) — xuất Excel
                 </a>
+            @elseif (($slug ?? '') === '2-bang-ten-de-in')
+                <p class="mb-3">
+                    Xuất file bảng tên học viên để in: upload file Excel danh sách, xem trước thẻ tên rồi in
+                    qua công cụ <strong>Nhập file in bảng tên</strong> (Phòng đào tạo).
+                </p>
+                <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-file-in-bang-ten') }}" class="btn btn-sm btn-navy">
+                    Mở nhập file in bảng tên
+                </a>
             @elseif (($slug ?? '') === '2-nhap-diem-thoi-gian-quang-duong-ket-qua-dao-tao-tung-hoc')
                 <p class="mb-3">
                     Nhập điểm, thời gian, quãng đường và kết quả đào tạo từng học viên vào phần mềm PMGPLX

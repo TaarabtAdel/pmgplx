@@ -20,17 +20,15 @@
                 <div class="alert alert-danger">{{ session('error') }}</div>
             @endif
 
-            <p class="text-muted small">
-                Xuất lịch theo mẫu <strong>lich C1K06…</strong>: mỗi giáo viên một sheet thực hành + sheet lịch chung LT+TH.
-                Mốc ngày dùng cùng logic với
-                <a href="{{ $linkLichChung }}">Lịch dự kiến → Lý thuyết</a>
-                (gợi ý từ <a href="{{ $linkLichGv }}" target="_blank">lịch giáo viên</a>,
-                <a href="{{ $linkLichXeTap }}" target="_blank">lịch xe tập</a>).
-                Sheet TH từng GV: hạng <strong>C</strong> (mẫu C1K06) hoặc <strong>B số tự động</strong> (mẫu B01 — cột C→H như file <em>THUC HANH B11</em>).
-                Hạng B sàn bổ sung sau.
+            <p class="text-muted small mb-3">
+                Chọn khoá trên PMGPLX, xuất file Excel <strong>cùng cấu trúc</strong> với
+                <a href="{{ $linkNhapLich }}">Nhập lịch từ file</a>
+                (7 cột / giáo viên: Thứ, ngày, Số giờ, Nội dung, Chi tiết, Bắt đầu, Kết thúc).
+                <strong>Mỗi giáo viên một sheet</strong>, tên sheet = tên giáo viên.
+                Dữ liệu lấy từ <a href="{{ $linkLichGv }}" target="_blank">PMGPLX → Lịch giáo viên</a>.
             </p>
 
-            <form method="GET" action="{{ route('qldtoto.lich-hoc-lt-th-tung-giao-vien.index') }}" class="form-row align-items-end mb-3">
+            <form method="GET" action="{{ route('qldtoto.lich-hoc-lt-th-tung-giao-vien.index') }}" class="form-row align-items-end mb-3" id="form-chon-khoa">
                 <div class="form-group col-md-5 mb-0">
                     <label for="ma_kh">Khoá (PMGPLX)</label>
                     <select class="form-control form-control-sm sel-khoa-pmgplx" id="ma_kh" name="ma_kh" data-placeholder="— Chọn khoá —">
@@ -42,25 +40,22 @@
                         @endforeach
                     </select>
                 </div>
-                @if ($maKh !== '' && $hang !== '')
-                    <div class="form-group col-md-3 mb-0">
-                        <label class="d-block">Hạng đào tạo</label>
-                        <p class="form-control-plaintext small py-1 mb-0 font-weight-bold">
-                            {{ $nhanHang[$hang] ?? $hang }}
-                        </p>
-                    </div>
-                @endif
                 <div class="form-group col-md-2 mb-0">
-                    <button type="submit" class="btn btn-sm btn-primary btn-block">Chọn</button>
+                    <button type="submit" class="btn btn-sm btn-primary btn-block">Chọn khoá</button>
                 </div>
             </form>
 
             @if ($maKh === '')
-                <p class="text-muted mb-0">Chọn khoá để xem danh sách giáo viên và xuất file.</p>
+                <p class="text-muted mb-0">Chọn khoá để xem giáo viên và xuất Excel.</p>
             @else
+                @if ($tenKhoa !== '')
+                    <p class="small mb-2"><strong>Khoá:</strong> {{ $tenKhoa }} <span class="text-muted">({{ $maKh }})</span></p>
+                @endif
+
                 @if ($danhSachGv === [])
-                    <div class="alert alert-warning py-2 small">
-                        Chưa có lịch thực hành giáo viên — nhập tại <a href="{{ $linkLichGv }}" target="_blank">PMGPLX → Lịch giáo viên</a>.
+                    <div class="alert alert-warning py-2 small mb-3">
+                        Chưa có buổi lịch giáo viên cho khoá này —
+                        nhập hoặc kiểm tra tại <a href="{{ $linkLichGv }}" target="_blank">lịch giáo viên</a>.
                     </div>
                 @else
                     <h6 class="small font-weight-bold mb-2">Giáo viên trong khoá ({{ count($danhSachGv) }})</h6>
@@ -86,63 +81,11 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('qldtoto.lich-hoc-lt-th-tung-giao-vien.export-workbook') }}" id="form-xuat-tung-gv">
+                <form method="POST" action="{{ route('qldtoto.lich-hoc-lt-th-tung-giao-vien.export-excel') }}">
                     @csrf
                     <input type="hidden" name="ma_kh" value="{{ $maKh }}">
-                    <div class="form-row mb-3">
-                        <div class="form-group col-md-6">
-                            <label for="ten_khoa_doc">Tên khoá trên file (tiêu đề)</label>
-                            <input type="text" class="form-control form-control-sm" id="ten_khoa_doc" name="ten_khoa_doc"
-                                   value="{{ old('ten_khoa_doc', $tenKhoaDoc) }}">
-                        </div>
-                    </div>
-
-                    <h6 class="small font-weight-bold mb-2">Mốc ngày (sheet lịch chung LT+TH)</h6>
-                    <div class="table-responsive mb-3">
-                        <table class="table table-sm table-bordered mb-0" style="font-size: 0.8125rem;">
-                            <thead class="thead-light">
-                                <tr>
-                                    <th>Mốc trên file</th>
-                                    <th style="width: 11rem">Ngày</th>
-                                    <th>Gợi ý · nguồn</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (\App\Support\QldtOto\LichHocLyThuyetThucHanhMocMoTa::KEYS as $key)
-                                    <tr>
-                                        <td class="small">{{ $nhanMocTrenFile[$key] ?? $key }}</td>
-                                        <td>
-                                            <input type="date" class="form-control form-control-sm ngay-moc" name="{{ $key }}"
-                                                   value="{{ $formNgay[$key] ?? '' }}">
-                                        </td>
-                                        <td class="text-muted small">{{ $goiYHienThi[$key] ?? '—' }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-
-                    @include('QldtOto.lich-hoc-ly-thuyet-thuc-hanh.partials.preview-bang', [
-                        'previewDong' => $previewDong,
-                        'hang' => $hang,
-                        'tenKhoaDoc' => $tenKhoaDoc,
-                    ])
-
-                    @include('QldtOto.lich-hoc-ly-thuyet-thuc-hanh.partials.bang-lich-gv-xuat', [
-                        'danhSachGv' => $danhSachGv,
-                        'hang' => $hang,
-                    ])
-
-                    @php
-                        $duocXuat = \App\Support\QldtOto\LichHocLyThuyetThucHanhTungGiaoVienExporter::hangDuocHoTro($hang)
-                            && $danhSachGv !== [];
-                    @endphp
-                    <button type="submit" class="btn btn-success btn-sm" @disabled(! $duocXuat)>
-                        ⬇ Xuất một file Excel (tất cả GV + lịch chung)
-                    </button>
-                    <button type="submit" formaction="{{ route('qldtoto.lich-hoc-lt-th-tung-giao-vien.export-zip') }}"
-                            class="btn btn-outline-success btn-sm ml-1" @disabled(! $duocXuat)>
-                        ⬇ Xuất ZIP (mỗi GV một file)
+                    <button type="submit" class="btn btn-success btn-sm" @disabled($danhSachGv === [])>
+                        ⬇ Xuất Excel (mỗi GV một sheet)
                     </button>
                 </form>
             @endif
@@ -152,11 +95,17 @@
 
 @push('scripts')
 <script>
-    $('#ma_kh').select2({
+(function ($) {
+    const $khoa = $('#ma_kh');
+    if (!$khoa.length) return;
+    $khoa.select2({
         theme: 'bootstrap4',
-        placeholder: 'Tìm khoá học...',
+        width: '100%',
         allowClear: true,
-        width: '100%'
+        placeholder: $khoa.data('placeholder') || '— Chọn khoá —',
+        dropdownParent: $khoa.closest('.form-group'),
+        language: { noResults: function () { return 'Không tìm thấy khoá học'; } },
     });
+})(jQuery);
 </script>
 @endpush

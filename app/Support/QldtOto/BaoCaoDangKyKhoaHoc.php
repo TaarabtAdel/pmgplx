@@ -81,6 +81,72 @@ class BaoCaoDangKyKhoaHoc
      *   ngay_bg: string,
      * }
      */
+    /**
+     * Gộp thông tin vài khoá cho một quyết định / biên bản (hạng + số khóa + tổng HV).
+     *
+     * @param  list<KhoaHoc>  $khoas
+     * @return array{hang: string, khoa_so: string, so_hv: int, ma_kh: string}
+     */
+    public static function hopNhatNhieuKhoa(array $khoas): array
+    {
+        $hangParts = [];
+        $soParts = [];
+        $soHv = 0;
+        $maList = [];
+
+        foreach ($khoas as $khoa) {
+            if (! $khoa instanceof KhoaHoc) {
+                continue;
+            }
+            $hang = self::nhanHangGplxQuyetDinh($khoa->HangGPLX ?? null);
+            $so = self::soKhoaTuTen($khoa->TenKH) ?? '';
+            $hangParts[] = $hang.($so !== '' ? ' Khóa '.$so : '');
+            if ($so !== '') {
+                $soParts[] = $so;
+            }
+            $soHv += self::demHocVien((string) $khoa->MaKH);
+            $maList[] = (string) $khoa->MaKH;
+        }
+
+        return [
+            'hang' => implode(', ', $hangParts),
+            'khoa_so' => implode(', ', $soParts),
+            'so_hv' => max($soHv, 1),
+            'ma_kh' => implode(', ', $maList),
+        ];
+    }
+
+    /**
+     * @param  array<int, string>|string|null  $maKhRaw
+     * @return list<KhoaHoc>
+     */
+    public static function khoaTuMaRaw(array|string|null $maKhRaw): array
+    {
+        if (is_string($maKhRaw)) {
+            if ($maKhRaw === '') {
+                $maKhRaw = [];
+            } else {
+                $maKhRaw = preg_split('/\s*,\s*/', $maKhRaw) ?: [];
+            }
+        }
+        if (! is_array($maKhRaw)) {
+            return [];
+        }
+        $mas = array_values(array_unique(array_filter(array_map(
+            static fn ($v) => trim((string) $v),
+            $maKhRaw
+        ))));
+        if ($mas === []) {
+            return [];
+        }
+
+        return KhoaHoc::query()
+            ->whereIn('MaKH', $mas)
+            ->orderBy('MaKH')
+            ->get()
+            ->all();
+    }
+
     public static function tuKhoaHoc(KhoaHoc $khoa): array
     {
         $soHv = self::demHocVien((string) $khoa->MaKH);

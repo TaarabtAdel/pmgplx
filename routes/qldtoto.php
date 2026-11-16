@@ -212,10 +212,8 @@ Route::prefix('qldt-oto')->name('qldtoto.')->group(function () {
     $slugLichTungGv = '1-lich-hoc-ly-thuyet-va-lich-hoc-thuc-hanh-cua-tung-giao-vien';
     Route::get('/'.$slugLichTungGv, [LichHocLyThuyetThucHanhTungGiaoVienController::class, 'index'])
         ->name('lich-hoc-lt-th-tung-giao-vien.index');
-    Route::post('/'.$slugLichTungGv.'/xuat-workbook', [LichHocLyThuyetThucHanhTungGiaoVienController::class, 'exportWorkbook'])
-        ->name('lich-hoc-lt-th-tung-giao-vien.export-workbook');
-    Route::post('/'.$slugLichTungGv.'/xuat-zip', [LichHocLyThuyetThucHanhTungGiaoVienController::class, 'exportZip'])
-        ->name('lich-hoc-lt-th-tung-giao-vien.export-zip');
+    Route::post('/'.$slugLichTungGv.'/xuat-excel', [LichHocLyThuyetThucHanhTungGiaoVienController::class, 'exportExcel'])
+        ->name('lich-hoc-lt-th-tung-giao-vien.export-excel');
 
     Route::prefix('lich-du-kien/thuc-hanh')->name('lich-du-kien.thuc-hanh.')->group(function () {
         Route::get('/', [ThucHanhController::class, 'index'])->name('index');

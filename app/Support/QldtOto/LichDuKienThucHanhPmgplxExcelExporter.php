@@ -54,18 +54,99 @@ final class LichDuKienThucHanhPmgplxExcelExporter
      */
     public static function download($lich, array $bangLich, string $filenamePrefix = 'lich-du-kien-th'): StreamedResponse
     {
+        $safeName = preg_replace('/[^\p{L}\p{N}\-_]+/u', '-', $lich->TenKhoa) ?: 'lich';
+        $maKh = trim((string) ($lich->MaKH ?? $lich->TenKhoa));
+
+        return self::downloadFromBangLich(
+            $maKh,
+            (string) $lich->TenKhoa,
+            $bangLich,
+            $filenamePrefix.'-'.$safeName.'-'.$lich->Id
+        );
+    }
+
+    /**
+     * @param  array{cot: list<array<string, mixed>>, dong: list<array<string, mixed>>, so_buoi: int}  $bangLich
+     */
+    public static function downloadFromBangLich(
+        string $maKh,
+        string $tenKhoa,
+        array $bangLich,
+        string $filenameStem
+    ): StreamedResponse {
         $cot = collect($bangLich['cot'])->filter(fn (array $c): bool => trim((string) ($c['ma_gv'] ?? '')) !== '')->values()->all();
         if ($cot === []) {
-            throw new \RuntimeException('Không có giáo viên trong lịch đã sinh.');
+            throw new \RuntimeException('Không có giáo viên trong lịch.');
         }
 
-        $maKh = trim((string) ($lich->MaKH ?? $lich->TenKhoa));
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Lich TH');
+        $sheet->setTitle('Lich');
+        self::fillSheetTuBangLich($sheet, trim($maKh), $bangLich);
+
+        return self::streamSpreadsheet($spreadsheet, $filenameStem.'.xlsx');
+    }
+
+    /**
+     * Một file Excel, mỗi giáo viên một sheet (tên sheet = tên giáo viên).
+     *
+     * @param  array{cot: list<array<string, mixed>>, dong: list<array<string, mixed>>, so_buoi: int}  $bangLichFull
+     * @param  callable(string, array): ?array  $thuBangChoGv
+     */
+    public static function downloadWorkbookMotGiaoVienMotSheet(
+        string $maKh,
+        array $bangLichFull,
+        string $filenameStem,
+        callable $thuBangChoGv
+    ): StreamedResponse {
+        $cot = collect($bangLichFull['cot'])->filter(fn (array $c): bool => trim((string) ($c['ma_gv'] ?? '')) !== '')->values()->all();
+        if ($cot === []) {
+            throw new \RuntimeException('Không có giáo viên trong lịch.');
+        }
+
+        $maKh = trim($maKh);
+        $spreadsheet = new Spreadsheet();
+        $spreadsheet->removeSheetByIndex(0);
+        $tenSheetDaDung = [];
+
+        foreach ($cot as $col) {
+            $maGv = trim((string) $col['ma_gv']);
+            $bang = $thuBangChoGv($maGv, $bangLichFull);
+            if (! is_array($bang) || $bang['dong'] === []) {
+                continue;
+            }
+
+            $sheet = new Worksheet($spreadsheet, self::tenSheetExcel(
+                (string) ($col['ten_gv'] ?? $maGv),
+                $maGv,
+                $tenSheetDaDung
+            ));
+            $spreadsheet->addSheet($sheet);
+            self::fillSheetTuBangLich($sheet, $maKh, $bang);
+        }
+
+        if ($spreadsheet->getSheetCount() === 0) {
+            throw new \RuntimeException('Không có buổi lịch để xuất.');
+        }
+
+        $spreadsheet->setActiveSheetIndex(0);
+
+        return self::streamSpreadsheet($spreadsheet, $filenameStem.'.xlsx');
+    }
+
+    /**
+     * @param  array{cot: list<array<string, mixed>>, dong: list<array<string, mixed>>, so_buoi: int}  $bangLich
+     */
+    private static function fillSheetTuBangLich(Worksheet $sheet, string $maKh, array $bangLich): void
+    {
+        $cot = collect($bangLich['cot'])->filter(fn (array $c): bool => trim((string) ($c['ma_gv'] ?? '')) !== '')->values()->all();
+        if ($cot === []) {
+            return;
+        }
 
         $header = [];
         $body = [];
+        $t = -1;
 
         foreach ($bangLich['dong'] as $dong) {
             $body[] = [];
@@ -96,25 +177,27 @@ final class LichDuKienThucHanhPmgplxExcelExporter
                     continue;
                 }
 
-                /** @var LichDuKienThucHanhBuoi|null $buoi */
                 $buoi = $dong['o'][$col['key']] ?? null;
                 if (! $buoi) {
                     continue;
                 }
 
-                $row[$base + self::COL_SO_GIO] = self::formatSoGio($buoi->SoGio);
-                $row[$base + self::COL_NOI_DUNG] = trim($buoi->NgaySo.'. '.$buoi->NoiDung, '. ');
-                $row[$base + self::COL_CHI_TIET] = '';
-                $row[$base + self::COL_BAT_DAU] = self::formatGio($buoi->GioBatDau);
-                $row[$base + self::COL_KET_THUC] = self::formatGio($buoi->GioKetThuc);
+                $row[$base + self::COL_SO_GIO] = self::formatSoGio($buoi->SoGio ?? null);
+                $ngaySo = trim((string) ($buoi->NgaySo ?? ''));
+                $noiDung = trim((string) ($buoi->NoiDung ?? ''));
+                $row[$base + self::COL_NOI_DUNG] = $ngaySo !== ''
+                    ? trim($ngaySo.'. '.$noiDung, '. ')
+                    : $noiDung;
+                $row[$base + self::COL_CHI_TIET] = trim((string) ($buoi->ChiTiet ?? ''));
+                $row[$base + self::COL_BAT_DAU] = self::formatGio($buoi->GioBatDau ?? '');
+                $row[$base + self::COL_KET_THUC] = self::formatGio($buoi->GioKetThuc ?? '');
             }
             unset($row);
         }
 
         ksort($header);
         $maxCol = ($t + 1) * self::COLS_PER_TEACHER;
-        $normalizedHeader = self::padRow($header, $maxCol);
-        $sheet->fromArray([$normalizedHeader], null, 'A1');
+        $sheet->fromArray([self::padRow($header, $maxCol)], null, 'A1');
 
         $rowNum = 2;
         foreach ($body as $row) {
@@ -125,16 +208,36 @@ final class LichDuKienThucHanhPmgplxExcelExporter
 
         self::applyPreviewColors($sheet, $bangLich, $cot, $maxCol);
         self::autoSize($sheet, $maxCol);
+    }
 
-        $safeName = preg_replace('/[^\p{L}\p{N}\-_]+/u', '-', $lich->TenKhoa) ?: 'lich';
-        $filename = $filenamePrefix.'-'.$safeName.'-'.$lich->Id.'.xlsx';
-
+    private static function streamSpreadsheet(Spreadsheet $spreadsheet, string $filename): StreamedResponse
+    {
         return response()->streamDownload(function () use ($spreadsheet): void {
             (new Xlsx($spreadsheet))->save('php://output');
             $spreadsheet->disconnectWorksheets();
         }, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
+    }
+
+    /** @param  array<string, true>  $daDung */
+    private static function tenSheetExcel(string $tenGv, string $maGv, array &$daDung): string
+    {
+        $raw = trim($tenGv) !== '' ? trim($tenGv) : trim($maGv);
+        $name = preg_replace('/[\\\\\\/\\*\\?\\:\\[\\]]/u', ' ', $raw) ?? $raw;
+        $name = preg_replace('/\\s+/u', ' ', trim($name)) ?: $maGv;
+        $name = mb_substr($name, 0, 31);
+
+        $candidate = $name;
+        $suffix = 2;
+        while (isset($daDung[$candidate])) {
+            $tail = ' ('.$suffix.')';
+            $candidate = mb_substr($name, 0, max(1, 31 - mb_strlen($tail))).$tail;
+            $suffix++;
+        }
+        $daDung[$candidate] = true;
+
+        return $candidate;
     }
 
     private static function headerNoiDung(string $tenGv, string $bienSo): string
@@ -172,8 +275,12 @@ final class LichDuKienThucHanhPmgplxExcelExporter
                 if (! $buoi) {
                     continue;
                 }
-                $noiDung = trim($buoi->NgaySo.'. '.$buoi->NoiDung, '. ');
-                $class = LichExcelCellStyle::classFor($noiDung);
+                $ngaySo = trim((string) ($buoi->NgaySo ?? ''));
+                $noiDung = $ngaySo !== ''
+                    ? trim($ngaySo.'. '.$buoi->NoiDung, '. ')
+                    : trim((string) ($buoi->NoiDung ?? ''));
+                $chiTiet = trim((string) ($buoi->ChiTiet ?? ''));
+                $class = LichExcelCellStyle::classFor($noiDung !== '' ? $noiDung : $chiTiet);
                 if ($class === '' || ! isset(self::FILL_BY_CLASS[$class])) {
                     continue;
                 }

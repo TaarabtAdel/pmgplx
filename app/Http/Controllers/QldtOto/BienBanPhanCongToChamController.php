@@ -25,16 +25,17 @@ class BienBanPhanCongToChamController extends Controller
         $trang = MenuQldt::timTrang(self::SLUG);
         abort_if($trang === null, 404);
 
-        $maKh = trim((string) $request->query('ma_kh', ''));
-        $khoa = $maKh !== '' ? KhoaHoc::query()->find($maKh) : null;
+        $khoas = BaoCaoDangKyKhoaHoc::khoaTuMaRaw($request->query('ma_kh'));
+        $maKhChon = array_map(static fn (KhoaHoc $k) => (string) $k->MaKH, $khoas);
 
         $form = null;
-        if ($khoa instanceof KhoaHoc) {
+        if ($khoas !== []) {
+            $gop = BaoCaoDangKyKhoaHoc::hopNhatNhieuKhoa($khoas);
             $form = [
-                'ma_kh' => (string) $khoa->MaKH,
+                'ma_kh' => $gop['ma_kh'],
                 'ngay_lap' => now()->format('Y-m-d'),
-                'hang' => BaoCaoDangKyKhoaHoc::nhanHangGplxQuyetDinh($khoa->HangGPLX ?? null),
-                'khoa_so' => BaoCaoDangKyKhoaHoc::soKhoaTuTen($khoa->TenKH) ?? '',
+                'hang' => $gop['hang'],
+                'khoa_so' => $gop['khoa_so'],
                 'so_qd' => '',
                 'ngay_qd' => now()->format('Y-m-d'),
                 'ngay_kiem_tra' => '',
@@ -50,7 +51,7 @@ class BienBanPhanCongToChamController extends Controller
             'item' => $trang['item'],
             'duongDan' => $trang['duong_dan'],
             'khoaOptions' => QuyetDinhHocVienForm::khoaOptions(),
-            'maKh' => $maKh,
+            'maKhChon' => $maKhChon,
             'form' => $form,
             'giaoVien' => $form === null ? [] : self::giaoVienGoiY(),
             'xungOptions' => BienBanPhanCongToChamDocx::XUNG,
@@ -60,7 +61,7 @@ class BienBanPhanCongToChamController extends Controller
     public function export(Request $request): BinaryFileResponse|RedirectResponse
     {
         $data = $request->validate([
-            'ma_kh' => ['required', 'string', 'max:50'],
+            'ma_kh' => ['required', 'string', 'max:500'],
             'ngay_lap' => ['required', 'date'],
             'hang' => ['required', 'string', 'max:40'],
             'khoa_so' => ['required', 'string', 'max:20'],
