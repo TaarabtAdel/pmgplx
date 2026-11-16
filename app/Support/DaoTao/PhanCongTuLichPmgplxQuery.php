@@ -150,12 +150,10 @@ class PhanCongTuLichPmgplxQuery
     }
 
     /**
-     * Tổng hợp theo từ ngày → đến ngày của lịch dạy (NgayBD–NgayKT), không lấy TG khoá.
+     * Tổng hợp theo khoảng thời gian lịch xe (NgayBD–NgayKT), không lấy TG khoá.
      *
-     * Có lọc ma_gv: 1 dòng / (khoá · xe) với khoảng BD–KT của GV đó;
-     * GV B = thầy khác chung xe có lịch chồng khoảng đó.
-     *
-     * Không lọc: mỗi GV trên xe tạo khoảng từ–đến riêng; thầy chung khoảng → cùng dòng (khử trùng).
+     * Cùng xe, cùng ngày có lịch → các GV đó đi chung xe ngày đó.
+     * Gộp các ngày liên tiếp có cùng tập GV thành một khoảng (đổi cặp GV → khoảng mới).
      *
      * @param  array{
      *     ma_kh?: list<string>,
@@ -184,7 +182,7 @@ class PhanCongTuLichPmgplxQuery
         unset($filtersAllGv['ma_gv']);
         $allRows = $this->rowsFromLichXeTap($filtersAllGv, $tenKhByMa, applyXeTuDongFilter: true);
 
-        /** @var array<string, array{ma_kh: string, ten_khoa: string, bien_so: string, by_gv: array<string, array{ma_gv: string, ho_ten: string, tu: Carbon, den: Carbon}>}> $byKhoaXe */
+        /** @var array<string, array{ma_kh: string, ten_khoa: string, bien_so: string, raw: list<array{ma_gv: string, ho_ten: string, tu: Carbon, den: Carbon, gv_key: string}>}> $byKhoaXe */
         $byKhoaXe = [];
 
         foreach ($allRows as $row) {
@@ -207,73 +205,40 @@ class PhanCongTuLichPmgplxQuery
             }
 
             $xeKey = ($maKh !== '' ? $maKh : $tenKhoa)."\0".$bien;
-            $gvKey = $maGv !== '' ? DatPhanCongHocVienSaver::normalizeMaGiaoVien($maGv) : mb_strtolower($hoTen);
 
             if (! isset($byKhoaXe[$xeKey])) {
                 $byKhoaXe[$xeKey] = [
                     'ma_kh' => $maKh,
                     'ten_khoa' => $tenKhoa !== '' ? $tenKhoa : $maKh,
                     'bien_so' => $bien,
-                    'by_gv' => [],
+                    'raw' => [],
                 ];
             }
 
-            if (! isset($byKhoaXe[$xeKey]['by_gv'][$gvKey])) {
-                $byKhoaXe[$xeKey]['by_gv'][$gvKey] = [
-                    'ma_gv' => $maGv,
-                    'ho_ten' => $hoTen !== '' ? $hoTen : $maGv,
-                    'tu' => $tu->copy(),
-                    'den' => $den->copy(),
-                ];
-            } else {
-                $slot = &$byKhoaXe[$xeKey]['by_gv'][$gvKey];
-                if ($tu->lt($slot['tu'])) {
-                    $slot['tu'] = $tu->copy();
-                }
-                if ($den->gt($slot['den'])) {
-                    $slot['den'] = $den->copy();
-                }
-                if (($slot['ho_ten'] ?? '') === '' && $hoTen !== '') {
-                    $slot['ho_ten'] = $hoTen;
-                }
-                unset($slot);
-            }
+            $gvKey = $maGv !== '' ? DatPhanCongHocVienSaver::normalizeMaGiaoVien($maGv) : mb_strtolower($hoTen);
+            $byKhoaXe[$xeKey]['raw'][] = [
+                'ma_gv' => $maGv,
+                'ho_ten' => $hoTen !== '' ? $hoTen : $maGv,
+                'tu' => $tu->copy(),
+                'den' => $den->copy(),
+                'gv_key' => $gvKey,
+            ];
         }
 
         $result = [];
         $seen = [];
 
         foreach ($byKhoaXe as $bucket) {
-            $anchors = $bucket['by_gv'];
-            if ($anchorNorm !== '') {
-                if (! isset($anchors[$anchorNorm])) {
+            foreach (self::gomCapXeTheoNgayChung($bucket['raw']) as $cum) {
+                if ($anchorNorm !== '' && ! isset($cum['gvs'][$anchorNorm])) {
                     continue;
-                }
-                $anchors = [$anchorNorm => $anchors[$anchorNorm]];
-            }
-
-            foreach ($anchors as $anchor) {
-                $tu = $anchor['tu'];
-                $den = $anchor['den'];
-
-                $gvs = [];
-                foreach ($bucket['by_gv'] as $gv) {
-                    // Chung xe trong khoảng từ–đến của GV neo: lịch chồng [tu, den].
-                    if ($gv['den']->lt($tu) || $gv['tu']->gt($den)) {
-                        continue;
-                    }
-                    $gvs[] = [
-                        'ma_gv' => $gv['ma_gv'],
-                        'ho_ten' => $gv['ho_ten'],
-                    ];
                 }
 
                 $ordered = self::orderGiaoViensAbForCapXe(
-                    $gvs,
-                    $anchorNorm !== '' ? $anchorNorm : DatPhanCongHocVienSaver::normalizeMaGiaoVien($anchor['ma_gv'])
+                    array_values($cum['gvs']),
+                    $anchorNorm !== '' ? $anchorNorm : null
                 );
 
-                // Khử trùng: cùng khoá·xe·từ–đến·cùng tập GV chỉ 1 dòng.
                 $fpParts = [];
                 foreach ($ordered as $gv) {
                     $fpParts[] = ($gv['ma_gv'] ?? '') !== ''
@@ -281,6 +246,8 @@ class PhanCongTuLichPmgplxQuery
                         : mb_strtolower((string) ($gv['ho_ten'] ?? ''));
                 }
                 sort($fpParts);
+                $tu = $cum['tu'];
+                $den = $cum['den'];
                 $fp = $bucket['ma_kh']."\0".$bucket['bien_so']."\0"
                     .$tu->format('Y-m-d H:i:s')."\0".$den->format('Y-m-d H:i:s')."\0"
                     .implode('|', $fpParts);
@@ -318,6 +285,94 @@ class PhanCongTuLichPmgplxQuery
     }
 
     /**
+     * Gom theo ngày: ai có lịch xe trong ngày thì cùng đi xe; gộp các ngày liên tiếp cùng tập GV.
+     *
+     * @param  list<array{tu: Carbon, den: Carbon, ma_gv: string, ho_ten: string, gv_key: string}>  $raw
+     * @return list<array{tu: Carbon, den: Carbon, gvs: array<string, array{ma_gv: string, ho_ten: string}>}>
+     */
+    private static function gomCapXeTheoNgayChung(array $raw): array
+    {
+        if ($raw === []) {
+            return [];
+        }
+
+        /** @var array<string, array<string, array{ma_gv: string, ho_ten: string}>> $ngayToGvs */
+        $ngayToGvs = [];
+        foreach ($raw as $slot) {
+            $ngay = $slot['tu']->format('Y-m-d');
+            $ngayToGvs[$ngay][$slot['gv_key']] = [
+                'ma_gv' => $slot['ma_gv'],
+                'ho_ten' => $slot['ho_ten'],
+            ];
+        }
+        ksort($ngayToGvs);
+
+        /** @var list<array{ngay_dau: string, ngay_cuoi: string, fp: string, gvs: array<string, array{ma_gv: string, ho_ten: string}>}> $periods */
+        $periods = [];
+        $current = null;
+
+        foreach ($ngayToGvs as $ngay => $gvs) {
+            $fp = self::gvSetFingerprint($gvs);
+            if ($current === null) {
+                $current = ['ngay_dau' => $ngay, 'ngay_cuoi' => $ngay, 'fp' => $fp, 'gvs' => $gvs];
+
+                continue;
+            }
+            if ($fp === $current['fp']) {
+                $current['ngay_cuoi'] = $ngay;
+            } else {
+                $periods[] = $current;
+                $current = ['ngay_dau' => $ngay, 'ngay_cuoi' => $ngay, 'fp' => $fp, 'gvs' => $gvs];
+            }
+        }
+        if ($current !== null) {
+            $periods[] = $current;
+        }
+
+        $out = [];
+        foreach ($periods as $p) {
+            $tu = null;
+            $den = null;
+            foreach ($raw as $slot) {
+                $d = $slot['tu']->format('Y-m-d');
+                if ($d < $p['ngay_dau'] || $d > $p['ngay_cuoi']) {
+                    continue;
+                }
+                if (! isset($p['gvs'][$slot['gv_key']])) {
+                    continue;
+                }
+                if ($tu === null || $slot['tu']->lt($tu)) {
+                    $tu = $slot['tu']->copy();
+                }
+                if ($den === null || $slot['den']->gt($den)) {
+                    $den = $slot['den']->copy();
+                }
+            }
+            if ($tu === null || $den === null) {
+                continue;
+            }
+            $out[] = [
+                'tu' => $tu,
+                'den' => $den,
+                'gvs' => $p['gvs'],
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param  array<string, array{ma_gv: string, ho_ten: string}>  $gvs
+     */
+    private static function gvSetFingerprint(array $gvs): string
+    {
+        $keys = array_keys($gvs);
+        sort($keys);
+
+        return implode('|', $keys);
+    }
+
+    /**
      * Cột A = GV neo (khi lọc ma_gv); cột B = GV còn lại cùng xe; không lọc → sắp theo tên.
      *
      * @param  list<array{ma_gv: string, ho_ten: string}>  $gvs
@@ -331,7 +386,7 @@ class PhanCongTuLichPmgplxQuery
                 return $cmp;
             }
 
-            return strcmp($a['ma_gv'], $b['ma_gv']);
+            return strcmp((string) ($a['ma_gv'] ?? ''), (string) ($b['ma_gv'] ?? ''));
         };
 
         if ($anchorMaGvNorm === null || $anchorMaGvNorm === '') {

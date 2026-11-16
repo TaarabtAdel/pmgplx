@@ -16,9 +16,10 @@
             <p class="small text-muted mb-3">
                 Dữ liệu từ lịch xe tập (<code>KhoaHoc_XeTap</code>, cùng
                 <a href="{{ route('pmgplx.lich.xe.index') }}">/pmgplx/lich/xe-tap</a>).
-                <strong>TG bắt đầu / kết thúc</strong> = từ ngày → đến ngày lịch dạy của GV (NgayBD–NgayKT), không lấy thời gian khoá.
-                Lọc GV: <strong>1 dòng / (khoá · xe)</strong> với khoảng BD–KT của GV đó; cột B = thầy khác chung xe trong khoảng đó.
-                Không lọc: mỗi GV trên xe một khoảng từ–đến; thầy chung khoảng → cùng dòng.
+                <strong>Cùng ngày, cùng xe</strong> = các GV có buổi lịch xe trong ngày đó đi chung (vd. 05/10: Bình + Nhuận).
+                Các ngày <strong>liên tiếp</strong> có <strong>cùng tập GV</strong> → gộp một khoảng từ–đến (TG lấy buổi sớm nhất / muộn nhất trong khoảng).
+                Đổi cặp GV (vd. từ 23/10 Bình + Độ thay Nhuận) → <strong>khoảng mới</strong>. Một cặp chỉ một dòng; cột A/B sắp theo tên.
+                Lọc GV: chỉ khoảng có GV đó; cột B = thầy còn lại trong cùng tập ngày.
                 Tạm thời: <strong>tên khoá</strong> có <strong>B01</strong> → khoá tự động (giữ xe B11); khoá khác ẩn xe tự động (danh mục xe).
             </p>
 
