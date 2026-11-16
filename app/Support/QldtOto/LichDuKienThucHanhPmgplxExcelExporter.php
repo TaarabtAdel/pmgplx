@@ -49,16 +49,17 @@ final class LichDuKienThucHanhPmgplxExcelExporter
     ];
 
     /**
+     * @param  LichDuKienThucHanh|\App\Models\QldtOto\LichChinhThuc  $lich
      * @param  array{cot: list<array<string, mixed>>, dong: list<array<string, mixed>>, so_buoi: int}  $bangLich
      */
-    public static function download(LichDuKienThucHanh $lich, array $bangLich): StreamedResponse
+    public static function download($lich, array $bangLich, string $filenamePrefix = 'lich-du-kien-th'): StreamedResponse
     {
         $cot = collect($bangLich['cot'])->filter(fn (array $c): bool => trim((string) ($c['ma_gv'] ?? '')) !== '')->values()->all();
         if ($cot === []) {
             throw new \RuntimeException('Không có giáo viên trong lịch đã sinh.');
         }
 
-        $maKh = trim((string) $lich->TenKhoa);
+        $maKh = trim((string) ($lich->MaKH ?? $lich->TenKhoa));
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Lich TH');
@@ -126,7 +127,7 @@ final class LichDuKienThucHanhPmgplxExcelExporter
         self::autoSize($sheet, $maxCol);
 
         $safeName = preg_replace('/[^\p{L}\p{N}\-_]+/u', '-', $lich->TenKhoa) ?: 'lich';
-        $filename = 'lich-du-kien-th-'.$safeName.'-'.$lich->Id.'.xlsx';
+        $filename = $filenamePrefix.'-'.$safeName.'-'.$lich->Id.'.xlsx';
 
         return response()->streamDownload(function () use ($spreadsheet): void {
             (new Xlsx($spreadsheet))->save('php://output');

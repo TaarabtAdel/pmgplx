@@ -28,7 +28,7 @@
                 Mẫu: <strong>C</strong>, <strong>B sàn</strong> (BK56), <strong>B tự động</strong> (B01K39).
             </p>
 
-            <form method="GET" action="{{ route('qldtoto.lich-hoc-ly-thuyet-thuc-hanh.index') }}" class="form-row align-items-end mb-3">
+            <form method="GET" action="{{ route('qldtoto.lich-du-kien.ly-thuyet.index') }}" class="form-row align-items-end mb-3">
                 <div class="form-group col-md-5 mb-0">
                     <label for="ma_kh">Khoá (PMGPLX)</label>
                     <select class="form-control form-control-sm sel-khoa-pmgplx" id="ma_kh" name="ma_kh" data-placeholder="— Chọn khoá —">
@@ -65,7 +65,7 @@
                         Lịch GV trống hoặc thưa — đang gợi ý chủ yếu từ <a href="{{ $linkLichXeTap }}" target="_blank">lịch xe tập</a> ({{ $goiY['so_buoi_lich_xe'] }} buổi).
                     </div>
                 @endif
-                <form method="POST" action="{{ route('qldtoto.lich-hoc-ly-thuyet-thuc-hanh.export') }}">
+                <form method="POST" action="{{ route('qldtoto.lich-du-kien.ly-thuyet.export') }}">
                     @csrf
                     <input type="hidden" name="ma_kh" value="{{ $maKh }}">
 

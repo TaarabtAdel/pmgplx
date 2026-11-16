@@ -5,6 +5,7 @@ namespace App\Http\Controllers\QldtOto;
 use App\Http\Controllers\Controller;
 use App\Models\PMGPLX\KhoaHoc;
 use App\Support\MenuQldt;
+use App\Support\QldtOto\LichHocLyThuyetThucHanhFormNgay;
 use App\Support\QldtOto\LichHocLyThuyetThucHanhHangB01Exporter;
 use App\Support\QldtOto\LichHocLyThuyetThucHanhHangBSanExporter;
 use App\Support\QldtOto\LichHocLyThuyetThucHanhHangCExporter;
@@ -18,20 +19,10 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-/** Lịch LT+TH — bước 1: xuất chung cả khoá (từng GV sau). */
+/** Lịch dự kiến lý thuyết (LT+TH) — bước 1: xuất chung cả khoá (từng GV sau). */
 class LichHocLyThuyetThucHanhController extends Controller
 {
-    private const SLUG = '1-lich-hoc-ly-thuyet-va-lich-hoc-thuc-hanh-cua-tung-giao-vien';
-
-    /** @var list<string> */
-    private const FORM_NGAY = [
-        'ngay_khai_giang', 'ngay_bd_thuc_hanh',
-        'ngay_bd_hinh_tren', 'ngay_kt_hinh_tren',
-        'ngay_bd_cabin', 'ngay_kt_cabin',
-        'ngay_bd_dat', 'ngay_kt_dat', 'ngay_bo_sung_dat',
-        'ngay_bd_hinh_duoi', 'ngay_kt_hinh_duoi',
-        'ngay_bd_on_luyen', 'ngay_kt_on_luyen', 'ngay_kiem_tra',
-    ];
+    private const SLUG = 'lich-du-kien/ly-thuyet';
 
     public function index(Request $request): View
     {
@@ -57,7 +48,7 @@ class LichHocLyThuyetThucHanhController extends Controller
             if ($kg) {
                 $goiY['ngay_khai_giang'] = $kg->format('Y-m-d');
             }
-            foreach (self::FORM_NGAY as $k) {
+            foreach (LichHocLyThuyetThucHanhFormNgay::KEYS as $k) {
                 $formNgay[$k] = old($k, $request->query($k, $goiY[$k] ?? ''));
             }
             $goiYHienThi = LichHocLyThuyetThucHanhMocMoTa::hienThiGoiY($goiY, $hang);
@@ -100,7 +91,7 @@ class LichHocLyThuyetThucHanhController extends Controller
         $validated = $request->validate([
             'ma_kh' => ['required', 'string'],
             'ten_khoa_doc' => ['nullable', 'string', 'max:200'],
-        ] + collect(self::FORM_NGAY)->mapWithKeys(fn (string $k) => [
+        ] + collect(LichHocLyThuyetThucHanhFormNgay::KEYS)->mapWithKeys(fn (string $k) => [
             $k => ['nullable', 'date'],
         ])->all());
 
@@ -122,7 +113,7 @@ class LichHocLyThuyetThucHanhController extends Controller
         }
 
         $formNgay = [];
-        foreach (self::FORM_NGAY as $k) {
+        foreach (LichHocLyThuyetThucHanhFormNgay::KEYS as $k) {
             $formNgay[$k] = $validated[$k] ?? null;
         }
 

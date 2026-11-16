@@ -44,10 +44,13 @@ final class DanhSachHocVienExportColumns
       ['key' => 'hang_gplx', 'label' => 'Hạng GPLX', 'uu_tien' => true, 'mac_dinh' => false],
       ['key' => 'hang_dao_tao', 'label' => 'Hạng đào tạo', 'uu_tien' => true, 'mac_dinh' => false],
       ['key' => 'trang_thai', 'label' => 'Trạng thái', 'uu_tien' => true, 'mac_dinh' => false],
+      ['key' => 'NguoiLX_HoSo.SoGPLXDaCo', 'label' => 'SoGPLXDaCo', 'uu_tien' => true, 'mac_dinh' => false],
+      ['key' => 'NguoiLX_HoSo.NgayCapGPLXDaCo', 'label' => 'NgayCapGPLXDaCo', 'uu_tien' => true, 'mac_dinh' => false],
+      ['key' => 'NguoiLX_HoSo.DonViCapGPLXDaCo', 'label' => 'DonViCapGPLXDaCo', 'uu_tien' => true, 'mac_dinh' => false],
     ];
 
     $skipN = ['MaDK', 'HoVaTen', 'HoDemNLX', 'TenNLX', 'NgaySinh', 'GioiTinh', 'SoCMT', 'NgayCapCMT', 'NoiCT', 'NoiCT_MaDVHC', 'NoiTT', 'NoiTT_MaDVHC', 'TrangThai'];
-    $skipH = ['MaDK', 'MaKhoaHoc', 'SoHoSo', 'HangGPLX', 'HangDaoTao'];
+    $skipH = ['MaDK', 'MaKhoaHoc', 'SoHoSo', 'HangGPLX', 'HangDaoTao', 'SoGPLXDaCo', 'NgayCapGPLXDaCo', 'DonViCapGPLXDaCo'];
 
     $extras = [];
     foreach (Schema::connection($connection)->getColumnListing('NguoiLX') as $col) {

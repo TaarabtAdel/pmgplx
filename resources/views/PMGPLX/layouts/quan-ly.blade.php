@@ -442,6 +442,9 @@
         @endif
 
         @yield('content')
+        @isset($qldtOtoLichSuXuat)
+            @include('QldtOto.partials.lich-su-xuat-accordion')
+        @endisset
 
         <div class="status-bar">
             <span>Tài khoản đăng nhập: {{ auth()->user()?->SoDienThoai ?? '—' }}</span>

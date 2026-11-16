@@ -42,7 +42,7 @@ class RouteServiceProvider extends ServiceProvider
             Route::middleware(['web', 'auth', 'phan.quyen'])
                 ->group(base_path('routes/web.php'));
 
-            Route::middleware(['web', 'auth', 'phan.quyen'])
+            Route::middleware(['web', 'auth', 'phan.quyen', 'qldtoto.chuan-bi-lich-su-xuat', 'qldtoto.lich-su-xuat'])
                 ->group(base_path('routes/qldtoto.php'));
         });
     }

@@ -62,7 +62,12 @@ final class DanhSachHocVienExcelRows
         } elseif (str_starts_with($key, 'NguoiLX_HoSo.')) {
           $col = substr($key, 13);
           $alias = 'NguoiLX_HoSo.'.$col;
-          $line[$key] = $row->{$alias} ?? $row->{$col} ?? null;
+          $raw = $row->{$alias} ?? $row->{$col} ?? null;
+          if ($col === 'NgayCapGPLXDaCo') {
+            $line[$key] = NgayVn::format($raw, 'yyyymmdd');
+          } else {
+            $line[$key] = $raw;
+          }
         } else {
           $line[$key] = '';
         }

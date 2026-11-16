@@ -4,16 +4,20 @@ namespace App\Support\QldtOto;
 
 use App\Models\PMGPLX\GiaoVien;
 use App\Models\QldtOto\BaiDay;
-use App\Models\QldtOto\LichDuKienThucHanh;
 use Carbon\Carbon;
 
-/** Bảng lịch dự kiến đã sinh — dùng hiển thị web và xuất Excel PMGPLX. */
+/**
+ * Bảng lịch thực hành đã sinh (dự kiến / chính thức) — hiển thị web và xuất Excel PMGPLX.
+ *
+ * @param  \App\Models\QldtOto\LichDuKienThucHanh|\App\Models\QldtOto\LichChinhThuc  $lich
+ */
 final class LichDuKienThucHanhBangLich
 {
     /**
+     * @param  \App\Models\QldtOto\LichDuKienThucHanh|\App\Models\QldtOto\LichChinhThuc  $lich
      * @return array{cot: list<array<string, mixed>>, dong: list<array<string, mixed>>, so_buoi: int}|null
      */
-    public static function build(LichDuKienThucHanh $lich): ?array
+    public static function build($lich): ?array
     {
         $lich->loadMissing(['ngayNghis']);
         $buois = $lich->buois()->orderBy('Ngay')->orderBy('CapThuTu')->orderBy('Ca', 'desc')->get();

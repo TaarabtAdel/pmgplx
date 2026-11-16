@@ -16,7 +16,9 @@
             <p class="small text-muted mb-3">
                 Dữ liệu từ lịch xe tập (<code>KhoaHoc_XeTap</code>, cùng
                 <a href="{{ route('pmgplx.lich.xe.index') }}">/pmgplx/lich/xe-tap</a>).
-                Một dòng = khoá + biển số xe; Giáo viên A–B = hai GV cùng xe (lọc GV → A là GV lọc, B là GV còn lại trên xe đó).
+                <strong>TG bắt đầu / kết thúc</strong> = từ ngày → đến ngày lịch dạy của GV (NgayBD–NgayKT), không lấy thời gian khoá.
+                Lọc GV: <strong>1 dòng / (khoá · xe)</strong> với khoảng BD–KT của GV đó; cột B = thầy khác chung xe trong khoảng đó.
+                Không lọc: mỗi GV trên xe một khoảng từ–đến; thầy chung khoảng → cùng dòng.
                 Tạm thời: <strong>tên khoá</strong> có <strong>B01</strong> → khoá tự động (giữ xe B11); khoá khác ẩn xe tự động (danh mục xe).
             </p>
 
@@ -95,7 +97,7 @@
                 <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
                     <div class="text-muted small">
                         Trang {{ $items->currentPage() }}/{{ max($items->lastPage(), 1) }}
-                        · {{ number_format($items->total()) }} dòng (khoá · xe)
+                        · {{ number_format($items->total()) }} dòng (khoá · xe · đoạn lịch)
                     </div>
                     <nav>
                         <ul class="pagination pagination-sm mb-0">

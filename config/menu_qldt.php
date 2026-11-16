@@ -29,6 +29,8 @@ return [
                                         [
                                             'title' => 'Lý thuyết',
                                             'trang' => 'lich-du-kien/ly-thuyet',
+                                            'route' => 'qldtoto.lich-du-kien.ly-thuyet.index',
+                                            'active' => 'qldtoto.lich-du-kien.ly-thuyet.*',
                                         ],
                                         [
                                             'title' => 'Thực hành',
@@ -40,6 +42,8 @@ return [
                                 [
                                     'title' => 'Làm lịch chính thức',
                                     'trang' => '1-lam-lich-chinh-thuc',
+                                    'route' => 'qldtoto.lam-lich-chinh-thuc.index',
+                                    'active' => 'qldtoto.lam-lich-chinh-thuc.*',
                                 ],
                             ],
                         ],
@@ -67,6 +71,8 @@ return [
                                         [
                                             'title' => 'Xuất file "Kế hoạch đào tạo"',
                                             'trang' => '1-ke-hoach-dao-tao',
+                                            'route' => 'qldtoto.ke-hoach-dao-tao.index',
+                                            'active' => 'qldtoto.ke-hoach-dao-tao.*',
                                         ],
                                     ],
                                 ],
@@ -85,12 +91,14 @@ return [
                                 [
                                     'title' => 'Xuất file "Danh sách học viên học tập trung lớp lý thuyết"',
                                     'trang' => '1-danh-sach-hoc-vien-hoc-tap-trung-lop-ly-thuyet',
+                                    'mo_ta' => 'Hiện học lý thuyết theo hình thức online — không cần xuất file danh sách tập trung. Cần danh sách học viên thì xuất tại PMGPLX → Danh mục học viên.',
                                 ],
                                 [
                                     'title' => 'Xuất file "Lịch học lý thuyết và lịch học thực hành" của từng giáo viên',
                                     'trang' => '1-lich-hoc-ly-thuyet-va-lich-hoc-thuc-hanh-cua-tung-giao-vien',
-                                    'route' => 'qldtoto.lich-hoc-ly-thuyet-thuc-hanh.index',
-                                    'active' => 'qldtoto.lich-hoc-ly-thuyet-thuc-hanh.*',
+                                    'route' => 'qldtoto.lich-hoc-lt-th-tung-giao-vien.index',
+                                    'active' => 'qldtoto.lich-hoc-lt-th-tung-giao-vien.*',
+                                    'mo_ta' => 'Mỗi GV một sheet TH + lịch chung LT+TH. Hạng C và B số tự động (THUC HANH B11).',
                                 ],
                                 [
                                     'title' => 'Xuất file "Quyết định điều động xe" của từng giáo viên',
@@ -294,8 +302,10 @@ return [
                                     ],
                                 ],
                                 [
-                                    'title' => 'Dựa vào file của Nhân, làm danh sách vắng, đạt, trượt + biên bản tổng hợp, biên bản họp kỳ thi kiểm tra kết thúc môn + thi lại',
+                                    'title' => 'Xuất báo cáo KTM từ file kết quả (BBTH, BC chi tiết, BC chung)',
                                     'trang' => '2-dua-vao-file-cua-nhan-lam-danh-sach-vang-dat-truot-bien-ban',
+                                    'route' => 'qldtoto.xuat-bao-cao-ktm.index',
+                                    'active' => 'qldtoto.xuat-bao-cao-ktm.*',
                                 ],
                                 [
                                     'title' => 'Xuất file "Biên bản tổng hợp kết quả kỳ kiểm tra kết thúc môn"',

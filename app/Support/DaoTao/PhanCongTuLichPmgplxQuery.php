@@ -150,7 +150,12 @@ class PhanCongTuLichPmgplxQuery
     }
 
     /**
-     * Tổng hợp theo khoá + biển số xe — GV TH dùng chung xe trong khoá (lịch xe).
+     * Tổng hợp theo từ ngày → đến ngày của lịch dạy (NgayBD–NgayKT), không lấy TG khoá.
+     *
+     * Có lọc ma_gv: 1 dòng / (khoá · xe) với khoảng BD–KT của GV đó;
+     * GV B = thầy khác chung xe có lịch chồng khoảng đó.
+     *
+     * Không lọc: mỗi GV trên xe tạo khoảng từ–đến riêng; thầy chung khoảng → cùng dòng (khử trùng).
      *
      * @param  array{
      *     ma_kh?: list<string>,
@@ -174,105 +179,125 @@ class PhanCongTuLichPmgplxQuery
             ? DatPhanCongHocVienSaver::normalizeMaGiaoVien($filterMaGv)
             : '';
 
-        if ($filterMaGv !== '') {
-            $rowsForAnchor = $this->rowsFromLichXeTap($filters, $tenKhByMa, applyXeTuDongFilter: true);
-            $khoaXeKeys = [];
-            foreach ($rowsForAnchor as $row) {
-                $maKh = trim((string) ($row['ma_kh'] ?? ''));
-                $bien = trim((string) ($row['bien_so'] ?? ''));
-                if ($maKh === '' || $bien === '') {
-                    continue;
-                }
-                $khoaXeKeys[$maKh."\0".$bien] = true;
-            }
+        // Toàn bộ lịch xe (mọi GV) trong phạm vi lọc khoá/xe — để tìm người chung xe.
+        $filtersAllGv = $filters;
+        unset($filtersAllGv['ma_gv']);
+        $allRows = $this->rowsFromLichXeTap($filtersAllGv, $tenKhByMa, applyXeTuDongFilter: true);
 
-            $filtersAllGvOnXe = $filters;
-            unset($filtersAllGvOnXe['ma_gv']);
-            $allRows = $this->rowsFromLichXeTap($filtersAllGvOnXe, $tenKhByMa, applyXeTuDongFilter: true);
-            $rows = array_values(array_filter(
-                $allRows,
-                static function (array $row) use ($khoaXeKeys): bool {
-                    $key = trim((string) ($row['ma_kh'] ?? ''))."\0".trim((string) ($row['bien_so'] ?? ''));
+        /** @var array<string, array{ma_kh: string, ten_khoa: string, bien_so: string, by_gv: array<string, array{ma_gv: string, ho_ten: string, tu: Carbon, den: Carbon}>}> $byKhoaXe */
+        $byKhoaXe = [];
 
-                    return $key !== "\0" && isset($khoaXeKeys[$key]);
-                }
-            ));
-        } else {
-            $rows = $this->rowsFromLichXeTap($filters, $tenKhByMa, applyXeTuDongFilter: true);
-        }
-
-        return $this->buildKhoaXeAggregatesFromDetailRows($rows, $anchorNorm !== '' ? $anchorNorm : null);
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $rows
-     * @return list<array<string, mixed>>
-     */
-    private function buildKhoaXeAggregatesFromDetailRows(array $rows, ?string $anchorMaGvNorm = null): array
-    {
-        /** @var array<string, array<string, mixed>> $groups */
-        $groups = [];
-
-        foreach ($rows as $row) {
+        foreach ($allRows as $row) {
             $maKh = trim((string) ($row['ma_kh'] ?? ''));
             $tenKhoa = trim((string) ($row['ten_khoa'] ?? ''));
             $bien = trim((string) ($row['bien_so'] ?? ''));
+            $maGv = trim((string) ($row['ma_gv'] ?? ''));
+            $hoTen = trim((string) ($row['ho_ten_gv'] ?? ''));
+            $tu = $row['tu_ngay'] ?? null;
+            $den = $row['den_ngay'] ?? null;
 
-            if ($maKh === '' && $tenKhoa === '') {
+            if (($maKh === '' && $tenKhoa === '') || ($maGv === '' && $hoTen === '') || ! $tu instanceof Carbon) {
                 continue;
             }
+            if (! $den instanceof Carbon) {
+                $den = $tu->copy();
+            }
+            if ($den->lt($tu)) {
+                $den = $tu->copy();
+            }
 
-            $key = ($maKh !== '' ? $maKh : $tenKhoa)."\0".$bien;
+            $xeKey = ($maKh !== '' ? $maKh : $tenKhoa)."\0".$bien;
+            $gvKey = $maGv !== '' ? DatPhanCongHocVienSaver::normalizeMaGiaoVien($maGv) : mb_strtolower($hoTen);
 
-            if (! isset($groups[$key])) {
-                $groups[$key] = [
+            if (! isset($byKhoaXe[$xeKey])) {
+                $byKhoaXe[$xeKey] = [
                     'ma_kh' => $maKh,
                     'ten_khoa' => $tenKhoa !== '' ? $tenKhoa : $maKh,
                     'bien_so' => $bien,
-                    'tu_ngay' => null,
-                    'den_ngay' => null,
-                    'giao_viens' => [],
+                    'by_gv' => [],
                 ];
             }
 
-            $g = &$groups[$key];
-
-            $tu = $row['tu_ngay'] ?? null;
-            $den = $row['den_ngay'] ?? null;
-            if ($tu instanceof Carbon) {
-                $g['tu_ngay'] = $g['tu_ngay'] === null || $tu->lt($g['tu_ngay']) ? $tu : $g['tu_ngay'];
-            }
-            if ($den instanceof Carbon) {
-                $g['den_ngay'] = $g['den_ngay'] === null || $den->gt($g['den_ngay']) ? $den : $g['den_ngay'];
-            }
-
-            $maGv = trim((string) ($row['ma_gv'] ?? ''));
-            $hoTen = trim((string) ($row['ho_ten_gv'] ?? ''));
-            if ($maGv !== '' || $hoTen !== '') {
-                $gvKey = $maGv !== '' ? $maGv : mb_strtolower($hoTen);
-                if (! isset($g['giao_viens'][$gvKey])) {
-                    $g['giao_viens'][$gvKey] = [
-                        'ma_gv' => $maGv,
-                        'ho_ten' => $hoTen !== '' ? $hoTen : $maGv,
-                    ];
+            if (! isset($byKhoaXe[$xeKey]['by_gv'][$gvKey])) {
+                $byKhoaXe[$xeKey]['by_gv'][$gvKey] = [
+                    'ma_gv' => $maGv,
+                    'ho_ten' => $hoTen !== '' ? $hoTen : $maGv,
+                    'tu' => $tu->copy(),
+                    'den' => $den->copy(),
+                ];
+            } else {
+                $slot = &$byKhoaXe[$xeKey]['by_gv'][$gvKey];
+                if ($tu->lt($slot['tu'])) {
+                    $slot['tu'] = $tu->copy();
                 }
+                if ($den->gt($slot['den'])) {
+                    $slot['den'] = $den->copy();
+                }
+                if (($slot['ho_ten'] ?? '') === '' && $hoTen !== '') {
+                    $slot['ho_ten'] = $hoTen;
+                }
+                unset($slot);
             }
-
-            unset($g);
         }
 
         $result = [];
-        foreach ($groups as $group) {
-            $gvs = self::orderGiaoViensAbForCapXe(array_values($group['giao_viens']), $anchorMaGvNorm);
+        $seen = [];
 
-            $result[] = [
-                'ma_kh' => (string) $group['ma_kh'],
-                'ten_khoa' => (string) $group['ten_khoa'],
-                'bien_so' => (string) $group['bien_so'],
-                'tu_ngay' => $group['tu_ngay'],
-                'den_ngay' => $group['den_ngay'],
-                'giao_viens' => $gvs,
-            ];
+        foreach ($byKhoaXe as $bucket) {
+            $anchors = $bucket['by_gv'];
+            if ($anchorNorm !== '') {
+                if (! isset($anchors[$anchorNorm])) {
+                    continue;
+                }
+                $anchors = [$anchorNorm => $anchors[$anchorNorm]];
+            }
+
+            foreach ($anchors as $anchor) {
+                $tu = $anchor['tu'];
+                $den = $anchor['den'];
+
+                $gvs = [];
+                foreach ($bucket['by_gv'] as $gv) {
+                    // Chung xe trong khoảng từ–đến của GV neo: lịch chồng [tu, den].
+                    if ($gv['den']->lt($tu) || $gv['tu']->gt($den)) {
+                        continue;
+                    }
+                    $gvs[] = [
+                        'ma_gv' => $gv['ma_gv'],
+                        'ho_ten' => $gv['ho_ten'],
+                    ];
+                }
+
+                $ordered = self::orderGiaoViensAbForCapXe(
+                    $gvs,
+                    $anchorNorm !== '' ? $anchorNorm : DatPhanCongHocVienSaver::normalizeMaGiaoVien($anchor['ma_gv'])
+                );
+
+                // Khử trùng: cùng khoá·xe·từ–đến·cùng tập GV chỉ 1 dòng.
+                $fpParts = [];
+                foreach ($ordered as $gv) {
+                    $fpParts[] = ($gv['ma_gv'] ?? '') !== ''
+                        ? DatPhanCongHocVienSaver::normalizeMaGiaoVien((string) $gv['ma_gv'])
+                        : mb_strtolower((string) ($gv['ho_ten'] ?? ''));
+                }
+                sort($fpParts);
+                $fp = $bucket['ma_kh']."\0".$bucket['bien_so']."\0"
+                    .$tu->format('Y-m-d H:i:s')."\0".$den->format('Y-m-d H:i:s')."\0"
+                    .implode('|', $fpParts);
+                if (isset($seen[$fp])) {
+                    continue;
+                }
+                $seen[$fp] = true;
+
+                $result[] = [
+                    'ma_kh' => (string) $bucket['ma_kh'],
+                    'ten_khoa' => (string) $bucket['ten_khoa'],
+                    'bien_so' => (string) $bucket['bien_so'],
+                    'tu_ngay' => $tu->copy(),
+                    'den_ngay' => $den->copy(),
+                    'giao_viens' => $ordered,
+                ];
+            }
         }
 
         usort($result, function (array $a, array $b): int {
@@ -280,15 +305,13 @@ class PhanCongTuLichPmgplxQuery
             if ($cmp !== 0) {
                 return $cmp;
             }
-
             $cmp = strnatcasecmp($a['bien_so'], $b['bien_so']);
             if ($cmp !== 0) {
                 return $cmp;
             }
+            $ta = $a['tu_ngay'] instanceof Carbon ? $a['tu_ngay']->format('Y-m-d H:i:s') : '';
 
-            $ta = $a['tu_ngay'] instanceof Carbon ? $a['tu_ngay']->format('Y-m-d') : '';
-
-            return strcmp($ta, $b['tu_ngay'] instanceof Carbon ? $b['tu_ngay']->format('Y-m-d') : '');
+            return strcmp($ta, $b['tu_ngay'] instanceof Carbon ? $b['tu_ngay']->format('Y-m-d H:i:s') : '');
         });
 
         return $result;
