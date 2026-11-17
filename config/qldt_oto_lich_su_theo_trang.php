@@ -27,6 +27,11 @@ return [
     'qldtoto.bien-ban-phan-cong-to-cham.index' => ['qldtoto.bien-ban-phan-cong-to-cham.export'],
     'qldtoto.quyet-dinh-bao-luu.index' => ['qldtoto.quyet-dinh-bao-luu.export'],
     'qldtoto.quyet-dinh-cho-thoi-hoc.index' => ['qldtoto.quyet-dinh-cho-thoi-hoc.export'],
+    'qldtoto.bao-cao-phien-hoc-loi.index' => [
+        'qldtoto.bao-cao-phien-hoc-loi.export-word',
+        'qldtoto.bao-cao-phien-hoc-loi.export-danh-sach',
+        'qldtoto.bao-cao-phien-hoc-loi.export-ca-hai',
+    ],
     'qldtoto.quyet-dinh-huy-phien.index' => [
         'qldtoto.quyet-dinh-huy-phien.export-word',
         'qldtoto.quyet-dinh-huy-phien.export-danh-sach',

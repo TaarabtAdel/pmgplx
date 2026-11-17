@@ -11,7 +11,7 @@ final class QuyetDinhHuyPhienSupport
     /**
      * Phiên không đạt kiểm tra DAT của khoá (theo MaKhoaHoc = MaKH PMGPLX).
      *
-     * @return list<array{ho_ten: string, ma_hv: string, ma_phien: string, phuong_an: string, ly_do: string}>
+     * @return list<array{ten_khoa: string, ho_ten_gv: string, ho_ten: string, ma_hv: string, ma_phien: string, phuong_an: string, ly_do: string}>
      */
     public static function phienLoiTuDat(string $maKhoa): array
     {
@@ -32,7 +32,6 @@ final class QuyetDinhHuyPhienSupport
         }
 
         $violationsById = DatDSPhienKiemTra::analyze($sessions);
-        $definitions = DatDSPhienKiemTra::definitions();
 
         $rows = [];
         foreach ($sessions as $session) {
@@ -55,7 +54,9 @@ final class QuyetDinhHuyPhienSupport
                 'ho_ten' => trim((string) ($session->HoTenHocVien ?? '')),
                 'ma_hv' => trim((string) ($session->MaHocVien ?? '')),
                 'ma_phien' => trim((string) ($session->MaPhienHoc ?? '')),
-                'phuong_an' => QuyetDinhHuyPhienKemDanhSachDocx::PHUONG_AN_MAC_DINH,
+                'ten_khoa' => trim((string) ($session->TenKhoaHoc ?? '')),
+                'ho_ten_gv' => trim((string) ($session->HoTenGiaoVien ?? '')),
+                'phuong_an' => BaoCaoPhienHocLoiDocx::PHUONG_AN_MAC_DINH,
                 'ly_do' => $labels !== [] ? implode('; ', $labels) : 'Phiên không đạt điều kiện',
             ];
         }
@@ -65,31 +66,35 @@ final class QuyetDinhHuyPhienSupport
 
     /**
      * @param  array<string, mixed>  $validated
-     * @return array{ngay_bao_cao: string, de_xuat: string, phien: list<array{ho_ten: string, ma_hv: string, ma_phien: string, phuong_an: string, ly_do: string}>}
+     * @return array{ngay_bao_cao: string, de_xuat: string, phien: list<array{ten_khoa: string, ho_ten_gv: string, ho_ten: string, ma_hv: string, ma_phien: string, phuong_an: string, ly_do: string}>}
      */
     public static function normalizePayload(array $validated): array
     {
         $phien = [];
         foreach ($validated['phien'] as $row) {
+            $tenKhoa = trim((string) ($row['ten_khoa'] ?? ''));
+            $hoTenGv = trim((string) ($row['ho_ten_gv'] ?? ''));
             $hoTen = trim((string) ($row['ho_ten'] ?? ''));
             $maHv = trim((string) ($row['ma_hv'] ?? ''));
             $maPhien = trim((string) ($row['ma_phien'] ?? ''));
             $lyDo = trim((string) ($row['ly_do'] ?? ''));
-            if ($hoTen === '' && $maHv === '' && $maPhien === '' && $lyDo === '') {
+            if ($tenKhoa === '' && $hoTenGv === '' && $hoTen === '' && $maHv === '' && $maPhien === '' && $lyDo === '') {
                 continue;
             }
             $phien[] = [
+                'ten_khoa' => $tenKhoa,
+                'ho_ten_gv' => $hoTenGv,
                 'ho_ten' => $hoTen,
                 'ma_hv' => $maHv,
                 'ma_phien' => $maPhien,
-                'phuong_an' => trim((string) ($row['phuong_an'] ?? '')) ?: QuyetDinhHuyPhienKemDanhSachDocx::PHUONG_AN_MAC_DINH,
+                'phuong_an' => trim((string) ($row['phuong_an'] ?? '')) ?: BaoCaoPhienHocLoiDocx::PHUONG_AN_MAC_DINH,
                 'ly_do' => $lyDo,
             ];
         }
 
         return [
             'ngay_bao_cao' => (string) $validated['ngay_bao_cao'],
-            'de_xuat' => trim((string) ($validated['de_xuat'] ?? '')) ?: QuyetDinhHuyPhienKemDanhSachDocx::DE_XUAT_MAC_DINH,
+            'de_xuat' => trim((string) ($validated['de_xuat'] ?? '')) ?: BaoCaoPhienHocLoiDocx::DE_XUAT_MAC_DINH,
             'phien' => $phien,
         ];
     }

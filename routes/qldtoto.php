@@ -19,6 +19,7 @@ use App\Http\Controllers\QldtOto\QuyetDinhDieuDongXeController;
 use App\Http\Controllers\QldtOto\QuyetDinhDoiGiaoVienController;
 use App\Http\Controllers\QldtOto\QuyetDinhDoiXeController;
 use App\Http\Controllers\QldtOto\QuyetDinhHoanThanhKhoaHocController;
+use App\Http\Controllers\QldtOto\BaoCaoPhienHocLoiController;
 use App\Http\Controllers\QldtOto\QuyetDinhHuyPhienController;
 use App\Http\Controllers\QldtOto\SoTheoDoiKetQuaHocTapController;
 use App\Http\Controllers\QldtOto\SoTayGiaoVienLyThuyetController;
@@ -134,6 +135,14 @@ Route::prefix('qldt-oto')->name('qldtoto.')->group(function () {
     $slugThoiHoc = '2-quyet-dinh-cho-thoi-hoc';
     Route::get('/'.$slugThoiHoc, [QuyetDinhThoiHocController::class, 'index'])->name('quyet-dinh-cho-thoi-hoc.index');
     Route::post('/'.$slugThoiHoc.'/xuat', [QuyetDinhThoiHocController::class, 'export'])->name('quyet-dinh-cho-thoi-hoc.export');
+
+    $slugBaoCaoPhienLoi = '2-bao-cao-phien-hoc-loi';
+    Route::get('/'.$slugBaoCaoPhienLoi, [BaoCaoPhienHocLoiController::class, 'index'])->name('bao-cao-phien-hoc-loi.index');
+    Route::get('/'.$slugBaoCaoPhienLoi.'/khoa/{maKh}', [BaoCaoPhienHocLoiController::class, 'khoaJson'])->name('bao-cao-phien-hoc-loi.khoa');
+    Route::get('/'.$slugBaoCaoPhienLoi.'/tim-hoc-vien', [BaoCaoPhienHocLoiController::class, 'timHocVien'])->name('bao-cao-phien-hoc-loi.tim-hoc-vien');
+    Route::post('/'.$slugBaoCaoPhienLoi.'/xuat-word', [BaoCaoPhienHocLoiController::class, 'exportWord'])->name('bao-cao-phien-hoc-loi.export-word');
+    Route::post('/'.$slugBaoCaoPhienLoi.'/xuat-danh-sach', [BaoCaoPhienHocLoiController::class, 'exportDanhSach'])->name('bao-cao-phien-hoc-loi.export-danh-sach');
+    Route::post('/'.$slugBaoCaoPhienLoi.'/xuat-ca-hai', [BaoCaoPhienHocLoiController::class, 'exportCaHai'])->name('bao-cao-phien-hoc-loi.export-ca-hai');
 
     $slugHuyPhien = '2-quyet-dinh-huy-phien-kem-danh-sach-huy-phien';
     Route::get('/'.$slugHuyPhien, [QuyetDinhHuyPhienController::class, 'index'])->name('quyet-dinh-huy-phien.index');

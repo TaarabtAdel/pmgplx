@@ -245,6 +245,8 @@ return [
                                             'title' => 'Xuất file "Báo cáo phiên học lỗi"',
                                             'mo_ta' => 'Nhân viên DAT làm',
                                             'trang' => '2-bao-cao-phien-hoc-loi',
+                                            'route' => 'qldtoto.bao-cao-phien-hoc-loi.index',
+                                            'active' => 'qldtoto.bao-cao-phien-hoc-loi.*',
                                         ],
                                         [
                                             'title' => 'Xuất file "Quyết định huỷ phiên kèm danh sách huỷ phiên"',

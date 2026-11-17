@@ -46,6 +46,21 @@
                 <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-dao-tao') }}" class="btn btn-sm btn-navy">
                     Mở nhập kết quả đào tạo
                 </a>
+            @elseif (($slug ?? '') === '1-danh-sach-lop-hoc')
+                <p class="mb-3">
+                    Xuất file <strong>Danh sách lớp học</strong>: vào <strong>Danh mục học viên</strong> trên PMGPLX,
+                    lọc theo khóa (và điều kiện khác nếu cần), chọn cột rồi dùng <strong>Xuất Excel</strong>.
+                </p>
+                <a href="{{ route('pmgplx.dm.hoc-vien.index') }}" class="btn btn-sm btn-success">
+                    Mở PMGPLX — Danh mục học viên (xuất Excel)
+                </a>
+            @elseif (($slug ?? '') === '2-nhap-lich-vao-phan-mem')
+                <p class="mb-3">
+                    Nhập lịch thực hành (file Excel) vào PMGPLX qua công cụ <strong>Nhập lịch từ file</strong>.
+                </p>
+                <a href="{{ route('pmgplx.lich.nhap-file.create') }}" class="btn btn-sm btn-navy">
+                    Mở nhập lịch từ file
+                </a>
             @elseif (($slug ?? '') === '1-danh-sach-hoc-vien-hoc-tap-trung-lop-ly-thuyet')
                 <p class="mb-3">
                     Bữa nay đã chuyển sang <strong>học lý thuyết online</strong>, không còn cần xuất file
