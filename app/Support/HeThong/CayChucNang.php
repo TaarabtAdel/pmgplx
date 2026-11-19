@@ -196,7 +196,8 @@ final class CayChucNang
                     ['khoa' => 'hoc-vien', 'title' => 'Quản lý học viên', 'route' => 'pmgplx.dm.hoc-vien.index', 'active' => ['pmgplx.dm.hoc-vien.*']],
                     ['khoa' => 'hoc-vien-ban-cu', 'title' => 'Học viên (bản cũ)', 'route' => 'pmgplxold.dm.hoc-vien.index', 'active' => ['pmgplxold.*']],
                     ['khoa' => 'xe', 'title' => 'Quản lý xe', 'route' => 'pmgplx.dm.xe.index', 'active' => ['pmgplx.dm.xe.*']],
-                    ['khoa' => 'khoa-hoc', 'title' => 'Quản lý khoá học', 'route' => 'pmgplx.dm.khoa-hoc.index', 'active' => ['pmgplx.dm.khoa-hoc.*']],
+                    ['khoa' => 'khoa-hoc', 'title' => 'Quản lý khoá học', 'route' => 'pmgplx.dm.khoa-hoc.index', 'active' => ['pmgplx.dm.khoa-hoc.index']],
+                    ['khoa' => 'khoa-hoc-ban-cu', 'title' => 'Quản lý khoá học (bản cũ)', 'route' => 'pmgplx.dm.khoa-hoc-ban-cu.index', 'active' => ['pmgplx.dm.khoa-hoc-ban-cu.*']],
                     [
                         'khoa' => 'lich', 'title' => 'Lịch', 'divider' => true, 'children' => [
                             ['khoa' => 'lich-giao-vien', 'title' => 'Lịch làm việc giáo viên', 'route' => 'pmgplx.lich.gv.index',

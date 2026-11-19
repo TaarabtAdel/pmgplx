@@ -39,6 +39,9 @@ class DuongDanAnhPmGplx
         ]);
     }
 
+    /**
+     * @deprecated Không dùng — đồng bộ giữ nguyên DuongDanAnh từ PM mới.
+     */
     public static function remapForDich(
         string $duongDanAnh,
         string $sourceMaDk,

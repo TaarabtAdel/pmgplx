@@ -3,6 +3,7 @@
 use App\Http\Controllers\PMGPLX\AnhHocVienController;
 use App\Http\Controllers\PMGPLX\DanhSachGiaoVienController;
 use App\Http\Controllers\PMGPLX\DanhSachHocVienController;
+use App\Http\Controllers\PMGPLX\DanhSachKhoaHocBanCuController;
 use App\Http\Controllers\PMGPLX\DanhSachKhoaHocController;
 use App\Http\Controllers\PMGPLX\DanhSachXeController;
 use App\Http\Controllers\PMGPLX\DoThongTinHocVienController;
@@ -66,4 +67,9 @@ Route::prefix('pmgplx')->name('pmgplx.')->group(function (): void {
 
     Route::get('/danh-muc/khoa-hoc', [DanhSachKhoaHocController::class, 'index'])
         ->name('dm.khoa-hoc.index');
+
+    Route::get('/danh-muc/khoa-hoc-ban-cu', [DanhSachKhoaHocBanCuController::class, 'index'])
+        ->name('dm.khoa-hoc-ban-cu.index');
+    Route::post('/danh-muc/khoa-hoc-ban-cu', [DanhSachKhoaHocBanCuController::class, 'store'])
+        ->name('dm.khoa-hoc-ban-cu.store');
 });

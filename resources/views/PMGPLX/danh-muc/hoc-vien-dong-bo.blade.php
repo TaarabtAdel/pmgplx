@@ -142,6 +142,26 @@
         margin: 0 auto;
         display: block;
     }
+    .dong-bo-anh-planned-cell {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+    }
+    .dong-bo-anh-ban-cu-stack {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1px;
+    }
+    .dong-bo-anh-ban-cu-stack .dong-bo-anh-thumb {
+        border-color: #ffc107;
+    }
+    .dong-bo-anh-ban-cu-label {
+        font-size: 0.6rem;
+        padding: 0 0.2rem;
+        line-height: 1.2;
+    }
 </style>
 @endpush
 
@@ -157,6 +177,7 @@
         $lastBatch = $lastBatch ?? null;
         $testStudent = $meta['test_student'] ?? null;
         $canTest = $maKhDich !== '' && is_array($testStudent) && ! empty($testStudent['ma_dk_nguon']);
+        $sourceByMaDk = collect($sourceRows)->keyBy('ma_dk');
     @endphp
 
     @if (! empty($lastBatch) && ! empty($lastBatch['ma_dks']))
@@ -229,7 +250,9 @@
                 (mã ĐK và mã khóa được map sang khóa đích; giấy tờ upsert theo khóa <code>MaDK</code> + <code>MaGT</code>).
                 <strong>Đơn vị cấp GPLX</strong> (<code>DonViCapGPLXDaCo</code>) trên bản cũ: nếu <code>NgayTTGPLXDaCo</code> sau 01/03/2025 thì ghi <code>00</code>;
                 trước mốc đó lấy <strong>2 số đầu của <code>SoGPLXDaCo</code></strong> (vd. <code>450190001488</code> → <code>45</code>, <code>440155002955</code> → <code>44</code>).
-                Bảng xem trước có cột ảnh (cao 18px) — bấm để phóng to. Trên live cấu hình <code>GPLX_ANH_LOCAL_ROOT</code> (map từ UNC <code>ANH GPLX</code>).
+                Map: <code>MaDK</code> prefix; <code>MaKhoaHoc</code> = khóa đích; <code>DuongDanAnh</code> giữ như PM mới (hai bảng cùng path ảnh).
+                Cột ảnh (cao 18px) — bấm phóng to; dòng vàng có thêm ảnh <strong>cũ</strong> nếu path trên bản cũ khác.
+                Trên live cấu hình <code>GPLX_ANH_LOCAL_ROOT</code> (map từ UNC <code>ANH GPLX</code>).
                 <strong>Chưa</strong> đưa <code>NguoiLX_GPLX</code>
                 và các cột chỉ có trên bản mới (điểm thi, kết quả DAT…).
                 Đủ để hiện danh sách học viên và giấy tờ trên bản cũ; chưa đủ nếu cần xem/sửa GPLX cũ trong phần mềm cũ.
@@ -410,6 +433,14 @@
                                     </thead>
                                     <tbody>
                                         @forelse ($plannedRows as $index => $row)
+                                            @php
+                                                $maDkNguonAnh = trim((string) ($row['ma_dk_nguon'] ?? ''));
+                                                $srcAnhRow = $maDkNguonAnh !== '' ? ($sourceByMaDk[$maDkNguonAnh] ?? null) : null;
+                                                $anhUrlNguon = is_array($srcAnhRow) ? ($srcAnhRow['anh_url'] ?? null) : ($row['anh_url'] ?? null);
+                                                $duongDanAnhNguon = is_array($srcAnhRow)
+                                                    ? trim((string) ($srcAnhRow['duong_danh_anh'] ?? ''))
+                                                    : trim((string) ($row['duong_danh_anh'] ?? ''));
+                                            @endphp
                                             <tr @class([
                                                 'hoc-vien-dong-bo-row-conflict' => ! empty($row['ton_tai']),
                                                 'hoc-vien-dong-bo-row-dvc-doi' => ! empty($row['don_vi_cap_doi']),
@@ -448,11 +479,14 @@
                                                 </td>
                                                 <td class="col-hang" title="{{ $row['hang_gplx_hien_thi'] ?? ($row['hang_gplx'] ?? '') }}">{{ $row['hang_gplx_hien_thi'] ?? ($row['hang_gplx'] ?: '—') }}</td>
                                                 <td class="col-anh">
-                                                    @include('PMGPLX.danh-muc._dong-bo-anh-thumb', [
-                                                        'anhUrl' => $row['anh_url'] ?? null,
-                                                        'duongDanAnh' => $row['duong_danh_anh'] ?? '',
+                                                    @include('PMGPLX.danh-muc._dong-bo-anh-planned-cell', [
+                                                        'anhUrl' => $anhUrlNguon,
+                                                        'duongDanAnh' => $duongDanAnhNguon,
                                                         'hoTen' => $row['ho_ten'] ?? '',
-                                                        'maDk' => $row['ma_dk'] ?? ($row['ma_dk_nguon'] ?? ''),
+                                                        'maDk' => $maDkNguonAnh,
+                                                        'anhUrlCu' => $row['anh_url_cu'] ?? null,
+                                                        'duongDanAnhCu' => $row['duong_danh_anh_cu'] ?? '',
+                                                        'khacPath' => ! empty($row['duong_danh_anh_khac']),
                                                     ])
                                                 </td>
                                             </tr>
@@ -468,6 +502,7 @@
                                 <strong>Từ Số GPLX</strong> = 2 số đầu <code>SoGPLXDaCo</code> (44/45…).
                                 <strong>ĐVC bản cũ</strong> = giá trị ghi sang DB cũ (trước 01/03/2025 = Từ Số GPLX; sau mốc = <code>00</code>).
                                 Dòng xanh nhạt: khác <strong>ĐVC hiện tại</strong> trên phần mềm mới.
+                                Ảnh trên = path sẽ ghi; nhãn <strong>cũ</strong> = <code>DuongDanAnh</code> đang có trên DB bản cũ (nếu khác path).
                             </div>
                         @endif
                     </div>

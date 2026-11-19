@@ -47,7 +47,10 @@
     </div>
 
     <div class="card card-panel">
-        <div class="card-header">Danh sách khoá học</div>
+        <div class="card-header d-flex align-items-center flex-wrap gap-2">
+            <span>Danh sách khoá học</span>
+            <a href="{{ route('pmgplx.dm.khoa-hoc-ban-cu.index') }}" class="btn btn-sm btn-outline-secondary ml-auto">Khoá học (bản cũ) →</a>
+        </div>
         <div class="card-body">
             <div class="d-flex flex-wrap align-items-center mb-3">
                 <div class="btn-group btn-group-sm mr-2 mb-2" role="group">

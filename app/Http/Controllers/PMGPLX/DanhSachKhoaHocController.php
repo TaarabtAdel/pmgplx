@@ -22,7 +22,6 @@ class DanhSachKhoaHocController extends Controller
             ->selectRaw('COUNT(*)')
             ->whereColumn('NguoiLX_HoSo.MaKhoaHoc', 'KhoaHoc.MaKH');
 
-        // Cùng điều kiện với màn Lịch làm việc GV / Lịch sử dụng xe để số khớp khi bấm vào.
         $soLichGv = DB::connection('sqlsrv')
             ->table('KhoaHoc_GiaoVien')
             ->selectRaw('COUNT(*)')

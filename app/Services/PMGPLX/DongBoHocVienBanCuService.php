@@ -109,16 +109,6 @@ class DongBoHocVienBanCuService
                 $plannedMaDks[] = $mappedMaDk;
             }
 
-            $duongDanAnhDich = ($maKhoaHocDich && $mappedMaDk && $duongDanAnh !== '')
-                ? DuongDanAnhPmGplx::remapForDich(
-                    $duongDanAnh,
-                    (string) $row->MaDK,
-                    $mappedMaDk,
-                    $maKhoaHocNguon,
-                    $maKhoaHocDich
-                )
-                : '';
-
             $planned[] = [
                 'ma_dk' => $mappedMaDk,
                 'ma_dk_nguon' => $row->MaDK,
@@ -133,8 +123,8 @@ class DongBoHocVienBanCuService
                 'don_vi_cap_gplx_da_co' => $donViCapBanCu,
                 'don_vi_cap_doi' => $donViCapBanCu !== '' && $donViCapBanCu !== $donViCapGoc,
                 'hang_gplx' => $row->HangGPLX,
-                'duong_danh_anh' => $duongDanAnhDich,
-                'anh_url' => DuongDanAnhPmGplx::previewUrl($duongDanAnhDich !== '' ? $duongDanAnhDich : null),
+                'duong_danh_anh' => $duongDanAnh,
+                'anh_url' => DuongDanAnhPmGplx::previewUrl($duongDanAnh !== '' ? $duongDanAnh : null),
                 'ton_tai' => false,
             ];
         }
@@ -158,6 +148,8 @@ class DongBoHocVienBanCuService
             }
         }
         unset($row);
+
+        $this->enrichPreviewAnhHienTaiBanCu($planned);
 
         $khoaNguon = KhoaHoc::query()->find($maKhoaHocNguon, ['MaKH', 'TenKH']);
         $khoaDich = $maKhoaHocDich
@@ -499,14 +491,53 @@ class DongBoHocVienBanCuService
             MaDkBanCu::prefixFromMaKhoaHoc($maKhoaHocDich),
         ];
 
-        foreach (['DuongDanAnh', 'GhiChu'] as $col) {
-            if (! array_key_exists($col, $payload) || $payload[$col] === null || $payload[$col] === '') {
-                continue;
-            }
-            $payload[$col] = str_replace($from, $to, (string) $payload[$col]);
+        if (array_key_exists('GhiChu', $payload) && $payload['GhiChu'] !== null && $payload['GhiChu'] !== '') {
+            $payload['GhiChu'] = str_replace($from, $to, (string) $payload['GhiChu']);
         }
 
+        // DuongDanAnh: giữ nguyên đường dẫn file trên nguồn (không thay MaDK / mã khoá trong path).
+
         return $payload;
+    }
+
+    /**
+     * HV đã có trên bản cũ: đọc DuongDanAnh hiện tại để so với path PM mới trên UI.
+     *
+     * @param  list<array<string, mixed>>  $planned
+     */
+    private function enrichPreviewAnhHienTaiBanCu(array &$planned): void
+    {
+        $maDks = [];
+        foreach ($planned as $row) {
+            if (! empty($row['ton_tai']) && ! empty($row['ma_dk'])) {
+                $maDks[] = (string) $row['ma_dk'];
+            }
+        }
+
+        $maDks = array_values(array_unique($maDks));
+        if ($maDks === []) {
+            return;
+        }
+
+        $paths = DB::connection('sqlsrv_old')
+            ->table('NguoiLX_HoSo')
+            ->whereIn('MaDK', $maDks)
+            ->pluck('DuongDanAnh', 'MaDK');
+
+        foreach ($planned as &$row) {
+            if (empty($row['ton_tai']) || empty($row['ma_dk'])) {
+                continue;
+            }
+
+            $maDk = (string) $row['ma_dk'];
+            $cu = trim((string) ($paths[$maDk] ?? ''));
+            $moi = trim((string) ($row['duong_danh_anh'] ?? ''));
+
+            $row['duong_danh_anh_cu'] = $cu;
+            $row['anh_url_cu'] = DuongDanAnhPmGplx::previewUrl($cu !== '' ? $cu : null);
+            $row['duong_danh_anh_khac'] = $cu !== '' && $cu !== $moi;
+        }
+        unset($row);
     }
 
     /**
