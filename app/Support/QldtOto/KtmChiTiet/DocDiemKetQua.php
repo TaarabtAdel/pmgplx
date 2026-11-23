@@ -72,6 +72,10 @@ final class DocDiemKetQua
             $colNs = self::timCot($cols, ['ngày sinh', 'ngay sinh']);
             $colHang = self::timCot($cols, ['hạng', 'hang gplx', 'hạng gplx']);
 
+            if (! $chuChi) {
+                self::kiemTraCauTrucLt($sheet, $headerRow, $colCccd, $colSbd, $colHoTen, $colDung);
+            }
+
             $out = [];
             for ($r = $headerRow + 1; $r <= $headerRow + 500; $r++) {
                 $kq = $chuChi
@@ -82,8 +86,8 @@ final class DocDiemKetQua
                 }
                 $keySbd = $colSbd !== null ? DocSheet::normalizeSbd(self::at($sheet, $r, $colSbd)) : '';
                 $keyCccd = $colCccd !== null ? DocSheet::normalizeCccd(self::at($sheet, $r, $colCccd)) : '';
-                if ($keyCccd === '' && ! $chuChi) {
-                    $cDau = $colCccd ?? $colSbd ?? 1;
+                if ($keyCccd === '' && ! $chuChi && $colCccd === null) {
+                    $cDau = $colSbd ?? 1;
                     $cCuoi = max($cDau, $colHang ?? $cDau, ($colNs ?? $cDau) + 3);
                     $keyCccd = DocSheet::timCccdTrongHang($sheet, $r, $cDau, min($cCuoi + 2, $cDau + 8));
                 }
@@ -189,6 +193,96 @@ final class DocDiemKetQua
         }
 
         return '';
+    }
+
+    /**
+     * LT/MP: cột Số CMT/CCCD theo tiêu đề phải có giá trị; cột «Trả lời đúng» phải là số (không «Đã thi»…).
+     */
+    private static function kiemTraCauTrucLt(
+        \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
+        int $headerRow,
+        ?int $colCccd,
+        ?int $colSbd,
+        ?int $colHoTen,
+        ?int $colDung,
+    ): void {
+        if ($colCccd !== null) {
+            $dongTrong = [];
+            $daCoDong = false;
+            for ($r = $headerRow + 1; $r <= $headerRow + 500; $r++) {
+                if (! self::laDongDuLieuLt($sheet, $r, $colSbd, $colHoTen)) {
+                    if ($daCoDong) {
+                        break;
+                    }
+
+                    continue;
+                }
+                $daCoDong = true;
+                $cmt = trim(self::at($sheet, $r, $colCccd));
+                if ($cmt === '') {
+                    $dongTrong[] = $r;
+                    if (count($dongTrong) >= 20) {
+                        break;
+                    }
+                }
+            }
+            if ($dongTrong !== []) {
+                $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colCccd);
+                $viDu = implode(', ', array_slice($dongTrong, 0, 8));
+                throw new \InvalidArgumentException(
+                    'File Lý thuyết: cột «Số CMT/CCCD» ('.$colLetter.') trống tại dòng '
+                    .$viDu.(count($dongTrong) > 8 ? ', … ('.count($dongTrong).'+ dòng)' : '')
+                    .'. Có thể file lệch cột — CCCD phải đúng cột tiêu đề, không tự quét cột khác.'
+                );
+            }
+        }
+
+        if ($colDung === null) {
+            return;
+        }
+
+        $coGiaTri = 0;
+        $khongPhaiSo = 0;
+        $daCoDong = false;
+        for ($r = $headerRow + 1; $r <= $headerRow + 500; $r++) {
+            if (! self::laDongDuLieuLt($sheet, $r, $colSbd, $colHoTen)) {
+                if ($daCoDong) {
+                    break;
+                }
+
+                continue;
+            }
+            $daCoDong = true;
+            $v = trim(self::at($sheet, $r, $colDung));
+            if ($v === '') {
+                continue;
+            }
+            $coGiaTri++;
+            $norm = str_replace(',', '.', $v);
+            if (! is_numeric($norm)) {
+                $khongPhaiSo++;
+            }
+        }
+
+        if ($coGiaTri >= 3 && $khongPhaiSo >= max(2, (int) ceil($coGiaTri * 0.25))) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colDung);
+            throw new \InvalidArgumentException(
+                'File Lý thuyết: cột «Trả lời đúng» ('.$colLetter.') có giá trị không phải số (vd. «Đã thi») '
+                .'— file có thể lệch cột so với tiêu đề.'
+            );
+        }
+    }
+
+    private static function laDongDuLieuLt(
+        \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
+        int $row,
+        ?int $colSbd,
+        ?int $colHoTen,
+    ): bool {
+        $sbd = $colSbd !== null ? DocSheet::normalizeSbd(self::at($sheet, $row, $colSbd)) : '';
+        $hoTen = $colHoTen !== null ? trim(self::at($sheet, $row, $colHoTen)) : '';
+
+        return $sbd !== '' || $hoTen !== '';
     }
 
     /** @param  array<string, int>  $cols */

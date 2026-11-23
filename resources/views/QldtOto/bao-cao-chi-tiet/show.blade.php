@@ -53,6 +53,10 @@
         </div>
     </div>
 
+    @include('QldtOto.bao-cao-chi-tiet.partials.bang-quy-uoc-logic', [
+        'laThiLai' => $record->LaThiLai,
+    ])
+
     <div class="card card-panel mb-3">
         <div class="card-header">Nhập / cập nhật file</div>
         <div class="card-body">
