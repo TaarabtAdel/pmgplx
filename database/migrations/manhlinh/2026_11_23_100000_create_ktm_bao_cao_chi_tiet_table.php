@@ -4,15 +4,24 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Báo cáo chi tiết KTM (ghép file, lưu DB).
+ *
+ *   php artisan migrate --database=sqlsrv_manhlinh --path=database/migrations/manhlinh
+ */
 return new class extends Migration
 {
+    protected $connection = 'sqlsrv_manhlinh';
+
     public function up(): void
     {
-        if (Schema::hasTable('KtmBaoCaoChiTiet')) {
+        $schema = Schema::connection($this->connection);
+
+        if ($schema->hasTable('KtmBaoCaoChiTiet')) {
             return;
         }
 
-        Schema::create('KtmBaoCaoChiTiet', function (Blueprint $table) {
+        $schema->create('KtmBaoCaoChiTiet', function (Blueprint $table) {
             $table->id();
             $table->date('NgayKyThi');
             $table->string('TenKhoaThi', 255);
@@ -27,6 +36,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('KtmBaoCaoChiTiet');
+        Schema::connection($this->connection)->dropIfExists('KtmBaoCaoChiTiet');
     }
 };

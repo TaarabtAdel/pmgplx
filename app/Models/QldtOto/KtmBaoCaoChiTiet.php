@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class KtmBaoCaoChiTiet extends Model
 {
+    protected $connection = 'sqlsrv_manhlinh';
+
     protected $table = 'KtmBaoCaoChiTiet';
 
     protected $fillable = [
