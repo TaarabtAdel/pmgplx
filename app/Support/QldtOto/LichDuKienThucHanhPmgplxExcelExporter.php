@@ -183,11 +183,7 @@ final class LichDuKienThucHanhPmgplxExcelExporter
                 }
 
                 $row[$base + self::COL_SO_GIO] = self::formatSoGio($buoi->SoGio ?? null);
-                $ngaySo = trim((string) ($buoi->NgaySo ?? ''));
-                $noiDung = trim((string) ($buoi->NoiDung ?? ''));
-                $row[$base + self::COL_NOI_DUNG] = $ngaySo !== ''
-                    ? trim($ngaySo.'. '.$noiDung, '. ')
-                    : $noiDung;
+                $row[$base + self::COL_NOI_DUNG] = trim((string) ($buoi->NoiDung ?? ''));
                 $row[$base + self::COL_CHI_TIET] = trim((string) ($buoi->ChiTiet ?? ''));
                 $row[$base + self::COL_BAT_DAU] = self::formatGio($buoi->GioBatDau ?? '');
                 $row[$base + self::COL_KET_THUC] = self::formatGio($buoi->GioKetThuc ?? '');
@@ -275,10 +271,7 @@ final class LichDuKienThucHanhPmgplxExcelExporter
                 if (! $buoi) {
                     continue;
                 }
-                $ngaySo = trim((string) ($buoi->NgaySo ?? ''));
-                $noiDung = $ngaySo !== ''
-                    ? trim($ngaySo.'. '.$buoi->NoiDung, '. ')
-                    : trim((string) ($buoi->NoiDung ?? ''));
+                $noiDung = trim((string) ($buoi->NoiDung ?? ''));
                 $chiTiet = trim((string) ($buoi->ChiTiet ?? ''));
                 $class = LichExcelCellStyle::classFor($noiDung !== '' ? $noiDung : $chiTiet);
                 if ($class === '' || ! isset(self::FILL_BY_CLASS[$class])) {

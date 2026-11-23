@@ -13,7 +13,7 @@ return [
     ['ten_route' => 'qldtoto.quyet-dinh-dieu-dong-xe.export', 'ma' => 'quyet-dinh-dieu-dong-xe', 'ten' => 'Quyết định điều động xe', 'loai' => 'Word', 'thu_tu' => 50],
     ['ten_route' => 'qldtoto.bao-cao-de-nghi-sat-hach.export', 'ma' => 'bao-cao-de-nghi-sat-hach', 'ten' => 'Báo cáo đề nghị sát hạch', 'loai' => 'Word', 'thu_tu' => 60],
     ['ten_route' => 'qldtoto.thong-bao-tap-trung-thuc-hanh.export', 'ma' => 'thong-bao-tap-trung-th', 'ten' => 'Thông báo tập trung thực hành', 'loai' => 'Word', 'thu_tu' => 70],
-    ['ten_route' => 'qldtoto.quyet-dinh-hoan-thanh-khoa-hoc.export', 'ma' => 'quyet-dinh-hoan-thanh', 'ten' => 'Quyết định hoàn thành khoá học', 'loai' => 'Word', 'thu_tu' => 80],
+    ['ten_route' => 'qldtoto.quyet-dinh-hoan-thanh-khoa-hoc.export', 'ma' => 'quyet-dinh-hoan-thanh', 'ten' => 'Quyết định hoàn thành khoá học', 'loai' => 'ZIP (Word + Excel)', 'thu_tu' => 80],
     ['ten_route' => 'qldtoto.thong-bao-kiem-tra-ket-thuc-mon.export', 'ma' => 'thong-bao-kiem-tra-ktm', 'ten' => 'Thông báo kiểm tra kết thúc môn', 'loai' => 'Word', 'thu_tu' => 90],
     ['ten_route' => 'qldtoto.thanh-lap-hoi-dong-xet-ktm.export-quyet-dinh', 'ma' => 'thanh-lap-hoi-dong-ktm', 'ten' => 'Thành lập hội đồng xét hoàn thành — Quyết định', 'loai' => 'Word', 'thu_tu' => 100],
     ['ten_route' => 'qldtoto.thanh-lap-hoi-dong-xet-ktm.export-danh-sach', 'ma' => 'thanh-lap-hoi-dong-ktm', 'ten' => 'Thành lập hội đồng xét hoàn thành — Danh sách', 'loai' => 'Excel', 'thu_tu' => 101],

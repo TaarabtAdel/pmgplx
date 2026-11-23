@@ -461,7 +461,12 @@ class GiaoVienLichCrossKhoaChecker
             } catch (\Throwable) {
                 continue;
             }
-            $pending[] = compact('index', 'maGv', 'plate', 'bd', 'kt') + [
+            $pending[] = [
+                'index' => $index,
+                'ma_gv' => $maGv,
+                'plate' => $plate,
+                'bd' => $bd,
+                'kt' => $kt,
                 'ma_kh' => trim((string) ($row['MaKH'] ?? '')),
             ];
         }

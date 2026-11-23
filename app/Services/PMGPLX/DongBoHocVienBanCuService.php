@@ -501,7 +501,7 @@ class DongBoHocVienBanCuService
     }
 
     /**
-     * HV đã có trên bản cũ: đọc DuongDanAnh hiện tại để so với path PM mới trên UI.
+     * Bảng dự kiến: ảnh lấy DuongDanAnh trên DB bản cũ (theo mã ĐK đích).
      *
      * @param  list<array<string, mixed>>  $planned
      */
@@ -509,7 +509,7 @@ class DongBoHocVienBanCuService
     {
         $maDks = [];
         foreach ($planned as $row) {
-            if (! empty($row['ton_tai']) && ! empty($row['ma_dk'])) {
+            if (! empty($row['ma_dk'])) {
                 $maDks[] = (string) $row['ma_dk'];
             }
         }
@@ -525,17 +525,15 @@ class DongBoHocVienBanCuService
             ->pluck('DuongDanAnh', 'MaDK');
 
         foreach ($planned as &$row) {
-            if (empty($row['ton_tai']) || empty($row['ma_dk'])) {
+            if (empty($row['ma_dk'])) {
                 continue;
             }
 
             $maDk = (string) $row['ma_dk'];
             $cu = trim((string) ($paths[$maDk] ?? ''));
-            $moi = trim((string) ($row['duong_danh_anh'] ?? ''));
 
             $row['duong_danh_anh_cu'] = $cu;
             $row['anh_url_cu'] = DuongDanAnhPmGplx::previewUrl($cu !== '' ? $cu : null);
-            $row['duong_danh_anh_khac'] = $cu !== '' && $cu !== $moi;
         }
         unset($row);
     }

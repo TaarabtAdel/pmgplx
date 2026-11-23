@@ -10,7 +10,7 @@ class BuildQuyetDinhHoanThanhKhoaHocTemplate extends Command
 {
     protected $signature = 'qldtoto:build-quyet-dinh-hoan-thanh-khoa-hoc-template';
 
-    protected $description = 'Tạo quyet-dinh-hoan-thanh-khoa-hoc.docx (quyết định + trang danh sách kèm theo) từ mẫu .doc';
+    protected $description = 'Tạo quyet-dinh-hoan-thanh-khoa-hoc.docx (chỉ quyết định, không kèm danh sách) từ mẫu .doc';
 
     public function handle(): int
     {
