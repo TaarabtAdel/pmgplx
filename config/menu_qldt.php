@@ -329,7 +329,7 @@ return [
                                         ],
                                         [
                                             'title' => 'Biên bản họp thông qua KTM',
-                                            'mo_ta' => 'Tổng hợp từ báo cáo chi tiết → sheet bb họp.',
+                                            'mo_ta' => 'Tổng hợp từ báo cáo chi tiết → sheet Biên bản họp.',
                                             'trang' => 'bien-ban-hop',
                                             'route' => 'qldtoto.bien-ban-hop.index',
                                             'active' => 'qldtoto.bien-ban-hop.*',

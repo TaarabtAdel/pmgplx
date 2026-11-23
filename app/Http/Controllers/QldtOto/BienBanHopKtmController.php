@@ -15,7 +15,7 @@ final class BienBanHopKtmController extends BaoCaoKtmTuChiTietController
     {
         return [
             'title' => 'Biên bản họp thông qua KTM',
-            'sheetLabel' => 'bb họp',
+            'sheetLabel' => 'Biên bản họp',
             'filePrefix' => 'BB-HOP',
         ];
     }

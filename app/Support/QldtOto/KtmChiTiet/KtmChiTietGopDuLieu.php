@@ -9,7 +9,7 @@ use App\Support\QldtOto\KtmBaoCao\KtmThiSinh;
 use App\Support\QldtOto\KtmBaoCao\KtmTinhToan;
 use App\Support\QldtOto\KtmBaoCao\KtmTongHop;
 
-/** Gộp nhiều báo cáo chi tiết đã lưu → dữ liệu tổng hợp (BBTH / BC CHUNG / BB họp). */
+/** Gộp nhiều báo cáo chi tiết đã lưu → dữ liệu tổng hợp (BBTH / BC CHUNG / Biên bản họp). */
 final class KtmChiTietGopDuLieu
 {
     public const HANG_B01 = 'b01';

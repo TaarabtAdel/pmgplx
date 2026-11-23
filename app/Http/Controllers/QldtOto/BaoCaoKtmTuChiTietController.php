@@ -53,7 +53,7 @@ abstract class BaoCaoKtmTuChiTietController extends Controller
             'record_ids' => ['required', 'array', 'min:1'],
             'record_ids.*' => ['integer'],
             'ngay_lap' => ['nullable', 'date'],
-            'ngay_thi' => ['nullable', 'string', 'max:32'],
+            'ngay_thi' => ['nullable', 'date'],
             'sat_hach' => ['nullable', 'string', 'max:255'],
             'ngay_hop' => ['nullable', 'string', 'max:32'],
             'gio_hop' => ['nullable', 'string', 'max:32'],
@@ -90,7 +90,10 @@ abstract class BaoCaoKtmTuChiTietController extends Controller
             }
         }
         $form['bc_chung']['ngay_lap'] = $ngayLap;
-        $form['bc_chung']['ngay_thi'] = $data['ngay_thi'] ?? $dl->ngayThi;
+        $ngayThi = KtmBaoCaoFormMacDinh::ngayTuInput($data['ngay_thi'] ?? '') ?: $dl->ngayThi;
+        $form['bc_chung']['ngay_thi'] = $ngayThi;
+        $form['chi_tiet']['ngay_lap'] = $ngayLap;
+        $form['chi_tiet']['ngay_thi'] = $ngayThi;
         $form['bc_chung']['sat_hach'] = $data['sat_hach'] ?? ($form['bc_chung']['sat_hach'] ?? '');
 
         $ts = KtmBaoCaoThamSo::tuForm($form, $dl);

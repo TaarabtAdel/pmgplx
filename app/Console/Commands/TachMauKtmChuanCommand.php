@@ -10,7 +10,7 @@ class TachMauKtmChuanCommand extends Command
     protected $signature = 'qldt-oto:tach-mau-chuan
         {--nguon= : Đường dẫn file chuẩn (mặc định resources/.../file-chuan-ktm-mau.xls)}';
 
-    protected $description = 'Tách BC CHUNG, BBTH, bb họp từ workbook chuẩn → 3 file mẫu .xls (giữ format)';
+    protected $description = 'Tách BC CHUNG, BBTH, Biên bản họp từ workbook chuẩn → 3 file mẫu .xls (giữ format)';
 
     public function handle(): int
     {

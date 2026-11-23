@@ -2,12 +2,11 @@
 
 namespace App\Support\QldtOto\KtmChiTiet;
 
-use App\Support\QldtOto\BaoCaoDangKyKhoaHoc;
 use App\Support\QldtOto\KtmBaoCao\KtmBaoCaoThamSo;
 use App\Support\QldtOto\KtmBaoCao\KtmCotBaSo;
 use App\Support\QldtOto\KtmBaoCao\KtmKyThiDuLieu;
+use App\Support\QldtOto\KtmBaoCao\KtmTinhToan;
 use App\Support\QldtOto\KtmBaoCao\KtmTongHop;
-use Carbon\Carbon;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
@@ -24,8 +23,7 @@ final class XuatKtmChuanExcel
     {
         $sheet = self::sheet('BC CHUNG');
         try {
-            $ngay = Carbon::parse($ts->bcChung['ngay_lap'] ?? $dl->ngayThi);
-            $sheet->setCellValue('M4', 'Quảng Trị, '.BaoCaoDangKyKhoaHoc::dongNgayThangNam($ngay));
+            $sheet->setCellValue('M4', $ts->dongNgayBcChung());
             $sheet->setCellValue('A8', '          1.	Trung tâm sát hạch: '.($ts->bcChung['sat_hach'] ?? ''));
             $sheet->setCellValue('A9', '          2.	Ngày sát hạch: '.($ts->bcChung['ngay_thi'] ?? $dl->ngayThi));
 
@@ -85,13 +83,16 @@ final class XuatKtmChuanExcel
             $doan = $ts->doanVanBbthA8(count($dl->thiSinh));
         }
         $sheet->setCellValue('A8', $doan);
+        $sheet->setCellValue('I4', $ts->dongNgayBbth());
 
         self::dienHoiDong($sheet, $ts);
 
         $hang = $dl->tongHopTheoHang ?? [];
         $cong = KtmChiTietGopDuLieu::tongHopHang($hang, 'cong');
+        $vang = max(0, $cong->hoSo - $cong->duThi);
         $sheet->setCellValue('I16', $cong->hoSo);
-        $sheet->setCellValue('O16', max(0, $cong->hoSo - $cong->duThi));
+        $sheet->setCellValue('O16', $vang);
+        $sheet->setCellValue('R16', $vang);
         $sheet->setCellValue('R17', $cong->duThi);
 
         $map = [
@@ -101,11 +102,17 @@ final class XuatKtmChuanExcel
             25 => 'c1_tcn',
             26 => 'qua_han',
             27 => 'b01_thi_lai',
-            38 => 'cong',
         ];
         foreach ($map as $row => $key) {
             self::dienBbthHang($sheet, $row, KtmChiTietGopDuLieu::tongHopHang($hang, $key));
         }
+
+        self::dienBbthHang($sheet, 28, $cong);
+
+        $rong = KtmTinhToan::tongHopNhomRong('');
+        self::dienBbthHang($sheet, 32, $rong);
+        self::dienBbthHang($sheet, 38, $rong);
+        $sheet->setCellValue('AC40', $cong->ketQuaDat);
 
         $tyLe = $cong->tyLeDat($ts->tyLeMauSo());
         $sheet->setCellValue('B40', '- Như vậy tổng số thí sinh đạt các nội dung kỳ kiểm tra nêu trên là: '
@@ -151,6 +158,8 @@ final class XuatKtmChuanExcel
         self::bonCotMon($sheet, $row, 'K', $g->mp, $g->hoSo);
         self::bonCotMon($sheet, $row, 'O', $g->h, $g->hoSo);
         self::bonCotMon($sheet, $row, 'S', $g->cc, $g->hoSo);
+        self::bonCotMon($sheet, $row, 'W', $g->duong, $g->hoSo);
+        $sheet->setCellValue('AA'.$row, $g->ketQuaDat > 0 ? $g->ketQuaDat : ($g->hoSo > 0 ? 0 : ''));
     }
 
     /** Đăng ký (cả nhóm) / tổng / đạt / rớt (cột G–J …). */

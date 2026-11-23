@@ -72,8 +72,9 @@
                         </div>
                         <div class="form-group col-md-3">
                             <label class="small">Ngày sát hạch (hiển thị)</label>
-                            <input type="text" name="ngay_thi" class="form-control form-control-sm" maxlength="32"
-                                   placeholder="dd/mm/yyyy" value="{{ old('ngay_thi') }}">
+                            <input type="date" name="ngay_thi" class="form-control form-control-sm"
+                                   value="{{ old('ngay_thi') }}">
+                            <small class="text-muted">Để trống = ngày kỳ thi của báo cáo đã chọn (dd/mm/yyyy trên file Excel).</small>
                         </div>
                         <div class="form-group col-md-6">
                             <label class="small">Trung tâm sát hạch</label>
