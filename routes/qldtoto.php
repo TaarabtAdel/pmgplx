@@ -30,7 +30,7 @@ use App\Http\Controllers\QldtOto\LichDuKien\ThucHanhController;
 use App\Http\Controllers\QldtOto\ThongBaoKiemTraKetThucMonController;
 use App\Http\Controllers\QldtOto\ThongBaoTapTrungThucHanhController;
 use App\Http\Controllers\QldtOto\TrangController;
-use App\Http\Controllers\QldtOto\XuatBaoCaoKtmController;
+use App\Http\Controllers\QldtOto\BaoCaoChiTietKtmController;
 use App\Models\QldtOto\BaiDay;
 use App\Support\MenuQldt;
 use Illuminate\Support\Facades\Route;
@@ -234,13 +234,21 @@ Route::prefix('qldt-oto')->name('qldtoto.')->group(function () {
         Route::delete('/{lich}', [ThucHanhController::class, 'destroy'])->whereNumber('lich')->name('destroy');
     });
 
-    $slugXuatBaoCaoKtm = '2-dua-vao-file-cua-nhan-lam-danh-sach-vang-dat-truot-bien-ban';
-    Route::get('/'.$slugXuatBaoCaoKtm, [XuatBaoCaoKtmController::class, 'index'])->name('xuat-bao-cao-ktm.index');
-    Route::post('/'.$slugXuatBaoCaoKtm, [XuatBaoCaoKtmController::class, 'store'])->name('xuat-bao-cao-ktm.store');
-    Route::get('/'.$slugXuatBaoCaoKtm.'/xem-truoc', [XuatBaoCaoKtmController::class, 'preview'])->name('xuat-bao-cao-ktm.preview');
-    Route::post('/'.$slugXuatBaoCaoKtm.'/tham-so', [XuatBaoCaoKtmController::class, 'updateThamSo'])->name('xuat-bao-cao-ktm.update-tham-so');
-    Route::post('/'.$slugXuatBaoCaoKtm.'/xuat/{loai}', [XuatBaoCaoKtmController::class, 'export'])->where('loai', 'bbth|chi-tiet|chung|zip')->name('xuat-bao-cao-ktm.export');
-    Route::get('/'.$slugXuatBaoCaoKtm.'/huy', [XuatBaoCaoKtmController::class, 'cancel'])->name('xuat-bao-cao-ktm.cancel');
+    $slugBaoCaoChiTietKtm = BaoCaoChiTietKtmController::SLUG;
+    Route::get('/'.$slugBaoCaoChiTietKtm, [BaoCaoChiTietKtmController::class, 'index'])->name('bao-cao-chi-tiet.index');
+    Route::get('/'.$slugBaoCaoChiTietKtm.'/tao-moi', [BaoCaoChiTietKtmController::class, 'create'])->name('bao-cao-chi-tiet.create');
+    Route::post('/'.$slugBaoCaoChiTietKtm, [BaoCaoChiTietKtmController::class, 'store'])->name('bao-cao-chi-tiet.store');
+    Route::get('/'.$slugBaoCaoChiTietKtm.'/{id}', [BaoCaoChiTietKtmController::class, 'show'])->whereNumber('id')->name('bao-cao-chi-tiet.show');
+    Route::get('/'.$slugBaoCaoChiTietKtm.'/xuat/{id}', [BaoCaoChiTietKtmController::class, 'export'])->whereNumber('id')->name('bao-cao-chi-tiet.export');
+    Route::get('/'.$slugBaoCaoChiTietKtm.'/xem-truoc/{id}', function (int $id) {
+        return redirect()->route('qldtoto.bao-cao-chi-tiet.show', ['id' => $id], 301);
+    })->whereNumber('id');
+
+    Route::redirect(
+        '/2-dua-vao-file-cua-nhan-lam-danh-sach-vang-dat-truot-bien-ban',
+        '/qldt-oto/'.$slugBaoCaoChiTietKtm,
+        302
+    );
 
     foreach (MenuQldt::tatCaTrang() as $slug) {
         Route::get('/'.$slug, [TrangController::class, 'show'])

@@ -10,6 +10,7 @@ use App\Support\QldtOto\QuyetDinhDoiGiaoVienSupport;
 use App\Support\QldtOto\BaoCaoDeNghiSatHachData;
 use App\Support\QldtOto\DanhSachKemQuyetDinhHoanThanhExcelExporter;
 use App\Support\QldtOto\QuyetDinhHoanThanhKhoaHocDocx;
+use App\Support\PMGPLX\SoCcnPmGplxBanCu;
 use App\Support\QldtOto\QuyetDinhHocVienForm;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -45,6 +46,7 @@ class QuyetDinhHoanThanhKhoaHocController extends Controller
             }
             $hang = BaoCaoDangKyKhoaHoc::nhanHangGplxQuyetDinh($khoa->HangGPLX ?? null);
             $hocVien = BaoCaoDeNghiSatHachData::hocVien((string) $khoa->MaKH);
+            SoCcnPmGplxBanCu::ganSoCcnTuPmBanCu((string) $khoa->MaKH, $hocVien);
             foreach ($hocVien as &$hv) {
                 $ten = DanhSachKemQuyetDinhHoanThanhExcelExporter::tachHoTen($hv['ho_ten']);
                 $hv['ho_dem'] = $ten['ho_dem'];
@@ -103,9 +105,10 @@ class QuyetDinhHoanThanhKhoaHocController extends Controller
             }
             $chon = array_flip((array) ($data['chon'][$ma] ?? []));
             $hocVien = array_values(array_filter(
-                \App\Support\QldtOto\BaoCaoDeNghiSatHachData::hocVien($ma),
+                BaoCaoDeNghiSatHachData::hocVien($ma),
                 fn ($hv) => isset($chon[$hv['ma_dk']])
             ));
+            SoCcnPmGplxBanCu::ganSoCcnTuPmBanCu($ma, $hocVien);
             $khoa[] = [
                 'hang' => trim($data['khoa'][$ma]['hang'] ?? ''),
                 'khoa_so' => trim($data['khoa'][$ma]['khoa_so'] ?? ''),

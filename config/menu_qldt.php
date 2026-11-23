@@ -304,10 +304,24 @@ return [
                                     ],
                                 ],
                                 [
-                                    'title' => 'Xuất báo cáo KTM từ file kết quả (BBTH, BC chi tiết, BC chung)',
-                                    'trang' => '2-dua-vao-file-cua-nhan-lam-danh-sach-vang-dat-truot-bien-ban',
-                                    'route' => 'qldtoto.xuat-bao-cao-ktm.index',
-                                    'active' => 'qldtoto.xuat-bao-cao-ktm.*',
+                                    'title' => 'Xuất báo cáo KTM từ file kết quả sát hạch',
+                                    'children' => [
+                                        [
+                                            'title' => 'Báo cáo chi tiết',
+                                            'mo_ta' => 'Ghép file DS + điểm từng môn, lưu theo ngày kỳ thi và tên khóa, xuất mẫu BC chi tiết.',
+                                            'trang' => 'bao-cao-chi-tiet',
+                                            'route' => 'qldtoto.bao-cao-chi-tiet.index',
+                                            'active' => 'qldtoto.bao-cao-chi-tiet.*',
+                                        ],
+                                        [
+                                            'title' => 'Báo cáo chung',
+                                            'trang' => 'bao-cao-chung',
+                                        ],
+                                        [
+                                            'title' => 'Báo cáo tổng hợp (BBTH)',
+                                            'trang' => 'bao-cao-tong-hop',
+                                        ],
+                                    ],
                                 ],
                                 [
                                     'title' => 'Xuất file "Biên bản tổng hợp kết quả kỳ kiểm tra kết thúc môn"',

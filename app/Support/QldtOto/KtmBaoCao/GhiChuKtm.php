@@ -8,6 +8,26 @@ final class GhiChuKtm
     /**
      * @return array{lt: bool, mp: bool, h: bool, duong: bool, cc: bool}
      */
+    /**
+     * Danh sách sát hạch: cột Ghi chú thường trống → coi là thi đủ các môn.
+     *
+     * @return array{lt: bool, mp: bool, h: bool, duong: bool, cc: bool}
+     */
+    public static function phaiThiChoSatHach(?string $ghiChu): array
+    {
+        if (trim((string) $ghiChu) === '') {
+            return [
+                'lt' => true,
+                'mp' => true,
+                'h' => true,
+                'duong' => true,
+                'cc' => true,
+            ];
+        }
+
+        return self::phaiThi($ghiChu);
+    }
+
     public static function phaiThi(?string $ghiChu): array
     {
         $tokens = self::maTuGhiChu($ghiChu);

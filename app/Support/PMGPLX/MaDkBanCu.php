@@ -29,4 +29,47 @@ class MaDkBanCu
 
         return $targetPrefix.'-'.$suffix;
     }
+
+    /**
+     * Mã khoá PMGPLX bản cũ tương ứng khoá PM mới (cùng TenKH, hoặc đổi 5 ký tự đầu MaKH).
+     */
+    public static function resolveMaKhoaHocBanCu(string $maKhMoi): ?string
+    {
+        $maKhMoi = trim($maKhMoi);
+        if ($maKhMoi === '') {
+            return null;
+        }
+
+        $tenKh = \App\Models\PMGPLX\KhoaHoc::query()->where('MaKH', $maKhMoi)->value('TenKH');
+        $tenKh = trim((string) ($tenKh ?? ''));
+        if ($tenKh !== '') {
+            $maCu = \App\Models\PMGPLXOLD\KhoaHoc::query()->where('TenKH', $tenKh)->value('MaKH');
+            if (is_string($maCu) && trim($maCu) !== '') {
+                return trim($maCu);
+            }
+        }
+
+        $suffix = strlen($maKhMoi) > 5 ? substr($maKhMoi, 5) : '';
+        foreach (self::tienToMaKhoaBanCu() as $prefix) {
+            $candidate = $prefix.$suffix;
+            if ($suffix !== '' && \App\Models\PMGPLXOLD\KhoaHoc::query()->where('MaKH', $candidate)->exists()) {
+                return $candidate;
+            }
+        }
+
+        $prefix = self::tienToMaKhoaBanCu()[0] ?? null;
+        if ($prefix !== null && $suffix !== '') {
+            return $prefix.$suffix;
+        }
+
+        return null;
+    }
+
+    /** @return list<string> */
+    public static function tienToMaKhoaBanCu(): array
+    {
+        $fromEnv = trim((string) config('pmgplx.ban_cu.ma_csdt_prefix', '45003'));
+
+        return $fromEnv !== '' ? [$fromEnv] : ['45003'];
+    }
 }
