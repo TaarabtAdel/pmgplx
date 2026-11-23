@@ -8,6 +8,7 @@ final class KtmKyThiDuLieu
     /**
      * @param  list<KtmThiSinh>  $thiSinh
      * @param  list<string>  $canhBao
+     * @param  array<string, KtmTongHop>|null  $tongHopTheoHang  nhóm hạng (từ báo cáo chi tiết)
      */
     public function __construct(
         public string $tenKhoa,
@@ -18,6 +19,7 @@ final class KtmKyThiDuLieu
         public KtmTongHop $tongHopBTTml,
         public KtmTongHop $tongHopKhac,
         public array $canhBao = [],
+        public ?array $tongHopTheoHang = null,
     ) {}
 
     /** @return array<string, mixed> */
@@ -49,6 +51,7 @@ final class KtmKyThiDuLieu
             KtmTongHop::fromArray($data['tongHopBTTml'] ?? []),
             KtmTongHop::fromArray($data['tongHopKhac'] ?? []),
             (array) ($data['canhBao'] ?? []),
+            null,
         );
     }
 }

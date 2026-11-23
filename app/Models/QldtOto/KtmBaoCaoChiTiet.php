@@ -14,13 +14,23 @@ class KtmBaoCaoChiTiet extends Model
         'TenKhoaThi',
         'TenKhoaTuFile',
         'DiaDiemSatHach',
+        'LaThiLai',
+        'BaoCaoGocId',
         'DuLieu',
         'CanhBao',
+        'LichSuUpload',
     ];
 
     protected $casts = [
         'NgayKyThi' => 'date',
+        'LaThiLai' => 'boolean',
+        'BaoCaoGocId' => 'integer',
     ];
+
+    public function baoCaoGoc(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(self::class, 'BaoCaoGocId');
+    }
 
     /** @return list<array<string, mixed>> */
     public function thiSinh(): array
@@ -41,6 +51,29 @@ class KtmBaoCaoChiTiet extends Model
                 continue;
             }
             $out[] = $ts;
+        }
+
+        return $out;
+    }
+
+    /** @return list<array{loai: string, ten_file: string, thoi_gian: string, so_hv: int}> */
+    public function lichSuUploadList(): array
+    {
+        $raw = json_decode((string) ($this->LichSuUpload ?? '[]'), true);
+        if (! is_array($raw)) {
+            return [];
+        }
+        $out = [];
+        foreach ($raw as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            $out[] = [
+                'loai' => (string) ($row['loai'] ?? ''),
+                'ten_file' => (string) ($row['ten_file'] ?? ''),
+                'thoi_gian' => (string) ($row['thoi_gian'] ?? ''),
+                'so_hv' => (int) ($row['so_hv'] ?? 0),
+            ];
         }
 
         return $out;

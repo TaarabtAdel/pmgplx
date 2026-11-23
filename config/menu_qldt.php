@@ -315,21 +315,26 @@ return [
                                         ],
                                         [
                                             'title' => 'Báo cáo chung',
+                                            'mo_ta' => 'Tổng hợp từ báo cáo chi tiết → sheet BC CHUNG.',
                                             'trang' => 'bao-cao-chung',
+                                            'route' => 'qldtoto.bao-cao-chung.index',
+                                            'active' => 'qldtoto.bao-cao-chung.*',
                                         ],
                                         [
                                             'title' => 'Báo cáo tổng hợp (BBTH)',
+                                            'mo_ta' => 'Tổng hợp từ báo cáo chi tiết → sheet BBTH.',
                                             'trang' => 'bao-cao-tong-hop',
+                                            'route' => 'qldtoto.bao-cao-tong-hop.index',
+                                            'active' => 'qldtoto.bao-cao-tong-hop.*',
+                                        ],
+                                        [
+                                            'title' => 'Biên bản họp thông qua KTM',
+                                            'mo_ta' => 'Tổng hợp từ báo cáo chi tiết → sheet bb họp.',
+                                            'trang' => 'bien-ban-hop',
+                                            'route' => 'qldtoto.bien-ban-hop.index',
+                                            'active' => 'qldtoto.bien-ban-hop.*',
                                         ],
                                     ],
-                                ],
-                                [
-                                    'title' => 'Xuất file "Biên bản tổng hợp kết quả kỳ kiểm tra kết thúc môn"',
-                                    'trang' => '2-bien-ban-tong-hop-ket-qua-ky-kiem-tra-ket-thuc-mon',
-                                ],
-                                [
-                                    'title' => 'Xuất file "Biên bản họp thông qua kết quả kỳ kiểm tra kết thúc môn học lý thuyết thực hành"',
-                                    'trang' => '2-bien-ban-hop-thong-qua-ket-qua-ky-kiem-tra-ket-thuc-mon-hoc',
                                 ],
                                 [
                                     'title' => 'Xuất file "Quyết định hoàn thành của khoá học" + danh sách học viên được tốt nghiệp',

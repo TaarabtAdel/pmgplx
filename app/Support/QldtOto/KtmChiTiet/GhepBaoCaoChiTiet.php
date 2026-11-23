@@ -20,7 +20,7 @@ final class GhepBaoCaoChiTiet
      * @param  array<string, string>  $hTruot  sbd => KĐ
      * @param  array<string, string>  $dtDat
      * @param  array<string, string>  $dtTruot
-     * @param  array{lt?: bool, mp?: bool, cc?: bool, h?: bool, duong?: bool}  $coFile  true = đã tải file môn đó trong lần ghép này
+     * @param  array{lt?: bool, mp?: bool, cc?: bool, h?: bool, h_dat?: bool, h_truot?: bool, duong?: bool, duong_dat?: bool, duong_truot?: bool}  $coFile
      * @param  array<string, array<string, mixed>>  $ketQuaCu  kết quả đã lưu (khóa CCCD), để cập nhật từng môn
      * @return array{thi_sinh: list<array<string, mixed>>, canh_bao: list<string>}
      */
@@ -41,10 +41,16 @@ final class GhepBaoCaoChiTiet
             'mp' => false,
             'cc' => false,
             'h' => false,
+            'h_dat' => false,
+            'h_truot' => false,
             'duong' => false,
+            'duong_dat' => false,
+            'duong_truot' => false,
         ], $coFile);
         $canhBao = [];
         $out = [];
+        $hTrongFileKhopDs = 0;
+        $dtTrongFileKhopDs = 0;
 
         foreach ($danhSach['thi_sinh'] as $row) {
             $sbd = $row['sbd'];
@@ -52,36 +58,60 @@ final class GhepBaoCaoChiTiet
             $phaiThi = GhiChuKtm::phaiThiChoSatHach($row['ghi_chu']);
             $cu = self::timKetQuaCu($ketQuaCu, $sbd, $cccd);
 
-            $kqLt = self::ketQuaMon($phaiThi['lt'], self::traDiem($lt, $sbd, $cccd), 'VLT', $coFile['lt'], self::giaTriCu($cu, 'lt'));
-            $kqMp = self::ketQuaMon($phaiThi['mp'], self::traDiem($mp, $sbd, $cccd), 'VMP', $coFile['mp'], self::giaTriCu($cu, 'mp'));
-            $kqCc = self::ketQuaMon($phaiThi['cc'], self::traDiem($cc, $sbd, $cccd), 'VCC', $coFile['cc'], self::giaTriCu($cu, 'cc'));
+            $tra = fn (array $bang) => self::traDiem($bang, $sbd, $cccd, $row['ho_ten'], $row['ngay_sinh']);
 
-            $coHDat = self::coTrongBang($hDat, $sbd, $cccd);
-            $coHTruot = self::coTrongBang($hTruot, $sbd, $cccd);
-            if ($coFile['h']) {
-                $kqH = self::monHinh($phaiThi['h'], $coHDat ? 'Đ' : null, $coHTruot ? 'KĐ' : null, true);
-            } else {
-                $kqH = self::ketQuaMon($phaiThi['h'], null, 'VH', false, self::giaTriCu($cu, 'h'));
+            $kqLt = self::ketQuaMon($phaiThi['lt'], $tra($lt), 'VLT', $coFile['lt'], self::giaTriCu($cu, 'lt'));
+            $kqMp = self::ketQuaMon($phaiThi['mp'], $tra($mp), 'VMP', $coFile['mp'], self::giaTriCu($cu, 'mp'));
+            $kqCc = self::ketQuaMon($phaiThi['cc'], $tra($cc), 'VCC', $coFile['cc'], self::giaTriCu($cu, 'cc'));
+
+            $coHDat = self::coTrongBang($hDat, $sbd, $cccd, $row['ho_ten'], $row['ngay_sinh']);
+            $coHTruot = self::coTrongBang($hTruot, $sbd, $cccd, $row['ho_ten'], $row['ngay_sinh']);
+            $kqH = '-';
+            if ($phaiThi['h']) {
+                if ($coFile['h']) {
+                    if ($coHDat || $coHTruot) {
+                        $hTrongFileKhopDs++;
+                    }
+                    $kqH = self::monHinhTuDanhSach(
+                        $coHDat,
+                        $coHTruot,
+                        (bool) $coFile['h_dat'],
+                        (bool) $coFile['h_truot'],
+                        $kqLt,
+                        $cu,
+                    );
+                } else {
+                    $kqH = self::ketQuaMon($phaiThi['h'], null, 'VH', false, self::giaTriCu($cu, 'h'));
+                }
             }
 
-            $datH = $kqH === 'Đ' || ($phaiThi['h'] && $coHDat);
-            $coDtDat = self::coTrongBang($dtDat, $sbd, $cccd);
-            $coDtTruot = self::coTrongBang($dtTruot, $sbd, $cccd);
-            if ($coFile['duong']) {
-                $kqDt = self::monDuong(
-                    $phaiThi['duong'],
-                    $datH || ! $phaiThi['h'],
-                    $coDtDat ? 'Đ' : null,
-                    $coDtTruot ? 'KĐ' : null,
-                    true,
-                );
-                if ($phaiThi['duong'] && $phaiThi['h'] && $kqH === 'KĐ') {
-                    $kqDt = '-';
+            $coDtDat = self::coTrongBang($dtDat, $sbd, $cccd, $row['ho_ten'], $row['ngay_sinh']);
+            $coDtTruot = self::coTrongBang($dtTruot, $sbd, $cccd, $row['ho_ten'], $row['ngay_sinh']);
+            if ($phaiThi['h'] && $kqLt === 'KĐ' && $coFile['h']) {
+                $kqH = '-';
+            } elseif ($phaiThi['h'] && $kqLt === 'KĐ') {
+                $cuH = self::giaTriCu($cu, 'h');
+                if ($cuH === null || $cuH === 'VH') {
+                    $kqH = '-';
                 }
-            } else {
-                $kqDt = self::ketQuaMon($phaiThi['duong'], null, 'VĐ', false, self::giaTriCu($cu, 'duong'));
-                if ($coFile['h'] && $phaiThi['duong'] && $phaiThi['h'] && $kqH === 'KĐ') {
-                    $kqDt = '-';
+            }
+
+            $kqDt = '-';
+            if ($phaiThi['duong']) {
+                if ($coFile['duong']) {
+                    if ($coDtDat || $coDtTruot) {
+                        $dtTrongFileKhopDs++;
+                    }
+                    $kqDt = self::monDuongTuDanhSach(
+                        $coDtDat,
+                        $coDtTruot,
+                        (bool) $coFile['duong_dat'],
+                        (bool) $coFile['duong_truot'],
+                        $kqH,
+                        $cu,
+                    );
+                } else {
+                    $kqDt = self::ketQuaMon(true, null, 'VĐ', false, self::giaTriCu($cu, 'duong'));
                 }
             }
 
@@ -109,17 +139,138 @@ final class GhepBaoCaoChiTiet
             ];
         }
 
+        if ($coFile['h']) {
+            if ($hDat === [] && $hTruot === []) {
+                $canhBao[] = 'File Hình không có dòng hợp lệ (thiếu tiêu đề CCCD / Họ tên / SBD).';
+            } elseif ($hTrongFileKhopDs === 0) {
+                $canhBao[] = 'File Hình không khớp thí sinh nào trong danh sách (kiểm CCCD hoặc Họ tên + Ngày sinh).';
+            }
+        }
+        if ($coFile['duong']) {
+            if ($dtDat === [] && $dtTruot === []) {
+                $canhBao[] = 'File Đường trường không có dòng hợp lệ (thiếu tiêu đề CCCD / Họ tên / SBD).';
+            } elseif ($dtTrongFileKhopDs === 0) {
+                $canhBao[] = 'File Đường trường không khớp thí sinh nào trong danh sách (kiểm CCCD hoặc Họ tên + Ngày sinh).';
+            }
+        }
+
         return ['thi_sinh' => $out, 'canh_bao' => $canhBao];
     }
 
-    /** @param  array<string, string>  $bang */
-    private static function coTrongBang(array $bang, string $sbd, string $cccd): bool
+    /**
+     * Tối đa 5 dòng sau ghép — ưu tiên thí sinh khớp file điểm/danh sách vừa tải (để nhân viên dò).
+     *
+     * @param  list<array<string, mixed>>  $thiSinh
+     * @param  list<array<string, string>>  $bangDaTai  các bảng đọc từ file vừa upload (bỏ qua nếu rỗng)
+     * @return list<array<string, mixed>>
+     */
+    public static function xemTruoc5Dong(array $thiSinh, array $bangDaTai): array
     {
-        if ($sbd !== '' && array_key_exists($sbd, $bang)) {
-            return true;
+        if ($thiSinh === []) {
+            return [];
         }
 
-        return $cccd !== '' && array_key_exists($cccd, $bang);
+        $bangDaTai = array_values(array_filter($bangDaTai, static fn (array $b): bool => $b !== []));
+        if ($bangDaTai === []) {
+            return array_slice(array_map(self::dongXemTruoc(...), $thiSinh), 0, 5);
+        }
+
+        $uuTien = [];
+        $khac = [];
+        foreach ($thiSinh as $ts) {
+            $row = self::dongXemTruoc($ts);
+            $trongFile = false;
+            foreach ($bangDaTai as $bang) {
+                if (self::thiSinhTrongBang($ts, $bang)) {
+                    $trongFile = true;
+                    break;
+                }
+            }
+            if ($trongFile) {
+                $uuTien[] = $row;
+            } else {
+                $khac[] = $row;
+            }
+        }
+
+        return array_slice(array_merge($uuTien, $khac), 0, 5);
+    }
+
+    /**
+     * @param  array<string, mixed>  $ts
+     * @param  array<string, string>  $bang
+     */
+    public static function thiSinhTrongBang(array $ts, array $bang): bool
+    {
+        return self::coTrongBang(
+            $bang,
+            (string) ($ts['sbd'] ?? ''),
+            (string) ($ts['soDinhDanh'] ?? ''),
+            (string) ($ts['hoTen'] ?? ''),
+            (string) ($ts['ngaySinh'] ?? ''),
+        );
+    }
+
+    /** @param  array<string, mixed>  $ts */
+    private static function dongXemTruoc(array $ts): array
+    {
+        return [
+            'stt' => $ts['stt'] ?? '',
+            'hoTen' => $ts['hoTen'] ?? '',
+            'ngaySinh' => $ts['ngaySinh'] ?? '',
+            'soDinhDanh' => $ts['soDinhDanh'] ?? '',
+            'hang' => $ts['hang'] ?? '',
+            'lt' => $ts['lt'] ?? '',
+            'mp' => $ts['mp'] ?? '',
+            'h' => $ts['h'] ?? '',
+            'cc' => $ts['cc'] ?? '',
+            'duong' => $ts['duong'] ?? '',
+            'tongHop' => $ts['tongHop'] ?? '',
+            'ghiChu' => $ts['ghiChu'] ?? '',
+        ];
+    }
+
+    /**
+     * Số thí sinh có trong file vừa upload (khớp CCCD / SBD / Họ tên + NS) — đếm sau ghép.
+     *
+     * @param  list<array<string, mixed>>  $thiSinhGhep
+     * @param  array<string, string>  $bang
+     */
+    public static function demThiSinhKhopBangTuGhep(array $thiSinhGhep, array $bang): int
+    {
+        if ($bang === []) {
+            return 0;
+        }
+        $n = 0;
+        foreach ($thiSinhGhep as $ts) {
+            if (self::coTrongBang(
+                $bang,
+                (string) ($ts['sbd'] ?? ''),
+                (string) ($ts['soDinhDanh'] ?? ''),
+                (string) ($ts['hoTen'] ?? ''),
+                (string) ($ts['ngaySinh'] ?? ''),
+            )) {
+                $n++;
+            }
+        }
+
+        return $n;
+    }
+
+    /** @param  array<string, string>  $bang */
+    private static function coTrongBang(array $bang, string $sbd, string $cccd, string $hoTen = '', string $ngaySinh = ''): bool
+    {
+        $cccd = DocSheet::normalizeCccd($cccd);
+        if ($cccd !== '' && array_key_exists($cccd, $bang)) {
+            return true;
+        }
+        $kTen = DocSheet::khoaHoTenNgaySinh($hoTen, $ngaySinh);
+        if ($kTen !== '' && array_key_exists($kTen, $bang)) {
+            return true;
+        }
+        $sbd = DocSheet::normalizeSbd($sbd);
+
+        return $sbd !== '' && array_key_exists($sbd, $bang);
     }
 
     /** @param  array<string, array<string, mixed>>  $ketQuaCu */
@@ -154,7 +305,14 @@ final class GhepBaoCaoChiTiet
             return '-';
         }
         if ($coFileMoi) {
-            return self::monKetQua(true, $tuFile, $maVang, true);
+            if ($tuFile !== null && $tuFile !== '') {
+                return $tuFile;
+            }
+            if ($cu !== null) {
+                return $cu;
+            }
+
+            return $maVang;
         }
         if ($cu !== null) {
             return $cu;
@@ -164,13 +322,19 @@ final class GhepBaoCaoChiTiet
     }
 
     /** @param  array<string, string>  $bang */
-    private static function traDiem(array $bang, string $sbd, string $cccd): ?string
+    private static function traDiem(array $bang, string $sbd, string $cccd, string $hoTen = '', string $ngaySinh = ''): ?string
     {
-        if ($sbd !== '' && isset($bang[$sbd])) {
-            return $bang[$sbd];
-        }
+        $cccd = DocSheet::normalizeCccd($cccd);
         if ($cccd !== '' && isset($bang[$cccd])) {
             return $bang[$cccd];
+        }
+        $kTen = DocSheet::khoaHoTenNgaySinh($hoTen, $ngaySinh);
+        if ($kTen !== '' && isset($bang[$kTen])) {
+            return $bang[$kTen];
+        }
+        $sbd = DocSheet::normalizeSbd($sbd);
+        if ($sbd !== '' && isset($bang[$sbd])) {
+            return $bang[$sbd];
         }
 
         return null;
@@ -191,43 +355,78 @@ final class GhepBaoCaoChiTiet
         return $ketQua;
     }
 
-    private static function monHinh(bool $phaiThi, ?string $dat, ?string $truot, bool $coFile): string
-    {
-        if (! $phaiThi) {
-            return '-';
-        }
-        if (! $coFile) {
-            return '-';
-        }
-        if ($dat !== null) {
+    /**
+     * File Hình: danh sách đạt / trượt — có trong file thì Đ/KĐ; không có thì giữ cũ (không gán VH).
+     *
+     * @param  array<string, mixed>|null  $cu
+     */
+    private static function monHinhTuDanhSach(
+        bool $coHDat,
+        bool $coHTruot,
+        bool $coFileDat,
+        bool $coFileTruot,
+        string $kqLt,
+        ?array $cu,
+    ): string {
+        if ($coHDat) {
             return 'Đ';
         }
-        if ($truot !== null) {
+        if ($coHTruot) {
             return 'KĐ';
         }
+        if ($coFileDat && $coFileTruot) {
+            return $kqLt === 'Đ' ? 'VH' : '-';
+        }
 
-        return 'VH';
+        return self::giaTriHGiuNguyen($cu);
     }
 
-    private static function monDuong(bool $phaiThi, bool $duocPhepThi, ?string $dat, ?string $truot, bool $coFile): string
+    /** @param  array<string, mixed>|null  $cu */
+    private static function giaTriHGiuNguyen(?array $cu): string
     {
-        if (! $phaiThi) {
+        if ($cu === null) {
             return '-';
         }
-        if (! $coFile) {
-            return '-';
-        }
-        if (! $duocPhepThi) {
-            return '-';
-        }
-        if ($dat !== null) {
+        $v = trim((string) ($cu['h'] ?? ''));
+
+        return $v !== '' ? $v : '-';
+    }
+
+    /**
+     * File Đường: danh sách đạt / trượt — có trong file thì ghi Đ/KĐ; không có thì giữ giá trị cũ (không gán VĐ).
+     *
+     * @param  array<string, mixed>|null  $cu
+     */
+    private static function monDuongTuDanhSach(
+        bool $coDtDat,
+        bool $coDtTruot,
+        bool $coFileDat,
+        bool $coFileTruot,
+        string $kqH,
+        ?array $cu,
+    ): string {
+        if ($coDtDat) {
             return 'Đ';
         }
-        if ($truot !== null) {
+        if ($coDtTruot) {
             return 'KĐ';
         }
+        if ($coFileDat && $coFileTruot) {
+            return $kqH === 'Đ' ? 'VĐ' : '-';
+        }
 
-        return 'VĐ';
+        return self::giaTriDuongGiuNguyen($cu);
+    }
+
+    /** @param  array<string, mixed>|null  $cu */
+    private static function giaTriDuongGiuNguyen(?array $cu): string
+    {
+        if ($cu === null) {
+            return '-';
+        }
+        $v = trim((string) ($cu['duong'] ?? ''));
+
+        return $v !== '' ? $v : '-';
     }
 
     private static function lanSh(string $kq): int

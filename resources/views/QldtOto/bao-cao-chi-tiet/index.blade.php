@@ -40,6 +40,7 @@
                                 <th style="width: 3rem;">#</th>
                                 <th>Ngày kỳ thi</th>
                                 <th>Tên khóa</th>
+                                <th>Thi lại (kỳ gốc)</th>
                                 <th>Tên khóa (file DS)</th>
                                 <th>Cập nhật</th>
                                 <th class="text-right">Thao tác</th>
@@ -53,11 +54,32 @@
                                     <td>
                                         <a href="{{ route('qldtoto.bao-cao-chi-tiet.show', ['id' => $ky->id]) }}">{{ $ky->TenKhoaThi }}</a>
                                     </td>
+                                    <td class="small">
+                                        @if ($ky->LaThiLai)
+                                            @if ($ky->baoCaoGoc)
+                                                <span class="badge badge-info">Thi lại</span>
+                                                <span class="text-nowrap">Ngày {{ $ky->baoCaoGoc->NgayKyThi->format('d/m/Y') }}</span>
+                                                <a href="{{ route('qldtoto.bao-cao-chi-tiet.show', ['id' => $ky->baoCaoGoc->id]) }}"
+                                                   class="d-block text-muted" title="Mở báo cáo kỳ gốc">{{ $ky->baoCaoGoc->TenKhoaThi }}</a>
+                                            @else
+                                                <span class="badge badge-warning text-dark">Thi lại</span>
+                                                <span class="text-muted">Chưa gắn kỳ gốc</span>
+                                            @endif
+                                        @else
+                                            <span class="text-muted">—</span>
+                                        @endif
+                                    </td>
                                     <td class="small text-muted">{{ $ky->TenKhoaTuFile }}</td>
                                     <td class="small text-muted">{{ $ky->updated_at?->format('d/m/Y H:i') }}</td>
                                     <td class="text-right text-nowrap">
                                         <a href="{{ route('qldtoto.bao-cao-chi-tiet.show', ['id' => $ky->id]) }}" class="btn btn-outline-primary btn-sm">Chi tiết</a>
                                         <a href="{{ route('qldtoto.bao-cao-chi-tiet.export', ['id' => $ky->id]) }}" class="btn btn-outline-secondary btn-sm">Excel</a>
+                                        <form method="POST" action="{{ route('qldtoto.bao-cao-chi-tiet.destroy', ['id' => $ky->id]) }}" class="d-inline"
+                                              onsubmit="return confirm('Xoá hết dữ liệu đã lưu của «{{ $ky->TenKhoaThi }}» (ngày {{ $ky->NgayKyThi->format('d/m/Y') }})? Thao tác không hoàn tác.');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">Xoá</button>
+                                        </form>
                                     </td>
                                 </tr>
                             @endforeach

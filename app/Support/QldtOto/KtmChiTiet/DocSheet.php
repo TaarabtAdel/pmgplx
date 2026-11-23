@@ -96,4 +96,79 @@ final class DocSheet
 
         return '';
     }
+
+    /** LT 30 câu: số câu trả lời đúng ≥ 26 là Đạt. */
+    public static function ketQuaTuSoCauDungLt(mixed $soCau, int $nguong = 26): string
+    {
+        $s = str_replace(',', '.', trim((string) $soCau));
+        if ($s === '' || ! is_numeric($s)) {
+            return '';
+        }
+
+        return (int) round((float) $s) >= $nguong ? 'Đ' : 'KĐ';
+    }
+
+    /**
+     * Tìm CCCD/CMT trong các cột lân cận khi cột «Số CMT» trống (file LT thi lại hay lệch cột).
+     */
+    public static function timCccdTrongHang(
+        \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
+        int $row,
+        int $colDau,
+        int $colCuoi,
+    ): string {
+        $colDau = max(1, $colDau);
+        $colCuoi = max($colDau, $colCuoi);
+        for ($c = $colDau; $c <= $colCuoi; $c++) {
+            $letter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($c);
+            $digits = self::normalizeCccd(self::cellStr($sheet, $letter.$row));
+            if ($digits !== '' && strlen($digits) >= 9) {
+                return $digits;
+            }
+        }
+
+        return '';
+    }
+
+    /** Ngưỡng điểm CC cabin: >= 5 là Đạt. */
+    public static function ketQuaTuDiemCc(mixed $raw, float $nguong = 5.0): string
+    {
+        $s = str_replace(',', '.', trim((string) $raw));
+        if ($s === '' || ! is_numeric($s)) {
+            return self::chuanHoaKetQua((string) $raw);
+        }
+
+        return (float) $s >= $nguong ? 'Đ' : 'KĐ';
+    }
+
+    public static function chuanNgaySinh(string $raw): string
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return '';
+        }
+        if (preg_match('/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/', $raw, $m)) {
+            return sprintf('%02d/%02d/%04d', (int) $m[1], (int) $m[2], (int) $m[3]);
+        }
+
+        return $raw;
+    }
+
+    public static function giongNgaySinh(string $raw): bool
+    {
+        $raw = trim($raw);
+
+        return $raw !== '' && (bool) preg_match('/^\d{1,2}[.\/-]\d{1,2}[.\/-]\d{2,4}$/', $raw);
+    }
+
+    public static function khoaHoTenNgaySinh(string $hoTen, string $ngaySinh): string
+    {
+        $ten = mb_strtoupper(trim($hoTen));
+        $ns = self::chuanNgaySinh($ngaySinh);
+        if ($ten === '' || $ns === '') {
+            return '';
+        }
+
+        return $ten.'|'.$ns;
+    }
 }

@@ -31,6 +31,9 @@ use App\Http\Controllers\QldtOto\ThongBaoKiemTraKetThucMonController;
 use App\Http\Controllers\QldtOto\ThongBaoTapTrungThucHanhController;
 use App\Http\Controllers\QldtOto\TrangController;
 use App\Http\Controllers\QldtOto\BaoCaoChiTietKtmController;
+use App\Http\Controllers\QldtOto\BaoCaoChungKtmController;
+use App\Http\Controllers\QldtOto\BaoCaoTongHopKtmController;
+use App\Http\Controllers\QldtOto\BienBanHopKtmController;
 use App\Models\QldtOto\BaiDay;
 use App\Support\MenuQldt;
 use Illuminate\Support\Facades\Route;
@@ -237,9 +240,17 @@ Route::prefix('qldt-oto')->name('qldtoto.')->group(function () {
     $slugBaoCaoChiTietKtm = BaoCaoChiTietKtmController::SLUG;
     Route::get('/'.$slugBaoCaoChiTietKtm, [BaoCaoChiTietKtmController::class, 'index'])->name('bao-cao-chi-tiet.index');
     Route::get('/'.$slugBaoCaoChiTietKtm.'/tao-moi', [BaoCaoChiTietKtmController::class, 'create'])->name('bao-cao-chi-tiet.create');
-    Route::post('/'.$slugBaoCaoChiTietKtm, [BaoCaoChiTietKtmController::class, 'store'])->name('bao-cao-chi-tiet.store');
+    Route::post('/'.$slugBaoCaoChiTietKtm.'/xem-truoc', [BaoCaoChiTietKtmController::class, 'previewStore'])->name('bao-cao-chi-tiet.preview.store');
+    Route::get('/'.$slugBaoCaoChiTietKtm.'/xem-truoc', [BaoCaoChiTietKtmController::class, 'preview'])->name('bao-cao-chi-tiet.preview');
+    Route::post('/'.$slugBaoCaoChiTietKtm.'/xac-nhan-luu', [BaoCaoChiTietKtmController::class, 'confirmStore'])->name('bao-cao-chi-tiet.confirm');
+    Route::post('/'.$slugBaoCaoChiTietKtm.'/huy-xem-truoc', [BaoCaoChiTietKtmController::class, 'previewCancel'])->name('bao-cao-chi-tiet.preview.cancel');
     Route::get('/'.$slugBaoCaoChiTietKtm.'/{id}', [BaoCaoChiTietKtmController::class, 'show'])->whereNumber('id')->name('bao-cao-chi-tiet.show');
     Route::get('/'.$slugBaoCaoChiTietKtm.'/xuat/{id}', [BaoCaoChiTietKtmController::class, 'export'])->whereNumber('id')->name('bao-cao-chi-tiet.export');
+    Route::get('/'.$slugBaoCaoChiTietKtm.'/xuat-ds/{loai}/{id}', [BaoCaoChiTietKtmController::class, 'exportDanhSach'])
+        ->whereIn('loai', ['vang', 'dat', 'ko-dat'])
+        ->whereNumber('id')
+        ->name('bao-cao-chi-tiet.export-ds');
+    Route::delete('/'.$slugBaoCaoChiTietKtm.'/{id}', [BaoCaoChiTietKtmController::class, 'destroy'])->whereNumber('id')->name('bao-cao-chi-tiet.destroy');
     Route::get('/'.$slugBaoCaoChiTietKtm.'/xem-truoc/{id}', function (int $id) {
         return redirect()->route('qldtoto.bao-cao-chi-tiet.show', ['id' => $id], 301);
     })->whereNumber('id');
@@ -249,6 +260,29 @@ Route::prefix('qldt-oto')->name('qldtoto.')->group(function () {
         '/qldt-oto/'.$slugBaoCaoChiTietKtm,
         302
     );
+
+    Route::redirect(
+        '/2-bien-ban-hop-thong-qua-ket-qua-ky-kiem-tra-ket-thuc-mon-hoc',
+        '/qldt-oto/'.BienBanHopKtmController::SLUG,
+        301
+    );
+    Route::redirect(
+        '/2-bien-ban-tong-hop-ket-qua-ky-kiem-tra-ket-thuc-mon',
+        '/qldt-oto/'.BaoCaoTongHopKtmController::SLUG,
+        301
+    );
+
+    $slugBcChung = BaoCaoChungKtmController::SLUG;
+    Route::get('/'.$slugBcChung, [BaoCaoChungKtmController::class, 'index'])->name('bao-cao-chung.index');
+    Route::post('/'.$slugBcChung.'/xuat', [BaoCaoChungKtmController::class, 'export'])->name('bao-cao-chung.export');
+
+    $slugBbth = BaoCaoTongHopKtmController::SLUG;
+    Route::get('/'.$slugBbth, [BaoCaoTongHopKtmController::class, 'index'])->name('bao-cao-tong-hop.index');
+    Route::post('/'.$slugBbth.'/xuat', [BaoCaoTongHopKtmController::class, 'export'])->name('bao-cao-tong-hop.export');
+
+    $slugBbHop = BienBanHopKtmController::SLUG;
+    Route::get('/'.$slugBbHop, [BienBanHopKtmController::class, 'index'])->name('bien-ban-hop.index');
+    Route::post('/'.$slugBbHop.'/xuat', [BienBanHopKtmController::class, 'export'])->name('bien-ban-hop.export');
 
     foreach (MenuQldt::tatCaTrang() as $slug) {
         Route::get('/'.$slug, [TrangController::class, 'show'])

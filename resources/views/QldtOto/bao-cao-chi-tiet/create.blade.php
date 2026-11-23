@@ -26,14 +26,15 @@
         <div class="card-header">Tạo mới báo cáo chi tiết</div>
         <div class="card-body">
             <p class="small text-muted mb-3">
-                Bắt buộc file <strong>danh sách thí sinh</strong> (7 cột). Các file điểm / đạt–trượt là tùy chọn;
-                thiếu file sẽ ghi nhận vắng theo ghi chú từng thí sinh.
+                Bắt buộc file <strong>danh sách thí sinh</strong> (7 cột). Các file điểm / đạt–trượt có thể nhập dần.
+                Với <strong>thi lại</strong>, chọn kỳ gốc để giữ kết quả cũ; chỉ cập nhật môn có file mới.
             </p>
             @include('QldtOto.bao-cao-chi-tiet.partials.form-nhap-file', [
                 'ngayKyThi' => $ngayMacDinh,
                 'tenKhoaThi' => '',
                 'diaDiem' => '',
-                'submitLabel' => 'Ghép dữ liệu & lưu',
+                'submitLabel' => 'Ghép & xem trước',
+                'danhSachKyGoc' => $danhSachKyGoc,
             ])
         </div>
     </div>
