@@ -34,6 +34,10 @@ use App\Http\Controllers\QldtOto\BaoCaoChiTietKtmController;
 use App\Http\Controllers\QldtOto\BaoCaoChungKtmController;
 use App\Http\Controllers\QldtOto\BaoCaoTongHopKtmController;
 use App\Http\Controllers\QldtOto\BienBanHopKtmController;
+use App\Http\Controllers\QldtOto\DatCabinTongDatController;
+use App\Http\Controllers\QldtOto\DatCabinPhuLuc1Controller;
+use App\Http\Controllers\QldtOto\DatCabinPhuLuc5Controller;
+use App\Http\Controllers\QldtOto\DatCabinPhuLuc6Controller;
 use App\Models\QldtOto\BaiDay;
 use App\Support\MenuQldt;
 use Illuminate\Support\Facades\Route;
@@ -283,6 +287,26 @@ Route::prefix('qldt-oto')->name('qldtoto.')->group(function () {
     $slugBbHop = BienBanHopKtmController::SLUG;
     Route::get('/'.$slugBbHop, [BienBanHopKtmController::class, 'index'])->name('bien-ban-hop.index');
     Route::post('/'.$slugBbHop.'/xuat', [BienBanHopKtmController::class, 'export'])->name('bien-ban-hop.export');
+
+    $slugTongDat = DatCabinTongDatController::SLUG;
+    Route::get('/'.$slugTongDat, [DatCabinTongDatController::class, 'index'])->name(MenuQldt::tenRouteTrang($slugTongDat).'.index');
+    Route::post('/'.$slugTongDat.'/xuat', [DatCabinTongDatController::class, 'export'])->name(MenuQldt::tenRouteTrang($slugTongDat).'.export');
+
+    $slugPhuLuc1 = DatCabinPhuLuc1Controller::SLUG;
+    Route::get('/'.$slugPhuLuc1, [DatCabinPhuLuc1Controller::class, 'index'])->name(MenuQldt::tenRouteTrang($slugPhuLuc1).'.index');
+    Route::get('/'.$slugPhuLuc1.'/xuat-hoc-vien', [DatCabinPhuLuc1Controller::class, 'exportMot'])->name(MenuQldt::tenRouteTrang($slugPhuLuc1).'.export-mot');
+    Route::post('/'.$slugPhuLuc1.'/xuat', [DatCabinPhuLuc1Controller::class, 'export'])->name(MenuQldt::tenRouteTrang($slugPhuLuc1).'.export');
+
+    $slugPhuLuc5 = DatCabinPhuLuc5Controller::SLUG;
+    Route::get('/'.$slugPhuLuc5, [DatCabinPhuLuc5Controller::class, 'index'])->name(MenuQldt::tenRouteTrang($slugPhuLuc5).'.index');
+    Route::get('/'.$slugPhuLuc5.'/thong-ke', [DatCabinPhuLuc5Controller::class, 'thongKe'])->name(MenuQldt::tenRouteTrang($slugPhuLuc5).'.thong-ke');
+    Route::post('/'.$slugPhuLuc5.'/xuat', [DatCabinPhuLuc5Controller::class, 'export'])->name(MenuQldt::tenRouteTrang($slugPhuLuc5).'.export');
+
+    $slugPhuLuc6 = DatCabinPhuLuc6Controller::SLUG;
+    Route::get('/'.$slugPhuLuc6, [DatCabinPhuLuc6Controller::class, 'index'])->name(MenuQldt::tenRouteTrang($slugPhuLuc6).'.index');
+    Route::post('/'.$slugPhuLuc6.'/preview', [DatCabinPhuLuc6Controller::class, 'preview'])->name(MenuQldt::tenRouteTrang($slugPhuLuc6).'.preview');
+    Route::post('/'.$slugPhuLuc6.'/xuat', [DatCabinPhuLuc6Controller::class, 'export'])->name(MenuQldt::tenRouteTrang($slugPhuLuc6).'.export');
+    Route::get('/'.$slugPhuLuc6.'/mau-danh-sach-dat', [DatCabinPhuLuc6Controller::class, 'mauDanhSachDat'])->name(MenuQldt::tenRouteTrang($slugPhuLuc6).'.mau-danh-sach-dat');
 
     foreach (MenuQldt::tatCaTrang() as $slug) {
         Route::get('/'.$slug, [TrangController::class, 'show'])

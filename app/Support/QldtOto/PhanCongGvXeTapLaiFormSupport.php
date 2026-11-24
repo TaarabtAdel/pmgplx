@@ -27,16 +27,12 @@ class PhanCongGvXeTapLaiFormSupport
             ->map(function (GiaoVien $gv): array {
                 $hoTen = trim(($gv->HoTenDem ?? '').' '.($gv->TenGV ?? ''));
                 $ghiChu = trim((string) ($gv->GhiChu ?? ''));
-                $label = $hoTen.' ('.$gv->MaGV.')';
-                if ($ghiChu !== '') {
-                    $label .= ' — '.$ghiChu;
-                }
 
                 return [
                     'ma' => (string) $gv->MaGV,
                     'ho_ten' => $hoTen,
                     'ghi_chu' => $ghiChu,
-                    'label' => $label,
+                    'label' => $hoTen.' ('.$gv->MaGV.')',
                 ];
             })
             ->values();

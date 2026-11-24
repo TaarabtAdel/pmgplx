@@ -191,6 +191,12 @@
                                                                 @if (($hv['khoang_ngay'] ?? '') !== '')
                                                                     <span class="badge badge-light border small ml-1">{{ $hv['khoang_ngay'] }}</span>
                                                                 @endif
+                                                                <div class="small mt-1">
+                                                                    @include('DaoTao.dat.partials.phan-cong-xe-hien-thi', [
+                                                                        'bien_so_xe' => $hv['bien_so_xe'] ?? '',
+                                                                        'bien_so_xe_tu_dong' => $hv['bien_so_xe_tu_dong'] ?? '',
+                                                                    ])
+                                                                </div>
                                                             </td>
                                                             <td class="text-center align-middle">
                                                                 <form method="POST"
@@ -300,12 +306,22 @@
                                                             @if ($ls['hien_tai'])<strong>@endif{{ $ls['ten_giao_vien'] }}@if ($ls['hien_tai'])</strong>@endif
                                                             <code>{{ $ls['ma_giao_vien'] }}</code>
                                                             <span class="text-nowrap">— {{ $ls['khoang_ngay'] !== '' ? $ls['khoang_ngay'] : 'cả khóa' }}</span>
+                                                            @include('DaoTao.dat.partials.phan-cong-xe-hien-thi', [
+                                                                'bien_so_xe' => $ls['bien_so_xe'] ?? '',
+                                                                'bien_so_xe_tu_dong' => $ls['bien_so_xe_tu_dong'] ?? '',
+                                                            ])
                                                         </div>
                                                     @endforeach
                                                 @elseif ($pc && ($pc['ma_giao_vien'] ?? '') !== '')
                                                     {{ $pc['ten_giao_vien'] ?? $pc['ma_giao_vien'] }}
                                                     <div class="text-muted"><code>{{ $pc['ma_giao_vien'] }}</code>
                                                         @if (($pc['khoang_ngay'] ?? '') !== '') · {{ $pc['khoang_ngay'] }} @endif
+                                                    </div>
+                                                    <div class="mt-1">
+                                                        @include('DaoTao.dat.partials.phan-cong-xe-hien-thi', [
+                                                            'bien_so_xe' => $pc['bien_so_xe'] ?? '',
+                                                            'bien_so_xe_tu_dong' => $pc['bien_so_xe_tu_dong'] ?? '',
+                                                        ])
                                                     </div>
                                                 @else
                                                     —

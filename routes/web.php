@@ -278,6 +278,8 @@ Route::prefix('daotao')->name('daotao.')->group(function () {
 
     Route::get('/phong-dao-tao/cong-cu-nhap/nhap-ket-qua-sat-hach', [NhapKetQuaSatHachController::class, 'create'])
         ->name('pdt.cong-cu-nhap.nhap-ket-qua-sat-hach');
+    Route::get('/phong-dao-tao/cong-cu-nhap/nhap-ket-qua-sat-hach/mau', [NhapKetQuaSatHachController::class, 'downloadMau'])
+        ->name('pdt.cong-cu-nhap.nhap-ket-qua-sat-hach.mau');
     Route::post('/phong-dao-tao/cong-cu-nhap/nhap-ket-qua-sat-hach', [NhapKetQuaSatHachController::class, 'store'])
         ->name('pdt.cong-cu-nhap.nhap-ket-qua-sat-hach.store');
     Route::get('/phong-dao-tao/cong-cu-nhap/nhap-ket-qua-sat-hach/xem-truoc', [NhapKetQuaSatHachController::class, 'preview'])

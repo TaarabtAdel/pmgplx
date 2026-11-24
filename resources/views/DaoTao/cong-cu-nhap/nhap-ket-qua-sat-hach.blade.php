@@ -28,6 +28,13 @@
                 </ul>
             </div>
 
+            <p class="mb-3">
+                <a href="{{ route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-sat-hach.mau') }}" class="btn btn-outline-primary btn-sm">
+                    Tải file mẫu (.xlsx)
+                </a>
+                <span class="text-muted small ml-2">Cấu trúc cột A, B, C, F, I, L–R — có 3 dòng ví dụ.</span>
+            </p>
+
             <form method="POST" action="{{ route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-sat-hach.store') }}" enctype="multipart/form-data">
                 @csrf
 

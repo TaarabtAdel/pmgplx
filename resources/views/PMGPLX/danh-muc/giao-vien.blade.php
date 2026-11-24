@@ -228,8 +228,8 @@
                     <p class="mb-2">Giáo viên: <strong id="gan_xe_ten_gv"></strong></p>
                     <div class="form-group mb-0">
                         <label for="gan_xe_bien_so">Biển số xe</label>
-                        <select name="bien_so_xe" id="gan_xe_bien_so" class="form-control" required>
-                            <option value="">-- Chọn xe --</option>
+                        <select name="bien_so_xe" id="gan_xe_bien_so" class="form-control">
+                            <option value="">— Không gắn xe —</option>
                             @foreach ($xeTaps as $xe)
                                 <option value="{{ $xe }}">{{ $xe }}</option>
                             @endforeach

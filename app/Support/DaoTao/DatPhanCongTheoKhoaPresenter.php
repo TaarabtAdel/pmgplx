@@ -47,7 +47,7 @@ final class DatPhanCongTheoKhoaPresenter
             ->orderBy('MaGiaoVien')
             ->orderBy('HoTenHocVien')
             ->orderBy('MaHocVien')
-            ->get(['Id', 'MaGiaoVien', 'MaHocVien', 'HoTenHocVien', 'TuNgay', 'DenNgay']);
+            ->get(['Id', 'MaGiaoVien', 'MaHocVien', 'HoTenHocVien', 'BienSoXe', 'BienSoXeTuDong', 'TuNgay', 'DenNgay']);
 
         /** @var array<string, list<array{id: int, ma_hoc_vien: string, ho_ten: string, khoang_ngay: string}>> $hvByGv */
         $hvByGv = [];
@@ -62,6 +62,8 @@ final class DatPhanCongTheoKhoaPresenter
                 'id' => (int) $row->Id,
                 'ma_hoc_vien' => $maHv,
                 'ho_ten' => $hoTen !== '' ? $hoTen : $maHv,
+                'bien_so_xe' => trim((string) ($row->BienSoXe ?? '')),
+                'bien_so_xe_tu_dong' => trim((string) ($row->BienSoXeTuDong ?? '')),
                 'khoang_ngay' => $row->nhanKhoangNgay(),
             ];
         }
@@ -149,6 +151,8 @@ final class DatPhanCongTheoKhoaPresenter
                     ? array_map(static fn (DatPhanCongHocVien $r): array => [
                         'ten_giao_vien' => $tenGv(trim((string) $r->MaGiaoVien)),
                         'ma_giao_vien' => trim((string) $r->MaGiaoVien),
+                        'bien_so_xe' => trim((string) ($r->BienSoXe ?? '')),
+                        'bien_so_xe_tu_dong' => trim((string) ($r->BienSoXeTuDong ?? '')),
                         'khoang_ngay' => $r->nhanKhoangNgay(),
                         'hien_tai' => $r->Id === $pc->Id,
                     ], $hvRows)

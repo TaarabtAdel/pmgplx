@@ -14,6 +14,11 @@ class DatDSPhienBoLoc
     public static function parseFilters(Request $request): array
     {
         $dat = trim((string) $request->input('dat', $request->input('dat_anh', '')));
+        if (in_array($dat, ['1', 'true', 'yes'], true)) {
+            $dat = 'dat';
+        } elseif (in_array($dat, ['0', 'false', 'no'], true)) {
+            $dat = 'chua_dat';
+        }
         $datCt = trim((string) $request->input('dat_ct', ''));
         $ngay = trim((string) $request->input('ngay', ''));
         $tuNgay = trim((string) $request->input('tu_ngay', ''));

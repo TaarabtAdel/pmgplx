@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DaoTao\DatDSPhien;
 use App\Models\DaoTao\DatPhanLoaiPhien;
 use App\Support\DaoTao\DatDSPhienBoLoc;
+use App\Support\DaoTao\DatDSPhienLocResolver;
 use App\Support\DaoTao\DatKhoaHocSelectOptions;
 use App\Support\DaoTao\DatDSPhienExcelExporter;
 use App\Support\DaoTao\DatDSPhienKiemTra;
@@ -24,8 +25,8 @@ class DanhSachDatDSPhienController extends Controller
     public function index(Request $request): View
     {
         $filters = DatDSPhienBoLoc::parseFilters($request);
-        $canAnalyzeViolations = ($filters['ma_khoa_hoc'] ?? '') !== '';
-        $resolved = $this->resolveFiltered($filters, $canAnalyzeViolations);
+        $resolved = DatDSPhienLocResolver::resolve($filters);
+        $canAnalyzeViolations = $resolved['canAnalyzeViolations'];
 
         $items = (clone $resolved['query'])->with('phanLoai')->paginate(50)->withQueryString();
         $chiTieuById = DatPhienChiTieu::forSessions(
@@ -157,8 +158,8 @@ class DanhSachDatDSPhienController extends Controller
     public function export(Request $request): StreamedResponse
     {
         $filters = DatDSPhienBoLoc::parseFilters($request);
-        $canAnalyzeViolations = ($filters['ma_khoa_hoc'] ?? '') !== '';
-        $resolved = $this->resolveFiltered($filters, $canAnalyzeViolations);
+        $resolved = DatDSPhienLocResolver::resolve($filters);
+        $canAnalyzeViolations = $resolved['canAnalyzeViolations'];
         $items = (clone $resolved['query'])->with('phanLoai')->get();
         $chiTieuById = DatPhienChiTieu::forSessions($items, fresh: ! $canAnalyzeViolations);
 
@@ -222,84 +223,6 @@ class DanhSachDatDSPhienController extends Controller
         };
 
         return back()->with('success', $message);
-    }
-
-    /**
-     * @param  array<string, mixed>  $filters
-     * @return array{
-     *     query: Builder,
-     *     violationsById: array<int, list<string>>,
-     *     expectedPhanCongById: array<int, array{ma_giao_vien: string, bien_so_xe: string}>,
-     *     filteredCount: int|null
-     * }
-     */
-    private function resolveFiltered(array $filters, bool $canAnalyzeViolations): array
-    {
-        $query = DatDSPhienBoLoc::filteredQuery($filters);
-
-        if (! $canAnalyzeViolations) {
-            return [
-                'query' => $query,
-                'violationsById' => [],
-                'expectedPhanCongById' => [],
-                'filteredCount' => null,
-            ];
-        }
-
-        $validationSessions = (clone $query)->get();
-        $expectedPhanCongById = [];
-        $violationsById = DatDSPhienKiemTra::analyze($validationSessions, $expectedPhanCongById);
-        $matchingIds = $this->matchingIds($validationSessions, $violationsById, $filters, $canAnalyzeViolations);
-
-        if ($matchingIds !== null) {
-            if ($matchingIds === []) {
-                $query->whereRaw('1 = 0');
-            } else {
-                $query->whereIn('Id', $matchingIds);
-            }
-        }
-
-        return [
-            'query' => $query,
-            'violationsById' => $violationsById,
-            'expectedPhanCongById' => $expectedPhanCongById,
-            'filteredCount' => $matchingIds === null ? $validationSessions->count() : count($matchingIds),
-        ];
-    }
-
-    /**
-     * @param  Collection<int, DatDSPhien>  $sessions
-     * @param  array<int, list<string>>  $violationsById
-     * @param  array<string, mixed>  $filters
-     * @return list<int>|null  null = không lọc thêm sau DB
-     */
-    private function matchingIds(Collection $sessions, array $violationsById, array $filters, bool $canAnalyzeViolations): ?array
-    {
-        if (! $canAnalyzeViolations) {
-            return null;
-        }
-
-        if ($filters['loi'] === [] && $filters['dat'] === '') {
-            return null;
-        }
-
-        $ids = [];
-
-        foreach ($sessions as $session) {
-            $id = (int) $session->Id;
-
-            if ($filters['dat'] !== '' && ! DatDSPhienKiemTra::matchesDatFilter($violationsById, $id, $filters['dat'])) {
-                continue;
-            }
-
-            if ($filters['loi'] !== [] && ! DatDSPhienKiemTra::matchesFilter($violationsById, $id, $filters['loi'])) {
-                continue;
-            }
-
-            $ids[] = $id;
-        }
-
-        return $ids;
     }
 
     /**

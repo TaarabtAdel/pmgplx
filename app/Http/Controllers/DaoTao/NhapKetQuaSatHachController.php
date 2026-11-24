@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Rules\ExcelUpload;
 use App\Support\DaoTao\DatDSPhienExcelParser;
 use App\Support\DaoTao\KetQuaSatHachExcelParser;
+use App\Support\DaoTao\KetQuaSatHachMauExcel;
 use App\Support\DaoTao\KetQuaSatHachThuTienUpdater;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 
 class NhapKetQuaSatHachController extends Controller
@@ -24,6 +26,13 @@ class NhapKetQuaSatHachController extends Controller
     public function create(): View
     {
         return view('DaoTao.cong-cu-nhap.nhap-ket-qua-sat-hach');
+    }
+
+    public function downloadMau(): BinaryFileResponse
+    {
+        $path = KetQuaSatHachMauExcel::writeToTempFile();
+
+        return response()->download($path, KetQuaSatHachMauExcel::DOWNLOAD_NAME)->deleteFileAfterSend(true);
     }
 
     public function store(Request $request): RedirectResponse

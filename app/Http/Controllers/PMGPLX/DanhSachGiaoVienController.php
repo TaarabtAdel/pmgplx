@@ -80,10 +80,9 @@ class DanhSachGiaoVienController extends Controller
     {
         $validated = $request->validate([
             'ma_gv' => ['required', 'string', 'max:8'],
-            'bien_so_xe' => ['required', 'string', 'max:10'],
+            'bien_so_xe' => ['nullable', 'string', 'max:10'],
         ], [
             'ma_gv.required' => 'Thiếu mã giáo viên.',
-            'bien_so_xe.required' => 'Vui lòng chọn xe.',
         ]);
 
         $gv = GiaoVien::query()->where('MaGV', $validated['ma_gv'])->first();
@@ -91,18 +90,22 @@ class DanhSachGiaoVienController extends Controller
             return back()->with('error', 'Không tìm thấy giáo viên.');
         }
 
-        $xeExists = XeTap::query()->where('BienSoXe', $validated['bien_so_xe'])->exists();
-        if (! $xeExists) {
+        $bienSo = trim((string) ($validated['bien_so_xe'] ?? ''));
+        if ($bienSo !== '' && ! XeTap::query()->where('BienSoXe', $bienSo)->exists()) {
             return back()->with('error', 'Biển số xe không hợp lệ.');
         }
 
         GiaoVien::query()
             ->where('MaGV', $validated['ma_gv'])
             ->update([
-                'GhiChu' => $validated['bien_so_xe'],
+                'GhiChu' => $bienSo !== '' ? $bienSo : null,
                 'NgaySua' => now(),
             ]);
 
-        return back()->with('success', "Đã gắn xe {$validated['bien_so_xe']} cho giáo viên {$validated['ma_gv']}.");
+        $msg = $bienSo === ''
+            ? "Đã bỏ gắn xe cho giáo viên {$validated['ma_gv']}."
+            : "Đã gắn xe {$bienSo} cho giáo viên {$validated['ma_gv']}.";
+
+        return back()->with('success', $msg);
     }
 }

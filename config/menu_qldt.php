@@ -471,7 +471,36 @@ return [
                         [
                             'title' => 'DAT+CABIN',
                             'mo_ta' => 'Nhân viên quản lý DAT lưu',
-                            'trang' => '4-dat-cabin',
+                            'children' => [
+                                [
+                                    'title' => 'Tổng DAT',
+                                    'mo_ta' => 'Báo cáo tổng hợp DAT cả khóa (Excel)',
+                                    'trang' => '4-dat-cabin-tong-dat',
+                                    'route' => 'qldtoto.4-dat-cabin-tong-dat.index',
+                                    'active' => 'qldtoto.4-dat-cabin-tong-dat.*',
+                                ],
+                                [
+                                    'title' => 'Xuất phụ lục 1',
+                                    'mo_ta' => 'Báo cáo quá trình DAT từng học viên (Word)',
+                                    'trang' => '4-dat-cabin-phu-luc-1',
+                                    'route' => 'qldtoto.4-dat-cabin-phu-luc-1.index',
+                                    'active' => 'qldtoto.4-dat-cabin-phu-luc-1.*',
+                                ],
+                                [
+                                    'title' => 'Xuất phụ lục 5',
+                                    'mo_ta' => 'Báo cáo số lượng HV hoàn thành quy định thời gian / quãng đường DAT',
+                                    'trang' => '4-dat-cabin',
+                                    'route' => 'qldtoto.4-dat-cabin.index',
+                                    'active' => 'qldtoto.4-dat-cabin.*',
+                                ],
+                                [
+                                    'title' => 'Xuất phụ lục 6',
+                                    'mo_ta' => 'Báo cáo kết quả TH theo danh sách đạt (CCCD → giờ / km DAT)',
+                                    'trang' => '4-dat-cabin-phu-luc-6',
+                                    'route' => 'qldtoto.4-dat-cabin-phu-luc-6.index',
+                                    'active' => 'qldtoto.4-dat-cabin-phu-luc-6.*',
+                                ],
+                            ],
                         ],
                         [
                             'title' => 'Hồ sơ quản lý đào tạo',
