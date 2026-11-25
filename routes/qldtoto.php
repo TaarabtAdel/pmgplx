@@ -130,6 +130,7 @@ Route::prefix('qldt-oto')->name('qldtoto.')->group(function () {
     Route::post('/'.$slugQdBbKtm.'/xuat-quyet-dinh', [QuyetDinhToChucKiemTraBbPhanCongController::class, 'exportQuyetDinh'])->name('quyet-dinh-to-chuc-ktm-bb.export-quyet-dinh');
     Route::post('/'.$slugQdBbKtm.'/xuat-bien-ban', [QuyetDinhToChucKiemTraBbPhanCongController::class, 'exportBienBan'])->name('quyet-dinh-to-chuc-ktm-bb.export-bien-ban');
     Route::post('/'.$slugQdBbKtm.'/xuat-ca-hai', [QuyetDinhToChucKiemTraBbPhanCongController::class, 'exportCaHai'])->name('quyet-dinh-to-chuc-ktm-bb.export-ca-hai');
+    Route::post('/'.$slugQdBbKtm.'/xuat-danh-sach-hoc-vien', [QuyetDinhToChucKiemTraBbPhanCongController::class, 'exportDanhSachHocVien'])->name('quyet-dinh-to-chuc-ktm-bb.export-danh-sach-hoc-vien');
 
     $slugToCham = '2-bien-ban-phan-cong-nhiem-vu-to-cham-kiem-tra';
     Route::get('/'.$slugToCham, [BienBanPhanCongToChamController::class, 'index'])->name('bien-ban-phan-cong-to-cham.index');

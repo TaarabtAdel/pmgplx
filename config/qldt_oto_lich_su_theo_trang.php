@@ -23,6 +23,7 @@ return [
         'qldtoto.quyet-dinh-to-chuc-ktm-bb.export-quyet-dinh',
         'qldtoto.quyet-dinh-to-chuc-ktm-bb.export-bien-ban',
         'qldtoto.quyet-dinh-to-chuc-ktm-bb.export-ca-hai',
+        'qldtoto.quyet-dinh-to-chuc-ktm-bb.export-danh-sach-hoc-vien',
     ],
     'qldtoto.bien-ban-phan-cong-to-cham.index' => ['qldtoto.bien-ban-phan-cong-to-cham.export'],
     'qldtoto.quyet-dinh-bao-luu.index' => ['qldtoto.quyet-dinh-bao-luu.export'],

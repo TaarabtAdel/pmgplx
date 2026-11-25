@@ -8,8 +8,10 @@ use App\Models\PMGPLX\KhoaHoc;
 use App\Support\MenuQldt;
 use App\Support\QldtOto\BaoCaoDangKyKhoaHoc;
 use App\Support\QldtOto\BienBanPhanCongToChamDocx;
+use App\Support\QldtOto\KemQdToChucKtmDanhSachHocVienExcelExporter;
 use App\Support\QldtOto\QuyetDinhHocVienForm;
 use App\Support\QldtOto\QuyetDinhToChucKiemTraKetThucMonDocx;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -129,6 +131,37 @@ class QuyetDinhToChucKiemTraBbPhanCongController extends Controller
         @unlink($bbPath);
 
         return $this->download($zipPath, 'qd-bb-ktm-'.$safe.'.zip');
+    }
+
+    public function exportDanhSachHocVien(
+        Request $request,
+        KemQdToChucKtmDanhSachHocVienExcelExporter $exporter,
+    ): BinaryFileResponse|RedirectResponse {
+        $data = $request->validate([
+            'ma_kh' => ['required', 'string', 'max:500'],
+            'so_qd' => ['required', 'regex:/^\d+$/', 'max:10'],
+            'ngay_quyet_dinh' => ['required', 'date'],
+        ], [
+            'so_qd.regex' => 'Số quyết định chỉ gồm chữ số.',
+        ]);
+
+        $khoas = BaoCaoDangKyKhoaHoc::khoaTuMaRaw($data['ma_kh']);
+        if ($khoas === []) {
+            return back()->withErrors(['ma_kh' => 'Chưa chọn khoá hợp lệ.'])->withInput();
+        }
+
+        $qd = [
+            'so_qd' => trim($data['so_qd']),
+            'ngay_quyet_dinh' => Carbon::parse($data['ngay_quyet_dinh']),
+        ];
+
+        try {
+            $safe = $this->safeMa($data['ma_kh']);
+
+            return $exporter->download($khoas, $qd, 'kem-qd-to-chuc-ktm-danh-sach-hv-'.$safe.'.xlsx');
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Xuất danh sách học viên thất bại: '.$e->getMessage())->withInput();
+        }
     }
 
     /** @return array<string, mixed> */

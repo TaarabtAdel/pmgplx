@@ -160,6 +160,8 @@
                                 formaction="{{ route('qldtoto.quyet-dinh-to-chuc-ktm-bb.export-quyet-dinh') }}">Xuất Quyết định</button>
                         <button type="submit" class="btn btn-sm btn-outline-primary mr-2 mb-2"
                                 formaction="{{ route('qldtoto.quyet-dinh-to-chuc-ktm-bb.export-bien-ban') }}">Xuất Biên bản</button>
+                        <button type="submit" class="btn btn-sm btn-outline-success mr-2 mb-2"
+                                formaction="{{ route('qldtoto.quyet-dinh-to-chuc-ktm-bb.export-danh-sach-hoc-vien') }}">Xuất danh sách HV (Excel)</button>
                         <button type="submit" class="btn btn-sm btn-navy mb-2"
                                 formaction="{{ route('qldtoto.quyet-dinh-to-chuc-ktm-bb.export-ca-hai') }}">Xuất cả hai (ZIP)</button>
                     </div>

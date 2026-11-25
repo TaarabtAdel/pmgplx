@@ -21,6 +21,7 @@ return [
     ['ten_route' => 'qldtoto.quyet-dinh-to-chuc-ktm-bb.export-quyet-dinh', 'ma' => 'qd-to-chuc-ktm-bb', 'ten' => 'QĐ tổ chức KTM + BB phân công — Quyết định', 'loai' => 'Word', 'thu_tu' => 110],
     ['ten_route' => 'qldtoto.quyet-dinh-to-chuc-ktm-bb.export-bien-ban', 'ma' => 'qd-to-chuc-ktm-bb', 'ten' => 'QĐ tổ chức KTM + BB phân công — Biên bản', 'loai' => 'Word', 'thu_tu' => 111],
     ['ten_route' => 'qldtoto.quyet-dinh-to-chuc-ktm-bb.export-ca-hai', 'ma' => 'qd-to-chuc-ktm-bb', 'ten' => 'QĐ tổ chức KTM + BB phân công — ZIP', 'loai' => 'ZIP', 'thu_tu' => 112],
+    ['ten_route' => 'qldtoto.quyet-dinh-to-chuc-ktm-bb.export-danh-sach-hoc-vien', 'ma' => 'qd-to-chuc-ktm-bb', 'ten' => 'QĐ tổ chức KTM — Danh sách học viên kèm theo', 'loai' => 'Excel', 'thu_tu' => 113],
     ['ten_route' => 'qldtoto.bien-ban-phan-cong-to-cham.export', 'ma' => 'bien-ban-phan-cong-to-cham', 'ten' => 'Biên bản phân công tổ chấm', 'loai' => 'Word', 'thu_tu' => 120],
     ['ten_route' => 'qldtoto.quyet-dinh-bao-luu.export', 'ma' => 'quyet-dinh-bao-luu', 'ten' => 'Quyết định bảo lưu', 'loai' => 'Word', 'thu_tu' => 130],
     ['ten_route' => 'qldtoto.quyet-dinh-cho-thoi-hoc.export', 'ma' => 'quyet-dinh-thoi-hoc', 'ten' => 'Quyết định cho thôi học', 'loai' => 'Word', 'thu_tu' => 140],
