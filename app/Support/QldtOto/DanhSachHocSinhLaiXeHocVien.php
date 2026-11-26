@@ -12,7 +12,10 @@ final class DanhSachHocSinhLaiXeHocVien
     /**
      * @return list<array{
      *     stt: int,
+     *     ma_dk: string,
      *     ho_ten: string,
+     *     ho_dem: string,
+     *     ten_rieng: string,
      *     ngay_sinh: string,
      *     gioi_tinh: string,
      *     quoc_tich: string,
@@ -32,7 +35,7 @@ final class DanhSachHocSinhLaiXeHocVien
             ->orderByRaw('n.HoDemNLX COLLATE Vietnamese_CI_AS ASC')
             ->orderBy('n.MaDK')
             ->get([
-                'n.HoVaTen', 'n.HoDemNLX', 'n.TenNLX', 'n.NgaySinh', 'n.GioiTinh',
+                'n.MaDK', 'n.HoVaTen', 'n.HoDemNLX', 'n.TenNLX', 'n.NgaySinh', 'n.GioiTinh',
                 'n.MaQuocTich', 'n.SoCMT', 'n.GhiChu',
                 'n.NoiTT', 'n.NoiTT_MaDVHC', 'n.NoiCT', 'n.NoiCT_MaDVHC',
             ]);
@@ -42,14 +45,24 @@ final class DanhSachHocSinhLaiXeHocVien
         $out = [];
         foreach ($rows->values() as $i => $n) {
             $diaChi = DmDvhcTenDayDu::diaChiTuNguoiLx($n, $dvhcMap);
+            $tenRieng = trim((string) ($n->TenNLX ?? ''));
+            $hoDem = trim((string) ($n->HoDemNLX ?? ''));
             $hoTen = trim((string) ($n->HoVaTen ?? ''));
             if ($hoTen === '') {
-                $hoTen = trim(($n->HoDemNLX ?? '').' '.($n->TenNLX ?? ''));
+                $hoTen = trim($hoDem.' '.$tenRieng);
+            }
+            if ($hoDem === '' && $tenRieng === '' && $hoTen !== '') {
+                $tach = DanhSachKemQuyetDinhHoanThanhExcelExporter::tachHoTen($hoTen);
+                $hoDem = rtrim((string) $tach['ho_dem']);
+                $tenRieng = (string) $tach['ten'];
             }
 
             $out[] = [
                 'stt' => $i + 1,
+                'ma_dk' => trim((string) ($n->MaDK ?? '')),
                 'ho_ten' => $hoTen,
+                'ho_dem' => $hoDem !== '' ? $hoDem.' ' : '',
+                'ten_rieng' => $tenRieng,
                 'ngay_sinh' => NgayVn::format($n->NgaySinh ?? null, 'yyyymmdd'),
                 'gioi_tinh' => self::gioiTinhLabel($n->GioiTinh ?? null),
                 'quoc_tich' => self::quocTichLabel($n->MaQuocTich ?? null),

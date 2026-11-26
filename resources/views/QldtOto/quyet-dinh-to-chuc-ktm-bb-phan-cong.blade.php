@@ -23,7 +23,7 @@
 
             <form method="GET" action="{{ route('qldtoto.quyet-dinh-to-chuc-ktm-bb.index') }}" class="form-row align-items-start mb-3" id="form-chon-khoa">
                 <div class="form-group col-md-8 mb-0">
-                    <label for="ma_kh_loc">Khoá (PMGPLX) — có thể chọn nhiều</label>
+                    <label for="ma_kh_loc">Khoá (PMGPLX) — có thể chọn nhiều <span class="text-danger">*</span></label>
                     <select class="select2-multi" id="ma_kh_loc" name="ma_kh[]" multiple data-placeholder="Chọn một hoặc nhiều khoá…">
                         @foreach ($khoaOptions as $kh)
                             <option value="{{ $kh->MaKH }}" @selected(in_array($kh->MaKH, $maKhChon ?? [], true))>{{ $kh->TenKH }} ({{ $kh->MaKH }})</option>
@@ -58,10 +58,12 @@
                     @csrf
                     <input type="hidden" name="ma_kh" value="{{ $form['ma_kh'] }}">
 
+                    <p class="text-muted small mb-2"><span class="text-danger">*</span> Trường bắt buộc</p>
+
                     <h6 class="font-weight-bold">Quyết định tổ chức kiểm tra</h6>
                     <div class="form-row">
                         <div class="form-group col-md-3">
-                            <label for="so_qd">Số quyết định</label>
+                            <label for="so_qd">Số quyết định <span class="text-danger">*</span></label>
                             <div class="input-group input-group-sm">
                                 <input type="text" class="form-control" id="so_qd" name="so_qd" inputmode="numeric"
                                        value="{{ $v('so_qd') }}" placeholder="vd. 506" maxlength="10" required>
@@ -69,20 +71,20 @@
                             </div>
                         </div>
                         <div class="form-group col-md-3">
-                            <label for="ngay_quyet_dinh">Ngày quyết định</label>
+                            <label for="ngay_quyet_dinh">Ngày quyết định <span class="text-danger">*</span></label>
                             <input type="date" class="form-control form-control-sm" id="ngay_quyet_dinh" name="ngay_quyet_dinh" value="{{ $v('ngay_quyet_dinh') }}" required>
                         </div>
                         <div class="form-group col-md-2">
-                            <label for="so_hv">Số học viên</label>
+                            <label for="so_hv">Số học viên <span class="text-danger">*</span></label>
                             <input type="number" class="form-control form-control-sm" id="so_hv" name="so_hv" min="1" value="{{ $v('so_hv') }}" required>
                         </div>
                         <div class="form-group col-md-2">
-                            <label for="hang">Hạng</label>
-                            <input type="text" class="form-control form-control-sm" id="hang" name="hang" value="{{ $v('hang') }}" maxlength="40" required>
+                            <label for="hang">Hạng <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm" id="hang" name="hang" value="{{ $v('hang') }}" maxlength="120" required>
                         </div>
                         <div class="form-group col-md-2">
-                            <label for="khoa_so">Khóa (số)</label>
-                            <input type="text" class="form-control form-control-sm" id="khoa_so" name="khoa_so" value="{{ $v('khoa_so') }}" maxlength="20" required>
+                            <label for="khoa_so">Khóa (số) <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm" id="khoa_so" name="khoa_so" value="{{ $v('khoa_so') }}" maxlength="40" required>
                         </div>
                     </div>
                     <div class="form-group">
@@ -91,11 +93,11 @@
                     </div>
                     <div class="form-row">
                         <div class="form-group col-md-2">
-                            <label for="gio_1">Giờ kiểm tra lần 1</label>
+                            <label for="gio_1">Giờ kiểm tra lần 1 <span class="text-danger">*</span></label>
                             <input type="text" class="form-control form-control-sm" id="gio_1" name="gio_1" value="{{ $v('gio_1') }}" maxlength="20" required>
                         </div>
                         <div class="form-group col-md-3">
-                            <label for="ngay_1">Ngày kiểm tra lần 1</label>
+                            <label for="ngay_1">Ngày kiểm tra lần 1 <span class="text-danger">*</span></label>
                             <input type="date" class="form-control form-control-sm" id="ngay_1" name="ngay_1" value="{{ $v('ngay_1') }}" required>
                         </div>
                         <div class="form-group col-md-3 d-flex align-items-end">
@@ -105,21 +107,21 @@
                             </div>
                         </div>
                         <div class="form-group col-md-2 l2-field">
-                            <label for="gio_2">Giờ lần 2</label>
+                            <label for="gio_2">Giờ lần 2 <span class="text-danger l2-req d-none">*</span></label>
                             <input type="text" class="form-control form-control-sm" id="gio_2" name="gio_2" value="{{ $v('gio_2') }}" maxlength="20">
                         </div>
                         <div class="form-group col-md-2 l2-field">
-                            <label for="ngay_2">Ngày lần 2</label>
+                            <label for="ngay_2">Ngày lần 2 <span class="text-danger l2-req d-none">*</span></label>
                             <input type="date" class="form-control form-control-sm" id="ngay_2" name="ngay_2" value="{{ $v('ngay_2') }}">
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group col-md-8">
-                            <label for="dia_diem">Địa điểm kiểm tra</label>
+                            <label for="dia_diem">Địa điểm kiểm tra <span class="text-danger">*</span></label>
                             <input type="text" class="form-control form-control-sm" id="dia_diem" name="dia_diem" value="{{ $v('dia_diem') }}" maxlength="400" required>
                         </div>
                         <div class="form-group col-md-4">
-                            <label for="giam_doc">Giám đốc ký</label>
+                            <label for="giam_doc">Giám đốc ký <span class="text-danger">*</span></label>
                             <input type="text" class="form-control form-control-sm" id="giam_doc" name="giam_doc" value="{{ $v('giam_doc') }}" maxlength="100" required>
                         </div>
                     </div>
@@ -128,21 +130,21 @@
                     <h6 class="font-weight-bold">Biên bản phân công tổ chấm kiểm tra</h6>
                     <div class="form-row">
                         <div class="form-group col-md-3">
-                            <label for="ngay_lap">Ngày lập biên bản</label>
+                            <label for="ngay_lap">Ngày lập biên bản <span class="text-danger">*</span></label>
                             <input type="date" class="form-control form-control-sm" id="ngay_lap" name="ngay_lap" value="{{ $v('ngay_lap') }}" required>
                         </div>
                         <div class="form-group col-md-3">
-                            <label for="ngay_kiem_tra">Ngày kiểm tra (trên biên bản)</label>
+                            <label for="ngay_kiem_tra">Ngày kiểm tra (trên biên bản) <span class="text-danger">*</span></label>
                             <input type="date" class="form-control form-control-sm" id="ngay_kiem_tra" name="ngay_kiem_tra" value="{{ $v('ngay_kiem_tra') }}" required>
                         </div>
                         <div class="form-group col-md-6">
-                            <label for="pho_truong_phong">P. Trưởng phòng Đào tạo (ký)</label>
+                            <label for="pho_truong_phong">P. Trưởng phòng Đào tạo (ký) <span class="text-danger">*</span></label>
                             <input type="text" class="form-control form-control-sm" id="pho_truong_phong" name="pho_truong_phong" value="{{ $v('pho_truong_phong') }}" maxlength="100" required>
                         </div>
                     </div>
 
                     <div class="d-flex align-items-center mb-2">
-                        <h6 class="font-weight-bold mb-0 mr-auto">Phân công nhiệm vụ</h6>
+                        <h6 class="font-weight-bold mb-0 mr-auto">Phân công nhiệm vụ <span class="text-danger">*</span></h6>
                         <button type="button" class="btn btn-sm btn-outline-secondary mr-2 d-none" id="btn-lan-truoc"
                                 title="Lấy lại phân công đã lưu trên máy này">Dùng phân công lần trước</button>
                         <button type="button" class="btn btn-sm btn-outline-primary" id="btn-them-nv">+ Thêm nhiệm vụ</button>
@@ -154,6 +156,70 @@
                             <option value="{{ $gv['ten'] }}"></option>
                         @endforeach
                     </datalist>
+
+                    @php $chonCu = old('chon'); @endphp
+                    <hr class="my-3">
+                    <h6 class="font-weight-bold">Danh sách học viên kèm Excel</h6>
+                    <p class="text-muted small mb-2">Một file Excel, một sheet — gộp các khoá theo thứ tự hiển thị (cùng thứ tự PMGPLX trong từng khoá). <strong>Bỏ chọn</strong> để loại trừ — chỉ học viên còn tích mới vào file. Cần <strong>ít nhất một học viên</strong> được chọn <span class="text-danger">*</span>.</p>
+                    <div class="form-row align-items-end mb-2">
+                        <div class="form-group col-md-5 col-lg-4 mb-2 mb-md-0">
+                            <label for="ds_hv_tim" class="small mb-1">Tìm nhanh</label>
+                            <input type="search" class="form-control form-control-sm" id="ds_hv_tim"
+                                   placeholder="Họ tên, CCCD, ngày sinh…" autocomplete="off" spellcheck="false">
+                        </div>
+                        <div class="form-group col-md-7 col-lg-8 mb-2 mb-md-0">
+                            <p class="small text-muted mb-0" id="ds_hv_tim_kq" aria-live="polite"></p>
+                        </div>
+                    </div>
+                    @foreach ($dsKhoaHv as $block)
+                        @php $ma = $block['ma_kh']; @endphp
+                        <div class="card border mb-2 khoa-ds-hv" data-ma="{{ $ma }}">
+                            <div class="card-header py-2 d-flex flex-wrap align-items-center">
+                                <strong class="mr-2">{{ $block['ten_kh'] }}</strong>
+                                <small class="text-muted mr-auto">({{ $ma }})</small>
+                                <span class="small text-muted">Đưa vào Excel: <strong class="dem-chon">0</strong>/{{ count($block['hoc_vien']) }}</span>
+                            </div>
+                            <div class="card-body p-0">
+                                @if ($block['hoc_vien'] === [])
+                                    <p class="small text-muted mb-0 p-2">Khoá không có học viên trên PMGPLX.</p>
+                                @else
+                                    <div class="table-responsive" style="max-height: 20rem;">
+                                        <table class="table table-sm table-bordered table-hover mb-0">
+                                            <thead class="thead-light" style="position: sticky; top: 0;">
+                                                <tr>
+                                                    <th class="text-center" style="width: 2.5rem;">
+                                                        <input type="checkbox" class="chon-tat-ca" title="Chọn tất cả trong khoá" checked>
+                                                    </th>
+                                                    <th style="width: 2.5rem;">STT</th>
+                                                    <th>Họ và tên</th>
+                                                    <th style="width: 6.5rem;">Ngày sinh</th>
+                                                    <th style="width: 8rem;">Số CCCD</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($block['hoc_vien'] as $hv)
+                                                    @php
+                                                        $checked = ! is_array($chonCu)
+                                                            || in_array($hv['ma_dk'], (array) ($chonCu[$ma] ?? []), true);
+                                                    @endphp
+                                                    <tr class="dong-hv"
+                                                        data-tim="{{ mb_strtolower($hv['ho_ten'].' '.$hv['ngay_sinh'].' '.$hv['so_cmnd'].' '.$hv['ma_dk'], 'UTF-8') }}">
+                                                        <td class="text-center">
+                                                            <input type="checkbox" class="chk-hv" name="chon[{{ $ma }}][]" value="{{ $hv['ma_dk'] }}" @checked($checked)>
+                                                        </td>
+                                                        <td class="text-center text-muted">{{ $hv['stt'] }}</td>
+                                                        <td>{{ $hv['ho_ten'] }}</td>
+                                                        <td class="text-center">{{ $hv['ngay_sinh'] }}</td>
+                                                        <td class="text-center">{{ $hv['so_cmnd'] }}</td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
 
                     <div class="mt-3 d-flex flex-wrap">
                         <button type="submit" class="btn btn-sm btn-outline-primary mr-2 mb-2"
@@ -198,6 +264,9 @@
                 el.disabled = !on;
                 el.required = on;
             });
+            document.querySelectorAll('.l2-req').forEach(function (el) {
+                el.classList.toggle('d-none', !on);
+            });
         };
         document.getElementById('co_lan_2').addEventListener('change', toggleL2);
         toggleL2();
@@ -237,7 +306,7 @@
                 return '<div class="card mb-2" data-i="' + i + '"><div class="card-body p-2">'
                     + '<div class="d-flex align-items-start mb-2">'
                     + '<span class="font-weight-bold mr-2 pt-1">' + (i + 1) + '.</span>'
-                    + '<textarea class="form-control form-control-sm js-ten-nv" rows="1" maxlength="500" required name="nv[' + i + '][ten]">' + esc(n.ten) + '</textarea>'
+                    + '<textarea class="form-control form-control-sm js-ten-nv" rows="1" maxlength="500" required aria-required="true" name="nv[' + i + '][ten]">' + esc(n.ten) + '</textarea>'
                     + '<div class="btn-group btn-group-sm ml-2">'
                     + '<button type="button" class="btn btn-outline-secondary js-len"' + (i === 0 ? ' disabled' : '') + '>&uarr;</button>'
                     + '<button type="button" class="btn btn-outline-secondary js-xuong"' + (i === nv.length - 1 ? ' disabled' : '') + '>&darr;</button>'
@@ -324,6 +393,99 @@
         });
 
         render();
+
+        const $dsHvTim = $('#ds_hv_tim');
+        const $dsHvTimKq = $('#ds_hv_tim_kq');
+
+        const boDauTim = function (s) {
+            return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        };
+
+        const dangLocDsHv = function () {
+            return boDauTim($dsHvTim.val()).trim() !== '';
+        };
+
+        const apDungTimDsHv = function () {
+            const q = boDauTim($dsHvTim.val()).trim();
+            let hien = 0;
+            let tong = 0;
+            document.querySelectorAll('.khoa-ds-hv').forEach(function (card) {
+                let hienKhoa = 0;
+                let tongKhoa = 0;
+                card.querySelectorAll('tbody tr.dong-hv').forEach(function (tr) {
+                    tong++;
+                    tongKhoa++;
+                    const hay = q === '' || boDauTim(tr.getAttribute('data-tim') || '').indexOf(q) >= 0;
+                    tr.classList.toggle('d-none', !hay);
+                    if (hay) {
+                        hien++;
+                        hienKhoa++;
+                    }
+                });
+                const ghi = card.querySelector('.ghi-tim-khoa');
+                if (ghi) {
+                    ghi.textContent = (q !== '' && tongKhoa > 0) ? (' · hiện ' + hienKhoa + '/' + tongKhoa) : '';
+                }
+            });
+            if (q === '') {
+                $dsHvTimKq.text('');
+            } else if (hien === 0) {
+                $dsHvTimKq.text('Không có học viên khớp «' + $dsHvTim.val().trim() + '».');
+            } else {
+                $dsHvTimKq.text('Đang hiển thị ' + hien + '/' + tong + ' học viên (gõ không dấu được).');
+            }
+            document.querySelectorAll('.chon-tat-ca').forEach(function (m) {
+                m.title = dangLocDsHv() ? 'Chọn/bỏ tất cả học viên đang hiển thị trong khoá' : 'Chọn tất cả trong khoá';
+            });
+        };
+
+        let timDsHvTimer;
+        $dsHvTim.on('input', function () {
+            clearTimeout(timDsHvTimer);
+            timDsHvTimer = setTimeout(apDungTimDsHv, 100);
+        });
+
+        function demChonKhoa($card) {
+            const n = $card.find('.chk-hv:checked').length;
+            $card.find('.dem-chon').text(n);
+        }
+        document.querySelectorAll('.khoa-ds-hv').forEach(function (card) {
+            const $card = $(card);
+            const demNode = card.querySelector('.dem-chon');
+            if (demNode && !card.querySelector('.ghi-tim-khoa')) {
+                const span = document.createElement('span');
+                span.className = 'small text-muted ghi-tim-khoa';
+                demNode.parentNode.appendChild(span);
+            }
+            demChonKhoa($card);
+            card.addEventListener('change', function (e) {
+                if (e.target.classList.contains('chon-tat-ca')) {
+                    const loc = dangLocDsHv();
+                    card.querySelectorAll('.chk-hv').forEach(function (cb) {
+                        const tr = cb.closest('tr');
+                        if (loc && tr && tr.classList.contains('d-none')) {
+                            return;
+                        }
+                        cb.checked = e.target.checked;
+                    });
+                }
+                if (e.target.classList.contains('chk-hv') || e.target.classList.contains('chon-tat-ca')) {
+                    const loc = dangLocDsHv();
+                    const all = Array.from(card.querySelectorAll('.chk-hv')).filter(function (cb) {
+                        if (!loc) return true;
+                        const tr = cb.closest('tr');
+                        return tr && !tr.classList.contains('d-none');
+                    });
+                    const on = all.filter(function (cb) { return cb.checked; });
+                    const master = card.querySelector('.chon-tat-ca');
+                    if (master) {
+                        master.checked = all.length > 0 && on.length === all.length;
+                        master.indeterminate = on.length > 0 && on.length < all.length;
+                    }
+                    demChonKhoa($card);
+                }
+            });
+        });
     });
 })(jQuery);
 </script>

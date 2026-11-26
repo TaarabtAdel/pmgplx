@@ -8,6 +8,7 @@ use App\Models\PMGPLX\KhoaHoc;
 use App\Support\MenuQldt;
 use App\Support\QldtOto\BaoCaoDangKyKhoaHoc;
 use App\Support\QldtOto\BienBanPhanCongToChamDocx;
+use App\Support\QldtOto\DanhSachHocSinhLaiXeHocVien;
 use App\Support\QldtOto\KemQdToChucKtmDanhSachHocVienExcelExporter;
 use App\Support\QldtOto\QuyetDinhHocVienForm;
 use App\Support\QldtOto\QuyetDinhToChucKiemTraKetThucMonDocx;
@@ -33,8 +34,16 @@ class QuyetDinhToChucKiemTraBbPhanCongController extends Controller
         $maKhChon = array_map(static fn (KhoaHoc $k) => (string) $k->MaKH, $khoas);
 
         $form = null;
+        $dsKhoaHv = [];
         if ($khoas !== []) {
             $gop = BaoCaoDangKyKhoaHoc::hopNhatNhieuKhoa($khoas);
+            foreach ($khoas as $khoa) {
+                $dsKhoaHv[] = [
+                    'ma_kh' => (string) $khoa->MaKH,
+                    'ten_kh' => (string) $khoa->TenKH,
+                    'hoc_vien' => DanhSachHocSinhLaiXeHocVien::dongXuat((string) $khoa->MaKH),
+                ];
+            }
             $form = [
                 'ma_kh' => $gop['ma_kh'],
                 'so_qd' => '',
@@ -66,6 +75,7 @@ class QuyetDinhToChucKiemTraBbPhanCongController extends Controller
             'khoaOptions' => QuyetDinhHocVienForm::khoaOptions(),
             'maKhChon' => $maKhChon,
             'form' => $form,
+            'dsKhoaHv' => $dsKhoaHv,
             'giaoVien' => $form === null ? [] : self::giaoVienGoiY(),
             'xungOptions' => BienBanPhanCongToChamDocx::XUNG,
         ]);
@@ -141,8 +151,14 @@ class QuyetDinhToChucKiemTraBbPhanCongController extends Controller
             'ma_kh' => ['required', 'string', 'max:500'],
             'so_qd' => ['required', 'regex:/^\d+$/', 'max:10'],
             'ngay_quyet_dinh' => ['required', 'date'],
+            'hang' => ['required', 'string', 'max:120'],
+            'khoa_so' => ['required', 'string', 'max:40'],
+            'chon' => ['required', 'array', 'min:1'],
+            'chon.*' => ['array'],
+            'chon.*.*' => ['string', 'max:50'],
         ], [
             'so_qd.regex' => 'Số quyết định chỉ gồm chữ số.',
+            'chon.required' => 'Chọn ít nhất một học viên trong danh sách.',
         ]);
 
         $khoas = BaoCaoDangKyKhoaHoc::khoaTuMaRaw($data['ma_kh']);
@@ -150,15 +166,34 @@ class QuyetDinhToChucKiemTraBbPhanCongController extends Controller
             return back()->withErrors(['ma_kh' => 'Chưa chọn khoá hợp lệ.'])->withInput();
         }
 
-        $qd = [
-            'so_qd' => trim($data['so_qd']),
-            'ngay_quyet_dinh' => Carbon::parse($data['ngay_quyet_dinh']),
+        $ngay = Carbon::parse($data['ngay_quyet_dinh']);
+        $meta = [
+            'tieu_de' => KemQdToChucKtmDanhSachHocVienExcelExporter::tieuDeTuForm($data['hang'], $data['khoa_so']),
+            'dong_quyet_dinh' => KemQdToChucKtmDanhSachHocVienExcelExporter::dongQuyetDinhTuForm(
+                trim($data['so_qd']),
+                $ngay,
+                trim($data['hang']),
+                trim($data['khoa_so']),
+            ),
         ];
 
+        $chon = [];
+        foreach ($data['chon'] as $ma => $ids) {
+            $chon[trim((string) $ma)] = array_values(array_filter(array_map(
+                static fn ($v) => trim((string) $v),
+                (array) $ids
+            )));
+        }
+
         try {
+            $hocVien = KemQdToChucKtmDanhSachHocVienExcelExporter::gopHocVienDaChon($khoas, $chon);
+            if ($hocVien === []) {
+                return back()->withErrors(['chon' => 'Không còn học viên sau khi loại trừ.'])->withInput();
+            }
+
             $safe = $this->safeMa($data['ma_kh']);
 
-            return $exporter->download($khoas, $qd, 'kem-qd-to-chuc-ktm-danh-sach-hv-'.$safe.'.xlsx');
+            return $exporter->download($meta, $hocVien, 'kem-qd-to-chuc-ktm-danh-sach-hv-'.$safe.'.xlsx');
         } catch (\Throwable $e) {
             return back()->with('error', 'Xuất danh sách học viên thất bại: '.$e->getMessage())->withInput();
         }
@@ -172,8 +207,8 @@ class QuyetDinhToChucKiemTraBbPhanCongController extends Controller
             'so_qd' => ['required', 'regex:/^\d+$/', 'max:10'],
             'ngay_quyet_dinh' => ['required', 'date'],
             'ngay_lap' => ['required', 'date'],
-            'hang' => ['required', 'string', 'max:40'],
-            'khoa_so' => ['required', 'string', 'max:20'],
+            'hang' => ['required', 'string', 'max:120'],
+            'khoa_so' => ['required', 'string', 'max:40'],
             'so_hv' => ['required', 'integer', 'min:1'],
             'ghi_thi_lai' => ['nullable', 'string', 'max:300'],
             'gio_1' => ['required', 'string', 'max:20'],

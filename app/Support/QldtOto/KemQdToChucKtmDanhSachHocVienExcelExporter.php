@@ -6,11 +6,10 @@ use App\Models\PMGPLX\KhoaHoc;
 use Carbon\CarbonInterface;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-/** Danh sách học viên kèm QĐ tổ chức kiểm tra kết thúc môn — mỗi khoá một sheet. */
+/** Danh sách học viên kèm QĐ tổ chức kiểm tra kết thúc môn — một sheet, gộp nhiều khoá. */
 final class KemQdToChucKtmDanhSachHocVienExcelExporter
 {
     public const TEMPLATE = 'templates/oto/kem-qd-to-chuc-kiem-tra-ket-thuc-mon.goc.xlsx';
@@ -21,31 +20,31 @@ final class KemQdToChucKtmDanhSachHocVienExcelExporter
 
     private const DATA_START_ROW = 4;
 
-    /** Dòng dữ liệu mẫu trong file gốc (để copy style). */
-    private const TEMPLATE_DATA_ROWS = 1;
+    /** Dòng dữ liệu mẫu trong file gốc (hàng 4–8, để copy style). */
+    private const TEMPLATE_DATA_ROWS = 5;
 
-    private const FOOTER_ROW_TEMPLATE = 5;
+    private const FOOTER_ROW_TEMPLATE = 9;
 
     /**
-     * @param  list<KhoaHoc>  $khoas
-     * @param  array{so_qd: string, ngay_quyet_dinh: CarbonInterface}  $qd
+     * @param  array{tieu_de: string, dong_quyet_dinh: string}  $meta
+     * @param  list<array<string, mixed>>  $hocVienRows
      */
-    public function download(array $khoas, array $qd, string $downloadName): BinaryFileResponse
+    public function download(array $meta, array $hocVienRows, string $downloadName): BinaryFileResponse
     {
         $tmp = storage_path('app/tmp/kem-qd-ktm-ds-hv-'.uniqid('', true).'.xlsx');
-        $this->generate($khoas, $qd, $tmp);
+        $this->generate($meta, $hocVienRows, $tmp);
 
         return response()->download($tmp, $downloadName)->deleteFileAfterSend(true);
     }
 
     /**
-     * @param  list<KhoaHoc>  $khoas
-     * @param  array{so_qd: string, ngay_quyet_dinh: CarbonInterface}  $qd
+     * @param  array{tieu_de: string, dong_quyet_dinh: string}  $meta
+     * @param  list<array<string, mixed>>  $hocVienRows
      */
-    public function generate(array $khoas, array $qd, string $outputPath): string
+    public function generate(array $meta, array $hocVienRows, string $outputPath): string
     {
-        if ($khoas === []) {
-            throw new \RuntimeException('Chưa chọn khoá học.');
+        if ($hocVienRows === []) {
+            throw new \RuntimeException('Không còn học viên sau khi loại trừ.');
         }
 
         $template = resource_path(self::TEMPLATE);
@@ -55,45 +54,18 @@ final class KemQdToChucKtmDanhSachHocVienExcelExporter
 
         @mkdir(dirname($outputPath), 0755, true);
 
-        /** @var Spreadsheet|null $spreadsheet */
-        $spreadsheet = null;
+        $spreadsheet = IOFactory::load($template);
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Danh sách');
 
-        foreach ($khoas as $i => $khoa) {
-            if (! $khoa instanceof KhoaHoc) {
-                continue;
+        for ($i = $spreadsheet->getSheetCount() - 1; $i >= 0; $i--) {
+            if ($spreadsheet->getSheet($i)->getTitle() !== $sheet->getTitle()) {
+                $spreadsheet->removeSheetByIndex($i);
             }
-            $maKh = (string) $khoa->MaKH;
-            $hocVien = DanhSachHocSinhLaiXeHocVien::dongXuat($maKh);
-            if ($hocVien === []) {
-                throw new \RuntimeException('Khoá '.$maKh.' không có học viên trên PMGPLX.');
-            }
-
-            $tuKhoa = BaoCaoDangKyKhoaHoc::tuKhoaHoc($khoa);
-            $hang = BaoCaoDangKyKhoaHoc::nhanHangGplxQuyetDinh($khoa->HangGPLX ?? null);
-            $meta = [
-                'tieu_de' => self::tieuDe($hang, $tuKhoa['khoa_so']),
-                'dong_quyet_dinh' => self::dongQuyetDinh($qd['so_qd'], $qd['ngay_quyet_dinh'], $hang, $tuKhoa['khoa_so']),
-            ];
-
-            $wb = IOFactory::load($template);
-            $sheet = $wb->getActiveSheet();
-            $sheet->setTitle(self::tenSheet($khoa, $i));
-
-            if ($spreadsheet === null) {
-                $spreadsheet = $wb;
-            } else {
-                $spreadsheet->addExternalSheet($sheet);
-                $wb->disconnectWorksheets();
-            }
-
-            self::fillSheet($sheet, $meta, $hocVien);
         }
 
-        if (! $spreadsheet instanceof Spreadsheet) {
-            throw new \RuntimeException('Không tạo được workbook.');
-        }
+        self::fillSheet($sheet, $meta, $hocVienRows);
 
-        $spreadsheet->setActiveSheetIndex(0);
         $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
         $writer->save($outputPath);
         $spreadsheet->disconnectWorksheets();
@@ -103,6 +75,40 @@ final class KemQdToChucKtmDanhSachHocVienExcelExporter
         }
 
         return $outputPath;
+    }
+
+    /**
+     * Gộp học viên các khoá; chỉ giữ mã đăng ký được chọn (checkbox).
+     *
+     * @param  list<KhoaHoc>  $khoas
+     * @param  array<string, list<string>>  $chonMaDkTheoKhoa  ma_kh => list ma_dk
+     * @return list<array<string, mixed>>
+     */
+    public static function gopHocVienDaChon(array $khoas, array $chonMaDkTheoKhoa): array
+    {
+        $all = [];
+        foreach ($khoas as $khoa) {
+            if (! $khoa instanceof KhoaHoc) {
+                continue;
+            }
+            $maKh = (string) $khoa->MaKH;
+            $chon = array_flip($chonMaDkTheoKhoa[$maKh] ?? []);
+            $rows = DanhSachHocSinhLaiXeHocVien::dongXuat($maKh);
+            foreach ($rows as $row) {
+                $maDk = (string) ($row['ma_dk'] ?? '');
+                if ($maDk === '' || ! isset($chon[$maDk])) {
+                    continue;
+                }
+                $all[] = $row;
+            }
+        }
+
+        foreach ($all as $i => &$row) {
+            $row['stt'] = $i + 1;
+        }
+        unset($row);
+
+        return $all;
     }
 
     /**
@@ -125,15 +131,21 @@ final class KemQdToChucKtmDanhSachHocVienExcelExporter
         for ($i = 0; $i < $count; $i++) {
             $row = self::DATA_START_ROW + $i;
             $hv = $hocVienRows[$i];
-            if ($row > self::DATA_START_ROW + self::TEMPLATE_DATA_ROWS - 1 + $extra) {
+            if ($row > self::DATA_START_ROW + self::TEMPLATE_DATA_ROWS - 1) {
                 self::copyRowStyle($sheet, self::DATA_START_ROW, $row);
             }
 
-            $tach = DanhSachKemQuyetDinhHoanThanhExcelExporter::tachHoTen((string) ($hv['ho_ten'] ?? ''));
+            $hoDem = (string) ($hv['ho_dem'] ?? '');
+            $tenRieng = (string) ($hv['ten_rieng'] ?? '');
+            if ($hoDem === '' && $tenRieng === '') {
+                $tach = DanhSachKemQuyetDinhHoanThanhExcelExporter::tachHoTen((string) ($hv['ho_ten'] ?? ''));
+                $hoDem = (string) $tach['ho_dem'];
+                $tenRieng = (string) $tach['ten'];
+            }
 
             $sheet->setCellValue('A'.$row, (int) ($hv['stt'] ?? $i + 1));
-            $sheet->setCellValue('B'.$row, $tach['ho_dem']);
-            $sheet->setCellValue('C'.$row, $tach['ten']);
+            $sheet->setCellValue('B'.$row, $hoDem);
+            $sheet->setCellValue('C'.$row, $tenRieng);
             $sheet->setCellValue('D'.$row, (string) ($hv['ngay_sinh'] ?? ''));
             $sheet->setCellValueExplicit('E'.$row, (string) ($hv['so_cmnd'] ?? ''), DataType::TYPE_STRING);
             $sheet->setCellValue('F'.$row, (string) ($hv['dia_chi_thuong_tru'] ?? ''));
@@ -151,43 +163,37 @@ final class KemQdToChucKtmDanhSachHocVienExcelExporter
         $sheet->setCellValue('B'.$footerRow, '(Danh sách này bao gồm '.$count.' học viên)');
     }
 
-    public static function tieuDe(string $hangLabel, string $khoaSo): string
+    public static function tieuDeTuForm(string $hangForm, string $khoaSoForm): string
     {
-        $hang = mb_strtoupper(trim($hangLabel), 'UTF-8');
-        $hang = preg_replace('/\s+/u', ' ', trim(str_replace(['(', ')'], [' ', ''], $hang))) ?? $hang;
-        $khoaSo = trim($khoaSo);
+        $khoaSo = trim($khoaSoForm);
+        $hangForm = trim($hangForm);
+        $hangBase = $hangForm;
+        if (str_contains($hangForm, ',')) {
+            $first = trim(explode(',', $hangForm)[0] ?? $hangForm);
+            $hangBase = preg_replace('/\s*Khóa\s+\S+\s*$/u', '', $first) ?? $first;
+            $hangBase = trim($hangBase);
+        }
+        $hang = mb_strtoupper(preg_replace('/\s+/u', ' ', str_replace(['(', ')'], [' ', ' '], $hangBase)) ?? $hangBase, 'UTF-8');
 
         return 'DANH SÁCH HỌC VIÊN HỌC LÁI XE Ô TÔ HẠNG '.$hang
             .($khoaSo !== '' ? ' KHÓA '.$khoaSo : '');
     }
 
-    public static function dongQuyetDinh(
+    public static function dongQuyetDinhTuForm(
         string $soQd,
         CarbonInterface $ngay,
-        string $hangLabel,
-        string $khoaSo,
+        string $hangForm,
+        string $khoaSoForm,
     ): string {
         $soQdFull = trim($soQd).QuyetDinhDieuDongXeSupport::HAU_TO_SO_QD;
-        $hang = trim($hangLabel);
-        $khoa = trim($khoaSo);
+        $hang = trim($hangForm);
+        $khoa = trim($khoaSoForm);
+        $coKhoaTrongHang = (bool) preg_match('/Khóa\s+\S+/u', $hang);
+        $phanKhoa = ($khoa !== '' && ! $coKhoaTrongHang) ? ' Khóa '.$khoa : ($khoa !== '' && str_contains($hang, ',') ? '' : ($khoa !== '' ? ' Khóa '.$khoa : ''));
 
         return '(Kèm theo Quyết định số: '.$soQdFull.' ngày '.$ngay->format('d/m/Y')
             .' của Trung tâm GDNN Mạnh Linh về việc Tổ chức kiểm tra kết thúc môn học lý thuyết, thực hành lái xe ô tô hạng '
-            .$hang.($khoa !== '' ? ' Khóa '.$khoa : '').')';
-    }
-
-    private static function tenSheet(KhoaHoc $khoa, int $index): string
-    {
-        $ma = preg_replace('/[\\\\\\/*?:\\[\\]]/', '-', (string) $khoa->MaKH) ?: 'khoa';
-        $ten = trim((string) ($khoa->TenKH ?? ''));
-        $so = BaoCaoDangKyKhoaHoc::soKhoaTuTen($ten) ?? '';
-        $base = $so !== '' ? 'Khoa '.$so : $ma;
-        $title = mb_substr($base, 0, 28);
-        if ($index > 0 && mb_strlen($base) > 28) {
-            $title = mb_substr($ma, 0, 24).'-'.$index;
-        }
-
-        return $title !== '' ? $title : 'Sheet'.($index + 1);
+            .$hang.$phanKhoa.')';
     }
 
     private static function copyRowStyle(Worksheet $sheet, int $fromRow, int $toRow): void
