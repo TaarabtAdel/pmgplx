@@ -336,6 +336,54 @@ class ThuTienHocVien extends Model
         return $out;
     }
 
+    /** Môn đang rớt và số dư đã đủ phí (nhãn «Rớt · đã thu lại»). */
+    public function laRotDaThuLai(string $khoan): bool
+    {
+        if (! isset(self::COT_KET_QUA[$khoan])) {
+            return false;
+        }
+
+        return $this->{self::COT_KET_QUA[$khoan]} === self::ROT && $this->phaiThu($khoan) === 0;
+    }
+
+    /** Số dư một khoản nếu đang «Rớt · đã thu lại», không thì 0. */
+    public static function sqlRotDaThuLai(string $khoan): string
+    {
+        if (! isset(self::COT_KET_QUA[$khoan])) {
+            return '0';
+        }
+        $soDu = self::sqlSoDu($khoan);
+        $cot = self::COT_KET_QUA[$khoan];
+        $phi = (int) self::PHI[$khoan];
+
+        return "(CASE WHEN ThuTienHocVien.{$cot} = '".self::ROT."' AND {$soDu} >= {$phi} THEN {$soDu} ELSE 0 END)";
+    }
+
+    /**
+     * Tổng số dư các ô «Rớt · đã thu lại» theo bộ lọc.
+     *
+     * @param  Builder<static>  $query
+     * @return array<string, int>
+     */
+    public static function tongRotDaThuLaiTheoKhoan(Builder $query): array
+    {
+        $tungDong = (clone $query)->reorder()->toBase();
+        $tungDong->columns = null;
+        $tong = [];
+        foreach (array_keys(self::PHI) as $k) {
+            $tungDong->selectRaw(self::sqlRotDaThuLai($k).' AS '.$k);
+            $tong[] = 'SUM('.$k.') AS '.$k;
+        }
+        $row = $tungDong->newQuery()->fromSub($tungDong, 't')->selectRaw(implode(', ', $tong))->first();
+        $out = [];
+        foreach (array_keys(self::PHI) as $k) {
+            $out[$k] = (int) ($row->{$k} ?? 0);
+        }
+        $out['tong'] = array_sum($out);
+
+        return $out;
+    }
+
     /**
      * Đổi trạng thái (đã thu tiền, tốt nghiệp, ghi chú) rồi ghi giao dịch chênh lệch cho các khoản bị ảnh hưởng.
      * Gọi trong transaction của kết nối sqlsrv_manhlinh.

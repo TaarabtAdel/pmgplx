@@ -405,6 +405,14 @@
                                 <td colspan="2"></td>
                             </tr>
                             <tr>
+                                <td colspan="8" class="text-right">Rớt · đã thu lại</td>
+                                @foreach ($khoan as $k)
+                                    <td class="so-tien {{ $tongRotDaThuLai[$k] === 0 ? 'khong' : '' }}">{{ $tien($tongRotDaThuLai[$k]) }}</td>
+                                @endforeach
+                                <td class="so-tien {{ $tongRotDaThuLai['tong'] === 0 ? 'khong' : '' }}">{{ $tien($tongRotDaThuLai['tong']) }}</td>
+                                <td colspan="2"></td>
+                            </tr>
+                            <tr>
                                 <td colspan="8" class="text-right text-danger">Phải thu (rớt chưa nộp lại phí thi lại)</td>
                                 @foreach ($khoan as $k)
                                     <td class="so-tien {{ $tongPhaiThu[$k] > 0 ? 'am' : 'khong' }}">{{ $tongPhaiThu[$k] > 0 ? $tien(-$tongPhaiThu[$k]) : '0' }}</td>

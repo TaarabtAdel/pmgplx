@@ -84,8 +84,14 @@ final class ThuTienHocVienExcelExporter
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
         ]);
 
+        $rotDaThuLai = array_fill_keys(array_keys(ThuTienHocVien::PHI), 0);
         $r = $dongTieuDe + 1;
         foreach ($rows->values() as $i => $row) {
+            foreach (array_keys(ThuTienHocVien::COT_KET_QUA) as $khoan) {
+                if ($row->laRotDaThuLai($khoan)) {
+                    $rotDaThuLai[$khoan] += $row->tien($khoan);
+                }
+            }
             $hv = $hocVien[(string) $row->MaDK] ?? null;
             $hoTen = $hv ? ($hv->HoVaTen ?: trim(($hv->HoDemNLX ?? '').' '.($hv->TenNLX ?? ''))) : '(không tìm thấy bên PMGPLX)';
             $sheet->fromArray([
@@ -124,6 +130,20 @@ final class ThuTienHocVienExcelExporter
         foreach (['K', 'M', 'O', 'Q', 'R', 'S'] as $c) {
             $sheet->setCellValue($c.$r, $cuoiDuLieu >= $dauDuLieu ? "=SUM({$c}{$dauDuLieu}:{$c}{$cuoiDuLieu})" : 0);
         }
+        $sheet->getStyle('A'.$r.':'.$cotCuoi.$r)->applyFromArray([
+            'font' => ['bold' => true],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFF1F3F5']],
+        ]);
+        $sheet->getStyle('A'.$r)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+
+        $r++;
+        $sheet->setCellValue('A'.$r, 'Rớt · đã thu lại');
+        $sheet->mergeCells('A'.$r.':J'.$r);
+        $sheet->setCellValue('K'.$r, $rotDaThuLai['ly_thuyet']);
+        $sheet->setCellValue('M'.$r, $rotDaThuLai['sa_hinh']);
+        $sheet->setCellValue('O'.$r, $rotDaThuLai['duong']);
+        $sheet->setCellValue('Q'.$r, 0);
+        $sheet->setCellValue('R'.$r, array_sum($rotDaThuLai));
         $sheet->getStyle('A'.$r.':'.$cotCuoi.$r)->applyFromArray([
             'font' => ['bold' => true],
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFF1F3F5']],

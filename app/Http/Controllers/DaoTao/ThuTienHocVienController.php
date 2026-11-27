@@ -62,6 +62,7 @@ class ThuTienHocVienController extends Controller
             'items' => $items,
             'hocVien' => $hocVien,
             'tong' => ThuTienHocVien::tongTheoKhoan($this->locDanhSach($filters)),
+            'tongRotDaThuLai' => ThuTienHocVien::tongRotDaThuLaiTheoKhoan($this->locDanhSach($filters)),
             'tongPhaiThu' => ThuTienHocVien::tongPhaiThuTheoKhoan($this->locDanhSach($filters)),
             'filters' => $filters,
             'tab' => $filters['tab'],
