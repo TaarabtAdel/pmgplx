@@ -4,11 +4,21 @@ namespace App\Support\Docx;
 
 /**
  * Chỉ sửa word/document.xml — tránh đụng footer/settings (vẫn cần xmlns:mc cho mc:AlternateContent).
- * Một số tool đổi xmlns:mc/w14/r thành xmlns:ns* nhưng vẫn để mc:/w14:/ns3: → Word Windows báo undeclared prefix.
+ * - Sửa xmlns:ns* → mc/w14/r
+ * - Bỏ mc:Ignorable / w14:* không cần
+ * - Đảm bảo xmlns:v / xmlns:o khi PhpWord setImageValue chèn VML (thiếu → Word báo undeclared prefix)
  */
 final class DocxNamespaceFixer
 {
     private const PART = 'word/document.xml';
+
+    private const NS = [
+        'r' => 'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
+        'v' => 'urn:schemas-microsoft-com:vml',
+        'o' => 'urn:schemas-microsoft-com:office:office',
+        'mc' => 'http://schemas.openxmlformats.org/markup-compatibility/2006',
+        'w14' => 'http://schemas.microsoft.com/office/word/2010/wordml',
+    ];
 
     public static function repairFile(string $docxPath): bool
     {
@@ -45,18 +55,18 @@ final class DocxNamespaceFixer
     public static function repairDocumentXml(string $xml): string
     {
         $xml = str_replace(
-            'xmlns:ns1="http://schemas.openxmlformats.org/markup-compatibility/2006"',
-            'xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"',
+            'xmlns:ns1="'.self::NS['mc'].'"',
+            'xmlns:mc="'.self::NS['mc'].'"',
             $xml
         );
         $xml = str_replace(
-            'xmlns:ns2="http://schemas.microsoft.com/office/word/2010/wordml"',
-            'xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"',
+            'xmlns:ns2="'.self::NS['w14'].'"',
+            'xmlns:w14="'.self::NS['w14'].'"',
             $xml
         );
         $xml = str_replace(
-            'xmlns:ns3="http://schemas.openxmlformats.org/officeDocument/2006/relationships"',
-            'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"',
+            'xmlns:ns3="'.self::NS['r'].'"',
+            'xmlns:r="'.self::NS['r'].'"',
             $xml
         );
 
@@ -75,7 +85,30 @@ final class DocxNamespaceFixer
             $xml = preg_replace('/\s+xmlns:w14="[^"]*"/', '', $xml) ?? $xml;
         }
 
+        // PhpWord setImageValue dùng VML: <v:shape> <v:imagedata o:title r:id=...>
+        foreach (['v', 'o', 'r'] as $prefix) {
+            if (preg_match('/\b'.preg_quote($prefix, '/').':/', $xml)) {
+                $xml = self::ensureXmlns($xml, $prefix, self::NS[$prefix]);
+            }
+        }
+
         return $xml;
+    }
+
+    private static function ensureXmlns(string $xml, string $prefix, string $uri): string
+    {
+        if (preg_match('/\sxmlns:'.preg_quote($prefix, '/').'="/', $xml)) {
+            return $xml;
+        }
+
+        $attr = ' xmlns:'.$prefix.'="'.$uri.'"';
+
+        return (string) preg_replace(
+            '/(<w:document\b[^>]*)(>)/',
+            '$1'.$attr.'$2',
+            $xml,
+            1
+        );
     }
 
     /** @deprecated dùng repairDocumentXml */
