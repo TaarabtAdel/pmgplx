@@ -21,6 +21,7 @@
                 <a href="{{ route('daotao.pdt.dat.quan-ly-phien') }}" target="_blank" rel="noopener">Quản lý phiên DAT</a>
                 với <strong>cùng tham số lọc</strong> (mã khóa, học viên <code>mã HV|mã khóa</code>, từ–đến ngày, Đạt/Không đạt, …).
                 Phiên không đạt → ghi chú <strong>Loại</strong>; tổng giờ/km chỉ cộng phiên đạt.
+                Xuất nhiều học viên → <strong>một file PDF</strong> (LibreOffice + gộp trang, giống nhập XML biên bản).
             </div>
 
             @if (session('error'))
@@ -144,8 +145,12 @@
                 <input type="hidden" name="ngay_bao_cao" value="{{ $ngay_bao_cao }}" id="hidden_ngay_bao_cao">
 
                 <div class="mb-2">
-                    <button type="submit" class="btn btn-navy btn-sm" @disabled(count($hocViens) === 0)>
-                        Xuất ZIP / Word
+                    <button type="button" class="btn btn-navy btn-sm" id="btn-xuat-pdf-pl1" @disabled(count($hocViens) === 0)>
+                        Xuất PDF tổng
+                    </button>
+                    <button type="submit" class="btn btn-outline-secondary btn-sm ml-1" @disabled(count($hocViens) === 0)
+                            title="Tải ZIP từng file Word (không gộp PDF)">
+                        Xuất ZIP Word
                     </button>
                     <span class="small text-muted ml-2" id="pl1-chon-count">Đã chọn: 0 (bỏ chọn = xuất cả bảng)</span>
                 </div>
@@ -216,12 +221,33 @@
             </form>
         </div>
     </div>
+
+    <div class="modal fade" id="modalXuatPdfPl1" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title">Xuất PDF Phụ lục 1</h5>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-1 small text-muted" id="xuat-pdf-pl1-scope"></p>
+                    <p class="mb-2" id="xuat-pdf-pl1-status">Đang chuẩn bị…</p>
+                    <div class="progress" style="height: 18px;">
+                        <div class="progress-bar bg-success" id="xuat-pdf-pl1-bar" role="progressbar" style="width: 0%">0%</div>
+                    </div>
+                    <p class="small text-danger mt-2 mb-0" id="xuat-pdf-pl1-error" style="display:none;"></p>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="xuat-pdf-pl1-close" data-dismiss="modal" disabled>Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
 @include('DaoTao.dat.partials.phien-filter-scripts')
 <script>
-(function () {
+(function ($) {
     var $ngay = $('#ngay_bao_cao');
     var $hidden = $('#hidden_ngay_bao_cao');
     if ($ngay.length && $hidden.length) {
@@ -231,9 +257,14 @@
     var $all = $('#chk-all-pl1');
     var $boxes = $('.chk-hv-pl1');
     var $count = $('#pl1-chon-count');
+    var $btnPdf = $('#btn-xuat-pdf-pl1');
+    var rowCount = @json(count($hocViens));
+    var running = false;
+
     function capNhatDem() {
         var n = $('.chk-hv-pl1:checked').length;
         $count.text('Đã chọn: ' + n + ' (bỏ chọn = xuất cả bảng)');
+        $btnPdf.prop('disabled', running || rowCount < 1);
     }
     $all.on('change', function () { $boxes.prop('checked', $all.prop('checked')); capNhatDem(); });
     $boxes.on('change', function () {
@@ -241,6 +272,148 @@
         capNhatDem();
     });
     capNhatDem();
-})();
+
+    function setProgress(done, total, text) {
+        var pct = total > 0 ? Math.round(done * 100 / total) : 0;
+        $('#xuat-pdf-pl1-status').text(text);
+        $('#xuat-pdf-pl1-bar').css('width', pct + '%').text(pct + '%');
+    }
+
+    function fail(message) {
+        running = false;
+        capNhatDem();
+        $('#xuat-pdf-pl1-error').text(message || 'Xuất PDF thất bại.').show();
+        $('#xuat-pdf-pl1-close').prop('disabled', false);
+    }
+
+    function formPayload(chon) {
+        var data = {
+            _token: $('meta[name="csrf-token"]').attr('content'),
+            ma_khoa_hoc: $('input[name="ma_khoa_hoc"]', '#form-xuat-pl1').val(),
+            ma_hoc_vien: $('input[name="ma_hoc_vien"]', '#form-xuat-pl1').val(),
+            ma_phien: $('input[name="ma_phien"]', '#form-xuat-pl1').val(),
+            ma_giao_vien: $('input[name="ma_giao_vien"]', '#form-xuat-pl1').val(),
+            loai_khoa_hoc: $('input[name="loai_khoa_hoc"]', '#form-xuat-pl1').val(),
+            bien_so_xe: $('input[name="bien_so_xe"]', '#form-xuat-pl1').val(),
+            tu_ngay: $('input[name="tu_ngay"]', '#form-xuat-pl1').val(),
+            den_ngay: $('input[name="den_ngay"]', '#form-xuat-pl1').val(),
+            dat: $('input[name="dat"]', '#form-xuat-pl1').val(),
+            ngay_bao_cao: $('#hidden_ngay_bao_cao').val() || $('#ngay_bao_cao').val()
+        };
+        var q = $.param(data);
+        chon.forEach(function (ma) {
+            q += '&ma_hoc_vien_chon[]=' + encodeURIComponent(ma);
+        });
+        return q;
+    }
+
+    function xuatPdf() {
+        if (running || rowCount < 1) return;
+        var chon = [];
+        $('.chk-hv-pl1:checked').each(function () { chon.push($(this).val()); });
+
+        running = true;
+        capNhatDem();
+        $('#xuat-pdf-pl1-error').hide().text('');
+        $('#xuat-pdf-pl1-close').prop('disabled', true);
+        var scope = chon.length > 0
+            ? (chon.length + ' học viên đã chọn')
+            : (rowCount + ' học viên theo bộ lọc');
+        $('#xuat-pdf-pl1-scope').text(scope);
+        setProgress(0, 1, 'Đang chuẩn bị xuất…');
+        $('#modalXuatPdfPl1').modal({ backdrop: 'static', keyboard: false });
+
+        $.ajax({
+            url: @json(route('qldtoto.4-dat-cabin-phu-luc-1.export-tong.start')),
+            method: 'POST',
+            contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+            data: formPayload(chon)
+        }).done(function (start) {
+            var items = start.items || [];
+            var total = start.total || items.length;
+            var jobId = start.job_id;
+            if (!jobId || !total) {
+                fail('Không có học viên để xuất.');
+                return;
+            }
+            setProgress(0, total, 'Đang xuất Word 0/' + total + '…');
+            addNext(jobId, items, 0, total);
+        }).fail(function (xhr) {
+            fail((xhr.responseJSON && xhr.responseJSON.message) || 'Không bắt đầu được phiên xuất.');
+        });
+    }
+
+    function addNext(jobId, items, index, total) {
+        if (index >= total) {
+            fail('Không tạo được file Word.');
+            return;
+        }
+        var item = items[index] || {};
+        var label = item.ten || item.ma || '';
+        setProgress(index, total, 'Đang xuất Word ' + (index + 1) + '/' + total + ': ' + label);
+        $.ajax({
+            url: @json(route('qldtoto.4-dat-cabin-phu-luc-1.export-tong.add')),
+            method: 'POST',
+            timeout: 0,
+            data: {
+                job_id: jobId,
+                ma: item.ma,
+                _token: $('meta[name="csrf-token"]').attr('content')
+            }
+        }).done(function (res) {
+            var done = res.done || (index + 1);
+            if (res.phase === 'pdf') {
+                setProgress(res.pdf_done || 0, res.pdf_total || total, res.status || 'Đang chuyển PDF…');
+                pdfStepNext(jobId, res.pdf_total || total);
+                return;
+            }
+            if (res.download_url) {
+                setProgress(total, total, 'Đã xuất xong. Đang tải PDF tổng…');
+                window.location = res.download_url;
+                running = false;
+                capNhatDem();
+                $('#xuat-pdf-pl1-close').prop('disabled', false);
+                return;
+            }
+            setProgress(done, total, 'Đã xuất Word ' + done + '/' + total);
+            addNext(jobId, items, index + 1, total);
+        }).fail(function (xhr) {
+            fail((xhr.responseJSON && xhr.responseJSON.message) || 'Lỗi khi xuất Word.');
+        });
+    }
+
+    function pdfStepNext(jobId, pdfTotal) {
+        $.ajax({
+            url: @json(route('qldtoto.4-dat-cabin-phu-luc-1.export-tong.pdf-step')),
+            method: 'POST',
+            timeout: 0,
+            data: {
+                job_id: jobId,
+                _token: $('meta[name="csrf-token"]').attr('content')
+            }
+        }).done(function (res) {
+            if (res.download_url) {
+                setProgress(pdfTotal, pdfTotal, 'Đã xuất xong. Đang tải PDF tổng…');
+                window.location = res.download_url;
+                running = false;
+                capNhatDem();
+                $('#xuat-pdf-pl1-close').prop('disabled', false);
+                return;
+            }
+            if (res.phase === 'pdf') {
+                var label = res.name ? (' — ' + res.name) : '';
+                setProgress(res.pdf_done || 0, res.pdf_total || pdfTotal,
+                    (res.status || 'Đang chuyển PDF…') + label);
+                pdfStepNext(jobId, res.pdf_total || pdfTotal);
+                return;
+            }
+            fail('Không hoàn tất được bước chuyển PDF.');
+        }).fail(function (xhr) {
+            fail((xhr.responseJSON && xhr.responseJSON.message) || 'Lỗi khi chuyển PDF (LibreOffice).');
+        });
+    }
+
+    $btnPdf.on('click', xuatPdf);
+})(jQuery);
 </script>
 @endpush

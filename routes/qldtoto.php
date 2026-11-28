@@ -297,6 +297,10 @@ Route::prefix('qldt-oto')->name('qldtoto.')->group(function () {
     Route::get('/'.$slugPhuLuc1, [DatCabinPhuLuc1Controller::class, 'index'])->name(MenuQldt::tenRouteTrang($slugPhuLuc1).'.index');
     Route::get('/'.$slugPhuLuc1.'/xuat-hoc-vien', [DatCabinPhuLuc1Controller::class, 'exportMot'])->name(MenuQldt::tenRouteTrang($slugPhuLuc1).'.export-mot');
     Route::post('/'.$slugPhuLuc1.'/xuat', [DatCabinPhuLuc1Controller::class, 'export'])->name(MenuQldt::tenRouteTrang($slugPhuLuc1).'.export');
+    Route::post('/'.$slugPhuLuc1.'/xuat-pdf/bat-dau', [DatCabinPhuLuc1Controller::class, 'exportTongStart'])->name(MenuQldt::tenRouteTrang($slugPhuLuc1).'.export-tong.start');
+    Route::post('/'.$slugPhuLuc1.'/xuat-pdf/add', [DatCabinPhuLuc1Controller::class, 'exportTongAdd'])->name(MenuQldt::tenRouteTrang($slugPhuLuc1).'.export-tong.add');
+    Route::post('/'.$slugPhuLuc1.'/xuat-pdf/pdf-step', [DatCabinPhuLuc1Controller::class, 'exportTongPdfStep'])->name(MenuQldt::tenRouteTrang($slugPhuLuc1).'.export-tong.pdf-step');
+    Route::get('/'.$slugPhuLuc1.'/xuat-pdf/tai/{job}', [DatCabinPhuLuc1Controller::class, 'exportTongDownload'])->name(MenuQldt::tenRouteTrang($slugPhuLuc1).'.export-tong.download');
 
     $slugPhuLuc5 = DatCabinPhuLuc5Controller::SLUG;
     Route::get('/'.$slugPhuLuc5, [DatCabinPhuLuc5Controller::class, 'index'])->name(MenuQldt::tenRouteTrang($slugPhuLuc5).'.index');
