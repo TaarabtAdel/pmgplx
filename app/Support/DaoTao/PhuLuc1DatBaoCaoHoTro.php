@@ -124,6 +124,33 @@ final class PhuLuc1DatBaoCaoHoTro
     }
 
     /**
+     * @return array<string, string> ma_hv => DuongDanAnh (C:\GPLX\CSDT\...)
+     */
+    public static function duongDanAnhTheoMaHocVien(array $maHocViens): array
+    {
+        if ($maHocViens === []) {
+            return [];
+        }
+
+        $map = [];
+        foreach (array_chunk($maHocViens, 400) as $chunk) {
+            $rows = \App\Models\PMGPLX\NguoiLXHoSo::query()
+                ->whereIn('MaDK', $chunk)
+                ->whereNotNull('DuongDanAnh')
+                ->where('DuongDanAnh', '!=', '')
+                ->get(['MaDK', 'DuongDanAnh']);
+            foreach ($rows as $row) {
+                $path = trim((string) ($row->DuongDanAnh ?? ''));
+                if ($path !== '') {
+                    $map[(string) $row->MaDK] = $path;
+                }
+            }
+        }
+
+        return $map;
+    }
+
+    /**
      * @param  Collection<int, DatDSPhien>  $sessions
      * @param  array<int, list<string>>  $violationsById
      * @return array<string, list<DatDSPhien>>

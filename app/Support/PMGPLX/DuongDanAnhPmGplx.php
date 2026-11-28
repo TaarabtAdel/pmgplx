@@ -78,25 +78,34 @@ class DuongDanAnhPmGplx
         $candidates = [];
 
         $normalized = str_replace('/', '\\', $duongDanAnh);
+        $forward = str_replace('\\', '/', $duongDanAnh);
         $candidates[] = $duongDanAnh;
         $candidates[] = $normalized;
+        $candidates[] = $forward;
 
         $uncPrefix = trim((string) config('pmgplx.anh.unc_prefix', ''));
-        $localRoot = rtrim(str_replace('/', DIRECTORY_SEPARATOR, trim((string) config('pmgplx.anh.local_root', ''))), DIRECTORY_SEPARATOR);
+        $windowsPrefix = trim((string) config('pmgplx.anh.windows_prefix', 'C:\\GPLX'));
+        $localRoot = rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, trim((string) config('pmgplx.anh.local_root', ''))), DIRECTORY_SEPARATOR);
 
-        if ($uncPrefix !== '' && $localRoot !== '') {
-            $prefixNorm = str_replace('/', '\\', $uncPrefix);
-            foreach ([$duongDanAnh, $normalized] as $path) {
-                if (str_starts_with($path, $prefixNorm)) {
-                    $rest = substr($path, strlen($prefixNorm));
-                    $rest = ltrim(str_replace('\\', DIRECTORY_SEPARATOR, $rest), DIRECTORY_SEPARATOR);
+        foreach ([$uncPrefix, $windowsPrefix] as $prefix) {
+            if ($prefix === '' || $localRoot === '') {
+                continue;
+            }
+            $prefixNorm = rtrim(str_replace('/', '\\', $prefix), '\\');
+            $prefixFwd = rtrim(str_replace('\\', '/', $prefix), '/');
+            foreach ([$normalized, $forward] as $path) {
+                $useNorm = str_contains($path, '\\');
+                $pfx = $useNorm ? $prefixNorm : $prefixFwd;
+                if ($pfx !== '' && str_starts_with(strtoupper($path), strtoupper($pfx))) {
+                    $rest = substr($path, strlen($pfx));
+                    $rest = ltrim(str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $rest), DIRECTORY_SEPARATOR);
                     $candidates[] = $localRoot.DIRECTORY_SEPARATOR.$rest;
                 }
             }
         }
 
         if ($localRoot !== '') {
-            $base = basename(str_replace('\\', '/', $duongDanAnh));
+            $base = basename($forward);
             if ($base !== '') {
                 $candidates[] = $localRoot.DIRECTORY_SEPARATOR.$base;
             }
@@ -109,5 +118,42 @@ class DuongDanAnhPmGplx
         }
 
         return null;
+    }
+
+    /**
+     * Đường dẫn ảnh sẵn sàng nhúng Word (jp2 → png tạm). Không có file → null.
+     */
+    public static function prepareDocxImagePath(string $duongDanAnh, string $workDir): ?string
+    {
+        $src = self::resolveReadablePath($duongDanAnh);
+        if ($src === null) {
+            return null;
+        }
+
+        $binary = @file_get_contents($src);
+        if ($binary === false || $binary === '') {
+            return null;
+        }
+
+        if (Jp2PhotoConverter::isJp2($binary)) {
+            $png = Jp2PhotoConverter::toPngBinary($binary);
+            if ($png === null || $png === '') {
+                return null;
+            }
+            @mkdir($workDir, 0755, true);
+            $out = $workDir.DIRECTORY_SEPARATOR.hash('sha256', $binary).'.png';
+            if (@file_put_contents($out, $png) === false) {
+                return null;
+            }
+
+            return $out;
+        }
+
+        $ext = strtolower(pathinfo($src, PATHINFO_EXTENSION));
+        if (! in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'], true)) {
+            return null;
+        }
+
+        return $src;
     }
 }

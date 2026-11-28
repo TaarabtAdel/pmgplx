@@ -6,6 +6,8 @@ return [
    */
     'anh' => [
         'unc_prefix' => env('GPLX_ANH_UNC_PREFIX', '\\\\192.168.1.212\\ANH GPLX'),
+        /** Prefix Windows trên DuongDanAnh (vd. C:\GPLX\CSDT\...). */
+        'windows_prefix' => env('GPLX_ANH_WINDOWS_PREFIX', 'C:\\GPLX'),
         'local_root' => env('GPLX_ANH_LOCAL_ROOT', ''),
     ],
 
