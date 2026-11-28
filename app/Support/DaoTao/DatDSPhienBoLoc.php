@@ -57,43 +57,52 @@ class DatDSPhienBoLoc
             $query->orderByDesc('ThoiGianBatDauPhienHoc')->orderByDesc('Id');
         }
 
-        if ($filters['ma_hoc_vien'] !== '') {
-            [$maHv, $maKhFromHv] = self::parseMaHocVienFilter($filters['ma_hoc_vien']);
+        $maHocVien = trim((string) ($filters['ma_hoc_vien'] ?? ''));
+        if ($maHocVien !== '') {
+            [$maHv, $maKhFromHv] = self::parseMaHocVienFilter($maHocVien);
             $query->where('MaHocVien', $maHv);
             if ($maKhFromHv !== '') {
                 $query->where('MaKhoaHoc', $maKhFromHv);
             }
         }
 
-        if ($filters['ma_phien'] !== '') {
-            $query->where('MaPhienHoc', 'like', '%'.$filters['ma_phien'].'%');
+        $maPhien = trim((string) ($filters['ma_phien'] ?? ''));
+        if ($maPhien !== '') {
+            $query->where('MaPhienHoc', 'like', '%'.$maPhien.'%');
         }
 
-        if ($filters['ma_khoa_hoc'] !== '') {
-            $query->where('MaKhoaHoc', $filters['ma_khoa_hoc']);
+        $maKhoaHoc = trim((string) ($filters['ma_khoa_hoc'] ?? ''));
+        if ($maKhoaHoc !== '') {
+            $query->where('MaKhoaHoc', $maKhoaHoc);
         }
 
-        if ($filters['loai_khoa_hoc'] !== '') {
-            $query->where('LoaiKhoaHoc', $filters['loai_khoa_hoc']);
+        $loaiKhoaHoc = trim((string) ($filters['loai_khoa_hoc'] ?? ''));
+        if ($loaiKhoaHoc !== '') {
+            $query->where('LoaiKhoaHoc', $loaiKhoaHoc);
         }
 
-        if ($filters['ma_giao_vien'] !== '') {
-            $query->where('MaGiaoVien', $filters['ma_giao_vien']);
+        $maGiaoVien = trim((string) ($filters['ma_giao_vien'] ?? ''));
+        if ($maGiaoVien !== '') {
+            $query->where('MaGiaoVien', $maGiaoVien);
         }
 
-        if ($filters['bien_so_xe'] !== '') {
-            $query->where('BienSoXe', $filters['bien_so_xe']);
+        $bienSoXe = trim((string) ($filters['bien_so_xe'] ?? ''));
+        if ($bienSoXe !== '') {
+            $query->where('BienSoXe', $bienSoXe);
         }
 
-        if ($filters['ngay'] !== '') {
-            $query->whereDate('ThoiGianBatDauPhienHoc', $filters['ngay']);
+        $ngay = trim((string) ($filters['ngay'] ?? ''));
+        $tuNgay = trim((string) ($filters['tu_ngay'] ?? ''));
+        $denNgay = trim((string) ($filters['den_ngay'] ?? ''));
+        if ($ngay !== '') {
+            $query->whereDate('ThoiGianBatDauPhienHoc', $ngay);
         } else {
-            if ($filters['tu_ngay'] !== '') {
-                $query->whereDate('ThoiGianBatDauPhienHoc', '>=', $filters['tu_ngay']);
+            if ($tuNgay !== '') {
+                $query->whereDate('ThoiGianBatDauPhienHoc', '>=', $tuNgay);
             }
 
-            if ($filters['den_ngay'] !== '') {
-                $query->whereDate('ThoiGianBatDauPhienHoc', '<=', $filters['den_ngay']);
+            if ($denNgay !== '') {
+                $query->whereDate('ThoiGianBatDauPhienHoc', '<=', $denNgay);
             }
         }
 

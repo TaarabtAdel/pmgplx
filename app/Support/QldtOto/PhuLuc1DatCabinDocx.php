@@ -3,6 +3,7 @@
 namespace App\Support\QldtOto;
 
 use App\Support\DaoTao\PhuLuc1DatBaoCaoHoTro;
+use App\Support\Docx\DocxNamespaceFixer;
 use Carbon\Carbon;
 use PhpOffice\PhpWord\TemplateProcessor;
 
@@ -76,6 +77,7 @@ final class PhuLuc1DatCabinDocx
         $processor->setValue('ket_luan', self::esc($data['ket_luan'] ?? ''));
 
         $processor->saveAs($outputPath);
+        DocxNamespaceFixer::repairFile($outputPath);
     }
 
     private static function esc(string $v): string

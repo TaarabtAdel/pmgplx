@@ -74,8 +74,8 @@ final class TongDatKhoaExcel
                 $sheet->setCellValue('A'.$r, $hang['stt']);
                 $sheet->setCellValue('B'.$r, $hang['label']);
                 $sheet->setCellValue('C'.$r, $hang['tong_hv']);
-                $sheet->setCellValue('D'.$r, $hang['phien_dat']);
-                $sheet->setCellValue('G'.$r, $hang['phien_khong_dat']);
+                $sheet->setCellValue('D'.$r, $hang['du_dk']);
+                $sheet->setCellValue('G'.$r, $hang['khong_du_dk']);
             }
 
             $firstDataRow = self::ROW_STUDENT_DATA + $extraHang;

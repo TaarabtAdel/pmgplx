@@ -19,7 +19,7 @@ final class TongDatKhoaDuLieu
      *   hang_chinh: string,
      *   ngay_kg: ?string,
      *   ngay_bg: ?string,
-     *   tom_tat_hang: list<array{stt: int, hang: string, label: string, tong_hv: int, phien_dat: int, phien_khong_dat: int}>,
+     *   tom_tat_hang: list<array{stt: int, hang: string, label: string, tong_hv: int, du_dk: int, khong_du_dk: int}>,
      *   hoc_vien: list<array{
      *     stt: int,
      *     ma_hoc_vien: string,
@@ -59,7 +59,7 @@ final class TongDatKhoaDuLieu
             $ngayBg = $sessions->max(fn ($s) => $s->ThoiGianBatDauPhienHoc?->format('Y-m-d'));
         }
 
-        /** @var array<string, array{hang: string, hv: array<string, true>, phien_dat: int, phien_khong_dat: int}> $theoHang */
+        /** @var array<string, array{hang: string, hv: array<string, true>}> $theoHang */
         $theoHang = [];
         /** @var array<string, array<string, mixed>> $theoHv */
         $theoHv = [];
@@ -78,15 +78,8 @@ final class TongDatKhoaDuLieu
             $theoHang[$hang] ??= [
                 'hang' => $hang,
                 'hv' => [],
-                'phien_dat' => 0,
-                'phien_khong_dat' => 0,
             ];
             $theoHang[$hang]['hv'][$maHv] = true;
-            if ($dat) {
-                $theoHang[$hang]['phien_dat']++;
-            } else {
-                $theoHang[$hang]['phien_khong_dat']++;
-            }
 
             if (! isset($theoHv[$key])) {
                 $theoHv[$key] = [
@@ -110,21 +103,6 @@ final class TongDatKhoaDuLieu
             $theoHv[$key]['phien'][] = $session;
         }
 
-        ksort($theoHang);
-        $tomTatHang = [];
-        $sttHang = 0;
-        foreach ($theoHang as $row) {
-            $sttHang++;
-            $tomTatHang[] = [
-                'stt' => $sttHang,
-                'hang' => $row['hang'],
-                'label' => self::nhanHang($row['hang']),
-                'tong_hv' => count($row['hv']),
-                'phien_dat' => $row['phien_dat'],
-                'phien_khong_dat' => $row['phien_khong_dat'],
-            ];
-        }
-
         $maHvList = array_values(array_unique(array_map(static fn (array $r) => $r['ma_hoc_vien'], $theoHv)));
         $ngaySinh = PhuLuc1DatBaoCaoHoTro::ngaySinhTheoMaHocVien($maHvList);
 
@@ -132,6 +110,8 @@ final class TongDatKhoaDuLieu
 
         $hocVien = [];
         $stt = 0;
+        /** @var array<string, array{du: int, khong: int}> $demDkTheoHang */
+        $demDkTheoHang = [];
         foreach ($theoHv as $row) {
             $stt++;
             $phien = $row['phien'];
@@ -141,17 +121,41 @@ final class TongDatKhoaDuLieu
                 $phien,
                 $violations
             );
+            $duDk = $ketLuan === 'Đạt';
+            $hang = $row['hang'];
+            $demDkTheoHang[$hang] ??= ['du' => 0, 'khong' => 0];
+            if ($duDk) {
+                $demDkTheoHang[$hang]['du']++;
+            } else {
+                $demDkTheoHang[$hang]['khong']++;
+            }
             $hocVien[] = [
                 'stt' => $stt,
                 'ma_hoc_vien' => $row['ma_hoc_vien'],
                 'ho_ten' => $row['ho_ten'],
                 'ngay_sinh' => $ngaySinh[$row['ma_hoc_vien']] ?? null,
-                'hang' => $row['hang'],
+                'hang' => $hang,
                 'tong_gio' => $row['tong_gio'],
                 'tong_km' => $row['tong_km'],
                 'phien_dat' => $row['phien_dat'],
                 'phien_khong_dat' => $row['phien_khong_dat'],
-                'ghi_chu' => $ketLuan === 'Đạt' ? 'HT' : '',
+                'ghi_chu' => $duDk ? 'HT' : '',
+            ];
+        }
+
+        ksort($theoHang);
+        $tomTatHang = [];
+        $sttHang = 0;
+        foreach ($theoHang as $row) {
+            $sttHang++;
+            $dem = $demDkTheoHang[$row['hang']] ?? ['du' => 0, 'khong' => 0];
+            $tomTatHang[] = [
+                'stt' => $sttHang,
+                'hang' => $row['hang'],
+                'label' => self::nhanHang($row['hang']),
+                'tong_hv' => count($row['hv']),
+                'du_dk' => $dem['du'],
+                'khong_du_dk' => $dem['khong'],
             ];
         }
 

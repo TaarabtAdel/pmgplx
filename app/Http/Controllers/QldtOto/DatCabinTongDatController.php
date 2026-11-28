@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\QldtOto;
 
 use App\Http\Controllers\Controller;
+use App\Support\DaoTao\DatDSPhienBoLoc;
 use App\Support\DaoTao\DatKhoaHocSelectOptions;
 use App\Support\DaoTao\TongDatKhoaDuLieu;
 use App\Support\MenuQldt;
@@ -38,11 +39,11 @@ class DatCabinTongDatController extends Controller
             'den_ngay' => ['nullable', 'date'],
         ]);
 
-        $filters = [
+        $filters = DatDSPhienBoLoc::parseFilters(new Request([
             'ma_khoa_hoc' => $validated['ma_khoa_hoc'],
             'tu_ngay' => $validated['tu_ngay'] ?? '',
             'den_ngay' => $validated['den_ngay'] ?? '',
-        ];
+        ]));
 
         try {
             $tomTat = TongDatKhoaDuLieu::tomTatKhoa($filters, $validated['ma_khoa_hoc']);

@@ -19,8 +19,8 @@
             <div class="alert alert-info small py-2">
                 Mẫu <code>tong-dat-khoa.goc.xlsx</code> — báo cáo tổng DAT theo khóa.
                 <strong>Tổng thời gian / quãng đường</strong> mỗi học viên = cộng <strong>tất cả</strong> phiên (cả Không đạt).
-                Bảng tóm tắt hạng: cột <strong>Đủ điều kiện</strong> / <strong>Không đủ điều kiện</strong> = <strong>số phiên</strong> đạt / không đạt
-                (cùng tiêu chí quản lý phiên DAT).
+                Bảng tóm tắt hạng: cột <strong>Đủ điều kiện</strong> / <strong>Không đủ điều kiện</strong> = số học viên đạt / chưa đạt chương trình
+                (cùng tiêu chí ghi chú HT trên danh sách).
             </div>
 
             @if (session('error'))
@@ -60,3 +60,20 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+(function ($) {
+    $(function () {
+        $('#ma_khoa_hoc').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            allowClear: true,
+            placeholder: '— Chọn khóa —',
+            dropdownParent: $('#ma_khoa_hoc').closest('.form-group'),
+            language: { noResults: function () { return 'Không tìm thấy'; } },
+        });
+    });
+})(jQuery);
+</script>
+@endpush
