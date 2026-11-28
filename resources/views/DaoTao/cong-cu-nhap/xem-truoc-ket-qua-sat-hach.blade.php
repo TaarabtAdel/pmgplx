@@ -6,6 +6,7 @@
     @php
         $meta = $preview['meta'] ?? [];
         $rows = $preview['rows'] ?? [];
+        $laGplx = ($preview['dich'] ?? '') === 'cap_nhat_gplx';
     @endphp
 
     <style>
@@ -25,10 +26,11 @@
         <div class="card-body">
             <div><strong>File:</strong> {{ $preview['file_name'] ?? '' }}</div>
             <div><strong>Sheet:</strong> {{ $preview['sheet_name'] ?? '' }}</div>
+            <div><strong>Ghi vào:</strong> {{ $laGplx ? 'Danh sách cập nhật GPLX — cột Kết quả (cột R Tổng hợp)' : 'Quản lý thu tiền học viên' }}</div>
             <div>
                 <strong>Dòng file:</strong> {{ number_format((int) ($meta['record_count'] ?? count($rows))) }}
-                · <strong>Khớp thu tiền:</strong> {{ number_format((int) ($meta['matched'] ?? 0)) }}
-                · <strong>Chưa có thu tiền:</strong> {{ number_format((int) ($meta['not_in_thu_tien'] ?? 0)) }}
+                · <strong>Khớp danh sách:</strong> {{ number_format((int) ($meta['matched'] ?? 0)) }}
+                · <strong>Chưa có trong danh sách:</strong> {{ number_format((int) ($laGplx ? ($meta['not_in_gplx'] ?? 0) : ($meta['not_in_thu_tien'] ?? 0))) }}
                 · <strong>Không khớp PMGPLX:</strong> {{ number_format((int) ($meta['not_found'] ?? 0)) }}
                 @if ((int) ($meta['ambiguous'] ?? 0) > 0)
                     · <strong>Trùng HV PMGPLX:</strong> {{ number_format((int) $meta['ambiguous']) }}
@@ -57,9 +59,14 @@
                             <th>Số ĐD</th>
                             <th>Hạng (file)</th>
                             <th>Mã ĐK</th>
-                            <th>Lý thuyết</th>
-                            <th>Sa hình</th>
-                            <th>Đường</th>
+                            @if ($laGplx)
+                                <th>Tổng hợp (R)</th>
+                                <th>Kết quả hiện tại</th>
+                            @else
+                                <th>Lý thuyết</th>
+                                <th>Sa hình</th>
+                                <th>Đường</th>
+                            @endif
                             <th>Trạng thái</th>
                         </tr>
                     </thead>
@@ -98,23 +105,31 @@
                                 </td>
                                 <td>
                                     @if (! empty($row['ma_dk']))
-                                        <a href="{{ route('daotao.pdt.bc.thu-tien-hoc-vien', ['tu_khoa' => $row['ma_dk']]) }}">{{ $row['ma_dk'] }}</a>
+                                        <a href="{{ $laGplx ? route('daotao.pdt.bc.cap-nhat-gplx', ['tu_khoa' => $row['ma_dk']]) : route('daotao.pdt.bc.thu-tien-hoc-vien', ['tu_khoa' => $row['ma_dk']]) }}">{{ $row['ma_dk'] }}</a>
                                     @else
                                         —
                                     @endif
                                 </td>
-                                <td>{!! $fmtMon($row['mon']['ly_thuyet'] ?? []) !!}</td>
-                                <td>{!! $fmtMon($row['mon']['sa_hinh'] ?? []) !!}</td>
-                                <td>{!! $fmtMon($row['mon']['duong'] ?? []) !!}</td>
+                                @if ($laGplx)
+                                    <td>{{ ($row['tong_hop'] ?? '') !== '' ? $row['tong_hop'] : '—' }}</td>
+                                    <td>{{ ($row['ket_qua_hien_tai'] ?? '') !== '' ? $row['ket_qua_hien_tai'] : '—' }}</td>
+                                @else
+                                    <td>{!! $fmtMon($row['mon']['ly_thuyet'] ?? []) !!}</td>
+                                    <td>{!! $fmtMon($row['mon']['sa_hinh'] ?? []) !!}</td>
+                                    <td>{!! $fmtMon($row['mon']['duong'] ?? []) !!}</td>
+                                @endif
                                 <td class="small">
                                     @if (($row['status'] ?? '') === 'matched')
                                         @if ($row['will_apply'] ?? false)
-                                            <span class="text-warning">Sẽ cập nhật KQ thi</span>
+                                            <span class="text-warning">{{ $laGplx ? 'Sẽ ghi Kết quả' : 'Sẽ cập nhật KQ thi' }}</span>
                                         @else
                                             <span class="text-muted">Khớp · không đổi</span>
+                                            @if (! empty($row['message']) && $laGplx)
+                                                <br><small>{{ $row['message'] }}</small>
+                                            @endif
                                         @endif
-                                    @elseif (($row['status'] ?? '') === 'not_in_thu_tien')
-                                        <span class="text-danger">Chưa có trong danh sách thu tiền</span>
+                                    @elseif (in_array($row['status'] ?? '', ['not_in_thu_tien', 'not_in_gplx'], true))
+                                        <span class="text-danger">{{ $laGplx ? 'Chưa có trong danh sách cập nhật GPLX' : 'Chưa có trong danh sách thu tiền' }}</span>
                                         @if (! empty($row['message']))
                                             <br><small>{{ $row['message'] }}</small>
                                         @endif
@@ -132,7 +147,7 @@
 
     <div class="d-flex flex-wrap align-items-center">
         <form method="POST" action="{{ route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-sat-hach.confirm') }}" class="mr-2 mb-2"
-              onsubmit="return confirm('Cập nhật kết quả thi vào Quản lý thu tiền học viên cho các dòng được đánh dấu?');">
+              onsubmit="return confirm({{ $laGplx ? "'Ghi cột Kết quả (Tổng hợp) vào danh sách cập nhật GPLX?'" : "'Cập nhật kết quả thi vào Quản lý thu tiền học viên cho các dòng được đánh dấu?'" }});">
             @csrf
             <button type="submit" class="btn btn-navy btn-lg" @if((int)($meta['will_update'] ?? 0) === 0) disabled @endif>
                 Xác nhận cập nhật ({{ number_format((int) ($meta['will_update'] ?? 0)) }} HV)

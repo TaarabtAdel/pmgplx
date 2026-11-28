@@ -33,6 +33,7 @@ class CapNhatGPLXHocVien extends Model
         'NgayCapGPLX',
         'NgayHHGPLX',
         'NoiCapGPLX',
+        'KetQua',
         'GhiChu',
         'NguoiTaoId',
         'NgayTao',

@@ -241,6 +241,7 @@
                             <th>Số GPLX</th>
                             <th>Ngày cấp GPLX</th>
                             <th>Ngày trúng tuyển</th>
+                            <th>Kết quả</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -287,6 +288,7 @@
                                 <td>{!! $cellMl($ht['so_gplx'], (bool) $row->SoGPLX) !!}</td>
                                 <td>{!! $cellMl($ht['ngay_cap_gplx'], (bool) $row->NgayCapGPLX) !!}</td>
                                 <td>{!! $cellMl($ht['ngay_trung_tuyen'], $ht['ml']['ngay_trung_tuyen']) !!}</td>
+                                <td>{{ $row->KetQua !== null && $row->KetQua !== '' ? $row->KetQua : '—' }}</td>
                                 <td class="text-nowrap">
                                     <button type="button" class="btn btn-sm btn-outline-primary py-0 btn-sua"
                                             data-url="{{ route('daotao.pdt.bc.cap-nhat-gplx.update', $row->Id) }}"
@@ -309,7 +311,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="12" class="text-center py-4">
+                                <td colspan="13" class="text-center py-4">
                                     @if (collect($filters)->except('per_page')->filter(fn ($v) => $v !== '')->isNotEmpty())
                                         Không có học viên khớp bộ lọc.
                                     @else
@@ -322,7 +324,7 @@
                     @if ($items->total() > 0)
                         <tfoot>
                             <tr>
-                                <td colspan="9" class="text-right">Theo bộ lọc ({{ number_format($tongTrangThai['tong']) }} học viên)</td>
+                                <td colspan="10" class="text-right">Theo bộ lọc ({{ number_format($tongTrangThai['tong']) }} học viên)</td>
                                 <td colspan="3">
                                     Đã cập nhật: {{ number_format($tongTrangThai['da_cap_nhat']) }}
                                     · Chưa: {{ number_format($tongTrangThai['chua_cap_nhat']) }}

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\DaoTao;
 use App\Http\Controllers\Controller;
 use App\Rules\ExcelUpload;
 use App\Support\DaoTao\DatDSPhienExcelParser;
+use App\Support\DaoTao\KetQuaSatHachCapNhatGplxUpdater;
 use App\Support\DaoTao\KetQuaSatHachExcelParser;
 use App\Support\DaoTao\KetQuaSatHachMauExcel;
 use App\Support\DaoTao\KetQuaSatHachThuTienUpdater;
@@ -39,8 +40,10 @@ class NhapKetQuaSatHachController extends Controller
     {
         $request->validate([
             'file' => ['required', 'file', new ExcelUpload(), 'max:51200'],
+            'dich' => ['required', 'in:thu_tien,cap_nhat_gplx'],
         ], [
             'file.required' => 'Vui lòng chọn file Excel.',
+            'dich.required' => 'Chọn nơi cập nhật.',
         ]);
 
         /** @var UploadedFile $file */
@@ -60,12 +63,16 @@ class NhapKetQuaSatHachController extends Controller
 
             $spreadsheet = DatDSPhienExcelParser::loadSpreadsheet($fullPath);
             $parsed = (new KetQuaSatHachExcelParser())->parse($spreadsheet, $file->getClientOriginalName());
-            $analysis = (new KetQuaSatHachThuTienUpdater())->analyzeFromFile($fullPath);
+            $dich = (string) $request->input('dich');
+            $analysis = $dich === 'cap_nhat_gplx'
+                ? (new KetQuaSatHachCapNhatGplxUpdater())->analyzeFromFile($fullPath)
+                : (new KetQuaSatHachThuTienUpdater())->analyzeFromFile($fullPath);
 
             $request->session()->put(self::SESSION_KEY, [
                 'stored_path' => $storedPath,
                 'file_name' => $parsed['file_name'],
                 'sheet_name' => $parsed['sheet_name'],
+                'dich' => $dich,
                 'meta' => array_merge($parsed['meta'], $analysis['meta']),
                 'rows' => $analysis['rows'],
             ]);
@@ -121,10 +128,10 @@ class NhapKetQuaSatHachController extends Controller
         }
 
         try {
-            $result = (new KetQuaSatHachThuTienUpdater())->applyFromFile(
-                Storage::disk('local')->path($storedPath),
-                auth()->id()
-            );
+            $fullPath = Storage::disk('local')->path($storedPath);
+            $result = ($preview['dich'] ?? '') === 'cap_nhat_gplx'
+                ? (new KetQuaSatHachCapNhatGplxUpdater())->applyFromFile($fullPath)
+                : (new KetQuaSatHachThuTienUpdater())->applyFromFile($fullPath, auth()->id());
         } catch (Throwable $e) {
             return redirect()
                 ->route('daotao.pdt.cong-cu-nhap.nhap-ket-qua-sat-hach.preview')
@@ -133,7 +140,9 @@ class NhapKetQuaSatHachController extends Controller
 
         $this->clearPendingImport($request);
 
-        $msg = 'Đã cập nhật kết quả thi cho '.$result['updated_hv'].' học viên ('.$result['updated_mon'].' lượt môn).';
+        $msg = ($preview['dich'] ?? '') === 'cap_nhat_gplx'
+            ? 'Đã ghi cột Kết quả (Tổng hợp) cho '.$result['updated_hv'].' học viên.'
+            : 'Đã cập nhật kết quả thi cho '.$result['updated_hv'].' học viên ('.$result['updated_mon'].' lượt môn).';
         if ($result['skipped'] > 0) {
             $msg .= ' Bỏ qua '.$result['skipped'].' dòng không thay đổi hoặc không khớp.';
         }

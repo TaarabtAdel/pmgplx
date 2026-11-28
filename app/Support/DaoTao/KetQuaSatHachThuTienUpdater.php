@@ -225,7 +225,7 @@ class KetQuaSatHachThuTienUpdater
      * @param  list<array<string, mixed>>  $records
      * @return array<string, list<array{ma_dk: string, ma_khoa_hoc: ?string, hang_gplx: ?string, hang_dao_tao: ?string, cccd_norm: string}>>
      */
-    private function buildPmglxIndexForRecords(array $records): array
+    public function buildPmglxIndexForRecords(array $records): array
     {
         $need = [];
         foreach ($records as $record) {
@@ -279,7 +279,7 @@ class KetQuaSatHachThuTienUpdater
      * @param  array<string, list<array<string, mixed>>>  $pmglxIndex
      * @return list<array<string, mixed>>
      */
-    private function findPmglxCandidates(array $pmglxIndex, string $cccd, string $hangFile): array
+    public function findPmglxCandidates(array $pmglxIndex, string $cccd, string $hangFile): array
     {
         $cccdNorm = KetQuaSatHachExcelParser::normalizeCccd($cccd);
         if ($cccdNorm === '') {

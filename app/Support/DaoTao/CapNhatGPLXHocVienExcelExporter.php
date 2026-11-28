@@ -62,6 +62,7 @@ final class CapNhatGPLXHocVienExcelExporter
             ['Số GPLX', 16],
             ['Ngày cấp GPLX', 12],
             ['Ngày trúng tuyển', 12],
+            ['Kết quả', 14],
         ];
         $soCot = count($cot);
         $cotCuoi = self::chuCot($soCot);
@@ -104,6 +105,7 @@ final class CapNhatGPLXHocVienExcelExporter
                 $ht['so_gplx'],
                 $ht['ngay_cap_gplx'],
                 $ht['ngay_trung_tuyen'],
+                (string) ($row->KetQua ?? ''),
             ], null, 'A'.$r, true);
             $sheet->setCellValueExplicit('D'.$r, $ht['so_cmnd'], DataType::TYPE_STRING);
             $sheet->setCellValueExplicit('G'.$r, $ht['so_gplx'], DataType::TYPE_STRING);
