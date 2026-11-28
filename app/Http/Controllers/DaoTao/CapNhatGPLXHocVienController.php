@@ -87,6 +87,11 @@ class CapNhatGPLXHocVienController extends Controller
         if (in_array($filters['cap_nhat'], ['0', '1'], true)) {
             $moTa[] = $filters['cap_nhat'] === '1' ? 'Đã cập nhật GPLX' : 'Chưa cập nhật GPLX';
         }
+        if ($filters['ket_qua'] === 'dat') {
+            $moTa[] = 'Kết quả: Đạt';
+        } elseif ($filters['ket_qua'] === 'khong_dat') {
+            $moTa[] = 'Kết quả: Không đạt';
+        }
 
         $tenFile = 'cap-nhat-gplx-hoc-vien'
             .($filters['ma_kh'] !== '' ? '-'.(preg_replace('/[^A-Za-z0-9_-]+/', '-', $filters['ma_kh']) ?: 'khoa') : '')
@@ -95,15 +100,17 @@ class CapNhatGPLXHocVienController extends Controller
         return CapNhatGPLXHocVienExcelExporter::download($rows, $hocVienExport, $moTa, $tenFile, $dvhcMap);
     }
 
-    /** @return array{tu_khoa: string, ma_kh: string, cap_nhat: string, per_page: int} */
+    /** @return array{tu_khoa: string, ma_kh: string, cap_nhat: string, ket_qua: string, per_page: int} */
     private static function boLoc(Request $request): array
     {
         $perPage = (int) $request->input('per_page', 50);
+        $ketQua = (string) $request->input('ket_qua', '');
 
         return [
             'tu_khoa' => trim((string) $request->input('tu_khoa', '')),
             'ma_kh' => trim((string) $request->input('ma_kh', '')),
             'cap_nhat' => (string) $request->input('cap_nhat', ''),
+            'ket_qua' => in_array($ketQua, ['dat', 'khong_dat'], true) ? $ketQua : '',
             'per_page' => in_array($perPage, self::SO_DONG_TRANG, true) ? $perPage : 50,
         ];
     }
@@ -293,6 +300,13 @@ class CapNhatGPLXHocVienController extends Controller
         }
         if (in_array($filters['cap_nhat'], ['0', '1'], true)) {
             $q->where('DaCapNhatGPLX', $filters['cap_nhat'] === '1');
+        }
+        if ($filters['ket_qua'] === 'dat' || $filters['ket_qua'] === 'khong_dat') {
+            $vals = $filters['ket_qua'] === 'dat'
+                ? ['Đạt', 'đạt', 'ĐẠT', 'DAT', 'Dat', 'dat', 'Đ', 'đ', 'D', 'd', 'Đậu', 'đậu', 'ĐẬU', 'DAU', 'Dau', 'dau']
+                : ['Không đạt', 'không đạt', 'KHÔNG ĐẠT', 'Khong dat', 'KHONG DAT', 'khong dat', 'KĐ', 'kđ', 'KD', 'kd', 'K', 'k', 'Rớt', 'rớt', 'RỚT', 'ROT', 'Rot', 'rot'];
+            $ph = implode(',', array_fill(0, count($vals), '?'));
+            $q->whereRaw('LTRIM(RTRIM(KetQua)) IN ('.$ph.')', $vals);
         }
         if ($filters['tu_khoa'] !== '') {
             $tk = $filters['tu_khoa'];

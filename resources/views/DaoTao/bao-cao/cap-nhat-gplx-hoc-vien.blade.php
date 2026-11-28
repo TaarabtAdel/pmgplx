@@ -153,11 +153,11 @@
         <div class="card-header">Tìm kiếm</div>
         <div class="card-body">
             <form method="GET" action="{{ route('daotao.pdt.bc.cap-nhat-gplx') }}" class="form-row align-items-end">
-                <div class="form-group col-md-4 mb-0">
+                <div class="form-group col-md-3 mb-0">
                     <label>Mã ĐK|Họ tên|CMT|Số hồ sơ|Số GPLX</label>
                     <input type="text" class="form-control form-control-sm" name="tu_khoa" value="{{ $filters['tu_khoa'] }}" placeholder="Nhập từ khoá">
                 </div>
-                <div class="form-group col-md-4 mb-0">
+                <div class="form-group col-md-3 mb-0">
                     <label for="loc_ma_kh">Khoá</label>
                     <select name="ma_kh" id="loc_ma_kh" class="form-control form-control-sm">
                         <option value=""></option>
@@ -174,6 +174,14 @@
                         <option value="">—Tất cả—</option>
                         <option value="1" @selected($filters['cap_nhat'] === '1')>Đã cập nhật</option>
                         <option value="0" @selected($filters['cap_nhat'] === '0')>Chưa cập nhật</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-2 mb-0">
+                    <label>Kết quả</label>
+                    <select name="ket_qua" class="form-control form-control-sm">
+                        <option value="">—Tất cả—</option>
+                        <option value="dat" @selected(($filters['ket_qua'] ?? '') === 'dat')>Đạt</option>
+                        <option value="khong_dat" @selected(($filters['ket_qua'] ?? '') === 'khong_dat')>Không đạt</option>
                     </select>
                 </div>
                 <div class="form-group col-md-2 mb-0">
@@ -199,7 +207,7 @@
                 </div>
                 <button type="button" class="btn btn-sm btn-outline-danger mr-2 mb-2 btn-hang-loat" data-hanh-dong="xoa">✕ Xoá khỏi danh sách</button>
                 <span class="small text-muted mb-2 mr-auto">Đã chọn <strong id="so-tick">0</strong></span>
-                <a href="{{ route('daotao.pdt.bc.cap-nhat-gplx.export', array_filter(request()->only(['tu_khoa', 'ma_kh', 'cap_nhat']), fn ($v) => $v !== null && $v !== '')) }}"
+                <a href="{{ route('daotao.pdt.bc.cap-nhat-gplx.export', array_filter(request()->only(['tu_khoa', 'ma_kh', 'cap_nhat', 'ket_qua']), fn ($v) => $v !== null && $v !== '')) }}"
                    class="btn btn-sm btn-outline-success mr-3 mb-2"
                    title="Xuất toàn bộ {{ number_format($items->total()) }} học viên theo bộ lọc hiện tại (không phân trang)">⬇ Xuất Excel ({{ number_format($items->total()) }})</a>
 
