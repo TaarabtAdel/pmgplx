@@ -53,6 +53,11 @@
                     </div>
                 </div>
 
+                <div class="mb-3">
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="btn-loc-pl5">Lọc</button>
+                    <a href="{{ route('qldtoto.4-dat-cabin.index') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
+                </div>
+
                 @if ($dem !== null)
                     <div class="border rounded p-3 bg-light small mb-3">
                         <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
@@ -81,23 +86,32 @@
 
 @push('scripts')
 <script>
-(function () {
-    var sel = document.getElementById('ma_khoa_hoc');
-    var tu = document.getElementById('tu_ngay');
-    var den = document.getElementById('den_ngay');
-    function reloadPreview() {
-        if (!sel.value) return;
-        var params = new URLSearchParams({
-            ma_khoa_hoc: sel.value,
-            tu_ngay: tu.value || '',
-            den_ngay: den.value || ''
+(function ($) {
+    $(function () {
+        var $sel = $('#ma_khoa_hoc');
+        $sel.select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            allowClear: true,
+            placeholder: '— Chọn khóa —',
+            dropdownParent: $sel.closest('.form-group'),
+            language: { noResults: function () { return 'Không tìm thấy'; } },
         });
-        window.location = @json(route('qldtoto.4-dat-cabin.index')) + '?' + params.toString();
-    }
-    [sel, tu, den].forEach(function (el) {
-        if (!el) return;
-        el.addEventListener('change', reloadPreview);
+
+        $('#btn-loc-pl5').on('click', function () {
+            var ma = $sel.val();
+            if (!ma) {
+                $sel.focus();
+                return;
+            }
+            var params = new URLSearchParams({
+                ma_khoa_hoc: ma,
+                tu_ngay: $('#tu_ngay').val() || '',
+                den_ngay: $('#den_ngay').val() || ''
+            });
+            window.location = @json(route('qldtoto.4-dat-cabin.index')) + '?' + params.toString();
+        });
     });
-})();
+})(jQuery);
 </script>
 @endpush
